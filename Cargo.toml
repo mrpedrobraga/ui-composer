@@ -1,0 +1,12 @@
+[package]
+name = "ui-composer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cgmath = "0.18.0"
+futures-signals = "0.3.33"
+pollster = "0.3.0"
+slotmap = "1.0.7"
+wgpu = "0.20.1"
+winit = "0.30.3"
