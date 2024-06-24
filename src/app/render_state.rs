@@ -4,12 +4,12 @@ use pollster::FutureExt as _;
 use winit::{dpi::PhysicalSize, window::Window};
 
 pub struct RenderState<'r> {
-    instance: wgpu::Instance,
-    main_render_target: RenderTarget<'r>,
-    device: wgpu::Device,
-    adapter: wgpu::Adapter,
-    queue: wgpu::Queue,
-    main_render_pipeline: wgpu::RenderPipeline,
+    pub instance: wgpu::Instance,
+    pub main_render_target: RenderTarget<'r>,
+    pub device: wgpu::Device,
+    pub adapter: wgpu::Adapter,
+    pub queue: wgpu::Queue,
+    pub main_render_pipeline: wgpu::RenderPipeline,
 
     pub window: std::sync::Arc<Window>,
 }
@@ -99,7 +99,11 @@ impl<'r> RenderState<'r> {
     pub fn handle_resize(&mut self, new_size: PhysicalSize<u32>) {
         self.main_render_target
             .resize(&self.device, &self.adapter, new_size);
-        self.window.request_redraw();
+        self.request_redraw();
+    }
+
+    pub fn request_redraw(&mut self) {
+        self.window.request_redraw()
     }
 
     pub fn handle_redraw_requested(&mut self) {

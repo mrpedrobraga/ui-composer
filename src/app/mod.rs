@@ -4,7 +4,7 @@ use winit::{application::ApplicationHandler, event::WindowEvent};
 pub mod render_state;
 
 pub struct App<'r> {
-    render_state: Option<RenderState<'r>>,
+    pub render_state: Option<RenderState<'r>>,
 }
 
 impl<'r> App<'r> {
@@ -42,16 +42,14 @@ impl<'r> ApplicationHandler for App<'r> {
         window_id: winit::window::WindowId,
         event: winit::event::WindowEvent,
     ) {
+        let render_state = self.render_state.as_mut().unwrap();
+
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::Resized(new_size) => {
-                self.render_state.as_mut().unwrap().handle_resize(new_size);
+                render_state.handle_resize(new_size);
             }
-            WindowEvent::RedrawRequested => self
-                .render_state
-                .as_mut()
-                .unwrap()
-                .handle_redraw_requested(),
+            WindowEvent::RedrawRequested => render_state.handle_redraw_requested(),
             _ => (),
         }
     }

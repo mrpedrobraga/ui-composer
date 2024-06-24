@@ -1,7 +1,7 @@
 use cgmath::Vector2;
 use futures_signals::signal::Mutable;
-use slotmap::{DefaultKey, SlotMap};
 use std::fmt::Debug;
+use ui_composer::{alloc::GBox, app::App};
 
 trait Render: Debug {
     fn push_fragments(&self, buf: &mut Vec<Fragment>);
@@ -31,29 +31,6 @@ where
     }
 }
 
-#[derive(Debug)]
-struct GPUModel {
-    pub bufs: SlotMap<DefaultKey, Vec<Fragment>>,
-}
-
-struct BufferRef(DefaultKey);
-
-impl GPUModel {
-    fn new() -> Self {
-        Self {
-            bufs: SlotMap::new(),
-        }
-    }
-
-    fn dyn_alloc<'g>(&mut self) -> BufferRef {
-        BufferRef(self.bufs.insert(Vec::new()))
-    }
-
-    fn borrow_buf(&mut self, buffer_ref: BufferRef) -> Option<&mut Vec<Fragment>> {
-        self.bufs.get_mut(buffer_ref.0)
-    }
-}
-
 struct Context {
     pub window_size: Mutable<Vector2<f32>>,
 }
@@ -65,19 +42,17 @@ const fn rect(x: f32, y: f32, w: f32, h: f32) -> Aabb {
 }
 
 fn main() {
-    let mut model = GPUModel::new();
+    let event_loop = winit::event_loop::EventLoop::builder().build().unwrap();
+    event_loop.set_control_flow(winit::event_loop::ControlFlow::Wait);
 
-    let buf = model.dyn_alloc();
-    {
-        let buf = model.borrow_buf(buf).unwrap();
+    let mut app = App::new();
+    event_loop.run_app(&mut app).unwrap();
 
-        let a = (
+    let a = GBox::new(
+        &app.render_state.unwrap().device,
+        (
             rect(0.0, 0.0, 10.0, 20.0),
             (rect(0.0, 0.0, 10.0, 10.0), rect(0.0, 10.0, 10.0, 10.0)),
-        );
-
-        a.push_fragments(buf);
-    }
-
-    dbg!(model);
+        ),
+    );
 }
