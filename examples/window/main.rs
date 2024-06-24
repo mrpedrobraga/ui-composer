@@ -1,4 +1,4 @@
-use ui_composer::{alloc::GBox, app::App};
+use ui_composer::app::App;
 use winit::event_loop::{ControlFlow, EventLoop};
 
 fn main() {
@@ -10,7 +10,7 @@ fn main() {
     // Creates a GPU Box (a heap allocation on the cpu);
     //
     // Beyond this you can imagine pseudo types like GVec, GTuple, GEnum, etc.
-    let buf = GBox::new(&app.render_state.as_ref().unwrap().device, (10, 20));
+    //let buf = GBox::new(&app.render_state.as_ref().unwrap().device, (10, 20));
 
     event_loop.run_app(&mut app).unwrap();
 }

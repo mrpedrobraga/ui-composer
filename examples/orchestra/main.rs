@@ -1,25 +1,41 @@
-use std::{borrow::Borrow, ops::Range};
+use std::ops::Range;
 
 #[derive(Debug, Clone)]
 struct Primitive(String);
 
-struct ReactiveNode {
+struct GenericReactiveNode<F: Fn(i32) -> Vec<Primitive>> {
     dirty: bool,
     current_value: i32,
     range: Range<usize>,
-    replacer: Box<dyn Fn(i32) -> Vec<Primitive>>,
+    replacer: F,
 }
 
-impl ReactiveNode {
+trait ReactiveNode {
+    fn set(&mut self, new_value: i32);
+    fn is_dirty(&self) -> bool;
+    fn apply(&mut self, buffer: &mut Vec<Primitive>);
+}
+
+impl<F: Fn(i32) -> Vec<Primitive>> ReactiveNode for GenericReactiveNode<F> {
     fn set(&mut self, new_value: i32) {
         self.current_value = new_value;
         self.dirty = true;
+    }
+    fn is_dirty(&self) -> bool {
+        self.dirty
+    }
+    fn apply(&mut self, buffer: &mut Vec<Primitive>) {
+        buffer.splice(self.range.clone(), {
+            let rep = &self.replacer;
+            rep(self.current_value).iter().cloned()
+        });
+        self.dirty = false;
     }
 }
 
 struct World {
     primitives: Vec<Primitive>,
-    reactive_nodes: Vec<ReactiveNode>,
+    reactive_nodes: Vec<Box<dyn ReactiveNode>>,
 }
 
 impl World {
@@ -35,12 +51,8 @@ impl World {
 
     fn update(&mut self) {
         for reactive_node in self.reactive_nodes.iter_mut() {
-            if reactive_node.dirty {
-                self.primitives.splice(reactive_node.range.clone(), {
-                    let rep = &*reactive_node.replacer;
-                    rep(reactive_node.current_value).iter().cloned()
-                });
-                reactive_node.dirty = false;
+            if reactive_node.is_dirty() {
+                reactive_node.apply(&mut self.primitives)
             }
         }
     }
@@ -49,12 +61,12 @@ impl World {
 fn main() {
     let mut world = World {
         primitives: vec![Primitive("A(0)".to_string()), Primitive("B".to_string())],
-        reactive_nodes: vec![ReactiveNode {
+        reactive_nodes: vec![Box::new(GenericReactiveNode {
             dirty: false,
             current_value: 0,
             range: 0..1,
-            replacer: Box::new(|num| vec![Primitive(format!("A({})", num))]),
-        }],
+            replacer: |num| vec![Primitive(format!("A({})", num))],
+        })],
     };
 
     world.render();
