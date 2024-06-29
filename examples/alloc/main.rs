@@ -1,22 +1,64 @@
-use cgmath::Vector2;
+use bytemuck::NoUninit;
 use futures_signals::signal::Mutable;
 use std::fmt::Debug;
-use ui_composer::{alloc::GBox, app::App};
+use ui_composer::{
+    alloc::{GBox, IntoGPU},
+    app::App,
+};
 
 trait Render: Debug {
     fn push_fragments(&self, buf: &mut Vec<Fragment>);
 }
 
-#[derive(Debug)]
-enum Fragment {
-    Aabb(Vector2<f32>, Vector2<f32>),
+#[derive(Clone)]
+struct W<T: Render>(pub T);
+
+impl<T> IntoGPU for W<T>
+where
+    T: Render,
+{
+    fn push_bytes<'slice>(self, bytes: &mut Vec<u8>) {
+        let mut v = Vec::new();
+        self.0.push_fragments(&mut v);
+        bytes.extend(bytemuck::cast_slice(v.as_slice()).iter());
+    }
 }
 
-#[derive(Debug)]
-struct Aabb(pub Vector2<f32>, pub Vector2<f32>);
+#[derive(Debug, Clone, Copy, NoUninit)]
+#[repr(C)]
+struct Vector2 {
+    x: f32,
+    y: f32,
+}
+
+impl Vector2 {
+    pub const fn new(x: f32, y: f32) -> Self {
+        Self { x, y }
+    }
+}
+
+#[derive(Debug, NoUninit, Clone, Copy)]
+#[repr(C)]
+struct Fragment {
+    position: Vector2,
+    size: Vector2,
+}
+
+impl IntoGPU for Fragment {
+    fn push_bytes<'slice>(self, bytes: &mut Vec<u8>) {
+        bytes.extend(bytemuck::cast_slice(&[self]));
+    }
+}
+
+#[derive(Debug, NoUninit, Clone, Copy)]
+#[repr(C)]
+struct Aabb(pub Vector2, pub Vector2);
 impl Render for Aabb {
     fn push_fragments(&self, buf: &mut Vec<Fragment>) {
-        buf.push(Fragment::Aabb(self.0, self.1));
+        buf.push(Fragment {
+            position: self.0,
+            size: self.1,
+        });
     }
 }
 
@@ -32,7 +74,7 @@ where
 }
 
 struct Context {
-    pub window_size: Mutable<Vector2<f32>>,
+    pub window_size: Mutable<Vector2>,
 }
 
 // ----- //
@@ -50,9 +92,9 @@ fn main() {
 
     let a = GBox::new(
         &app.render_state.unwrap().device,
-        (
-            rect(0.0, 0.0, 10.0, 20.0),
-            (rect(0.0, 0.0, 10.0, 10.0), rect(0.0, 10.0, 10.0, 10.0)),
-        ),
+        W((
+            rect(0.0, 0.0, 1.0, 1.0),
+            (rect(0.0, 0.0, 6.0, 3.0), rect(0.0, 3.0, 6.0, 3.0)),
+        )),
     );
 }

@@ -140,7 +140,6 @@ impl<'r> RenderState<'r> {
         });
 
         render_pass.set_pipeline(&self.main_render_pipeline);
-        render_pass.draw(0..3, 0..1);
         drop(render_pass);
 
         self.queue.submit(Some(encoder.finish()));
