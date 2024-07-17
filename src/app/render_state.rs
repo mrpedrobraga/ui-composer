@@ -1,21 +1,22 @@
-use std::sync::Arc;
-
+use crate::alloc::{IntoRenderStack, RenderModule, RenderStack, UIFragment};
 use pollster::FutureExt as _;
+use std::sync::Arc;
 use winit::{dpi::PhysicalSize, window::Window};
 
-pub struct RenderState<'r> {
+pub struct RenderState<'window> {
     pub instance: wgpu::Instance,
-    pub main_render_target: RenderTarget<'r>,
-    pub device: wgpu::Device,
     pub adapter: wgpu::Adapter,
     pub queue: wgpu::Queue,
-    pub main_render_pipeline: wgpu::RenderPipeline,
+    pub root_render_stack: RenderStack<'window>,
 
     pub window: std::sync::Arc<Window>,
 }
 
-impl<'r> RenderState<'r> {
-    pub fn new(window: Window) -> Self {
+impl<'window> RenderState<'window> {
+    pub fn new<TRootFragment: UIFragment + 'static>(
+        window: Window,
+        root_render_fragment: TRootFragment,
+    ) -> Self {
         let instance = wgpu::Instance::default();
         let window = std::sync::Arc::new(window);
         let surface = instance.create_surface(window.clone()).unwrap();
@@ -41,64 +42,21 @@ impl<'r> RenderState<'r> {
             .block_on()
             .unwrap();
 
-        let surface_config = surface
-            .get_default_config(
-                &adapter,
-                window.inner_size().width,
-                window.inner_size().height,
-            )
-            .unwrap();
-        surface.configure(&device, &surface_config);
-
-        let main_render_target = RenderTarget {
-            size: window.inner_size(),
-            surface,
-            surface_config,
-        };
-
-        let shader = device.create_shader_module(wgpu::include_wgsl!("../shader.wgsl"));
-        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: None,
-            bind_group_layouts: &[],
-            push_constant_ranges: &[],
-        });
-        let swapchain_capabilities = main_render_target.surface.get_capabilities(&adapter);
-        let swapchain_format = swapchain_capabilities.formats[0];
-        let main_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: None,
-            layout: Some(&pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: "vs_main",
-                buffers: &[],
-                compilation_options: Default::default(),
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: "fs_main",
-                compilation_options: Default::default(),
-                targets: &[Some(swapchain_format.into())],
-            }),
-            primitive: wgpu::PrimitiveState::default(),
-            depth_stencil: None, // yet
-            multisample: wgpu::MultisampleState::default(),
-            multiview: None,
-        });
+        let root_render_stack =
+            root_render_fragment.into_render_stack(window.clone(), surface, &adapter, device);
 
         Self {
             instance,
-            main_render_target,
-            device,
             adapter,
             queue,
             window,
-            main_render_pipeline,
+            root_render_stack,
         }
     }
 
-    pub fn handle_resize(&mut self, new_size: PhysicalSize<u32>) {
-        self.main_render_target
-            .resize(&self.device, &self.adapter, new_size);
+    pub fn handle_resize(&mut self, _new_size: PhysicalSize<u32>) {
+        //self.main_render_target
+        //    .resize(&self.device, &self.adapter, new_size);
         self.request_redraw();
     }
 
@@ -107,15 +65,10 @@ impl<'r> RenderState<'r> {
     }
 
     pub fn handle_redraw_requested(&mut self) {
-        let frame = self
-            .main_render_target
-            .surface
-            .get_current_texture()
-            .unwrap();
-        let view = frame
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
+        let (frame, view) = self.root_render_stack.create_render_frame();
         let mut encoder = self
+            .root_render_stack
+            .render_pipeline
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
@@ -139,7 +92,10 @@ impl<'r> RenderState<'r> {
             occlusion_query_set: None,
         });
 
-        render_pass.set_pipeline(&self.main_render_pipeline);
+        {
+            self.root_render_stack.prepare(&mut render_pass);
+            self.root_render_stack.draw(&mut render_pass);
+        }
         drop(render_pass);
 
         self.queue.submit(Some(encoder.finish()));
@@ -147,13 +103,13 @@ impl<'r> RenderState<'r> {
     }
 }
 
-pub struct RenderTarget<'r> {
+pub struct RenderTarget<'window> {
     pub size: winit::dpi::PhysicalSize<u32>,
-    pub surface: wgpu::Surface<'r>,
+    pub surface: wgpu::Surface<'window>,
     pub surface_config: wgpu::SurfaceConfiguration,
 }
 
-impl<'r> RenderTarget<'r> {
+impl<'window> RenderTarget<'window> {
     pub fn new(
         instance: &wgpu::Instance,
         adapter: &wgpu::Adapter,
