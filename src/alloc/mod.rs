@@ -71,7 +71,7 @@ impl<'window> RenderModule for RenderStack<'window> {
     }
 }
 
-pub trait UIFragment: RenderPipelineProvider {
+pub trait UIFragment {
     fn get_allocation_info(&self) -> AllocationInfo;
     fn push_allocation(&self, primitive_buffer: &mut Vec<u8>);
 }
@@ -80,49 +80,34 @@ pub struct AllocationInfo {
     pub buffer_size: u32,
     pub primitive_count: u32,
 }
-
-pub trait RenderPipelineProvider {
-    fn get_render_stack_pipeline<'window>(
-        window: std::sync::Arc<winit::window::Window>,
-        surface: wgpu::Surface<'window>,
-        adapter: &wgpu::Adapter,
-        device: wgpu::Device,
-    ) -> RenderStackPipeline<'window>;
-}
-
 pub trait IntoRenderStack {
     fn into_render_stack<'window>(
         self,
-        window: std::sync::Arc<winit::window::Window>,
-        surface: wgpu::Surface<'window>,
-        adapter: &wgpu::Adapter,
-        device: wgpu::Device,
+        render_pipeline: RenderStackPipeline<'window>,
     ) -> RenderStack<'window>;
 }
 
 impl<TFragment: UIFragment + 'static> IntoRenderStack for TFragment {
     fn into_render_stack<'window>(
         self,
-        window: std::sync::Arc<winit::window::Window>,
-        surface: wgpu::Surface<'window>,
-        adapter: &wgpu::Adapter,
-        device: wgpu::Device,
+        render_pipeline: RenderStackPipeline<'window>,
     ) -> RenderStack<'window> {
         let allocation_info = self.get_allocation_info();
 
         let mut primitive_buffer = vec![];
         self.push_allocation(&mut primitive_buffer);
-        let instance_buffer = (&device).create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: None,
-            contents: bytemuck::cast_slice(&primitive_buffer[..]),
-            usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
-        });
+        let instance_buffer =
+            (&render_pipeline.device).create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: None,
+                contents: bytemuck::cast_slice(&primitive_buffer[..]),
+                usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
+            });
 
         let render_stack = RenderStack {
             reactors: vec![],
             primitive_count: allocation_info.primitive_count,
             primitive_buffer_cpu: primitive_buffer,
-            render_pipeline: Self::get_render_stack_pipeline(window, surface, adapter, device),
+            render_pipeline,
             primitive_buffer: instance_buffer,
         };
         return render_stack;
@@ -143,16 +128,5 @@ impl<A: UIFragment, B: UIFragment> UIFragment for (A, B) {
     fn push_allocation(&self, primitive_buffer: &mut Vec<u8>) {
         self.0.push_allocation(primitive_buffer);
         self.1.push_allocation(primitive_buffer);
-    }
-}
-
-impl<A: UIFragment, B: UIFragment> RenderPipelineProvider for (A, B) {
-    fn get_render_stack_pipeline<'window>(
-        window: std::sync::Arc<winit::window::Window>,
-        surface: wgpu::Surface<'window>,
-        adapter: &wgpu::Adapter,
-        device: wgpu::Device,
-    ) -> RenderStackPipeline<'window> {
-        A::get_render_stack_pipeline(window, surface, adapter, device)
     }
 }

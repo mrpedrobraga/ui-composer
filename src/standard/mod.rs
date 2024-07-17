@@ -1,5 +1,5 @@
 use crate::{
-    alloc::{self, RenderPipelineProvider, RenderStackPipeline, UIFragment},
+    alloc::{self, RenderStackPipeline, UIFragment},
     app::render_state::RenderTarget,
 };
 use bytemuck::{Pod, Zeroable};
@@ -9,6 +9,7 @@ use wgpu::{util::DeviceExt, BufferAddress, BufferUsages};
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
 pub struct Primitive {
+    pub transform: [[f32; 4]; 4],
     pub color: [f32; 3],
 }
 
@@ -25,93 +26,38 @@ impl UIFragment for Primitive {
     }
 }
 
-impl RenderPipelineProvider for Primitive {
-    fn get_render_stack_pipeline<'window>(
-        window: std::sync::Arc<winit::window::Window>,
-        surface: wgpu::Surface<'window>,
-        adapter: &wgpu::Adapter,
-        device: wgpu::Device,
-    ) -> alloc::RenderStackPipeline<'window> {
-        let surface_config = surface
-            .get_default_config(
-                &adapter,
-                window.inner_size().width,
-                window.inner_size().height,
-            )
-            .unwrap();
-        surface.configure(&device, &surface_config);
-
-        let render_target = RenderTarget {
-            size: window.inner_size(),
-            surface,
-            surface_config,
-        };
-
-        let swapchain_capabilities = render_target.surface.get_capabilities(&adapter);
-        let swapchain_format = swapchain_capabilities.formats[0];
-
-        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: None,
-            bind_group_layouts: &[],
-            push_constant_ranges: &[],
-        });
-        let shader = device.create_shader_module(wgpu::include_wgsl!("./standard-shader.wgsl"));
-        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: None,
-            layout: Some(&pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: "vs_main",
-                buffers: &[Vertex::buffer_layout(), Primitive::buffer_layout()],
-                compilation_options: Default::default(),
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: "fs_main",
-                compilation_options: Default::default(),
-                targets: &[Some(swapchain_format.into())],
-            }),
-            primitive: wgpu::PrimitiveState::default(),
-            depth_stencil: None, // yet
-            multisample: wgpu::MultisampleState::default(),
-            multiview: None,
-        });
-
-        let (vertices, indices) = get_quad_mesh();
-
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: None,
-            contents: bytemuck::cast_slice(&vertices[..]),
-            usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
-        });
-
-        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: None,
-            contents: bytemuck::cast_slice(&indices[..]),
-            usage: BufferUsages::INDEX | BufferUsages::COPY_DST,
-        });
-
-        RenderStackPipeline {
-            pipeline: render_pipeline,
-            vertex_buffer: vertex_buffer,
-            index_buffer: index_buffer,
-            index_count: indices.len() as u32,
-            render_texture: render_target,
-            device,
-        }
-    }
-}
-
 impl Primitive {
     fn buffer_layout() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Self>() as BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
-            attributes: &[wgpu::VertexAttribute {
-                offset: 0,
-                shader_location: 5,
-                format: wgpu::VertexFormat::Float32x3,
-            }],
+            attributes: &[
+                wgpu::VertexAttribute {
+                    offset: 0,
+                    shader_location: 5,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+                wgpu::VertexAttribute {
+                    offset: size_of::<[[f32; 4]; 1]>() as BufferAddress,
+                    shader_location: 6,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+                wgpu::VertexAttribute {
+                    offset: size_of::<[[f32; 4]; 2]>() as BufferAddress,
+                    shader_location: 7,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+                wgpu::VertexAttribute {
+                    offset: size_of::<[[f32; 4]; 3]>() as BufferAddress,
+                    shader_location: 8,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+                wgpu::VertexAttribute {
+                    offset: size_of::<[[f32; 4]; 4]>() as BufferAddress,
+                    shader_location: 9,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
+            ],
         }
     }
 }
@@ -166,4 +112,79 @@ fn get_quad_mesh() -> (Vec<Vertex>, Vec<u32>) {
         ],
         vec![0, 1, 2, 2, 3, 0],
     )
+}
+
+pub fn get_main_render_stack_pipeline<'window>(
+    window: std::sync::Arc<winit::window::Window>,
+    surface: wgpu::Surface<'window>,
+    adapter: &wgpu::Adapter,
+    device: wgpu::Device,
+) -> alloc::RenderStackPipeline<'window> {
+    let surface_config = surface
+        .get_default_config(
+            &adapter,
+            window.inner_size().width,
+            window.inner_size().height,
+        )
+        .unwrap();
+    surface.configure(&device, &surface_config);
+
+    let render_target = RenderTarget {
+        size: window.inner_size(),
+        surface,
+        surface_config,
+    };
+
+    let swapchain_capabilities = render_target.surface.get_capabilities(&adapter);
+    let swapchain_format = swapchain_capabilities.formats[0];
+
+    let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        label: None,
+        bind_group_layouts: &[],
+        push_constant_ranges: &[],
+    });
+    let shader = device.create_shader_module(wgpu::include_wgsl!("./standard-shader.wgsl"));
+    let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: None,
+        layout: Some(&pipeline_layout),
+        vertex: wgpu::VertexState {
+            module: &shader,
+            entry_point: "vs_main",
+            buffers: &[Vertex::buffer_layout(), Primitive::buffer_layout()],
+            compilation_options: Default::default(),
+        },
+        fragment: Some(wgpu::FragmentState {
+            module: &shader,
+            entry_point: "fs_main",
+            compilation_options: Default::default(),
+            targets: &[Some(swapchain_format.into())],
+        }),
+        primitive: wgpu::PrimitiveState::default(),
+        depth_stencil: None, // yet
+        multisample: wgpu::MultisampleState::default(),
+        multiview: None,
+    });
+
+    let (vertices, indices) = get_quad_mesh();
+
+    let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: None,
+        contents: bytemuck::cast_slice(&vertices[..]),
+        usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
+    });
+
+    let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: None,
+        contents: bytemuck::cast_slice(&indices[..]),
+        usage: BufferUsages::INDEX | BufferUsages::COPY_DST,
+    });
+
+    RenderStackPipeline {
+        pipeline: render_pipeline,
+        vertex_buffer: vertex_buffer,
+        index_buffer: index_buffer,
+        index_count: indices.len() as u32,
+        render_texture: render_target,
+        device,
+    }
 }

@@ -1,4 +1,7 @@
-use crate::alloc::{IntoRenderStack, RenderModule, RenderStack, UIFragment};
+use crate::{
+    alloc::{IntoRenderStack, RenderModule, RenderStack, UIFragment},
+    standard::get_main_render_stack_pipeline,
+};
 use pollster::FutureExt as _;
 use std::sync::Arc;
 use winit::{dpi::PhysicalSize, window::Window};
@@ -42,8 +45,10 @@ impl<'window> RenderState<'window> {
             .block_on()
             .unwrap();
 
-        let root_render_stack =
-            root_render_fragment.into_render_stack(window.clone(), surface, &adapter, device);
+        // Allow user to switch the render pipeline!!!
+        let root_render_stack = root_render_fragment.into_render_stack(
+            get_main_render_stack_pipeline(window.clone(), surface, &adapter, device),
+        );
 
         Self {
             instance,
