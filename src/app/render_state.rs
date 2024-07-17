@@ -1,21 +1,22 @@
 use crate::{
-    alloc::{IntoRenderStack, RenderModule, RenderStack, UIFragment},
+    alloc::{IntoRenderModule, RenderModule, UIFragment},
     standard::get_main_render_stack_pipeline,
 };
 use pollster::FutureExt as _;
 use std::sync::Arc;
 use winit::{dpi::PhysicalSize, window::Window};
 
-pub struct RenderState<'window> {
+pub struct RenderState {
     pub instance: wgpu::Instance,
     pub adapter: wgpu::Adapter,
     pub queue: wgpu::Queue,
-    pub root_render_stack: RenderStack<'window>,
+    pub current_pipeline_id: Option<u8>,
+    pub root_render_stack: Box<dyn RenderModule>,
 
     pub window: std::sync::Arc<Window>,
 }
 
-impl<'window> RenderState<'window> {
+impl RenderState {
     pub fn new<TRootFragment: UIFragment + 'static>(
         window: Window,
         root_render_fragment: TRootFragment,
@@ -46,11 +47,12 @@ impl<'window> RenderState<'window> {
             .unwrap();
 
         // Allow user to switch the render pipeline!!!
-        let root_render_stack = root_render_fragment.into_render_stack(
+        let root_render_stack = Box::new(root_render_fragment.into_render_module(
             get_main_render_stack_pipeline(window.clone(), surface, &adapter, device),
-        );
+        ));
 
         Self {
+            current_pipeline_id: None,
             instance,
             adapter,
             queue,
@@ -70,11 +72,8 @@ impl<'window> RenderState<'window> {
 
     pub fn handle_redraw_requested(&mut self) {
         let (frame, view) = self.root_render_stack.create_render_frame();
-        let mut encoder = self
-            .root_render_stack
-            .render_pipeline
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        let root_render_stack = self.root_render_stack.as_ref();
+        let mut encoder = root_render_stack.get_command_encoder();
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: None,
@@ -97,7 +96,9 @@ impl<'window> RenderState<'window> {
         });
 
         {
-            self.root_render_stack.prepare(&mut render_pass);
+            self.current_pipeline_id = None;
+            self.root_render_stack
+                .prepare(&mut self.current_pipeline_id, &mut render_pass);
             self.root_render_stack.draw(&mut render_pass);
         }
         drop(render_pass);

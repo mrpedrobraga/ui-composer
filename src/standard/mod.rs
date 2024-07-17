@@ -1,5 +1,5 @@
 use crate::{
-    alloc::{self, RenderStackPipeline, UIFragment},
+    alloc::{self, RenderModulePipeline, UIFragment},
     app::render_state::RenderTarget,
 };
 use bytemuck::{Pod, Zeroable};
@@ -90,6 +90,17 @@ impl Vertex {
     }
 }
 
+/// Returns the mesh for the quad used in the standard pipeline.
+/// ```
+/// 0             1
+/// *-------------*
+/// |             |
+/// |             |
+/// |             |
+/// |             |
+/// *-------------*
+/// 1
+/// ```
 fn get_quad_mesh() -> (Vec<Vertex>, Vec<u32>) {
     (
         vec![
@@ -114,12 +125,13 @@ fn get_quad_mesh() -> (Vec<Vertex>, Vec<u32>) {
     )
 }
 
+// Only generate a single render stack pipeline and share it across stacks.
 pub fn get_main_render_stack_pipeline<'window>(
     window: std::sync::Arc<winit::window::Window>,
     surface: wgpu::Surface<'window>,
     adapter: &wgpu::Adapter,
     device: wgpu::Device,
-) -> alloc::RenderStackPipeline<'window> {
+) -> alloc::RenderModulePipeline<'window> {
     let surface_config = surface
         .get_default_config(
             &adapter,
@@ -179,7 +191,8 @@ pub fn get_main_render_stack_pipeline<'window>(
         usage: BufferUsages::INDEX | BufferUsages::COPY_DST,
     });
 
-    RenderStackPipeline {
+    RenderModulePipeline {
+        id: 0,
         pipeline: render_pipeline,
         vertex_buffer: vertex_buffer,
         index_buffer: index_buffer,

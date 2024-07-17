@@ -42,5 +42,14 @@ fn vs_main(
 fn fs_main(
     in: VertexOutput,
 ) -> @location(0) vec4<f32> {
-    return vec4<f32>(in.color, 1.0);
+    return vec4<f32>(srgb_to_linear(in.color), 1.0);
+}
+
+// Function to convert sRGB color to linear RGB
+fn srgb_to_linear(color_srgb: vec3<f32>) -> vec3<f32> {
+    // Apply inverse gamma correction
+    let color_linear = pow(color_srgb, vec3<f32>(2.2));
+
+    // Ensure the resulting linear RGB color values are clamped between 0 and 1
+    return min(max(color_linear, vec3<f32>(0.0)), vec3<f32>(1.0));
 }

@@ -1,18 +1,23 @@
-use std::mem::size_of;
-
 use crate::app::render_state::RenderTarget;
 use wgpu::{util::DeviceExt, BufferUsages, RenderPipeline};
 use winit::dpi::PhysicalSize;
 
+pub struct InteractorNode {}
+
 pub struct RenderStack<'window> {
     pub reactors: Vec<()>,
+    pub interactors: InteractorNode,
     pub primitive_count: u32,
     pub primitive_buffer_cpu: Vec<u8>,
     pub primitive_buffer: wgpu::Buffer,
-    pub render_pipeline: RenderStackPipeline<'window>,
+    pub sub_renderers: (),
+    // Currently this is owned, but it should be shared to avoid context-switching.
+    pub render_pipeline: RenderModulePipeline<'window>,
 }
 
-pub struct RenderStackPipeline<'window> {
+pub struct RenderModulePipeline<'window> {
+    /// This needs to be moved to `RenderState`, i.e., a pipeline doesn't know its own ID.
+    pub id: u8,
     pub render_texture: RenderTarget<'window>,
     pub pipeline: RenderPipeline,
     pub device: wgpu::Device,
@@ -27,12 +32,26 @@ impl<'window> RenderStack<'window> {
 
 pub trait RenderModule {
     fn create_render_frame(&self) -> (wgpu::SurfaceTexture, wgpu::TextureView);
-    fn prepare<'pass>(&'pass self, render_pass: &mut wgpu::RenderPass<'pass>);
+    fn prepare<'pass>(
+        &'pass self,
+        current_pipeline_id: &mut Option<u8>,
+        render_pass: &mut wgpu::RenderPass<'pass>,
+    );
     fn resize(&mut self, adapter: &wgpu::Adapter, new_size: PhysicalSize<u32>);
     fn draw(&self, render_pass: &mut wgpu::RenderPass);
+    fn get_pipeline(&self) -> &RenderModulePipeline;
+    fn get_command_encoder<'window>(&self) -> wgpu::CommandEncoder {
+        self.get_pipeline()
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None })
+    }
 }
 
 impl<'window> RenderModule for RenderStack<'window> {
+    fn get_pipeline(&self) -> &RenderModulePipeline {
+        &self.render_pipeline
+    }
+
     fn create_render_frame(&self) -> (wgpu::SurfaceTexture, wgpu::TextureView) {
         let surface_texture = self
             .render_pipeline
@@ -46,7 +65,16 @@ impl<'window> RenderModule for RenderStack<'window> {
         return (surface_texture, view);
     }
 
-    fn prepare<'pass>(&'pass self, render_pass: &mut wgpu::RenderPass<'pass>) {
+    fn prepare<'pass>(
+        &'pass self,
+        current_pipeline_id: &mut Option<u8>,
+        render_pass: &mut wgpu::RenderPass<'pass>,
+    ) {
+        if current_pipeline_id.is_some_and(|id| id == self.render_pipeline.id) {
+            return;
+        };
+
+        *current_pipeline_id = Some(self.render_pipeline.id);
         render_pass.set_pipeline(&self.render_pipeline.pipeline);
         render_pass.set_vertex_buffer(0, self.render_pipeline.vertex_buffer.slice(..));
         render_pass.set_vertex_buffer(1, self.primitive_buffer.slice(..));
@@ -80,18 +108,18 @@ pub struct AllocationInfo {
     pub buffer_size: u32,
     pub primitive_count: u32,
 }
-pub trait IntoRenderStack {
-    fn into_render_stack<'window>(
+pub trait IntoRenderModule {
+    fn into_render_module<'window>(
         self,
-        render_pipeline: RenderStackPipeline<'window>,
-    ) -> RenderStack<'window>;
+        render_pipeline: RenderModulePipeline<'window>,
+    ) -> impl RenderModule;
 }
 
-impl<TFragment: UIFragment + 'static> IntoRenderStack for TFragment {
-    fn into_render_stack<'window>(
+impl<TFragment: UIFragment + 'static> IntoRenderModule for TFragment {
+    fn into_render_module<'window>(
         self,
-        render_pipeline: RenderStackPipeline<'window>,
-    ) -> RenderStack<'window> {
+        render_pipeline: RenderModulePipeline<'window>,
+    ) -> impl RenderModule {
         let allocation_info = self.get_allocation_info();
 
         let mut primitive_buffer = vec![];
@@ -105,6 +133,8 @@ impl<TFragment: UIFragment + 'static> IntoRenderStack for TFragment {
 
         let render_stack = RenderStack {
             reactors: vec![],
+            interactors: InteractorNode {},
+            sub_renderers: (),
             primitive_count: allocation_info.primitive_count,
             primitive_buffer_cpu: primitive_buffer,
             render_pipeline,
@@ -114,19 +144,4 @@ impl<TFragment: UIFragment + 'static> IntoRenderStack for TFragment {
     }
 }
 
-impl<A: UIFragment, B: UIFragment> UIFragment for (A, B) {
-    fn get_allocation_info(&self) -> AllocationInfo {
-        let a = self.0.get_allocation_info();
-        let b = self.1.get_allocation_info();
-
-        AllocationInfo {
-            buffer_size: a.buffer_size + b.buffer_size,
-            primitive_count: a.primitive_count + b.primitive_count,
-        }
-    }
-
-    fn push_allocation(&self, primitive_buffer: &mut Vec<u8>) {
-        self.0.push_allocation(primitive_buffer);
-        self.1.push_allocation(primitive_buffer);
-    }
-}
+pub mod ui_fragment_impls;
