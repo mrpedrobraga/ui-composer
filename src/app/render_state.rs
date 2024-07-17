@@ -54,9 +54,8 @@ impl<'window> RenderState<'window> {
         }
     }
 
-    pub fn handle_resize(&mut self, _new_size: PhysicalSize<u32>) {
-        //self.main_render_target
-        //    .resize(&self.device, &self.adapter, new_size);
+    pub fn handle_resize(&mut self, new_size: PhysicalSize<u32>) {
+        self.root_render_stack.resize(&self.adapter, new_size);
         self.request_redraw();
     }
 

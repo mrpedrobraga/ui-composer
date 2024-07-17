@@ -6,6 +6,7 @@ pub mod render_state;
 /// App builder, receives an UI fragment with the entirety of your app.
 pub struct AppBuilder<'window, TRootFragment: UIFragment> {
     pub root_render_fragment: Option<TRootFragment>,
+    event_loop: Option<winit::event_loop::EventLoop<()>>,
     running_app: Option<RunningApp<'window>>,
 }
 
@@ -19,13 +20,22 @@ impl<'window, TRootFragment: UIFragment + 'static> AppBuilder<'window, TRootFrag
     // For cross-platform compatibility, this should be called in the main thread,
     // and only once in your program.
     pub fn new(root_fragment: TRootFragment) -> Self {
+        let event_loop = winit::event_loop::EventLoop::builder().build().unwrap();
+        event_loop.set_control_flow(winit::event_loop::ControlFlow::Wait);
+
         Self {
             root_render_fragment: Some(root_fragment),
+            event_loop: Some(event_loop),
             running_app: None,
         }
     }
 
-    pub fn build(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
+    pub fn run(mut self) {
+        let event_loop = self.event_loop.take().unwrap();
+        event_loop.run_app(&mut self).unwrap();
+    }
+
+    fn build(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         let window = event_loop
             .create_window(
                 winit::window::WindowAttributes::default()
@@ -67,7 +77,7 @@ impl<'window> ApplicationHandler for RunningApp<'window> {
     fn window_event(
         &mut self,
         event_loop: &winit::event_loop::ActiveEventLoop,
-        window_id: winit::window::WindowId,
+        _window_id: winit::window::WindowId,
         event: WindowEvent,
     ) {
         match event {
