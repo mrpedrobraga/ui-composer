@@ -30,7 +30,15 @@ fn vs_main(
         instance.transform_mat_z,
         instance.transform_mat_w
     );
-    let position = ((transform_mat * vec4(model.position, 1.0)).xyz + vec3<f32>(-1.0, -1.0, 0.0)) * vec3<f32>(1.0, -1.0, 1.0);
+    let window_size = vec2<f32>(800.0, 800.0);
+    let world_mat = mat4x4<f32>(
+        vec4<f32>(1.0 / window_size.x, 0.0, 0.0, 0.0),
+        vec4<f32>(0.0, -1.0 / window_size.y, 0.0, 0.0),
+        vec4<f32>(0.0, 0.0, 1.0, 0.0),
+        vec4<f32>(-1.0, 1.0, 0.0, 1.0),
+    );
+
+    let position = (world_mat * transform_mat * vec4(model.position, 1.0)).xyz;
 
     out.clip_position = vec4<f32>(position, 1.0);
     return out;
