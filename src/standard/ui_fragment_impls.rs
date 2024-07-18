@@ -1,4 +1,4 @@
-use super::{AllocationInfo, UIFragment};
+use super::render_stack::{AllocationInfo, UIFragment};
 
 impl<'a, T, const N: usize> UIFragment for [T; N]
 where

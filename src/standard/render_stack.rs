@@ -1,8 +1,11 @@
 use crate::app::render_state::RenderTarget;
-use wgpu::{util::DeviceExt, BufferUsages, RenderPipeline};
+use crate::interaction::InteractorNode;
+use crate::render_module::{IntoRenderModule, RenderModule};
+use wgpu::util::DeviceExt as _;
+use wgpu::{BufferUsages, RenderPipeline};
 use winit::dpi::PhysicalSize;
 
-pub struct InteractorNode {}
+use super::standard_pipeline::get_main_render_stack_pipeline;
 
 pub struct RenderStack<'window> {
     pub reactors: Vec<()>,
@@ -12,46 +15,23 @@ pub struct RenderStack<'window> {
     pub primitive_buffer: wgpu::Buffer,
     pub sub_renderers: (),
     // Currently this is owned, but it should be shared to avoid context-switching.
-    pub render_pipeline: RenderModulePipeline<'window>,
+    pub render_pipeline: RenderStackPipeline<'window>,
 }
 
-pub struct RenderModulePipeline<'window> {
+pub struct RenderStackPipeline<'window> {
     /// This needs to be moved to `RenderState`, i.e., a pipeline doesn't know its own ID.
     pub id: u8,
     pub render_texture: RenderTarget<'window>,
     pub pipeline: RenderPipeline,
     pub device: wgpu::Device,
+    pub queue: wgpu::Queue,
+    pub adapter: wgpu::Adapter,
     pub vertex_buffer: wgpu::Buffer,
     pub index_count: u32,
     pub index_buffer: wgpu::Buffer,
 }
 
-impl<'window> RenderStack<'window> {
-    //fn new() {}
-}
-
-pub trait RenderModule {
-    fn create_render_frame(&self) -> (wgpu::SurfaceTexture, wgpu::TextureView);
-    fn prepare<'pass>(
-        &'pass self,
-        current_pipeline_id: &mut Option<u8>,
-        render_pass: &mut wgpu::RenderPass<'pass>,
-    );
-    fn resize(&mut self, adapter: &wgpu::Adapter, new_size: PhysicalSize<u32>);
-    fn draw(&self, render_pass: &mut wgpu::RenderPass);
-    fn get_pipeline(&self) -> &RenderModulePipeline;
-    fn get_command_encoder<'window>(&self) -> wgpu::CommandEncoder {
-        self.get_pipeline()
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None })
-    }
-}
-
 impl<'window> RenderModule for RenderStack<'window> {
-    fn get_pipeline(&self) -> &RenderModulePipeline {
-        &self.render_pipeline
-    }
-
     fn create_render_frame(&self) -> (wgpu::SurfaceTexture, wgpu::TextureView) {
         let surface_texture = self
             .render_pipeline
@@ -84,6 +64,14 @@ impl<'window> RenderModule for RenderStack<'window> {
         );
     }
 
+    fn resize(&mut self, new_size: PhysicalSize<u32>) {
+        self.render_pipeline.render_texture.resize(
+            &self.render_pipeline.device,
+            &self.render_pipeline.adapter,
+            new_size,
+        );
+    }
+
     fn draw(&self, render_pass: &mut wgpu::RenderPass) {
         render_pass.draw_indexed(
             0..self.render_pipeline.index_count,
@@ -92,10 +80,16 @@ impl<'window> RenderModule for RenderStack<'window> {
         );
     }
 
-    fn resize(&mut self, adapter: &wgpu::Adapter, new_size: PhysicalSize<u32>) {
+    fn get_command_encoder(&self) -> wgpu::CommandEncoder {
         self.render_pipeline
-            .render_texture
-            .resize(&self.render_pipeline.device, adapter, new_size);
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None })
+    }
+
+    fn present(&self, command_encoder: wgpu::CommandEncoder) {
+        self.render_pipeline
+            .queue
+            .submit(Some(command_encoder.finish()));
     }
 }
 
@@ -108,12 +102,6 @@ pub struct AllocationInfo {
     pub buffer_size: u32,
     pub primitive_count: u32,
 }
-pub trait IntoRenderModule {
-    fn into_render_module<'window>(
-        &self,
-        render_pipeline: RenderModulePipeline<'window>,
-    ) -> Box<dyn RenderModule + 'window>;
-}
 
 impl<T> IntoRenderModule for T
 where
@@ -121,8 +109,14 @@ where
 {
     fn into_render_module<'window>(
         &self,
-        render_pipeline: RenderModulePipeline<'window>,
+        window: std::sync::Arc<winit::window::Window>,
+        surface: wgpu::Surface<'window>,
+        adapter: wgpu::Adapter,
+        device: wgpu::Device,
+        queue: wgpu::Queue,
     ) -> Box<dyn RenderModule + 'window> {
+        let render_pipeline =
+            get_main_render_stack_pipeline(window.clone(), surface, adapter, device, queue);
         let allocation_info = self.get_allocation_info();
 
         let mut primitive_buffer = vec![];
@@ -146,5 +140,3 @@ where
         return Box::new(render_stack);
     }
 }
-
-pub mod ui_fragment_impls;

@@ -10,15 +10,16 @@ name = "ui_composer"
 [features]
 default = ["standard"]
 standard = []
+text = ["dep:glyphon"]
 
 [dependencies]
 bytemuck = { version = "1.16.1", features = ["derive"] }
 cgmath = "0.18.0"
 futures-signals = "0.3.33"
-glyphon = "0.5.0"
+glyphon = { version = "0.5.0", optional = true }
 pollster = "0.3.0"
 slotmap = "1.0.7"
-wgpu = "0.20.1"
+wgpu = { version = "0.20", default-features = false, features = ["wgsl"] }
 winit = "0.30.3"
 
 # Enable a small amount of optimization in the dev profile.

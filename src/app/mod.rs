@@ -1,4 +1,4 @@
-use crate::alloc::IntoRenderModule;
+use crate::render_module::IntoRenderModule;
 use render_state::RenderState;
 use winit::{application::ApplicationHandler, event::WindowEvent};
 pub mod render_state;

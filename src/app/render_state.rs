@@ -1,15 +1,9 @@
-use crate::{
-    alloc::{IntoRenderModule, RenderModule},
-    standard::get_main_render_stack_pipeline,
-};
+use crate::render_module::{IntoRenderModule, RenderModule};
 use pollster::FutureExt as _;
 use std::sync::Arc;
 use winit::{dpi::PhysicalSize, window::Window};
 
 pub struct RenderState {
-    pub instance: wgpu::Instance,
-    pub adapter: wgpu::Adapter,
-    pub queue: wgpu::Queue,
     pub current_pipeline_id: Option<u8>,
     pub root_render_stack: Box<dyn RenderModule>,
 
@@ -45,21 +39,22 @@ impl RenderState {
 
         // Allow user to switch the render pipeline!!!
         let root_render_stack = root_render_fragment.into_render_module(
-            get_main_render_stack_pipeline(window.clone(), surface, &adapter, device),
+            window.clone(),
+            surface,
+            adapter,
+            device,
+            queue,
         );
 
         Self {
             current_pipeline_id: None,
-            instance,
-            adapter,
-            queue,
             window,
             root_render_stack,
         }
     }
 
     pub fn handle_resize(&mut self, new_size: PhysicalSize<u32>) {
-        self.root_render_stack.resize(&self.adapter, new_size);
+        self.root_render_stack.resize(new_size);
         self.request_redraw();
     }
 
@@ -100,7 +95,8 @@ impl RenderState {
         }
         drop(render_pass);
 
-        self.queue.submit(Some(encoder.finish()));
+        // Probably keep the queue here in the render state???
+        self.root_render_stack.present(encoder);
         frame.present();
     }
 }
