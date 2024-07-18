@@ -90,7 +90,7 @@ impl RenderState {
         {
             self.current_pipeline_id = None;
             self.root_render_stack
-                .prepare(&mut self.current_pipeline_id, &mut render_pass);
+                .prepare(&mut self.current_pipeline_id);
             self.root_render_stack.draw(&mut render_pass);
         }
         drop(render_pass);

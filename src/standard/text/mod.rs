@@ -3,8 +3,8 @@ use crate::{
     render_module::{IntoRenderModule, RenderModule},
 };
 use glyphon::{
-    Attrs, Buffer, Family, FontSystem, Metrics, Resolution, Shaping, SwashCache, TextArea,
-    TextAtlas, TextBounds, TextRenderer,
+    Attrs, Buffer, Cache, Family, FontSystem, Metrics, Resolution, Shaping, SwashCache, TextArea,
+    TextAtlas, TextBounds, TextRenderer, Viewport,
 };
 use wgpu::MultisampleState;
 
@@ -13,6 +13,7 @@ pub struct TextRenderModule<'window> {
     text_renderer: TextRenderer,
     font_system: FontSystem,
     swash_cache: SwashCache,
+    viewport: Viewport,
     atlas: TextAtlas,
     render_stuff: TextRenderStuff<'window>,
 }
@@ -26,9 +27,12 @@ struct TextRenderStuff<'window> {
     pub adapter: wgpu::Adapter,
 }
 
-pub struct Text(String);
+pub struct Text<T: AsRef<str>>(pub T);
 
-impl IntoRenderModule for Text {
+impl<T> IntoRenderModule for Text<T>
+where
+    T: AsRef<str>,
+{
     fn into_render_module<'window>(
         &self,
         window: std::sync::Arc<winit::window::Window>,
@@ -52,9 +56,6 @@ impl IntoRenderModule for Text {
             surface_config,
         };
 
-        let swapchain_capabilities = render_texture.surface.get_capabilities(&adapter);
-        let swapchain_format = swapchain_capabilities.formats[0];
-
         let render_pipeline = TextRenderStuff {
             id: 2,
             render_texture,
@@ -65,13 +66,16 @@ impl IntoRenderModule for Text {
 
         // Set up text renderer
         let mut font_system = FontSystem::new();
-        let mut swash_cache = SwashCache::new();
+        let swash_cache = SwashCache::new();
+        let cache = Cache::new(&render_pipeline.device);
+        let viewport = Viewport::new(&render_pipeline.device, &cache);
         let mut atlas = TextAtlas::new(
             &render_pipeline.device,
             &render_pipeline.queue,
+            &cache,
             render_pipeline.render_texture.surface_config.format,
         );
-        let mut text_renderer = TextRenderer::new(
+        let text_renderer = TextRenderer::new(
             &mut atlas,
             &render_pipeline.device,
             MultisampleState::default(),
@@ -82,14 +86,19 @@ impl IntoRenderModule for Text {
 
         let attrs = Attrs::new().family(Family::SansSerif);
 
-        buffer.set_size(&mut font_system, 400.0, 800.0);
-        buffer.set_text(
+        let rich_text = &[(
+            self.0.as_ref(),
+            Attrs::new().color(glyphon::Color::rgb(0x40, 0xFD, 0xAA)),
+        )];
+
+        buffer.set_size(&mut font_system, Some(400.0), Some(800.0));
+        buffer.set_rich_text(
             &mut font_system,
-            "Hi, this is some text!",
+            rich_text.iter().copied(),
             attrs,
             Shaping::Advanced,
         );
-        buffer.shape_until_scroll(&mut font_system);
+        buffer.shape_until_scroll(&mut font_system, false);
 
         Box::new(TextRenderModule {
             buffer,
@@ -98,6 +107,7 @@ impl IntoRenderModule for Text {
             atlas,
             font_system,
             swash_cache,
+            viewport,
         })
     }
 }
@@ -116,21 +126,16 @@ impl<'window> RenderModule for TextRenderModule<'window> {
         return (surface_texture, view);
     }
 
-    fn prepare<'pass>(
-        &'pass self,
-        _current_pipeline_id: &mut Option<u8>,
-        render_pass: &mut wgpu::RenderPass<'pass>,
-    ) {
+    fn prepare<'pass>(&mut self, _current_pipeline_id: &mut Option<u8>) {
+        let size = self.render_stuff.render_texture.size;
+
         self.text_renderer
             .prepare(
                 &self.render_stuff.device,
                 &self.render_stuff.queue,
                 &mut self.font_system,
                 &mut self.atlas,
-                Resolution {
-                    width: 800,
-                    height: 800,
-                },
+                &self.viewport,
                 [TextArea {
                     buffer: &self.buffer,
                     left: 16.0,
@@ -139,8 +144,8 @@ impl<'window> RenderModule for TextRenderModule<'window> {
                     bounds: TextBounds {
                         left: 0,
                         top: 0,
-                        right: 400,
-                        bottom: 800,
+                        right: 0 + size.width as i32,
+                        bottom: 0 + size.height as i32,
                     },
                     default_color: glyphon::Color::rgb(255, 255, 255),
                 }],
@@ -157,13 +162,22 @@ impl<'window> RenderModule for TextRenderModule<'window> {
         );
         self.buffer.set_size(
             &mut self.font_system,
-            new_size.width as f32,
-            new_size.height as f32,
+            Some(new_size.width as f32),
+            Some(new_size.height as f32),
+        );
+        self.viewport.update(
+            &self.render_stuff.queue,
+            Resolution {
+                width: new_size.width,
+                height: new_size.height,
+            },
         );
     }
 
-    fn draw(&self, render_pass: &mut wgpu::RenderPass) {
-        self.text_renderer.render(&self.atlas, render_pass).unwrap();
+    fn draw<'pass>(&'pass self, render_pass: &mut wgpu::RenderPass<'pass>) {
+        self.text_renderer
+            .render(&self.atlas, &self.viewport, render_pass)
+            .unwrap();
     }
 
     fn get_command_encoder(&self) -> wgpu::CommandEncoder {

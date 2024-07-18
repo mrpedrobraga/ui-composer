@@ -2,14 +2,10 @@ use winit::dpi::PhysicalSize;
 
 pub trait RenderModule {
     fn create_render_frame(&self) -> (wgpu::SurfaceTexture, wgpu::TextureView);
-    fn prepare<'pass>(
-        &'pass self,
-        current_pipeline_id: &mut Option<u8>,
-        render_pass: &mut wgpu::RenderPass<'pass>,
-    );
+    fn prepare(&mut self, current_pipeline_id: &mut Option<u8>);
     fn resize(&mut self, new_size: PhysicalSize<u32>);
-    fn draw(&self, render_pass: &mut wgpu::RenderPass);
     fn get_command_encoder(&self) -> wgpu::CommandEncoder;
+    fn draw<'pass>(&'pass self, render_pass: &mut wgpu::RenderPass<'pass>);
     fn present(&self, encoder: wgpu::CommandEncoder);
 }
 

@@ -45,24 +45,7 @@ impl<'window> RenderModule for RenderStack<'window> {
         return (surface_texture, view);
     }
 
-    fn prepare<'pass>(
-        &'pass self,
-        current_pipeline_id: &mut Option<u8>,
-        render_pass: &mut wgpu::RenderPass<'pass>,
-    ) {
-        if current_pipeline_id.is_some_and(|id| id == self.render_pipeline.id) {
-            return;
-        };
-
-        *current_pipeline_id = Some(self.render_pipeline.id);
-        render_pass.set_pipeline(&self.render_pipeline.pipeline);
-        render_pass.set_vertex_buffer(0, self.render_pipeline.vertex_buffer.slice(..));
-        render_pass.set_vertex_buffer(1, self.primitive_buffer.slice(..));
-        render_pass.set_index_buffer(
-            self.render_pipeline.index_buffer.slice(..),
-            wgpu::IndexFormat::Uint32,
-        );
-    }
+    fn prepare<'pass>(&mut self, _current_pipeline_id: &mut Option<u8>) {}
 
     fn resize(&mut self, new_size: PhysicalSize<u32>) {
         self.render_pipeline.render_texture.resize(
@@ -72,7 +55,15 @@ impl<'window> RenderModule for RenderStack<'window> {
         );
     }
 
-    fn draw(&self, render_pass: &mut wgpu::RenderPass) {
+    fn draw<'pass>(&'pass self, render_pass: &mut wgpu::RenderPass<'pass>) {
+        render_pass.set_pipeline(&self.render_pipeline.pipeline);
+        render_pass.set_vertex_buffer(0, self.render_pipeline.vertex_buffer.slice(..));
+        render_pass.set_vertex_buffer(1, self.primitive_buffer.slice(..));
+        render_pass.set_index_buffer(
+            self.render_pipeline.index_buffer.slice(..),
+            wgpu::IndexFormat::Uint32,
+        );
+
         render_pass.draw_indexed(
             0..self.render_pipeline.index_count,
             0,

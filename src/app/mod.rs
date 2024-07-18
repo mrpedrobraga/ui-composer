@@ -1,6 +1,9 @@
 use crate::render_module::IntoRenderModule;
 use render_state::RenderState;
-use winit::{application::ApplicationHandler, event::WindowEvent};
+use winit::{
+    application::ApplicationHandler, event::WindowEvent,
+    platform::wayland::WindowAttributesExtWayland,
+};
 pub mod render_state;
 
 /// App builder, receives an UI fragment with the entirety of your app.
@@ -46,6 +49,7 @@ impl AppBuilder {
                     winit::window::WindowAttributes::default()
                         .with_inner_size(winit::dpi::LogicalSize::new(640, 640))
                         .with_title("Humble Begginings")
+                        .with_name("UIComposer App", "")
                         .with_visible(true),
                 )
                 .unwrap()

@@ -9,14 +9,14 @@ name = "ui_composer"
 
 [features]
 default = ["standard"]
-standard = []
+standard = ["text"]
 text = ["dep:glyphon"]
 
 [dependencies]
 bytemuck = { version = "1.16.1", features = ["derive"] }
 cgmath = "0.18.0"
 futures-signals = "0.3.33"
-glyphon = { version = "0.5.0", optional = true }
+glyphon = { git = "https://github.com/grovesNL/glyphon.git", optional = true }
 pollster = "0.3.0"
 slotmap = "1.0.7"
 wgpu = { version = "0.20", default-features = false, features = ["wgsl"] }
