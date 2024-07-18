@@ -5,6 +5,7 @@ use crate::{
 use bytemuck::{Pod, Zeroable};
 use std::mem::size_of;
 use wgpu::{util::DeviceExt, BufferAddress, BufferUsages};
+pub mod text;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]

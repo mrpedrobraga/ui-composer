@@ -1,5 +1,5 @@
 use crate::{
-    alloc::{IntoRenderModule, RenderModule, UIFragment},
+    alloc::{IntoRenderModule, RenderModule},
     standard::get_main_render_stack_pipeline,
 };
 use pollster::FutureExt as _;
@@ -17,10 +17,7 @@ pub struct RenderState {
 }
 
 impl RenderState {
-    pub fn new<TRootFragment: UIFragment + 'static>(
-        window: Window,
-        root_render_fragment: TRootFragment,
-    ) -> Self {
+    pub fn new(window: Window, root_render_fragment: &dyn IntoRenderModule) -> Self {
         let instance = wgpu::Instance::default();
         let window = std::sync::Arc::new(window);
         let surface = instance.create_surface(window.clone()).unwrap();
@@ -47,9 +44,9 @@ impl RenderState {
             .unwrap();
 
         // Allow user to switch the render pipeline!!!
-        let root_render_stack = Box::new(root_render_fragment.into_render_module(
+        let root_render_stack = root_render_fragment.into_render_module(
             get_main_render_stack_pipeline(window.clone(), surface, &adapter, device),
-        ));
+        );
 
         Self {
             current_pipeline_id: None,

@@ -110,16 +110,19 @@ pub struct AllocationInfo {
 }
 pub trait IntoRenderModule {
     fn into_render_module<'window>(
-        self,
+        &self,
         render_pipeline: RenderModulePipeline<'window>,
-    ) -> impl RenderModule;
+    ) -> Box<dyn RenderModule + 'window>;
 }
 
-impl<TFragment: UIFragment + 'static> IntoRenderModule for TFragment {
+impl<T> IntoRenderModule for T
+where
+    T: UIFragment,
+{
     fn into_render_module<'window>(
-        self,
+        &self,
         render_pipeline: RenderModulePipeline<'window>,
-    ) -> impl RenderModule {
+    ) -> Box<dyn RenderModule + 'window> {
         let allocation_info = self.get_allocation_info();
 
         let mut primitive_buffer = vec![];
@@ -140,7 +143,7 @@ impl<TFragment: UIFragment + 'static> IntoRenderModule for TFragment {
             render_pipeline,
             primitive_buffer: instance_buffer,
         };
-        return render_stack;
+        return Box::new(render_stack);
     }
 }
 

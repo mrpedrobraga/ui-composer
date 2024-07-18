@@ -1,11 +1,11 @@
-use crate::alloc::UIFragment;
+use crate::alloc::IntoRenderModule;
 use render_state::RenderState;
 use winit::{application::ApplicationHandler, event::WindowEvent};
 pub mod render_state;
 
 /// App builder, receives an UI fragment with the entirety of your app.
-pub struct AppBuilder<TRootFragment: UIFragment> {
-    root_render_fragment: Option<TRootFragment>,
+pub struct AppBuilder {
+    root_render_fragment: Option<Box<dyn IntoRenderModule>>,
     event_loop: Option<winit::event_loop::EventLoop<()>>,
     window: Option<winit::window::Window>,
     running_app: Option<RunningApp>,
@@ -17,13 +17,13 @@ pub struct RunningApp {
 }
 
 /// TODO: PRovide methods to bind to an existing Event Loop or window.
-impl<TRootFragment: UIFragment + 'static> AppBuilder<TRootFragment> {
+impl AppBuilder {
     // Creates a new app.
     // For cross-platform compatibility, this should be called in the main thread,
     // and only once in your program.
-    pub fn new(root_fragment: TRootFragment) -> Self {
+    pub fn new<T: IntoRenderModule + 'static>(root_fragment: T) -> Self {
         Self {
-            root_render_fragment: Some(root_fragment),
+            root_render_fragment: Some(Box::new(root_fragment)),
             event_loop: None,
             window: None,
             running_app: None,
@@ -45,20 +45,20 @@ impl<TRootFragment: UIFragment + 'static> AppBuilder<TRootFragment> {
                 .create_window(
                     winit::window::WindowAttributes::default()
                         .with_inner_size(winit::dpi::LogicalSize::new(640, 640))
-                        .with_title("App")
+                        .with_title("Humble Begginings")
                         .with_visible(true),
                 )
                 .unwrap()
         });
 
         let root_render_fragment = self.root_render_fragment.take().unwrap();
-        let render_state = RenderState::new(window, root_render_fragment);
+        let render_state = RenderState::new(window, root_render_fragment.as_ref());
 
         self.running_app = Some(RunningApp { render_state });
     }
 }
 
-impl<TRootFragment: UIFragment + 'static> ApplicationHandler for AppBuilder<TRootFragment> {
+impl ApplicationHandler for AppBuilder {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         self.build(event_loop);
     }
