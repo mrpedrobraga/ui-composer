@@ -32,9 +32,43 @@ pub fn get_main_render_stack_pipeline<'window>(
     let swapchain_capabilities = render_target.surface.get_capabilities(&adapter);
     let swapchain_format = swapchain_capabilities.formats[0];
 
+    let uniforms = StandardUniform {
+        world_to_wgpu_mat: world_to_wgpu_mat(window.inner_size()),
+    };
+
+    let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("Render Stack Uniform Buffer"),
+        contents: bytemuck::cast_slice(&[uniforms]),
+        usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+    });
+
+    let uniform_bind_group_layout =
+        device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Standard Uniform Bind Group Layout"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        });
+
+    let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        layout: &uniform_bind_group_layout,
+        entries: &[wgpu::BindGroupEntry {
+            binding: 0,
+            resource: uniform_buffer.as_entire_binding(),
+        }],
+        label: Some("Standard Uniform Bind Group"),
+    });
+
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        label: None,
-        bind_group_layouts: &[],
+        label: Some("Standard Render Pipeline Layout"),
+        bind_group_layouts: &[&uniform_bind_group_layout],
         push_constant_ranges: &[],
     });
     let shader = device.create_shader_module(wgpu::include_wgsl!("./standard-shader.wgsl"));
@@ -83,6 +117,9 @@ pub fn get_main_render_stack_pipeline<'window>(
         device,
         queue,
         adapter,
+        uniforms,
+        uniform_buffer,
+        uniform_bind_group,
     }
 }
 
@@ -120,6 +157,30 @@ impl Primitive {
             ],
         }
     }
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Pod, Zeroable)]
+pub struct StandardUniform {
+    world_to_wgpu_mat: [[f32; 4]; 4],
+}
+
+impl StandardUniform {
+    pub fn resize(&mut self, container_size: winit::dpi::PhysicalSize<u32>) {
+        self.world_to_wgpu_mat = world_to_wgpu_mat(container_size);
+    }
+}
+
+fn world_to_wgpu_mat(window_size: winit::dpi::PhysicalSize<u32>) -> [[f32; 4]; 4] {
+    let ww = window_size.width as f32;
+    let wh = window_size.height as f32;
+
+    return [
+        [2.0 / ww, 0.0, 0.0, 0.0],
+        [0.0, -2.0 / wh, 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0],
+        [-1.0, 1.0, 0.0, 1.0],
+    ];
 }
 
 #[repr(C)]

@@ -3,6 +3,13 @@ use pollster::FutureExt as _;
 use std::sync::Arc;
 use winit::{dpi::PhysicalSize, window::Window};
 
+const DEFAULT_CLEAR_COLOR: wgpu::Color = wgpu::Color {
+    r: 0.02,
+    g: 0.02,
+    b: 0.02,
+    a: 1.0,
+};
+
 pub struct RenderState {
     pub current_pipeline_id: Option<u8>,
     pub root_render_stack: Box<dyn RenderModule>,
@@ -73,12 +80,7 @@ impl RenderState {
                 view: &view,
                 resolve_target: None,
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: 0.05,
-                        g: 0.05,
-                        b: 0.05,
-                        a: 1.0,
-                    }),
+                    load: wgpu::LoadOp::Clear(DEFAULT_CLEAR_COLOR),
                     store: wgpu::StoreOp::Store,
                 },
             })],

@@ -2,7 +2,7 @@ use crate::render_module::IntoRenderModule;
 use render_state::RenderState;
 use winit::{
     application::ApplicationHandler, event::WindowEvent,
-    platform::wayland::WindowAttributesExtWayland,
+    platform::wayland::WindowAttributesExtWayland, window::WindowAttributes,
 };
 pub mod render_state;
 
@@ -11,6 +11,7 @@ pub struct AppBuilder {
     root_render_fragment: Option<Box<dyn IntoRenderModule>>,
     event_loop: Option<winit::event_loop::EventLoop<()>>,
     window: Option<winit::window::Window>,
+    window_attributes: Option<WindowAttributes>,
     running_app: Option<RunningApp>,
 }
 
@@ -30,7 +31,16 @@ impl AppBuilder {
             event_loop: None,
             window: None,
             running_app: None,
+            window_attributes: None,
         }
+    }
+
+    pub fn with_window_attributes(
+        mut self,
+        window_attributes: winit::window::WindowAttributes,
+    ) -> Self {
+        self.window_attributes = Some(window_attributes);
+        self
     }
 
     pub fn run(mut self) {
@@ -45,13 +55,13 @@ impl AppBuilder {
     fn build(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         let window = self.window.take().unwrap_or_else(|| {
             event_loop
-                .create_window(
+                .create_window(self.window_attributes.take().unwrap_or_else(|| {
                     winit::window::WindowAttributes::default()
                         .with_inner_size(winit::dpi::LogicalSize::new(640, 640))
-                        .with_title("Humble Begginings")
-                        .with_name("UIComposer App", "")
-                        .with_visible(true),
-                )
+                        .with_title("UI Composer App")
+                        .with_name("UI Composer App", "")
+                        .with_visible(true)
+                }))
                 .unwrap()
         });
 

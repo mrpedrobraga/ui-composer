@@ -6,5 +6,5 @@ fn main() {
 }
 
 fn MyApp() -> Text<&'static str> {
-    Text("This is an incredibly cool text.")
+    Text("The quick brown fox jumped over the lazy dog. Sphinx of black quartz judge my vow.")
 }

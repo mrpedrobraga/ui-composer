@@ -1,8 +1,18 @@
 #![allow(non_snake_case)]
 use ui_composer::prelude::*;
+use winit::{dpi::LogicalSize, platform::x11::WindowAttributesExtX11, window::WindowAttributes};
 
 fn main() {
-    AppBuilder::new(MyApp()).run();
+    AppBuilder::new(MyApp())
+        .with_window_attributes(
+            WindowAttributes::default()
+                .with_name("Simple App", "Simple App")
+                .with_inner_size(LogicalSize {
+                    width: 128,
+                    height: 128,
+                }),
+        )
+        .run();
 }
 
 fn MyApp() -> impl UIFragment {
@@ -10,10 +20,15 @@ fn MyApp() -> impl UIFragment {
 }
 
 fn SquareGrid() -> impl UIFragment {
-    [
-        Rect((0.0, 0.0), (16.0, 16.0), (1.0, 0.0, 1.0)),
-        Rect((100.0, 100.0), (16.0, 16.0), (1.0, 0.0, 1.0)),
-    ]
+    [Point((32.0, 32.0)), Point((128.0 - 32.0, 32.0))]
+}
+
+fn Point(position: (f32, f32)) -> Primitive {
+    Rect(
+        (position.0 - 8.0, position.1 - 8.0),
+        (16.0, 16.0),
+        (0.0, 0.0, 0.0),
+    )
 }
 
 fn Rect(top_left: (f32, f32), size: (f32, f32), color: (f32, f32, f32)) -> Primitive {

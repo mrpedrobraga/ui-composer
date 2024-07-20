@@ -1,4 +1,5 @@
 pub mod app;
+pub mod geometry;
 pub mod interaction;
 pub mod prelude;
 pub mod render_module;

@@ -86,10 +86,7 @@ where
 
         let attrs = Attrs::new().family(Family::SansSerif);
 
-        let rich_text = &[(
-            self.0.as_ref(),
-            Attrs::new().color(glyphon::Color::rgb(0x40, 0xFD, 0xAA)),
-        )];
+        let rich_text = &[(self.0.as_ref(), Attrs::new().weight(glyphon::Weight::BOLD))];
 
         buffer.set_size(&mut font_system, Some(400.0), Some(800.0));
         buffer.set_rich_text(

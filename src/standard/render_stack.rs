@@ -5,11 +5,11 @@ use wgpu::util::DeviceExt as _;
 use wgpu::{BufferUsages, RenderPipeline};
 use winit::dpi::PhysicalSize;
 
-use super::standard_pipeline::get_main_render_stack_pipeline;
+use super::standard_pipeline::{get_main_render_stack_pipeline, StandardUniform};
 
 pub struct RenderStack<'window> {
     pub reactors: Vec<()>,
-    pub interactors: InteractorNode,
+    pub interactors: Box<dyn InteractorNode>,
     pub primitive_count: u32,
     pub primitive_buffer_cpu: Vec<u8>,
     pub primitive_buffer: wgpu::Buffer,
@@ -27,8 +27,21 @@ pub struct RenderStackPipeline<'window> {
     pub queue: wgpu::Queue,
     pub adapter: wgpu::Adapter,
     pub vertex_buffer: wgpu::Buffer,
+    pub uniforms: StandardUniform,
+    pub uniform_buffer: wgpu::Buffer,
+    pub uniform_bind_group: wgpu::BindGroup,
     pub index_count: u32,
     pub index_buffer: wgpu::Buffer,
+}
+
+impl<'window> RenderStackPipeline<'window> {
+    pub fn send_uniforms(&self) {
+        self.queue.write_buffer(
+            &self.uniform_buffer,
+            0,
+            bytemuck::cast_slice(&[self.uniforms]),
+        )
+    }
 }
 
 impl<'window> RenderModule for RenderStack<'window> {
@@ -53,10 +66,13 @@ impl<'window> RenderModule for RenderStack<'window> {
             &self.render_pipeline.adapter,
             new_size,
         );
+        self.render_pipeline.uniforms.resize(new_size);
+        self.render_pipeline.send_uniforms();
     }
 
     fn draw<'pass>(&'pass self, render_pass: &mut wgpu::RenderPass<'pass>) {
         render_pass.set_pipeline(&self.render_pipeline.pipeline);
+        render_pass.set_bind_group(0, &self.render_pipeline.uniform_bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.render_pipeline.vertex_buffer.slice(..));
         render_pass.set_vertex_buffer(1, self.primitive_buffer.slice(..));
         render_pass.set_index_buffer(
@@ -121,7 +137,9 @@ where
 
         let render_stack = RenderStack {
             reactors: vec![],
-            interactors: InteractorNode {},
+            interactors: Box::new(crate::interaction::Hover {
+                aabb: crate::interaction::Aabb(0.0, 0.0, 100.0, 100.0),
+            }),
             sub_renderers: (),
             primitive_count: allocation_info.primitive_count,
             primitive_buffer_cpu: primitive_buffer,
