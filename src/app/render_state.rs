@@ -12,8 +12,7 @@ const DEFAULT_CLEAR_COLOR: wgpu::Color = wgpu::Color {
 
 pub struct RenderState {
     pub current_pipeline_id: Option<u8>,
-    pub root_render_stack: Box<dyn RenderModule>,
-
+    pub root_render_module: Box<dyn RenderModule>,
     pub window: std::sync::Arc<Window>,
 }
 
@@ -56,12 +55,16 @@ impl RenderState {
         Self {
             current_pipeline_id: None,
             window,
-            root_render_stack,
+            root_render_module: root_render_stack,
         }
     }
 
+    pub fn handle_window_event(&mut self, event: winit::event::WindowEvent) {
+        self.root_render_module.handle_event(event);
+    }
+
     pub fn handle_resize(&mut self, new_size: PhysicalSize<u32>) {
-        self.root_render_stack.resize(new_size);
+        self.root_render_module.resize(new_size);
         self.request_redraw();
     }
 
@@ -70,8 +73,8 @@ impl RenderState {
     }
 
     pub fn handle_redraw_requested(&mut self) {
-        let (frame, view) = self.root_render_stack.create_render_frame();
-        let root_render_stack = self.root_render_stack.as_ref();
+        let (frame, view) = self.root_render_module.create_render_frame();
+        let root_render_stack = self.root_render_module.as_ref();
         let mut encoder = root_render_stack.get_command_encoder();
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -91,14 +94,14 @@ impl RenderState {
 
         {
             self.current_pipeline_id = None;
-            self.root_render_stack
+            self.root_render_module
                 .prepare(&mut self.current_pipeline_id);
-            self.root_render_stack.draw(&mut render_pass);
+            self.root_render_module.draw(&mut render_pass);
         }
         drop(render_pass);
 
         // Probably keep the queue here in the render state???
-        self.root_render_stack.present(encoder);
+        self.root_render_module.present(encoder);
         frame.present();
     }
 }

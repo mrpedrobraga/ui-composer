@@ -1,3 +1,5 @@
+use std::io::Write;
+
 use crate::render_module::IntoRenderModule;
 use render_state::RenderState;
 use winit::{
@@ -106,5 +108,7 @@ impl ApplicationHandler for RunningApp {
             WindowEvent::RedrawRequested => self.render_state.handle_redraw_requested(),
             _ => (),
         }
+
+        self.render_state.handle_window_event(event);
     }
 }

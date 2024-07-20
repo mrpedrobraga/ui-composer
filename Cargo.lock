@@ -1919,6 +1919,7 @@ dependencies = [
  "futures-channel",
  "futures-signals",
  "glyphon",
+ "pin-project",
  "pollster",
  "slotmap",
  "wgpu",

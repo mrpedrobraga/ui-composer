@@ -1,5 +1,5 @@
 #![allow(non_snake_case)]
-use ui_composer::prelude::*;
+use ui_composer::{interaction::hover::Hover, prelude::*};
 use winit::{dpi::LogicalSize, platform::x11::WindowAttributesExtX11, window::WindowAttributes};
 
 fn main() {
@@ -16,28 +16,23 @@ fn main() {
 }
 
 fn MyApp() -> impl UIFragment {
-    SquareGrid()
+    Square(AABB::new((0, 0), (64, 64)))
 }
 
-fn SquareGrid() -> impl UIFragment {
-    [Point((32.0, 32.0)), Point((128.0 - 32.0, 32.0))]
+fn Square(aabb: AABB) -> impl UIFragment {
+    let hover = Hover::new(aabb);
+    let state = hover.get_state();
+
+    (Rect(aabb, (1.0, 0.0, 0.0)), hover)
 }
 
-fn Point(position: (f32, f32)) -> Primitive {
-    Rect(
-        (position.0 - 8.0, position.1 - 8.0),
-        (16.0, 16.0),
-        (0.0, 0.0, 0.0),
-    )
-}
-
-fn Rect(top_left: (f32, f32), size: (f32, f32), color: (f32, f32, f32)) -> Primitive {
+fn Rect(aabb: AABB, color: (f32, f32, f32)) -> Primitive {
     Primitive {
         transform: [
-            [size.0, 0.0, 0.0, 0.0],
-            [0.0, size.1, 0.0, 0.0],
+            [aabb.size.0 as f32, 0.0, 0.0, 0.0],
+            [0.0, aabb.size.1 as f32, 0.0, 0.0],
             [0.0, 0.0, 1.0, 0.0],
-            [top_left.0, top_left.1, 0.0, 1.0],
+            [aabb.top_left.0 as f32, aabb.top_left.1 as f32, 0.0, 1.0],
         ],
         color: [color.0, color.1, color.2],
     }

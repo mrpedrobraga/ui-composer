@@ -1,5 +1,6 @@
 use crate::app::render_state::RenderTarget;
 use crate::interaction::InteractorNode;
+use crate::prelude::AABB;
 use crate::render_module::{IntoRenderModule, RenderModule};
 use wgpu::util::DeviceExt as _;
 use wgpu::{BufferUsages, RenderPipeline};
@@ -70,6 +71,12 @@ impl<'window> RenderModule for RenderStack<'window> {
         self.render_pipeline.send_uniforms();
     }
 
+    fn get_command_encoder(&self) -> wgpu::CommandEncoder {
+        self.render_pipeline
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None })
+    }
+
     fn draw<'pass>(&'pass self, render_pass: &mut wgpu::RenderPass<'pass>) {
         render_pass.set_pipeline(&self.render_pipeline.pipeline);
         render_pass.set_bind_group(0, &self.render_pipeline.uniform_bind_group, &[]);
@@ -87,16 +94,14 @@ impl<'window> RenderModule for RenderStack<'window> {
         );
     }
 
-    fn get_command_encoder(&self) -> wgpu::CommandEncoder {
-        self.render_pipeline
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None })
-    }
-
     fn present(&self, command_encoder: wgpu::CommandEncoder) {
         self.render_pipeline
             .queue
             .submit(Some(command_encoder.finish()));
+    }
+
+    fn handle_event(&mut self, event: winit::event::WindowEvent) -> bool {
+        self.interactors.handle_event(event)
     }
 }
 
@@ -137,9 +142,10 @@ where
 
         let render_stack = RenderStack {
             reactors: vec![],
-            interactors: Box::new(crate::interaction::Hover {
-                aabb: crate::interaction::Aabb(0.0, 0.0, 100.0, 100.0),
-            }),
+            interactors: Box::new(crate::interaction::hover::Hover::new(AABB::new(
+                (0, 0),
+                (64, 64),
+            ))),
             sub_renderers: (),
             primitive_count: allocation_info.primitive_count,
             primitive_buffer_cpu: primitive_buffer,

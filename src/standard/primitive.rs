@@ -1,4 +1,4 @@
-use crate::prelude::UIFragment;
+use crate::{interaction::InteractorNode, prelude::UIFragment};
 use bytemuck::{Pod, Zeroable};
 use std::mem::size_of;
 
@@ -22,4 +22,18 @@ impl UIFragment for Primitive {
     fn push_allocation(&self, primitive_buffer: &mut Vec<u8>) {
         primitive_buffer.extend(bytemuck::cast_slice(&[*self]))
     }
+}
+
+impl<T> UIFragment for T
+where
+    T: InteractorNode,
+{
+    fn get_allocation_info(&self) -> AllocationInfo {
+        AllocationInfo {
+            buffer_size: 0,
+            primitive_count: 0,
+        }
+    }
+
+    fn push_allocation(&self, _: &mut Vec<u8>) {}
 }

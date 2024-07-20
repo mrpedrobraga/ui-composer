@@ -186,4 +186,9 @@ impl<'window> RenderModule for TextRenderModule<'window> {
     fn present(&self, encoder: wgpu::CommandEncoder) {
         self.render_stuff.queue.submit(Some(encoder.finish()));
     }
+
+    // There are no events to be handled in this module
+    fn handle_event(&mut self, _: winit::event::WindowEvent) -> bool {
+        false
+    }
 }
