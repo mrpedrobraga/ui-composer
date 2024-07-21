@@ -1,8 +1,8 @@
-use std::ops::Deref;
-
-use crate::interaction::InteractorNodeContainer;
-
-use super::render::{AllocationInfo, UIFragment};
+use super::render::{tuple_render_module::TupleRenderModule, AllocationInfo, UIFragment};
+use crate::{
+    interaction::InteractorNodeContainer,
+    render_module::{self, RenderModule},
+};
 
 impl<T, const N: usize> UIFragment for [T; N]
 where
@@ -16,16 +16,9 @@ where
         }
     }
 
-    fn push_allocation(
-        self,
-        primitive_buffer: &mut Vec<u8>,
-        interactor_node: &mut dyn InteractorNodeContainer,
-    ) {
-        self.iter().for_each(|fragment| {
-            fragment
-                .clone()
-                .push_allocation(primitive_buffer, interactor_node)
-        });
+    fn push_allocation(self, render_module: &mut TupleRenderModule) {
+        self.iter()
+            .for_each(|fragment| fragment.clone().push_allocation(render_module));
     }
 }
 
@@ -50,14 +43,10 @@ where
         }
     }
 
-    fn push_allocation(
-        self,
-        primitive_buffer: &mut Vec<u8>,
-        interactor_node_parent: &mut dyn InteractorNodeContainer,
-    ) {
+    fn push_allocation(self, render_module: &mut TupleRenderModule) {
         match self {
-            Ok(ok) => ok.push_allocation(primitive_buffer, interactor_node_parent),
-            Err(err) => err.push_allocation(primitive_buffer, interactor_node_parent),
+            Ok(ok) => ok.push_allocation(render_module),
+            Err(err) => err.push_allocation(render_module),
         }
     }
 }
@@ -88,15 +77,11 @@ where
         }
     }
 
-    fn push_allocation(
-        self,
-        primitive_buffer: &mut Vec<u8>,
-        interactor_node_parent: &mut dyn InteractorNodeContainer,
-    ) {
+    fn push_allocation(self, render_module: &mut TupleRenderModule) {
         self.0
             .into_iter()
             .take(N)
-            .for_each(|frag| frag.push_allocation(primitive_buffer, interactor_node_parent));
+            .for_each(|frag| frag.push_allocation(render_module));
     }
 }
 
@@ -119,10 +104,10 @@ macro_rules! tuple_impls {
                     )
             }
 
-            fn push_allocation(self, primitive_buffer: &mut Vec<u8>, interactor_node: &mut dyn InteractorNodeContainer) {
+            fn push_allocation(self, render_module: &mut TupleRenderModule) {
                 #[allow(non_snake_case)]
                 let ($($name,)+) = self;
-                $($name.push_allocation(primitive_buffer, interactor_node);)+
+                $($name.push_allocation(render_module);)+
             }
         }
     };

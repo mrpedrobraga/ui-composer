@@ -8,6 +8,8 @@ use glyphon::{
 };
 use wgpu::MultisampleState;
 
+use super::render::{AllocationInfo, UIFragment};
+
 pub struct TextRenderModule<'window> {
     buffer: glyphon::Buffer,
     text_renderer: TextRenderer,
@@ -113,40 +115,6 @@ impl<'window> RenderModule for TextRenderModule<'window> {
         return (surface_texture, view);
     }
 
-    fn prepare<'pass>(
-        &'pass mut self,
-        _current_pipeline_id: &mut Option<u8>,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-        // _: &mut wgpu::RenderPass<'pass>,
-    ) {
-        let size = self.render_stuff.render_texture.size;
-
-        self.text_renderer
-            .prepare(
-                &device,
-                &queue,
-                &mut self.font_system,
-                &mut self.atlas,
-                &self.viewport,
-                [TextArea {
-                    buffer: &self.buffer,
-                    left: 16.0,
-                    top: 0.0,
-                    scale: 1.0,
-                    bounds: TextBounds {
-                        left: 0,
-                        top: 0,
-                        right: 0 + size.width as i32,
-                        bottom: 0 + size.height as i32,
-                    },
-                    default_color: glyphon::Color::rgb(255, 255, 255),
-                }],
-                &mut self.swash_cache,
-            )
-            .unwrap();
-    }
-
     fn resize(
         &mut self,
         new_size: winit::dpi::PhysicalSize<u32>,
@@ -171,7 +139,41 @@ impl<'window> RenderModule for TextRenderModule<'window> {
         );
     }
 
-    fn draw<'pass>(&'pass self, render_pass: &mut wgpu::RenderPass<'pass>) {
+    fn draw<'pass>(
+        &'pass mut self,
+        current_pipeline_id: &mut Option<u8>,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        render_pass: &mut wgpu::RenderPass<'pass>,
+    ) {
+        let size = self.render_stuff.render_texture.size;
+
+        /// Prepare!
+        self.text_renderer
+            .prepare(
+                &device,
+                &queue,
+                &mut self.font_system,
+                &mut self.atlas,
+                &self.viewport,
+                [TextArea {
+                    buffer: &self.buffer,
+                    left: 16.0,
+                    top: 0.0,
+                    scale: 1.0,
+                    bounds: TextBounds {
+                        left: 0,
+                        top: 0,
+                        right: 0 + size.width as i32,
+                        bottom: 0 + size.height as i32,
+                    },
+                    default_color: glyphon::Color::rgb(255, 255, 255),
+                }],
+                &mut self.swash_cache,
+            )
+            .unwrap();
+
+        /// Draw!
         self.text_renderer
             .render(&self.atlas, &self.viewport, render_pass)
             .unwrap();
@@ -190,3 +192,24 @@ impl<'window> RenderModule for TextRenderModule<'window> {
         false
     }
 }
+
+// impl<T> UIFragment for Text<T>
+// where
+//     T: AsRef<str>,
+// {
+//     fn get_allocation_info() -> super::render::AllocationInfo {
+//         AllocationInfo {
+//             buffer_size: 0,
+//             primitive_count: 0,
+//         }
+//     }
+
+//     fn push_allocation(
+//         self,
+//         render_module: &mut super::render::tuple_render_module::TupleRenderModule,
+//     ) {
+//         render_module
+//             .sub_modules
+//             .push(self.into_render_module(window, surface, adapter, device, queue))
+//     }
+// }

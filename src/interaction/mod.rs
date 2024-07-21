@@ -5,7 +5,12 @@
 //! When an event is emitted by the winit event loop, the root interactor node will be given the event.
 //!
 
-use crate::standard::render::{AllocationInfo, UIFragment};
+use wgpu::util::RenderEncoder;
+
+use crate::{
+    render_module::RenderModule,
+    standard::render::{tuple_render_module::TupleRenderModule, AllocationInfo, UIFragment},
+};
 pub mod hover;
 pub mod keyboard;
 pub mod tap;
@@ -30,12 +35,8 @@ where
         }
     }
 
-    fn push_allocation(
-        self,
-        primitive_buffer: &mut Vec<u8>,
-        interactor_node_parent: &mut dyn InteractorNodeContainer,
-    ) {
-        interactor_node_parent.push(Box::new(self))
+    fn push_allocation(self, render_module: &mut TupleRenderModule) {
+        render_module.interactor_tree = Some(Box::new(self));
     }
 }
 

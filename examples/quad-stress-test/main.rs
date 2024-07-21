@@ -9,8 +9,8 @@ fn main() {
                 .with_title("Grid Example")
                 .with_name("UI Composer", "UI Composer Grid Example")
                 .with_inner_size(PhysicalSize {
-                    width: 64 * 16,
-                    height: 64 * 16,
+                    width: 1000,
+                    height: 1000,
                 }),
         )
         .run();
@@ -21,16 +21,17 @@ fn MyApp() -> impl UIFragment {
 }
 
 fn SquareGrid() -> impl UIFragment {
-    const SIZE: usize = 1024;
-    const SQUARE_SIZE: usize = SIZE * SIZE;
-    println!("Rendering {}x{}={} quads!", SIZE, SIZE, SIZE * SIZE);
+    const WIDTH: usize = 1000;
+    const HEIGHT: usize = 1000;
+    const AREA: usize = WIDTH * HEIGHT;
+    println!("Rendering {}x{}={} quads!", WIDTH, HEIGHT, AREA);
 
-    (0..SIZE)
+    (0..HEIGHT)
         .flat_map(|y| {
             let square_size = [1.0, 1.0];
             let padding = 0.0;
 
-            (0..SIZE).map(move |x| Primitive {
+            (0..WIDTH).map(move |x| Primitive {
                 transform: aabb(
                     [
                         (x as f32 * (1.0 + padding)) * square_size[0],
@@ -38,10 +39,10 @@ fn SquareGrid() -> impl UIFragment {
                     ],
                     [square_size[0], square_size[1]],
                 ),
-                color: [x as f32 / SIZE as f32, y as f32 / SIZE as f32, 0.0],
+                color: [x as f32 / WIDTH as f32, y as f32 / WIDTH as f32, 0.0],
             })
         })
-        .collect::<SizedVec<_, SQUARE_SIZE>>()
+        .collect::<SizedVec<_, AREA>>()
 }
 
 fn aabb(position: [f32; 2], size: [f32; 2]) -> [[f32; 4]; 4] {

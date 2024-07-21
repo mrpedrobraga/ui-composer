@@ -12,7 +12,7 @@ pub struct TupleRenderModule<'window> {
     pub primitive_count: u32,
     pub primitive_buffer_cpu: Vec<u8>,
     pub primitive_buffer: wgpu::Buffer,
-    pub sub_renderers: Vec<Box<dyn RenderModule>>,
+    pub sub_modules: Vec<Box<dyn RenderModule>>,
     // Currently this is owned, but it should be shared to avoid context-switching.
     pub render_pipeline: RenderModulePipeline<'window>,
 }
@@ -31,12 +31,24 @@ pub struct RenderModulePipeline<'window> {
 }
 
 impl<'window> RenderModulePipeline<'window> {
-    pub fn send_uniforms(&self, queue: &wgpu::Queue) {
+    pub fn flush_uniforms(&self, queue: &wgpu::Queue) {
         queue.write_buffer(
             &self.uniform_buffer,
             0,
             bytemuck::cast_slice(&[self.uniforms]),
-        )
+        );
+    }
+}
+
+impl<'window> TupleRenderModule<'window> {
+    /// TODO: Write data partially instead of the whole damn buffer.
+    pub fn flush_instances(&self, queue: &wgpu::Queue) {
+        queue.write_buffer(
+            &self.primitive_buffer,
+            0,
+            bytemuck::cast_slice(&self.primitive_buffer_cpu[..]),
+        );
+        queue.submit([]);
     }
 }
 
@@ -54,21 +66,6 @@ impl<'window> RenderModule for TupleRenderModule<'window> {
         return (surface_texture, view);
     }
 
-    fn prepare<'pass>(
-        &'pass mut self,
-        current_pipeline_id: &mut Option<u8>,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-        // render_pass: &mut wgpu::RenderPass<'pass>,
-    ) {
-        // for renderer in self.sub_renderers.iter_mut() {
-        //     {
-        //         renderer.prepare(current_pipeline_id, device, queue, render_pass)
-        //     };
-        //     renderer.draw(render_pass);
-        // }
-    }
-
     fn resize(
         &mut self,
         new_size: PhysicalSize<u32>,
@@ -80,14 +77,24 @@ impl<'window> RenderModule for TupleRenderModule<'window> {
             .render_texture
             .resize(&device, &adapter, new_size);
         self.render_pipeline.uniforms.resize(new_size);
-        self.render_pipeline.send_uniforms(queue);
+        self.render_pipeline.flush_uniforms(queue);
     }
 
     fn get_command_encoder(&self, device: &wgpu::Device) -> wgpu::CommandEncoder {
         device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None })
     }
 
-    fn draw<'pass>(&'pass self, render_pass: &mut wgpu::RenderPass<'pass>) {
+    fn draw<'pass>(
+        &'pass mut self,
+        current_pipeline_id: &mut Option<u8>,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        render_pass: &mut wgpu::RenderPass<'pass>,
+    ) {
+        for module in self.sub_modules.iter_mut() {
+            module.draw(current_pipeline_id, device, queue, render_pass);
+        }
+
         render_pass.set_pipeline(&self.render_pipeline.pipeline);
         render_pass.set_bind_group(0, &self.render_pipeline.uniform_bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.render_pipeline.vertex_buffer.slice(..));

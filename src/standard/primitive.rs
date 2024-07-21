@@ -1,8 +1,12 @@
-use crate::{interaction::InteractorNodeContainer, prelude::UIFragment};
+use crate::{
+    interaction::InteractorNodeContainer,
+    prelude::UIFragment,
+    render_module::{self, RenderModule},
+};
 use bytemuck::{Pod, Zeroable};
 use std::mem::size_of;
 
-use super::render::AllocationInfo;
+use super::render::{tuple_render_module::TupleRenderModule, AllocationInfo};
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
@@ -19,7 +23,9 @@ impl UIFragment for Primitive {
         }
     }
 
-    fn push_allocation(self, primitive_buffer: &mut Vec<u8>, _: &mut dyn InteractorNodeContainer) {
-        primitive_buffer.extend(bytemuck::cast_slice(&[self]))
+    fn push_allocation(self, render_module: &mut TupleRenderModule) {
+        render_module
+            .primitive_buffer_cpu
+            .extend(bytemuck::cast_slice(&[self]))
     }
 }

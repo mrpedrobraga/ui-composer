@@ -72,7 +72,6 @@ impl UIEngine {
         );
 
         render_state.root_render_module = Some(root_render_stack);
-
         render_state
     }
 
@@ -115,13 +114,12 @@ impl UIEngine {
 
             {
                 self.current_pipeline_id = None;
-                root_render_module.prepare(
+                root_render_module.draw(
                     &mut self.current_pipeline_id,
                     &self.device,
                     &self.queue,
-                    //&mut render_pass,
+                    &mut render_pass,
                 );
-                root_render_module.draw(&mut render_pass);
             }
             drop(render_pass);
 
