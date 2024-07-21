@@ -1,8 +1,10 @@
-use super::render_stack::{AllocationInfo, UIFragment};
+use crate::interaction::InteractorNodeContainer;
+
+use super::render::{AllocationInfo, UIFragment};
 
 impl<'a, T, const N: usize> UIFragment for [T; N]
 where
-    T: UIFragment,
+    T: UIFragment + Clone,
 {
     fn get_allocation_info(&self) -> AllocationInfo {
         self.iter()
@@ -19,15 +21,22 @@ where
             )
     }
 
-    fn push_allocation(&self, primitive_buffer: &mut Vec<u8>) {
-        self.iter()
-            .for_each(|fragment| fragment.push_allocation(primitive_buffer));
+    fn push_allocation(
+        self,
+        primitive_buffer: &mut Vec<u8>,
+        interactor_node: &mut dyn InteractorNodeContainer,
+    ) {
+        self.iter().for_each(|fragment| {
+            fragment
+                .clone()
+                .push_allocation(primitive_buffer, interactor_node)
+        });
     }
 }
 
 impl<'a, T> UIFragment for &'a [T]
 where
-    T: UIFragment,
+    T: UIFragment + Clone,
 {
     fn get_allocation_info(&self) -> AllocationInfo {
         self.iter()
@@ -44,15 +53,22 @@ where
             )
     }
 
-    fn push_allocation(&self, primitive_buffer: &mut Vec<u8>) {
-        self.iter()
-            .for_each(|fragment| fragment.push_allocation(primitive_buffer));
+    fn push_allocation(
+        self,
+        primitive_buffer: &mut Vec<u8>,
+        interactor_node: &mut dyn InteractorNodeContainer,
+    ) {
+        self.iter().for_each(|fragment| {
+            fragment
+                .clone()
+                .push_allocation(primitive_buffer, interactor_node)
+        });
     }
 }
 
 impl<'a, T> UIFragment for Vec<T>
 where
-    T: UIFragment,
+    T: UIFragment + Clone,
 {
     fn get_allocation_info(&self) -> AllocationInfo {
         self.iter()
@@ -69,9 +85,16 @@ where
             )
     }
 
-    fn push_allocation(&self, primitive_buffer: &mut Vec<u8>) {
-        self.iter()
-            .for_each(|fragment| fragment.push_allocation(primitive_buffer));
+    fn push_allocation(
+        self,
+        primitive_buffer: &mut Vec<u8>,
+        interactor_node: &mut dyn InteractorNodeContainer,
+    ) {
+        self.iter().for_each(|fragment| {
+            fragment
+                .clone()
+                .push_allocation(primitive_buffer, interactor_node)
+        });
     }
 }
 
@@ -97,10 +120,10 @@ macro_rules! tuple_impls {
                     )
             }
 
-            fn push_allocation(&self, primitive_buffer: &mut Vec<u8>) {
+            fn push_allocation(self, primitive_buffer: &mut Vec<u8>, interactor_node: &mut dyn InteractorNodeContainer) {
                 #[allow(non_snake_case)]
                 let ($($name,)+) = self;
-                $($name.push_allocation(primitive_buffer);)+
+                $($name.push_allocation(primitive_buffer, interactor_node);)+
             }
         }
     };

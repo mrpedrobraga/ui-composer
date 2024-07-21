@@ -2,12 +2,12 @@ use super::InteractorNode;
 use crate::geometry::aabb::AABB;
 use futures_signals::signal::{Mutable, MutableSignal};
 
-pub struct Hover {
+pub struct HoverInteraction {
     is_hovered: Mutable<bool>,
     pub aabb: AABB,
 }
 
-impl Hover {
+impl HoverInteraction {
     pub fn new(aabb: AABB) -> Self {
         Self {
             is_hovered: Mutable::new(false),
@@ -21,7 +21,7 @@ impl Hover {
     }
 }
 
-impl InteractorNode for Hover {
+impl InteractorNode for HoverInteraction {
     fn handle_event(&mut self, event: winit::event::WindowEvent) -> bool {
         match event {
             winit::event::WindowEvent::CursorMoved {

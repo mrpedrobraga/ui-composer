@@ -6,7 +6,7 @@ use std::{
 
 use futures_signals::signal::SignalExt as _;
 use ui_composer::{
-    interaction::{hover::Hover, InteractorNode},
+    interaction::{hover::HoverInteraction, InteractorNode},
     prelude::AABB,
     reaction::PrimitiveSpliceReactor,
     standard::primitive::Primitive,
@@ -16,7 +16,7 @@ use winit::event::{DeviceId, WindowEvent};
 fn main() {
     let aabb = AABB::new((0, 0), (10, 10));
 
-    let mut hover = Hover::new(aabb);
+    let mut hover = HoverInteraction::new(aabb);
     let primitive = hover.get_signal().map(|foo| {
         Rect(
             aabb,

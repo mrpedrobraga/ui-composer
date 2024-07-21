@@ -1,5 +1,6 @@
 #![allow(non_snake_case)]
-use ui_composer::{interaction::hover::Hover, prelude::*};
+use futures_signals::signal::SignalExt;
+use ui_composer::{interaction::tap::TapInteraction, prelude::*};
 use winit::{dpi::LogicalSize, platform::x11::WindowAttributesExtX11, window::WindowAttributes};
 
 fn main() {
@@ -20,10 +21,18 @@ fn MyApp() -> impl UIFragment {
 }
 
 fn Square(aabb: AABB) -> impl UIFragment {
-    let hover = Hover::new(aabb);
-    let state = hover.get_state();
+    let tap = TapInteraction::new(aabb);
 
-    (Rect(aabb, (1.0, 0.0, 0.0)), hover)
+    let signal = tap.get_signal();
+    std::thread::spawn(move || {
+        pollster::block_on(signal.for_each(|click| async move {
+            if click.is_some() {
+                println!("Clicked!")
+            };
+        }))
+    });
+
+    (Rect(aabb, (1.0, 0.0, 0.0)), tap)
 }
 
 fn Rect(aabb: AABB, color: (f32, f32, f32)) -> Primitive {

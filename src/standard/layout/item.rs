@@ -1,5 +1,5 @@
 use crate::geometry::aabb::AABB;
-use crate::standard::render_stack::UIFragment;
+use crate::standard::render::UIFragment;
 
 pub struct ReshapableFragment<T, F>
 where

@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 pub mod app;
 pub mod geometry;
 pub mod interaction;

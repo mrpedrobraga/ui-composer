@@ -1,5 +1,6 @@
 use super::InteractorNode;
 
+#[derive(Clone)]
 pub struct Keyboard {}
 
 impl InteractorNode for Keyboard {

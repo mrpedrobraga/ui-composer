@@ -1,19 +1,19 @@
 use std::mem::size_of;
 
-use crate::app::render_state::RenderTarget;
+use crate::app::engine::RenderTarget;
 use bytemuck::{Pod, Zeroable};
 use wgpu::{util::DeviceExt as _, BufferAddress, BufferUsages};
 
-use super::{primitive::Primitive, render_stack::RenderStackPipeline};
+use super::{primitive::Primitive, render::tuple_render_module::RenderModulePipeline};
 
 // Only generate a single render stack pipeline and share it across stacks.
-pub fn get_main_render_stack_pipeline<'window>(
+pub fn get_main_render_stack_pipeline<'a, 'window>(
     window: std::sync::Arc<winit::window::Window>,
     surface: wgpu::Surface<'window>,
-    adapter: wgpu::Adapter,
-    device: wgpu::Device,
-    queue: wgpu::Queue,
-) -> RenderStackPipeline<'window> {
+    adapter: &'a wgpu::Adapter,
+    device: &'a wgpu::Device,
+    queue: &'a wgpu::Queue,
+) -> RenderModulePipeline<'window> {
     let surface_config = surface
         .get_default_config(
             &adapter,
@@ -107,16 +107,13 @@ pub fn get_main_render_stack_pipeline<'window>(
         usage: BufferUsages::INDEX | BufferUsages::COPY_DST,
     });
 
-    RenderStackPipeline {
+    RenderModulePipeline {
         id: 0,
         pipeline: render_pipeline,
         vertex_buffer,
         index_buffer,
         index_count: indices.len() as u32,
         render_texture: render_target,
-        device,
-        queue,
-        adapter,
         uniforms,
         uniform_buffer,
         uniform_bind_group,

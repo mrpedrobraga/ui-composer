@@ -1,4 +1,4 @@
-use futures_signals::signal::{Signal, SignalExt as _};
+use futures_signals::signal::Signal;
 use pin_project::pin_project;
 use std::ops::Range;
 
@@ -40,7 +40,7 @@ where
         self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context,
     ) -> std::task::Poll<Option<Self::Item>> {
-        let PrimitiveSpliceReactorProj { signal, range } = self.project();
+        let PrimitiveSpliceReactorProj { signal, range: _ } = self.project();
         signal.poll_change(cx)
     }
 }

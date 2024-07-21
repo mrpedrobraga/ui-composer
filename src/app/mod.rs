@@ -1,16 +1,14 @@
-use std::io::Write;
-
 use crate::render_module::IntoRenderModule;
-use render_state::RenderState;
+use engine::UIEngine;
 use winit::{
     application::ApplicationHandler, event::WindowEvent,
     platform::wayland::WindowAttributesExtWayland, window::WindowAttributes,
 };
-pub mod render_state;
+pub mod engine;
 
 /// App builder, receives an UI fragment with the entirety of your app.
-pub struct AppBuilder {
-    root_render_fragment: Option<Box<dyn IntoRenderModule>>,
+pub struct AppBuilder<I: IntoRenderModule> {
+    root_render_fragment: Option<I>,
     event_loop: Option<winit::event_loop::EventLoop<()>>,
     window: Option<winit::window::Window>,
     window_attributes: Option<WindowAttributes>,
@@ -19,17 +17,17 @@ pub struct AppBuilder {
 
 /// An app in execution (the ui fragment has been transformed into a [`RenderModule`]).
 pub struct RunningApp {
-    render_state: RenderState,
+    engine: UIEngine,
 }
 
 /// TODO: PRovide methods to bind to an existing Event Loop or window.
-impl AppBuilder {
+impl<I: IntoRenderModule> AppBuilder<I> {
     // Creates a new app.
     // For cross-platform compatibility, this should be called in the main thread,
     // and only once in your program.
-    pub fn new<T: IntoRenderModule + 'static>(root_fragment: T) -> Self {
+    pub fn new(root_fragment: I) -> Self {
         Self {
-            root_render_fragment: Some(Box::new(root_fragment)),
+            root_render_fragment: Some(root_fragment),
             event_loop: None,
             window: None,
             running_app: None,
@@ -68,13 +66,15 @@ impl AppBuilder {
         });
 
         let root_render_fragment = self.root_render_fragment.take().unwrap();
-        let render_state = RenderState::new(window, root_render_fragment.as_ref());
+        let render_state = UIEngine::new(window, root_render_fragment);
 
-        self.running_app = Some(RunningApp { render_state });
+        self.running_app = Some(RunningApp {
+            engine: render_state,
+        });
     }
 }
 
-impl ApplicationHandler for AppBuilder {
+impl<I: IntoRenderModule> ApplicationHandler for AppBuilder<I> {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         self.build(event_loop);
     }
@@ -103,12 +103,12 @@ impl ApplicationHandler for RunningApp {
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::Resized(new_size) => {
-                self.render_state.handle_resize(new_size);
+                self.engine.handle_resize(new_size);
             }
-            WindowEvent::RedrawRequested => self.render_state.handle_redraw_requested(),
+            WindowEvent::RedrawRequested => self.engine.handle_redraw_requested(),
             _ => (),
         }
 
-        self.render_state.handle_window_event(event);
+        self.engine.handle_window_event(event);
     }
 }

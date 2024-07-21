@@ -1,5 +1,5 @@
 use crate::{
-    app::render_state::RenderTarget,
+    app::engine::RenderTarget,
     render_module::{IntoRenderModule, RenderModule},
 };
 use glyphon::{
@@ -22,9 +22,6 @@ struct TextRenderStuff<'window> {
     /// This needs to be moved to `RenderState`, i.e., a pipeline doesn't know its own ID.
     pub id: u8,
     pub render_texture: RenderTarget<'window>,
-    pub device: wgpu::Device,
-    pub queue: wgpu::Queue,
-    pub adapter: wgpu::Adapter,
 }
 
 pub struct Text<T: AsRef<str>>(pub T);
@@ -33,13 +30,13 @@ impl<T> IntoRenderModule for Text<T>
 where
     T: AsRef<str>,
 {
-    fn into_render_module<'window>(
-        &self,
+    fn into_render_module<'a, 'window>(
+        self,
         window: std::sync::Arc<winit::window::Window>,
         surface: wgpu::Surface<'window>,
-        adapter: wgpu::Adapter,
-        device: wgpu::Device,
-        queue: wgpu::Queue,
+        adapter: &'a wgpu::Adapter,
+        device: &'a wgpu::Device,
+        queue: &'a wgpu::Queue,
     ) -> Box<dyn RenderModule + 'window> {
         let surface_config = surface
             .get_default_config(
@@ -56,31 +53,24 @@ where
             surface_config,
         };
 
-        let render_pipeline = TextRenderStuff {
+        let render_stuff = TextRenderStuff {
             id: 2,
             render_texture,
-            device,
-            queue,
-            adapter,
         };
 
         // Set up text renderer
         let mut font_system = FontSystem::new();
         let swash_cache = SwashCache::new();
-        let cache = Cache::new(&render_pipeline.device);
-        let viewport = Viewport::new(&render_pipeline.device, &cache);
+        let cache = Cache::new(&device);
+        let viewport = Viewport::new(&device, &cache);
         let mut atlas = TextAtlas::new(
-            &render_pipeline.device,
-            &render_pipeline.queue,
+            &device,
+            &queue,
             &cache,
-            render_pipeline.render_texture.surface_config.format,
+            render_stuff.render_texture.surface_config.format,
         );
-        let text_renderer = TextRenderer::new(
-            &mut atlas,
-            &render_pipeline.device,
-            MultisampleState::default(),
-            None,
-        );
+        let text_renderer =
+            TextRenderer::new(&mut atlas, &device, MultisampleState::default(), None);
         let mut buffer = Buffer::new(&mut font_system, Metrics::new(30.0, 42.0));
         buffer.set_wrap(&mut font_system, glyphon::Wrap::Word);
 
@@ -100,7 +90,7 @@ where
         Box::new(TextRenderModule {
             buffer,
             text_renderer,
-            render_stuff: render_pipeline,
+            render_stuff,
             atlas,
             font_system,
             swash_cache,
@@ -123,13 +113,19 @@ impl<'window> RenderModule for TextRenderModule<'window> {
         return (surface_texture, view);
     }
 
-    fn prepare<'pass>(&mut self, _current_pipeline_id: &mut Option<u8>) {
+    fn prepare<'pass>(
+        &'pass mut self,
+        _current_pipeline_id: &mut Option<u8>,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        // _: &mut wgpu::RenderPass<'pass>,
+    ) {
         let size = self.render_stuff.render_texture.size;
 
         self.text_renderer
             .prepare(
-                &self.render_stuff.device,
-                &self.render_stuff.queue,
+                &device,
+                &queue,
                 &mut self.font_system,
                 &mut self.atlas,
                 &self.viewport,
@@ -151,19 +147,23 @@ impl<'window> RenderModule for TextRenderModule<'window> {
             .unwrap();
     }
 
-    fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
-        self.render_stuff.render_texture.resize(
-            &self.render_stuff.device,
-            &self.render_stuff.adapter,
-            new_size,
-        );
+    fn resize(
+        &mut self,
+        new_size: winit::dpi::PhysicalSize<u32>,
+        queue: &wgpu::Queue,
+        device: &wgpu::Device,
+        adapter: &wgpu::Adapter,
+    ) {
+        self.render_stuff
+            .render_texture
+            .resize(&device, &adapter, new_size);
         self.buffer.set_size(
             &mut self.font_system,
             Some(new_size.width as f32),
             Some(new_size.height as f32),
         );
         self.viewport.update(
-            &self.render_stuff.queue,
+            &queue,
             Resolution {
                 width: new_size.width,
                 height: new_size.height,
@@ -177,14 +177,12 @@ impl<'window> RenderModule for TextRenderModule<'window> {
             .unwrap();
     }
 
-    fn get_command_encoder(&self) -> wgpu::CommandEncoder {
-        self.render_stuff
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None })
+    fn get_command_encoder(&self, device: &wgpu::Device) -> wgpu::CommandEncoder {
+        device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None })
     }
 
-    fn present(&self, encoder: wgpu::CommandEncoder) {
-        self.render_stuff.queue.submit(Some(encoder.finish()));
+    fn present(&self, queue: &wgpu::Queue, encoder: wgpu::CommandEncoder) {
+        queue.submit(Some(encoder.finish()));
     }
 
     // There are no events to be handled in this module
