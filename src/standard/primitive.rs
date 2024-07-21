@@ -12,9 +12,9 @@ pub struct Primitive {
 }
 
 impl UIFragment for Primitive {
-    fn get_allocation_info(&self) -> AllocationInfo {
+    fn get_allocation_info() -> AllocationInfo {
         AllocationInfo {
-            buffer_size: size_of::<Self>() as u32,
+            buffer_size: size_of::<Self>(),
             primitive_count: 1,
         }
     }

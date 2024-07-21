@@ -8,7 +8,7 @@ use wgpu::{util::DeviceExt as _, BufferUsages};
 pub mod tuple_render_module;
 
 pub trait UIFragment {
-    fn get_allocation_info(&self) -> AllocationInfo;
+    fn get_allocation_info() -> AllocationInfo;
     fn push_allocation(
         self,
         primitive_buffer: &mut Vec<u8>,
@@ -17,8 +17,8 @@ pub trait UIFragment {
 }
 
 pub struct AllocationInfo {
-    pub buffer_size: u32,
-    pub primitive_count: u32,
+    pub buffer_size: usize,
+    pub primitive_count: usize,
 }
 
 impl<T> IntoRenderModule for T
@@ -35,7 +35,7 @@ where
     ) -> Box<dyn RenderModule + 'window> {
         let render_pipeline =
             get_main_render_stack_pipeline(window.clone(), surface, adapter, device, queue);
-        let allocation_info = self.get_allocation_info();
+        let allocation_info = T::get_allocation_info();
 
         let mut primitive_buffer = vec![];
         let mut root_interactor_node = VecNode::new();
@@ -51,7 +51,7 @@ where
             reactors: vec![],
             interactor_tree: Some(Box::new(root_interactor_node)),
             sub_renderers: vec![],
-            primitive_count: allocation_info.primitive_count,
+            primitive_count: allocation_info.primitive_count as u32,
             primitive_buffer_cpu: primitive_buffer,
             render_pipeline,
             primitive_buffer: instance_buffer,

@@ -1,5 +1,5 @@
 #![allow(non_snake_case)]
-use ui_composer::prelude::*;
+use ui_composer::{prelude::*, standard::ui_fragment_impls::SizedVec};
 use winit::{dpi::PhysicalSize, platform::x11::WindowAttributesExtX11, window::WindowAttributes};
 
 fn main() {
@@ -21,14 +21,16 @@ fn MyApp() -> impl UIFragment {
 }
 
 fn SquareGrid() -> impl UIFragment {
-    let size = 1024;
-    println!("Rendering {}x{}={} quads!", size, size, size * size);
-    (0..size)
+    const SIZE: usize = 1024;
+    const SQUARE_SIZE: usize = SIZE * SIZE;
+    println!("Rendering {}x{}={} quads!", SIZE, SIZE, SIZE * SIZE);
+
+    (0..SIZE)
         .flat_map(|y| {
             let square_size = [1.0, 1.0];
             let padding = 0.0;
 
-            (0..size).map(move |x| Primitive {
+            (0..SIZE).map(move |x| Primitive {
                 transform: aabb(
                     [
                         (x as f32 * (1.0 + padding)) * square_size[0],
@@ -36,10 +38,10 @@ fn SquareGrid() -> impl UIFragment {
                     ],
                     [square_size[0], square_size[1]],
                 ),
-                color: [x as f32 / size as f32, y as f32 / size as f32, 0.0],
+                color: [x as f32 / SIZE as f32, y as f32 / SIZE as f32, 0.0],
             })
         })
-        .collect::<Vec<_>>()
+        .collect::<SizedVec<_, SQUARE_SIZE>>()
 }
 
 fn aabb(position: [f32; 2], size: [f32; 2]) -> [[f32; 4]; 4] {

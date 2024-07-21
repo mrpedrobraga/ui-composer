@@ -23,7 +23,7 @@ impl<I> UIFragment for I
 where
     I: InteractorNode + 'static,
 {
-    fn get_allocation_info(&self) -> crate::standard::render::AllocationInfo {
+    fn get_allocation_info() -> crate::standard::render::AllocationInfo {
         AllocationInfo {
             buffer_size: 0,
             primitive_count: 0,
