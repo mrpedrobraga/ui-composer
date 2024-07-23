@@ -1,6 +1,6 @@
 use crate::standard::{
     primitive::Primitive,
-    render::{AllocationInfo, AllocationOffset, UIFragment},
+    render::{AllocationInfo, AllocationOffset, UIFragment, UIFragmentLive},
 };
 use futures_signals::signal::Signal;
 use pin_project::pin_project;
@@ -11,27 +11,23 @@ use std::ops::Range;
 pub struct Reactor<T, S>
 where
     S: Signal<Item = T>,
-    T: UIFragment,
+    T: UIFragmentLive,
 {
     allocation_offset: AllocationOffset,
     #[pin]
     signal: S,
 }
 
-pub trait ReactorExt<T: UIFragment>: Signal<Item = T> + Send {
-    fn get_allocation_offset(&self) -> AllocationOffset;
-}
-
-pub trait UnknownReactor {
+pub trait UnknownReactor: Signal<Item = Box<dyn UIFragmentLive>> + Send {
     fn get_allocation_offset(&self) -> AllocationOffset;
 }
 
 impl<T, S> Signal for Reactor<T, S>
 where
     S: Signal<Item = T>,
-    T: UIFragment,
+    T: UIFragmentLive + 'static,
 {
-    type Item = T;
+    type Item = Box<dyn UIFragmentLive>;
 
     fn poll_change(
         self: std::pin::Pin<&mut Self>,
@@ -42,24 +38,19 @@ where
             signal,
         } = self.project();
 
-        signal.poll_change(cx)
-    }
-}
-
-impl<T, S> ReactorExt<T> for Reactor<T, S>
-where
-    S: Signal<Item = T> + Send,
-    T: UIFragment,
-{
-    fn get_allocation_offset(&self) -> AllocationOffset {
-        self.allocation_offset
+        signal.poll_change(cx).map(|opt| {
+            opt.map(|fragment| {
+                let c: Box<dyn UIFragmentLive> = Box::new(fragment);
+                c
+            })
+        })
     }
 }
 
 impl<T, S> UnknownReactor for Reactor<T, S>
 where
     S: Signal<Item = T> + Send,
-    T: UIFragment,
+    T: UIFragment + 'static,
 {
     fn get_allocation_offset(&self) -> AllocationOffset {
         self.allocation_offset
@@ -95,7 +86,13 @@ where
         // TODO: Need to allocate a reactor, too, duh!
         base_info
     }
+}
 
+impl<T, S> UIFragmentLive for React<T, S>
+where
+    S: Signal<Item = T> + Send + 'static,
+    T: UIFragment + 'static,
+{
     fn splat_allocation(
         self,
         allocation_offset: AllocationOffset,

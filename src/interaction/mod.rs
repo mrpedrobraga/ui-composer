@@ -12,6 +12,7 @@ use crate::{
     render_module::RenderModule,
     standard::render::{
         tuple_render_module::TupleRenderModule, AllocationInfo, AllocationOffset, UIFragment,
+        UIFragmentLive,
     },
 };
 pub mod hover;
@@ -29,7 +30,7 @@ pub trait InteractorNodeContainer {
 
 impl<I> UIFragment for I
 where
-    I: InteractorNode + 'static,
+    I: InteractorNode + UIFragmentLive + 'static,
 {
     fn get_allocation_info() -> crate::standard::render::AllocationInfo {
         AllocationInfo {
@@ -37,7 +38,12 @@ where
             primitive_count: 0,
         }
     }
+}
 
+impl<I> UIFragmentLive for I
+where
+    I: InteractorNode + 'static,
+{
     fn splat_allocation(
         self,
         allocation_offset: AllocationOffset,

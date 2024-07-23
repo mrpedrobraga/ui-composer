@@ -1,5 +1,6 @@
 use super::render::{
     tuple_render_module::TupleRenderModule, AllocationInfo, AllocationOffset, UIFragment,
+    UIFragmentLive,
 };
 use crate::{
     interaction::InteractorNodeContainer,
@@ -18,7 +19,12 @@ where
             primitive_count: inner_alloc_info.primitive_count * N,
         }
     }
+}
 
+impl<T, const N: usize> UIFragmentLive for [T; N]
+where
+    T: UIFragment + Clone,
+{
     fn splat_allocation(
         self,
         allocation_offset: AllocationOffset,
@@ -55,7 +61,13 @@ where
             ),
         }
     }
+}
 
+impl<T, E> UIFragmentLive for Result<T, E>
+where
+    T: UIFragment,
+    E: UIFragment,
+{
     fn splat_allocation(
         self,
         allocation_offset: AllocationOffset,
@@ -94,7 +106,12 @@ where
             primitive_count: inner_alloc_info.primitive_count * N,
         }
     }
+}
 
+impl<T, const N: usize> UIFragmentLive for SizedVec<T, N>
+where
+    T: UIFragment + Clone,
+{
     fn splat_allocation(
         self,
         allocation_offset: AllocationOffset,
@@ -129,7 +146,9 @@ macro_rules! tuple_impls {
                         },
                     )
             }
+        }
 
+        impl<$($name: UIFragment),+> UIFragmentLive for ($($name,)+) {
             fn splat_allocation(
                 self,
                 allocation_offset: AllocationOffset,

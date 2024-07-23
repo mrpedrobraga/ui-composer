@@ -11,8 +11,11 @@ use tuple_render_module::TupleRenderModule;
 use wgpu::{util::DeviceExt as _, BufferUsages};
 pub mod tuple_render_module;
 
-pub trait UIFragment {
+pub trait UIFragment: UIFragmentLive {
     fn get_allocation_info() -> AllocationInfo;
+}
+
+pub trait UIFragmentLive {
     fn splat_allocation(
         self,
         allocation_offset: AllocationOffset,

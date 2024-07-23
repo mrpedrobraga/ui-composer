@@ -7,7 +7,9 @@ use crate::{
 use bytemuck::{Pod, Zeroable};
 use std::mem::size_of;
 
-use super::render::{tuple_render_module::TupleRenderModule, AllocationInfo, AllocationOffset};
+use super::render::{
+    tuple_render_module::TupleRenderModule, AllocationInfo, AllocationOffset, UIFragmentLive,
+};
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
@@ -32,7 +34,9 @@ impl UIFragment for Primitive {
             primitive_count: 1,
         }
     }
+}
 
+impl UIFragmentLive for Primitive {
     fn splat_allocation(
         self,
         allocation_offset: AllocationOffset,
