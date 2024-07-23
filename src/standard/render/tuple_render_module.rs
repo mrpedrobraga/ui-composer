@@ -1,16 +1,22 @@
+use std::thread;
+use std::time::Duration;
+
 use super::super::standard_pipeline::StandardUniform;
 use crate::app::engine::RenderTarget;
-use crate::interaction::InteractorNode;
-use crate::reaction::Reactor;
+use crate::interaction::{InteractorNode, VecNode};
+use crate::reaction::{Reactor, UnknownReactor};
 use crate::render_module::RenderModule;
+use crate::standard::primitive::Primitive;
+use futures::stream::select_all;
+use futures_signals::signal::{Signal, SignalExt};
 use wgpu::RenderPipeline;
 use winit::dpi::PhysicalSize;
 
 pub struct TupleRenderModule<'window> {
-    pub reactors: Vec<Box<dyn Reactor>>,
+    pub reactors: Vec<Box<dyn UnknownReactor + 'window>>,
     pub interactor_tree: Option<Box<dyn InteractorNode>>,
     pub primitive_count: u32,
-    pub primitive_buffer_cpu: Vec<u8>,
+    pub primitive_buffer_cpu: Vec<Primitive>,
     pub primitive_buffer: wgpu::Buffer,
     pub sub_modules: Vec<Box<dyn RenderModule>>,
     // Currently this is owned, but it should be shared to avoid context-switching.
@@ -41,6 +47,33 @@ impl<'window> RenderModulePipeline<'window> {
 }
 
 impl<'window> TupleRenderModule<'window> {
+    pub fn new(
+        reactors: Vec<Box<dyn UnknownReactor>>,
+        sub_modules: Vec<Box<dyn RenderModule>>,
+        primitive_count: u32,
+        primitive_buffer_cpu: Vec<Primitive>,
+        primitive_buffer: wgpu::Buffer,
+        render_pipeline: RenderModulePipeline<'window>,
+    ) -> Self {
+        let tuple_render_module = Self {
+            reactors,
+            interactor_tree: Some(Box::new(VecNode::new())),
+            primitive_count,
+            primitive_buffer_cpu,
+            primitive_buffer,
+            sub_modules,
+            render_pipeline,
+        };
+
+        // Create new thread to poll the reactors
+        std::thread::spawn(|| loop {
+            dbg!("Hey");
+            std::thread::sleep(Duration::from_secs(1));
+        });
+
+        tuple_render_module
+    }
+
     /// TODO: Write data partially instead of the whole damn buffer.
     pub fn flush_instances(&self, queue: &wgpu::Queue) {
         queue.write_buffer(

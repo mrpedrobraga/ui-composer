@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
-use futures_signals::signal::SignalExt;
-use ui_composer::{interaction::tap::TapInteraction, prelude::*};
+use ui_composer::{interaction::hover::HoverInteraction, prelude::*};
 use winit::{dpi::LogicalSize, platform::x11::WindowAttributesExtX11, window::WindowAttributes};
 
 fn main() {
@@ -21,18 +20,20 @@ fn MyApp() -> impl UIFragment {
 }
 
 fn Square(aabb: AABB) -> impl UIFragment {
-    let tap = TapInteraction::new(aabb);
+    let hover = HoverInteraction::new(aabb);
+    let is_hovering_state = hover.get_signal();
 
-    let signal = tap.get_signal();
-    std::thread::spawn(move || {
-        pollster::block_on(signal.for_each(|click| async move {
-            if click.is_some() {
-                println!("Clicked!")
-            };
-        }))
-    });
+    let square = is_hovering_state
+        .map(move |is_hovering| {
+            if is_hovering {
+                Rect(aabb, (1.0, 0.0, 0.0))
+            } else {
+                Rect(aabb, (0.0, 1.0, 1.0))
+            }
+        })
+        .into_fragment();
 
-    (Rect(aabb, (1.0, 0.0, 0.0)), tap)
+    (square, hover)
 }
 
 fn Rect(aabb: AABB, color: (f32, f32, f32)) -> Primitive {

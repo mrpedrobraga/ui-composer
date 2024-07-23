@@ -71,6 +71,7 @@ fn Column<A: LayoutItem, B: LayoutItem>((item_0, item_1): (A, B)) -> impl Layout
     )
 }
 
+#[allow(unused)]
 fn Row<A: LayoutItem, B: LayoutItem>((item_0, item_1): (A, B)) -> impl LayoutItem {
     let gap = 10; // 10px
     let item_a_natural_size = item_0.get_natural_size();

@@ -1,6 +1,6 @@
 use crate::render_module::{IntoRenderModule, RenderModule};
 use pollster::FutureExt as _;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use winit::{dpi::PhysicalSize, window::Window};
 
 const DEFAULT_CLEAR_COLOR: wgpu::Color = wgpu::Color {
@@ -63,7 +63,7 @@ impl UIEngine {
         };
 
         // Allow user to switch the render pipeline!!!
-        let root_render_stack = root_render_fragment.into_render_module(
+        let root_render_module = root_render_fragment.into_render_module(
             render_state.window.clone(),
             surface,
             &render_state.adapter,
@@ -71,8 +71,8 @@ impl UIEngine {
             &render_state.queue,
         );
 
-        render_state.root_render_module = Some(root_render_stack);
-        render_state
+        render_state.root_render_module = Some(root_render_module);
+        return render_state;
     }
 
     pub fn handle_window_event(&mut self, event: winit::event::WindowEvent) {

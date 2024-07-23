@@ -1,6 +1,9 @@
-use super::render::{tuple_render_module::TupleRenderModule, AllocationInfo, UIFragment};
+use super::render::{
+    tuple_render_module::TupleRenderModule, AllocationInfo, AllocationOffset, UIFragment,
+};
 use crate::{
     interaction::InteractorNodeContainer,
+    reaction::UnknownReactor,
     render_module::{self, RenderModule},
 };
 
@@ -16,9 +19,19 @@ where
         }
     }
 
-    fn push_allocation(self, render_module: &mut TupleRenderModule) {
-        self.iter()
-            .for_each(|fragment| fragment.clone().push_allocation(render_module));
+    fn splat_allocation(
+        self,
+        allocation_offset: AllocationOffset,
+        render_module: &mut TupleRenderModule,
+        temp_reactors: &mut Vec<Box<dyn UnknownReactor>>,
+    ) {
+        let mut offset = allocation_offset;
+        let allocation_info = T::get_allocation_info();
+
+        for fragment in self.iter().cloned() {
+            fragment.splat_allocation(allocation_offset, render_module, temp_reactors);
+            offset.offset_by_allocation(&allocation_info);
+        }
     }
 }
 
@@ -43,10 +56,15 @@ where
         }
     }
 
-    fn push_allocation(self, render_module: &mut TupleRenderModule) {
+    fn splat_allocation(
+        self,
+        allocation_offset: AllocationOffset,
+        render_module: &mut TupleRenderModule,
+        temp_reactors: &mut Vec<Box<dyn UnknownReactor>>,
+    ) {
         match self {
-            Ok(ok) => ok.push_allocation(render_module),
-            Err(err) => err.push_allocation(render_module),
+            Ok(ok) => ok.splat_allocation(allocation_offset, render_module, temp_reactors),
+            Err(err) => err.splat_allocation(allocation_offset, render_module, temp_reactors),
         }
     }
 }
@@ -77,11 +95,19 @@ where
         }
     }
 
-    fn push_allocation(self, render_module: &mut TupleRenderModule) {
-        self.0
-            .into_iter()
-            .take(N)
-            .for_each(|frag| frag.push_allocation(render_module));
+    fn splat_allocation(
+        self,
+        allocation_offset: AllocationOffset,
+        render_module: &mut TupleRenderModule,
+        temp_reactors: &mut Vec<Box<dyn UnknownReactor>>,
+    ) {
+        let mut offset = allocation_offset;
+        let allocation_info = T::get_allocation_info();
+
+        for fragment in self.0.into_iter().take(N) {
+            fragment.splat_allocation(offset, render_module, temp_reactors);
+            offset.offset_by_allocation(&allocation_info);
+        }
     }
 }
 
@@ -104,10 +130,20 @@ macro_rules! tuple_impls {
                     )
             }
 
-            fn push_allocation(self, render_module: &mut TupleRenderModule) {
+            fn splat_allocation(
+                self,
+                allocation_offset: AllocationOffset,
+                render_module: &mut TupleRenderModule,
+                temp_reactors: &mut Vec<Box<dyn UnknownReactor>>,
+            ) {
+                let mut offset = allocation_offset;
                 #[allow(non_snake_case)]
                 let ($($name,)+) = self;
-                $($name.push_allocation(render_module);)+
+
+                $({
+                    $name.splat_allocation(offset, render_module, temp_reactors);
+                    offset.offset_by_allocation(&A::get_allocation_info());
+                })+
             }
         }
     };

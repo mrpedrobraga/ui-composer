@@ -8,8 +8,11 @@
 use wgpu::util::RenderEncoder;
 
 use crate::{
+    reaction::UnknownReactor,
     render_module::RenderModule,
-    standard::render::{tuple_render_module::TupleRenderModule, AllocationInfo, UIFragment},
+    standard::render::{
+        tuple_render_module::TupleRenderModule, AllocationInfo, AllocationOffset, UIFragment,
+    },
 };
 pub mod hover;
 pub mod keyboard;
@@ -35,7 +38,13 @@ where
         }
     }
 
-    fn push_allocation(self, render_module: &mut TupleRenderModule) {
+    fn splat_allocation(
+        self,
+        allocation_offset: AllocationOffset,
+        render_module: &mut TupleRenderModule,
+
+        temp_reactors: &mut Vec<Box<dyn UnknownReactor>>,
+    ) {
         render_module.interactor_tree = Some(Box::new(self));
     }
 }

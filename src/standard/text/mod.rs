@@ -1,17 +1,18 @@
+use super::render::{AllocationInfo, UIFragment};
 use crate::{
     app::engine::RenderTarget,
+    geometry::aabb::AABB,
     render_module::{IntoRenderModule, RenderModule},
 };
 use glyphon::{
-    Attrs, Buffer, Cache, Family, FontSystem, Metrics, Resolution, Shaping, SwashCache, TextArea,
-    TextAtlas, TextBounds, TextRenderer, Viewport,
+    Attrs, Buffer, Cache, Family, FontSystem, Metrics, Resolution, Shaping, SwashCache,
+    TextArea as GlyphonTextArea, TextAtlas, TextBounds, TextRenderer, Viewport,
 };
+use std::{any::Any, path::PathBuf};
 use wgpu::MultisampleState;
 
-use super::render::{AllocationInfo, UIFragment};
-
 pub struct TextRenderModule<'window> {
-    buffer: glyphon::Buffer,
+    text_areas: Vec<TextArea>,
     text_renderer: TextRenderer,
     font_system: FontSystem,
     swash_cache: SwashCache,
@@ -24,6 +25,11 @@ struct TextRenderStuff<'window> {
     /// This needs to be moved to `RenderState`, i.e., a pipeline doesn't know its own ID.
     pub id: u8,
     pub render_texture: RenderTarget<'window>,
+}
+
+struct TextArea {
+    buffer: glyphon::Buffer,
+    aabb: AABB,
 }
 
 pub struct Text<T: AsRef<str>>(pub T);
@@ -62,6 +68,10 @@ where
 
         // Set up text renderer
         let mut font_system = FontSystem::new();
+        font_system
+            .db_mut()
+            .load_font_file("./Source_Sans_3/SourceSans3-Regular.ttf");
+
         let swash_cache = SwashCache::new();
         let cache = Cache::new(&device);
         let viewport = Viewport::new(&device, &cache);
@@ -73,24 +83,33 @@ where
         );
         let text_renderer =
             TextRenderer::new(&mut atlas, &device, MultisampleState::default(), None);
-        let mut buffer = Buffer::new(&mut font_system, Metrics::new(30.0, 42.0));
-        buffer.set_wrap(&mut font_system, glyphon::Wrap::Word);
+        let mut text_buffer = Buffer::new(&mut font_system, Metrics::new(16.0, 16.0 * 1.2));
+        text_buffer.set_wrap(&mut font_system, glyphon::Wrap::Word);
+        let attrs = Attrs::new().family(Family::Name("Source Sans 3"));
+        let rich_text = &[(self.0.as_ref(), Attrs::new())];
 
-        let attrs = Attrs::new().family(Family::SansSerif);
-
-        let rich_text = &[(self.0.as_ref(), Attrs::new().weight(glyphon::Weight::BOLD))];
-
-        buffer.set_size(&mut font_system, Some(400.0), Some(800.0));
-        buffer.set_rich_text(
+        text_buffer.set_size(&mut font_system, Some(400.0), Some(800.0));
+        text_buffer.set_rich_text(
             &mut font_system,
             rich_text.iter().copied(),
             attrs,
             Shaping::Advanced,
         );
-        buffer.shape_until_scroll(&mut font_system, false);
+        text_buffer.shape_until_scroll(&mut font_system, false);
+        let text_area = TextArea {
+            buffer: text_buffer,
+            aabb: AABB {
+                top_left: (0, 0),
+                size: (
+                    window.inner_size().width as i32,
+                    window.inner_size().height as i32,
+                ),
+            },
+        };
+        let text_areas = vec![text_area];
 
         Box::new(TextRenderModule {
-            buffer,
+            text_areas,
             text_renderer,
             render_stuff,
             atlas,
@@ -125,11 +144,6 @@ impl<'window> RenderModule for TextRenderModule<'window> {
         self.render_stuff
             .render_texture
             .resize(&device, &adapter, new_size);
-        self.buffer.set_size(
-            &mut self.font_system,
-            Some(new_size.width as f32),
-            Some(new_size.height as f32),
-        );
         self.viewport.update(
             &queue,
             Resolution {
@@ -156,19 +170,19 @@ impl<'window> RenderModule for TextRenderModule<'window> {
                 &mut self.font_system,
                 &mut self.atlas,
                 &self.viewport,
-                [TextArea {
-                    buffer: &self.buffer,
-                    left: 16.0,
-                    top: 0.0,
+                self.text_areas.iter().map(|ta| GlyphonTextArea {
+                    buffer: &ta.buffer,
+                    left: ta.aabb.top_left.0 as f32,
+                    top: ta.aabb.top_left.1 as f32,
                     scale: 1.0,
                     bounds: TextBounds {
-                        left: 0,
-                        top: 0,
-                        right: 0 + size.width as i32,
-                        bottom: 0 + size.height as i32,
+                        left: ta.aabb.top_left.0,
+                        top: ta.aabb.top_left.1,
+                        right: ta.aabb.top_left.0 + ta.aabb.size.0,
+                        bottom: ta.aabb.top_left.1 + ta.aabb.size.1,
                     },
-                    default_color: glyphon::Color::rgb(255, 255, 255),
-                }],
+                    default_color: glyphon::Color::rgb(0xFF, 0xFF, 0xFF),
+                }),
                 &mut self.swash_cache,
             )
             .unwrap();

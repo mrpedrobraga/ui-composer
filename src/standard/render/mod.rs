@@ -1,22 +1,49 @@
-use std::mem::size_of;
+use std::{mem::size_of, thread};
 
 use super::{primitive::Primitive, standard_pipeline::get_main_render_stack_pipeline};
 use crate::{
     interaction::{InteractorNode, InteractorNodeContainer, VecNode},
+    reaction::{Reactor, UnknownReactor},
     render_module::{IntoRenderModule, RenderModule},
 };
+use futures_signals::signal::{Signal, SignalExt as _};
 use tuple_render_module::TupleRenderModule;
 use wgpu::{util::DeviceExt as _, BufferUsages};
 pub mod tuple_render_module;
 
 pub trait UIFragment {
     fn get_allocation_info() -> AllocationInfo;
-    fn push_allocation(self, render_module: &mut TupleRenderModule);
+    fn splat_allocation(
+        self,
+        allocation_offset: AllocationOffset,
+        render_module: &mut TupleRenderModule,
+        temp_reactors: &mut Vec<Box<dyn UnknownReactor>>,
+    );
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct AllocationInfo {
     pub buffer_size: usize,
     pub primitive_count: usize,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct AllocationOffset {
+    pub primitive_buffer_offset: usize,
+    pub reactor_buffer_offset: usize,
+}
+
+impl AllocationOffset {
+    pub fn new() -> Self {
+        Self {
+            primitive_buffer_offset: 0,
+            reactor_buffer_offset: 0,
+        }
+    }
+
+    pub fn offset_by_allocation(&mut self, allocation: &AllocationInfo) {
+        self.primitive_buffer_offset += allocation.primitive_count
+    }
 }
 
 impl<T> IntoRenderModule for T
@@ -41,18 +68,28 @@ where
             mapped_at_creation: false,
         });
 
-        let mut render_module = TupleRenderModule {
-            reactors: vec![],
-            interactor_tree: Some(Box::new(VecNode::new())),
-            sub_modules: vec![],
-            primitive_count: allocation_info.primitive_count as u32,
-            primitive_buffer_cpu: vec![],
-            render_pipeline,
-            primitive_buffer: instance_buffer,
-        };
-        self.push_allocation(&mut render_module);
-        render_module.flush_instances(queue);
+        let allocation_info = Self::get_allocation_info();
+        let primitive_buffer_cpu = Vec::with_capacity(allocation_info.primitive_count);
+        let reactors = Vec::with_capacity(1);
 
+        let mut temp_reactors = Vec::<Box<dyn UnknownReactor>>::with_capacity(1);
+
+        let mut render_module = TupleRenderModule::new(
+            reactors,
+            vec![],
+            allocation_info.primitive_count as u32,
+            primitive_buffer_cpu,
+            instance_buffer,
+            render_pipeline,
+        );
+
+        self.splat_allocation(
+            AllocationOffset::new(),
+            &mut render_module,
+            &mut temp_reactors,
+        );
+
+        render_module.flush_instances(queue);
         return Box::new(render_module);
     }
 }

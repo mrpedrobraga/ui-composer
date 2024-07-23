@@ -34,7 +34,7 @@ fn numbers_stream(
     let (mut sender, receiver) = futures_channel::mpsc::channel::<u64>(100); // Buffer size 100
 
     std::thread::spawn(move || {
-        for c in 0..10 {
+        for _ in 0..10 {
             std::thread::sleep(interval);
             if let Err(_) = sender.try_send(index) {
                 break;

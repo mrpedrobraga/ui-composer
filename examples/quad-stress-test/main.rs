@@ -6,8 +6,8 @@ fn main() {
     AppBuilder::new(MyApp())
         .with_window_attributes(
             WindowAttributes::default()
-                .with_title("Grid Example")
-                .with_name("UI Composer", "UI Composer Grid Example")
+                .with_title("Who needs fragment shaders?")
+                .with_name("UI Composer Stress Test", "UI Composer Grid Example")
                 .with_inner_size(PhysicalSize {
                     width: 1000,
                     height: 1000,
