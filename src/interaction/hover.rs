@@ -1,15 +1,15 @@
 use super::InteractorNode;
-use crate::geometry::aabb::AABB;
 use futures_signals::signal::{Mutable, MutableSignal};
+use vek::{Aabr, Vec2};
 
 #[derive(Clone)]
 pub struct HoverInteraction {
     is_hovered: Mutable<bool>,
-    pub aabb: AABB,
+    pub aabb: Aabr<i32>,
 }
 
 impl HoverInteraction {
-    pub fn new(aabb: AABB) -> Self {
+    pub fn new(aabb: Aabr<i32>) -> Self {
         Self {
             is_hovered: Mutable::new(false),
             aabb,
@@ -29,7 +29,7 @@ impl InteractorNode for HoverInteraction {
                 device_id: _,
                 position,
             } => {
-                let position = (position.x as i32, position.y as i32);
+                let position = Vec2::new(position.x as i32, position.y as i32);
                 let is_hovered = self.aabb.contains_point(position);
                 if self.is_hovered.get() != is_hovered {
                     self.is_hovered.set(is_hovered);

@@ -1,7 +1,6 @@
 use super::render::{AllocationInfo, UIFragment};
 use crate::{
     app::engine::RenderTarget,
-    geometry::aabb::AABB,
     interaction::InteractorNode,
     prelude::Primitive,
     reaction::Reactor,
@@ -12,6 +11,7 @@ use glyphon::{
     TextArea as GlyphonTextArea, TextAtlas, TextBounds, TextRenderer, Viewport,
 };
 use std::{any::Any, path::PathBuf};
+use vek::{Aabr, Vec2};
 use wgpu::MultisampleState;
 
 pub struct TextRenderModule<'window> {
@@ -35,7 +35,7 @@ struct TextRenderStuff<'window> {
 
 struct TextArea {
     buffer: glyphon::Buffer,
-    aabb: AABB,
+    aabb: Aabr<i32>,
 }
 
 pub struct Text<T: AsRef<str>>(pub T);
@@ -104,9 +104,9 @@ where
         text_buffer.shape_until_scroll(&mut font_system, false);
         let text_area = TextArea {
             buffer: text_buffer,
-            aabb: AABB {
-                top_left: (0, 0),
-                size: (
+            aabb: Aabr {
+                min: Vec2::new(0, 0),
+                max: Vec2::new(
                     window.inner_size().width as i32,
                     window.inner_size().height as i32,
                 ),
@@ -190,14 +190,14 @@ impl<'window> RenderModule for TextRenderModule<'window> {
                 &self.viewport,
                 self.text_areas.iter().map(|ta| GlyphonTextArea {
                     buffer: &ta.buffer,
-                    left: ta.aabb.top_left.0 as f32,
-                    top: ta.aabb.top_left.1 as f32,
+                    left: ta.aabb.min.x as f32,
+                    top: ta.aabb.min.y as f32,
                     scale: 1.0,
                     bounds: TextBounds {
-                        left: ta.aabb.top_left.0,
-                        top: ta.aabb.top_left.1,
-                        right: ta.aabb.top_left.0 + ta.aabb.size.0,
-                        bottom: ta.aabb.top_left.1 + ta.aabb.size.1,
+                        left: ta.aabb.min.x,
+                        top: ta.aabb.min.y,
+                        right: ta.aabb.max.x,
+                        bottom: ta.aabb.max.y,
                     },
                     default_color: glyphon::Color::rgb(0xFF, 0xFF, 0xFF),
                 }),

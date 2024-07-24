@@ -1,7 +1,6 @@
 #![allow(unused)]
 
 pub mod app;
-pub mod geometry;
 pub mod interaction;
 pub mod prelude;
 pub mod reaction;

@@ -1,16 +1,16 @@
 use super::InteractorNode;
-use crate::geometry::aabb::AABB;
 use futures_signals::signal::{Mutable, MutableSignal};
+use vek::{Aabr, Vec2};
 use winit::event::MouseButton;
 
 pub struct TapInteraction {
     tap: Mutable<Option<()>>,
     cursor_inside_bounds: bool,
-    pub aabb: AABB,
+    pub aabb: Aabr<i32>,
 }
 
 impl TapInteraction {
-    pub fn new(aabb: AABB) -> Self {
+    pub fn new(aabb: Aabr<i32>) -> Self {
         Self {
             tap: Mutable::new(None),
             cursor_inside_bounds: false,
@@ -31,7 +31,7 @@ impl InteractorNode for TapInteraction {
                 device_id,
                 position,
             } => {
-                let position = (position.x as i32, position.y as i32);
+                let position = Vec2::new(position.x as i32, position.y as i32);
                 self.cursor_inside_bounds = self.aabb.contains_point(position);
                 false
             }
