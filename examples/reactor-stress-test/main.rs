@@ -9,19 +9,19 @@ fn main() {
             WindowAttributes::default()
                 .with_name("Simple App", "Simple App")
                 .with_inner_size(LogicalSize {
-                    width: 1000,
-                    height: 1000,
+                    width: 500,
+                    height: 500,
                 }),
         )
         .run();
 }
 
 fn MyApp() -> impl UIFragment {
-    const WIDTH: i32 = 100;
-    seq!(I in 0..1000 {
+    const WIDTH: i32 = 50;
+    seq!(I in 0..2500 {
         [
             #(
-                TinySquare(I - (WIDTH * (I/WIDTH)), I/WIDTH),
+                TinySquare(I - WIDTH * (I / WIDTH), I / WIDTH),
             )*
         ]
     })
@@ -29,11 +29,11 @@ fn MyApp() -> impl UIFragment {
 
 fn TinySquare(x: i32, y: i32) -> impl UIFragment {
     const SIZE: i32 = 10;
-    Square(AABB::new((x * SIZE, y * SIZE), (SIZE, SIZE)))
+    Square(AABB::new((x * SIZE, y * SIZE), (SIZE - 1, SIZE - 1)))
 }
 
 fn Square(aabb: AABB) -> impl UIFragment {
-    let hover = HoverInteraction::new(aabb);
+    let hover = HoverInteraction::new(aabb.expand_radius(50));
     let is_hovering_state = hover.get_signal();
 
     let square = is_hovering_state

@@ -84,11 +84,18 @@ impl UIEngine {
         let processor = ReactorProcessor::new(root_render_module);
         let req_redraw_engine = render_engine.clone();
         std::thread::spawn(move || {
-            pollster::block_on(processor.for_each(|_| async {
-                req_redraw_engine
-                    .lock()
-                    .expect("Could not lock Render Engine to request redraw!")
-                    .request_redraw();
+            pollster::block_on(processor.for_each(|event| {
+                match &event {
+                    &crate::signals::ReactorProcessorEvent::DoNothing => (),
+                    &crate::signals::ReactorProcessorEvent::Redraw => {
+                        // TODO: Instead of redrawing on each update, we should wait for all sequential updates to settle!!!
+                        req_redraw_engine
+                            .lock()
+                            .expect("Could not lock Render Engine to request redraw!")
+                            .request_redraw();
+                    }
+                }
+                async {}
             }))
         });
 

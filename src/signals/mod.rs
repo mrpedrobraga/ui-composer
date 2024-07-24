@@ -11,19 +11,26 @@ use std::{
 };
 
 pub struct ReactorProcessor {
+    dirty: bool,
     render_module: Arc<Mutex<Box<dyn RenderModule>>>,
+}
+
+pub enum ReactorProcessorEvent {
+    DoNothing,
+    Redraw,
 }
 
 impl ReactorProcessor {
     pub fn new(reactors: Arc<Mutex<Box<dyn RenderModule>>>) -> Self {
         Self {
+            dirty: false,
             render_module: reactors,
         }
     }
 }
 
 impl Signal for ReactorProcessor {
-    type Item = ();
+    type Item = ReactorProcessorEvent;
 
     fn poll_change(
         mut self: Pin<&mut Self>,
@@ -45,7 +52,9 @@ impl Signal for ReactorProcessor {
                             render_module.as_mut(),
                             false,
                         );
-                        return Poll::Ready(Some(()));
+                        drop(render_module);
+                        self.dirty = true;
+                        return Poll::Ready(Some(ReactorProcessorEvent::DoNothing));
                     }
                     None => (),
                 },
@@ -55,10 +64,17 @@ impl Signal for ReactorProcessor {
             }
         }
 
-        return if any_pending {
-            Poll::Pending
-        } else {
-            Poll::Ready(None)
-        };
+        drop(render_module);
+
+        if self.dirty {
+            self.dirty = false;
+            return Poll::Ready(Some(ReactorProcessorEvent::Redraw));
+        }
+
+        if any_pending {
+            return Poll::Pending;
+        }
+
+        return Poll::Ready(None);
     }
 }
