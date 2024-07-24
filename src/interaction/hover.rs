@@ -2,6 +2,7 @@ use super::InteractorNode;
 use crate::geometry::aabb::AABB;
 use futures_signals::signal::{Mutable, MutableSignal};
 
+#[derive(Clone)]
 pub struct HoverInteraction {
     is_hovered: Mutable<bool>,
     pub aabb: AABB,
@@ -30,12 +31,16 @@ impl InteractorNode for HoverInteraction {
             } => {
                 let position = (position.x as i32, position.y as i32);
                 let is_hovered = self.aabb.contains_point(position);
-
                 if self.is_hovered.get() != is_hovered {
                     self.is_hovered.set(is_hovered);
                 }
-
                 true
+            }
+            winit::event::WindowEvent::CursorLeft { device_id } => {
+                if self.is_hovered.get() {
+                    self.is_hovered.set(false);
+                }
+                false
             }
             _ => false,
         }

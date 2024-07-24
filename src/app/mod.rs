@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use crate::render_module::IntoRenderModule;
 use engine::UIEngine;
 use winit::{
@@ -17,7 +19,7 @@ pub struct AppBuilder<I: IntoRenderModule> {
 
 /// An app in execution (the ui fragment has been transformed into a [`RenderModule`]).
 pub struct RunningApp {
-    engine: UIEngine,
+    engine: Arc<Mutex<UIEngine>>,
 }
 
 /// TODO: PRovide methods to bind to an existing Event Loop or window.
@@ -103,12 +105,26 @@ impl ApplicationHandler for RunningApp {
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::Resized(new_size) => {
-                self.engine.handle_resize(new_size);
+                let mut engine = self
+                    .engine
+                    .lock()
+                    .expect("Could not lock Render Engine to resize");
+                engine.handle_resize(new_size);
             }
-            WindowEvent::RedrawRequested => self.engine.handle_redraw_requested(),
+            WindowEvent::RedrawRequested => {
+                let mut engine = self
+                    .engine
+                    .lock()
+                    .expect("Could not lock Render Engine to request redraw");
+                engine.handle_redraw_requested()
+            }
             _ => (),
         }
 
-        self.engine.handle_window_event(event);
+        let mut engine = self
+            .engine
+            .lock()
+            .expect("Could not lock Render Engine to pump window event");
+        engine.handle_window_event(event);
     }
 }

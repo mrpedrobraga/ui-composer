@@ -1,7 +1,7 @@
 use crate::{
     interaction::InteractorNodeContainer,
     prelude::UIFragment,
-    reaction::UnknownReactor,
+    reaction::Reactor,
     render_module::{self, RenderModule},
 };
 use bytemuck::{Pod, Zeroable};
@@ -38,17 +38,18 @@ impl UIFragment for Primitive {
 
 impl UIFragmentLive for Primitive {
     fn splat_allocation(
-        self,
+        &mut self,
         allocation_offset: AllocationOffset,
-        render_module: &mut TupleRenderModule,
-        temp_reactors: &mut Vec<Box<dyn UnknownReactor>>,
+        render_module: &mut dyn RenderModule,
+        initial: bool,
     ) {
+        let primitive_buffer = render_module.primitive_buffer();
         let offset = allocation_offset.primitive_buffer_offset;
 
-        if render_module.primitive_buffer_cpu.len() == offset {
-            render_module.primitive_buffer_cpu.push(self);
+        if initial {
+            primitive_buffer.push(*self);
         } else {
-            render_module.primitive_buffer_cpu[allocation_offset.primitive_buffer_offset] = self;
+            primitive_buffer[allocation_offset.primitive_buffer_offset] = *self;
         }
     }
 }

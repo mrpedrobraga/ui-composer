@@ -1,6 +1,11 @@
-use crate::render_module::{IntoRenderModule, RenderModule};
+use crate::{
+    render_module::{IntoRenderModule, RenderModule},
+    signals::ReactorProcessor,
+};
+use futures::{FutureExt, StreamExt};
+use futures_signals::signal::SignalExt;
 use pollster::FutureExt as _;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex, RwLock};
 use winit::{dpi::PhysicalSize, window::Window};
 
 const DEFAULT_CLEAR_COLOR: wgpu::Color = wgpu::Color {
@@ -12,7 +17,7 @@ const DEFAULT_CLEAR_COLOR: wgpu::Color = wgpu::Color {
 
 pub struct UIEngine {
     pub current_pipeline_id: Option<u8>,
-    pub root_render_module: Option<Box<dyn RenderModule>>,
+    pub root_render_module: Option<Arc<Mutex<Box<dyn RenderModule>>>>,
 
     instance: wgpu::Instance,
     device: wgpu::Device,
@@ -23,7 +28,7 @@ pub struct UIEngine {
 }
 
 impl UIEngine {
-    pub fn new<I>(window: Window, root_render_fragment: I) -> Self
+    pub fn new<I>(window: Window, root_render_fragment: I) -> Arc<Mutex<Self>>
     where
         I: IntoRenderModule,
     {
@@ -52,7 +57,7 @@ impl UIEngine {
             .block_on()
             .unwrap();
 
-        let mut render_state = Self {
+        let mut render_engine = Self {
             current_pipeline_id: None,
             root_render_module: None,
             window,
@@ -64,26 +69,48 @@ impl UIEngine {
 
         // Allow user to switch the render pipeline!!!
         let root_render_module = root_render_fragment.into_render_module(
-            render_state.window.clone(),
+            render_engine.window.clone(),
             surface,
-            &render_state.adapter,
-            &render_state.device,
-            &render_state.queue,
+            &render_engine.adapter,
+            &render_engine.device,
+            &render_engine.queue,
         );
 
-        render_state.root_render_module = Some(root_render_module);
-        return render_state;
+        let root_render_module = Arc::new(Mutex::new(root_render_module));
+        render_engine.root_render_module = Some(root_render_module.clone());
+
+        let render_engine = Arc::new(Mutex::new(render_engine));
+
+        let processor = ReactorProcessor::new(root_render_module);
+        let req_redraw_engine = render_engine.clone();
+        std::thread::spawn(move || {
+            pollster::block_on(processor.for_each(|_| async {
+                req_redraw_engine
+                    .lock()
+                    .expect("Could not lock Render Engine to request redraw!")
+                    .request_redraw();
+            }))
+        });
+
+        return render_engine;
     }
 
     pub fn handle_window_event(&mut self, event: winit::event::WindowEvent) {
         if let Some(root_render_module) = &mut self.root_render_module {
+            let mut root_render_module = root_render_module
+                .lock()
+                .expect("Couldn't lock Root Render Module for window event.");
             root_render_module.handle_event(event);
         }
     }
 
     pub fn handle_resize(&mut self, new_size: PhysicalSize<u32>) {
         if let Some(root_render_module) = &mut self.root_render_module {
+            let mut root_render_module = root_render_module
+                .lock()
+                .expect("Couldn't lock Root Render Module for resize event.");
             root_render_module.resize(new_size, &self.queue, &self.device, &self.adapter);
+            drop(root_render_module);
             self.request_redraw();
         }
     }
@@ -94,6 +121,9 @@ impl UIEngine {
 
     pub fn handle_redraw_requested(&mut self) {
         if let Some(root_render_module) = &mut self.root_render_module {
+            let mut root_render_module = root_render_module
+                .lock()
+                .expect("Couldn't lock Root Render Module for redraw requested event.");
             let (frame, view) = root_render_module.create_render_frame();
             let mut encoder = root_render_module.get_command_encoder(&self.device);
 

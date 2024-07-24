@@ -24,9 +24,9 @@ impl AABB {
     }
 
     pub fn contains_point(&self, point: (i32, i32)) -> bool {
-        point.0 > self.top_left.0
+        point.0 >= self.top_left.0
             && point.0 < self.top_left.0 + self.size.0
-            && point.1 > self.top_left.1
+            && point.1 >= self.top_left.1
             && point.1 < self.top_left.1 + self.size.1
     }
 }

@@ -3,7 +3,7 @@ use std::{mem::size_of, thread};
 use super::{primitive::Primitive, standard_pipeline::get_main_render_stack_pipeline};
 use crate::{
     interaction::{InteractorNode, InteractorNodeContainer, VecNode},
-    reaction::{Reactor, UnknownReactor},
+    reaction::Reactor,
     render_module::{IntoRenderModule, RenderModule},
 };
 use futures_signals::signal::{Signal, SignalExt as _};
@@ -11,16 +11,16 @@ use tuple_render_module::TupleRenderModule;
 use wgpu::{util::DeviceExt as _, BufferUsages};
 pub mod tuple_render_module;
 
-pub trait UIFragment: UIFragmentLive {
+pub trait UIFragment: UIFragmentLive + Send {
     fn get_allocation_info() -> AllocationInfo;
 }
 
-pub trait UIFragmentLive {
+pub trait UIFragmentLive: Send {
     fn splat_allocation(
-        self,
+        &mut self,
         allocation_offset: AllocationOffset,
-        render_module: &mut TupleRenderModule,
-        temp_reactors: &mut Vec<Box<dyn UnknownReactor>>,
+        render_module: &mut dyn RenderModule,
+        initial: bool,
     );
 }
 
@@ -54,7 +54,7 @@ where
     T: UIFragment,
 {
     fn into_render_module<'a, 'window>(
-        self,
+        mut self,
         window: std::sync::Arc<winit::window::Window>,
         surface: wgpu::Surface<'window>,
         adapter: &'a wgpu::Adapter,
@@ -75,8 +75,6 @@ where
         let primitive_buffer_cpu = Vec::with_capacity(allocation_info.primitive_count);
         let reactors = Vec::with_capacity(1);
 
-        let mut temp_reactors = Vec::<Box<dyn UnknownReactor>>::with_capacity(1);
-
         let mut render_module = TupleRenderModule::new(
             reactors,
             vec![],
@@ -86,11 +84,7 @@ where
             render_pipeline,
         );
 
-        self.splat_allocation(
-            AllocationOffset::new(),
-            &mut render_module,
-            &mut temp_reactors,
-        );
+        self.splat_allocation(AllocationOffset::new(), &mut render_module, true);
 
         render_module.flush_instances(queue);
         return Box::new(render_module);

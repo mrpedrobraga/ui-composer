@@ -1,4 +1,5 @@
 #![allow(non_snake_case)]
+use seq_macro::seq;
 use ui_composer::{interaction::hover::HoverInteraction, prelude::*};
 use winit::{dpi::LogicalSize, platform::x11::WindowAttributesExtX11, window::WindowAttributes};
 
@@ -8,15 +9,27 @@ fn main() {
             WindowAttributes::default()
                 .with_name("Simple App", "Simple App")
                 .with_inner_size(LogicalSize {
-                    width: 128,
-                    height: 128,
+                    width: 1000,
+                    height: 1000,
                 }),
         )
         .run();
 }
 
 fn MyApp() -> impl UIFragment {
-    Square(AABB::new((0, 0), (64, 64)))
+    const WIDTH: i32 = 100;
+    seq!(I in 0..1000 {
+        [
+            #(
+                TinySquare(I - (WIDTH * (I/WIDTH)), I/WIDTH),
+            )*
+        ]
+    })
+}
+
+fn TinySquare(x: i32, y: i32) -> impl UIFragment {
+    const SIZE: i32 = 10;
+    Square(AABB::new((x * SIZE, y * SIZE), (SIZE, SIZE)))
 }
 
 fn Square(aabb: AABB) -> impl UIFragment {

@@ -1,20 +1,23 @@
-use std::thread;
-use std::time::Duration;
-
 use super::super::standard_pipeline::StandardUniform;
 use crate::app::engine::RenderTarget;
 use crate::interaction::{InteractorNode, VecNode};
-use crate::reaction::{Reactor, UnknownReactor};
+use crate::reaction::Reactor;
 use crate::render_module::RenderModule;
+use crate::signals::ReactorProcessor;
 use crate::standard::primitive::Primitive;
 use futures::stream::select_all;
 use futures_signals::signal::{Signal, SignalExt};
+use std::pin::Pin;
+use std::sync::{Arc, Mutex, RwLock};
+use std::thread;
+use std::time::Duration;
+use wgpu::rwh::RawDisplayHandle;
 use wgpu::RenderPipeline;
 use winit::dpi::PhysicalSize;
 
 pub struct TupleRenderModule<'window> {
-    pub reactors: Vec<Box<dyn UnknownReactor + 'window>>,
-    pub interactor_tree: Option<Box<dyn InteractorNode>>,
+    pub reactors: Vec<Reactor>,
+    pub interactors: Vec<Box<dyn InteractorNode>>,
     pub primitive_count: u32,
     pub primitive_buffer_cpu: Vec<Primitive>,
     pub primitive_buffer: wgpu::Buffer,
@@ -48,7 +51,7 @@ impl<'window> RenderModulePipeline<'window> {
 
 impl<'window> TupleRenderModule<'window> {
     pub fn new(
-        reactors: Vec<Box<dyn UnknownReactor>>,
+        reactors: Vec<Reactor>,
         sub_modules: Vec<Box<dyn RenderModule>>,
         primitive_count: u32,
         primitive_buffer_cpu: Vec<Primitive>,
@@ -57,7 +60,7 @@ impl<'window> TupleRenderModule<'window> {
     ) -> Self {
         let tuple_render_module = Self {
             reactors,
-            interactor_tree: Some(Box::new(VecNode::new())),
+            interactors: vec![],
             primitive_count,
             primitive_buffer_cpu,
             primitive_buffer,
@@ -65,22 +68,13 @@ impl<'window> TupleRenderModule<'window> {
             render_pipeline,
         };
 
-        // Create new thread to poll the reactors
-        std::thread::spawn(|| loop {
-            dbg!("Hey");
-            std::thread::sleep(Duration::from_secs(1));
-        });
-
         tuple_render_module
     }
 
     /// TODO: Write data partially instead of the whole damn buffer.
     pub fn flush_instances(&self, queue: &wgpu::Queue) {
-        queue.write_buffer(
-            &self.primitive_buffer,
-            0,
-            bytemuck::cast_slice(&self.primitive_buffer_cpu[..]),
-        );
+        let slice = bytemuck::cast_slice(&self.primitive_buffer_cpu[..]);
+        queue.write_buffer(&self.primitive_buffer, 0, slice);
         queue.submit([]);
     }
 }
@@ -113,6 +107,14 @@ impl<'window> RenderModule for TupleRenderModule<'window> {
         self.render_pipeline.flush_uniforms(queue);
     }
 
+    fn handle_event(&mut self, event: winit::event::WindowEvent) -> bool {
+        let any_handled = false;
+        for interactor in self.interactors().iter_mut() {
+            interactor.handle_event(event.clone());
+        }
+        return any_handled;
+    }
+
     fn get_command_encoder(&self, device: &wgpu::Device) -> wgpu::CommandEncoder {
         device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None })
     }
@@ -124,6 +126,8 @@ impl<'window> RenderModule for TupleRenderModule<'window> {
         queue: &wgpu::Queue,
         render_pass: &mut wgpu::RenderPass<'pass>,
     ) {
+        self.flush_instances(queue);
+
         for module in self.sub_modules.iter_mut() {
             module.draw(current_pipeline_id, device, queue, render_pass);
         }
@@ -148,11 +152,15 @@ impl<'window> RenderModule for TupleRenderModule<'window> {
         queue.submit(Some(command_encoder.finish()));
     }
 
-    fn handle_event(&mut self, event: winit::event::WindowEvent) -> bool {
-        if let Some(root) = &mut self.interactor_tree {
-            root.handle_event(event)
-        } else {
-            false
-        }
+    fn reactors(&mut self) -> &mut Vec<Reactor> {
+        &mut self.reactors
+    }
+
+    fn primitive_buffer(&mut self) -> &mut Vec<Primitive> {
+        &mut self.primitive_buffer_cpu
+    }
+
+    fn interactors(&mut self) -> &mut Vec<Box<dyn InteractorNode>> {
+        &mut self.interactors
     }
 }

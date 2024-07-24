@@ -1,16 +1,16 @@
-use super::render::{
-    tuple_render_module::TupleRenderModule, AllocationInfo, AllocationOffset, UIFragment,
-    UIFragmentLive,
-};
+use std::mem::size_of;
+
+use super::render::{AllocationInfo, AllocationOffset, UIFragment, UIFragmentLive};
 use crate::{
     interaction::InteractorNodeContainer,
-    reaction::UnknownReactor,
+    prelude::Primitive,
+    reaction::Reactor,
     render_module::{self, RenderModule},
 };
 
 impl<T, const N: usize> UIFragment for [T; N]
 where
-    T: UIFragment + Clone,
+    T: UIFragment,
 {
     fn get_allocation_info() -> AllocationInfo {
         let inner_alloc_info = T::get_allocation_info();
@@ -23,20 +23,23 @@ where
 
 impl<T, const N: usize> UIFragmentLive for [T; N]
 where
-    T: UIFragment + Clone,
+    T: UIFragment,
 {
     fn splat_allocation(
-        self,
+        &mut self,
         allocation_offset: AllocationOffset,
-        render_module: &mut TupleRenderModule,
-        temp_reactors: &mut Vec<Box<dyn UnknownReactor>>,
+        render_module: &mut dyn RenderModule,
+        initial: bool,
     ) {
         let mut offset = allocation_offset;
-        let allocation_info = T::get_allocation_info();
+        let inner_allocation_info = T::get_allocation_info();
 
-        for fragment in self.iter().cloned() {
-            fragment.splat_allocation(allocation_offset, render_module, temp_reactors);
-            offset.offset_by_allocation(&allocation_info);
+        for mut fragment in self.iter_mut() {
+            fragment.splat_allocation(offset, render_module, initial);
+            offset.offset_by_allocation(&AllocationInfo {
+                buffer_size: inner_allocation_info.buffer_size,
+                primitive_count: inner_allocation_info.primitive_count,
+            });
         }
     }
 }
@@ -69,14 +72,14 @@ where
     E: UIFragment,
 {
     fn splat_allocation(
-        self,
+        &mut self,
         allocation_offset: AllocationOffset,
-        render_module: &mut TupleRenderModule,
-        temp_reactors: &mut Vec<Box<dyn UnknownReactor>>,
+        render_module: &mut dyn RenderModule,
+        initial: bool,
     ) {
         match self {
-            Ok(ok) => ok.splat_allocation(allocation_offset, render_module, temp_reactors),
-            Err(err) => err.splat_allocation(allocation_offset, render_module, temp_reactors),
+            Ok(ok) => ok.splat_allocation(allocation_offset, render_module, initial),
+            Err(err) => err.splat_allocation(allocation_offset, render_module, initial),
         }
     }
 }
@@ -113,16 +116,16 @@ where
     T: UIFragment + Clone,
 {
     fn splat_allocation(
-        self,
+        &mut self,
         allocation_offset: AllocationOffset,
-        render_module: &mut TupleRenderModule,
-        temp_reactors: &mut Vec<Box<dyn UnknownReactor>>,
+        render_module: &mut dyn RenderModule,
+        initial: bool,
     ) {
         let mut offset = allocation_offset;
         let allocation_info = T::get_allocation_info();
 
-        for fragment in self.0.into_iter().take(N) {
-            fragment.splat_allocation(offset, render_module, temp_reactors);
+        for fragment in self.0.iter_mut().take(N) {
+            fragment.splat_allocation(offset, render_module, initial);
             offset.offset_by_allocation(&allocation_info);
         }
     }
@@ -150,17 +153,17 @@ macro_rules! tuple_impls {
 
         impl<$($name: UIFragment),+> UIFragmentLive for ($($name,)+) {
             fn splat_allocation(
-                self,
+                &mut self,
                 allocation_offset: AllocationOffset,
-                render_module: &mut TupleRenderModule,
-                temp_reactors: &mut Vec<Box<dyn UnknownReactor>>,
+                render_module: &mut dyn RenderModule,
+                initial: bool,
             ) {
                 let mut offset = allocation_offset;
                 #[allow(non_snake_case)]
                 let ($($name,)+) = self;
 
                 $({
-                    $name.splat_allocation(offset, render_module, temp_reactors);
+                    $name.splat_allocation(offset, render_module, initial);
                     offset.offset_by_allocation(&A::get_allocation_info());
                 })+
             }

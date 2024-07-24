@@ -8,7 +8,7 @@
 use wgpu::util::RenderEncoder;
 
 use crate::{
-    reaction::UnknownReactor,
+    reaction::Reactor,
     render_module::RenderModule,
     standard::render::{
         tuple_render_module::TupleRenderModule, AllocationInfo, AllocationOffset, UIFragment,
@@ -20,11 +20,11 @@ pub mod keyboard;
 pub mod tap;
 
 /// An interactor node can receive an event and handle it, possibly flaring up reactors.
-pub trait InteractorNode {
+pub trait InteractorNode: Send {
     fn handle_event(&mut self, event: winit::event::WindowEvent) -> bool;
 }
 
-pub trait InteractorNodeContainer {
+pub trait InteractorNodeContainer: Send {
     fn push(&mut self, child: Box<dyn InteractorNode>);
 }
 
@@ -42,16 +42,15 @@ where
 
 impl<I> UIFragmentLive for I
 where
-    I: InteractorNode + 'static,
+    I: InteractorNode + Clone + 'static,
 {
     fn splat_allocation(
-        self,
+        &mut self,
         allocation_offset: AllocationOffset,
-        render_module: &mut TupleRenderModule,
-
-        temp_reactors: &mut Vec<Box<dyn UnknownReactor>>,
+        render_module: &mut dyn RenderModule,
+        initial: bool,
     ) {
-        render_module.interactor_tree = Some(Box::new(self));
+        render_module.interactors().push(Box::new(self.clone()));
     }
 }
 

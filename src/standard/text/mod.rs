@@ -2,6 +2,9 @@ use super::render::{AllocationInfo, UIFragment};
 use crate::{
     app::engine::RenderTarget,
     geometry::aabb::AABB,
+    interaction::InteractorNode,
+    prelude::Primitive,
+    reaction::Reactor,
     render_module::{IntoRenderModule, RenderModule},
 };
 use glyphon::{
@@ -12,6 +15,9 @@ use std::{any::Any, path::PathBuf};
 use wgpu::MultisampleState;
 
 pub struct TextRenderModule<'window> {
+    reactors: Vec<Reactor>,
+    primitive_buffer_cpu: Vec<Primitive>,
+    interactors: Vec<Box<dyn InteractorNode>>,
     text_areas: Vec<TextArea>,
     text_renderer: TextRenderer,
     font_system: FontSystem,
@@ -116,6 +122,9 @@ where
             font_system,
             swash_cache,
             viewport,
+            reactors: Vec::new(),
+            primitive_buffer_cpu: Vec::new(),
+            interactors: Vec::new(),
         })
     }
 }
@@ -151,6 +160,15 @@ impl<'window> RenderModule for TextRenderModule<'window> {
                 height: new_size.height,
             },
         );
+    }
+
+    // There are no events to be handled in this module
+    fn handle_event(&mut self, _: winit::event::WindowEvent) -> bool {
+        false
+    }
+
+    fn get_command_encoder(&self, device: &wgpu::Device) -> wgpu::CommandEncoder {
+        device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None })
     }
 
     fn draw<'pass>(
@@ -193,17 +211,20 @@ impl<'window> RenderModule for TextRenderModule<'window> {
             .unwrap();
     }
 
-    fn get_command_encoder(&self, device: &wgpu::Device) -> wgpu::CommandEncoder {
-        device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None })
-    }
-
     fn present(&self, queue: &wgpu::Queue, encoder: wgpu::CommandEncoder) {
         queue.submit(Some(encoder.finish()));
     }
 
-    // There are no events to be handled in this module
-    fn handle_event(&mut self, _: winit::event::WindowEvent) -> bool {
-        false
+    fn reactors(&mut self) -> &mut Vec<crate::reaction::Reactor> {
+        &mut self.reactors
+    }
+
+    fn primitive_buffer(&mut self) -> &mut Vec<crate::prelude::Primitive> {
+        &mut self.primitive_buffer_cpu
+    }
+
+    fn interactors(&mut self) -> &mut Vec<Box<dyn InteractorNode>> {
+        &mut self.interactors
     }
 }
 
