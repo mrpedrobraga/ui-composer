@@ -68,11 +68,9 @@ impl<I: IntoRenderModule> AppBuilder<I> {
         });
 
         let root_render_fragment = self.root_render_fragment.take().unwrap();
-        let render_state = UIEngine::new(window, root_render_fragment);
+        let engine = UIEngine::new(window, root_render_fragment);
 
-        self.running_app = Some(RunningApp {
-            engine: render_state,
-        });
+        self.running_app = Some(RunningApp { engine });
     }
 }
 

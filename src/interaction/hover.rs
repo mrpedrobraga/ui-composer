@@ -1,6 +1,6 @@
 use super::InteractorNode;
 use futures_signals::signal::{Mutable, MutableSignal};
-use vek::{Aabr, Vec2};
+use vek::{Aabr, Rect, Vec2};
 
 #[derive(Clone)]
 pub struct HoverInteraction {
@@ -9,10 +9,14 @@ pub struct HoverInteraction {
 }
 
 impl HoverInteraction {
-    pub fn new(aabb: Aabr<i32>) -> Self {
+    pub fn rect(rect: Rect<f32, f32>) -> Self {
+        Self::new(rect.as_().into_aabr())
+    }
+
+    pub fn new(aabr: Aabr<i32>) -> Self {
         Self {
             is_hovered: Mutable::new(false),
-            aabb,
+            aabb: aabr,
         }
     }
 

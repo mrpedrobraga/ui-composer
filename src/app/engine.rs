@@ -67,7 +67,7 @@ impl UIEngine {
             adapter,
         };
 
-        // Allow user to switch the render pipeline!!!
+        // TODO: Allow user to switch the render pipeline!!!
         let root_render_module = root_render_fragment.into_render_module(
             render_engine.window.clone(),
             surface,
@@ -76,20 +76,22 @@ impl UIEngine {
             &render_engine.queue,
         );
 
+        // This will be shared between the render engine and the reactor processor.
         let root_render_module = Arc::new(Mutex::new(root_render_module));
         render_engine.root_render_module = Some(root_render_module.clone());
 
+        // This will be shared between the creator of the engine (i.e., your application) and
+        // the reactor processor.
         let render_engine = Arc::new(Mutex::new(render_engine));
 
         let processor = ReactorProcessor::new(root_render_module);
-        let req_redraw_engine = render_engine.clone();
+        let render_engine_view = render_engine.clone();
         std::thread::spawn(move || {
             pollster::block_on(processor.for_each(|event| {
                 match &event {
                     &ReactorProcessorEvent::DoNothing => (),
                     &ReactorProcessorEvent::Redraw => {
-                        // TODO: Instead of redrawing on each update, we should wait for all sequential updates to settle!!!
-                        req_redraw_engine
+                        render_engine_view
                             .lock()
                             .expect("Could not lock Render Engine to request redraw!")
                             .request_redraw();
@@ -160,13 +162,14 @@ impl UIEngine {
             }
             drop(render_pass);
 
-            // Probably keep the queue here in the render state???
             root_render_module.present(&self.queue, encoder);
             frame.present();
         }
     }
 }
 
+/// Describes a RenderTarget that a render module can render to.
+/// TODO: Move this out of here.
 pub struct RenderTarget<'window> {
     pub size: winit::dpi::PhysicalSize<u32>,
     pub surface: wgpu::Surface<'window>,
