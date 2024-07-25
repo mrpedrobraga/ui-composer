@@ -8,6 +8,26 @@ use crate::{
     render_module::{self, RenderModule},
 };
 
+impl UIFragment for () {
+    fn get_allocation_info() -> AllocationInfo {
+        AllocationInfo {
+            buffer_size: 0,
+            primitive_count: 0,
+        }
+    }
+}
+
+impl UIFragmentLive for () {
+    fn splat_allocation(
+        &mut self,
+        allocation_offset: AllocationOffset,
+        render_module: &mut dyn RenderModule,
+        initial: bool,
+    ) {
+        // Yes it is empty.
+    }
+}
+
 impl<T, const N: usize> UIFragment for [T; N]
 where
     T: UIFragment,

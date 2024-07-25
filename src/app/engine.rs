@@ -1,6 +1,6 @@
-use crate::{
-    render_module::{IntoRenderModule, RenderModule},
-    signals::ReactorProcessor,
+use crate::render_module::{
+    reactivity_processing::{ReactorProcessor, ReactorProcessorEvent},
+    IntoRenderModule, RenderModule,
 };
 use futures::{FutureExt, StreamExt};
 use futures_signals::signal::SignalExt;
@@ -86,8 +86,8 @@ impl UIEngine {
         std::thread::spawn(move || {
             pollster::block_on(processor.for_each(|event| {
                 match &event {
-                    &crate::signals::ReactorProcessorEvent::DoNothing => (),
-                    &crate::signals::ReactorProcessorEvent::Redraw => {
+                    &ReactorProcessorEvent::DoNothing => (),
+                    &ReactorProcessorEvent::Redraw => {
                         // TODO: Instead of redrawing on each update, we should wait for all sequential updates to settle!!!
                         req_redraw_engine
                             .lock()

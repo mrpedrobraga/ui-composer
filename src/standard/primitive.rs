@@ -6,6 +6,7 @@ use crate::{
 };
 use bytemuck::{Pod, Zeroable};
 use std::mem::size_of;
+use vek::{Extent3, Mat4, Rect, Rgb};
 
 use super::render::{
     tuple_render_module::TupleRenderModule, AllocationInfo, AllocationOffset, UIFragmentLive,
@@ -14,8 +15,19 @@ use super::render::{
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
 pub struct Primitive {
-    pub transform: [[f32; 4]; 4],
-    pub color: [f32; 3],
+    pub transform: Mat4<f32>,
+    pub color: Rgb<f32>,
+}
+
+impl Primitive {
+    pub fn rect(rect: Rect<f32, f32>, color: Rgb<f32>) -> Self {
+        Self {
+            transform: Mat4::identity()
+                .scaled_3d(Extent3::new(rect.extent().w, rect.extent().h, 1.0))
+                .translated_2d(rect.position()),
+            color,
+        }
+    }
 }
 
 impl Default for Primitive {

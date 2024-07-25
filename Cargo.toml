@@ -23,7 +23,7 @@ pin-project = "1.1.5"
 pollster = "0.3.0"
 seq-macro = "0.3.5"
 slotmap = "1.0.7"
-vek = "0.17.0"
+vek = { version = "0.17.0", features = ["bytemuck"] }
 wgpu = { version = "0.20", default-features = false, features = ["wgsl"] }
 winit = "0.30.3"
 

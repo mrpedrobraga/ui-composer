@@ -2043,6 +2043,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cb40015035f83ba23d647e647f8be060d0f6f99b7c7687989fbca3e3d65e7234"
 dependencies = [
  "approx 0.5.1",
+ "bytemuck",
  "num-integer",
  "num-traits",
  "rustc_version",

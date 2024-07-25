@@ -3,7 +3,6 @@ use crate::app::engine::RenderTarget;
 use crate::interaction::{InteractorNode, VecNode};
 use crate::reaction::Reactor;
 use crate::render_module::RenderModule;
-use crate::signals::ReactorProcessor;
 use crate::standard::primitive::Primitive;
 use futures::stream::select_all;
 use futures_signals::signal::{Signal, SignalExt};
