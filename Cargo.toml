@@ -9,8 +9,9 @@ name = "ui_composer"
 
 [features]
 default = ["standard"]
-standard = ["text"]
+standard = ["text", "serde"]
 text = ["dep:glyphon"]
+serde = ["dep:serde"]
 
 [dependencies]
 bytemuck = { version = "1.16.1", features = ["derive"] }
@@ -22,6 +23,7 @@ glyphon = { git = "https://github.com/grovesNL/glyphon.git", optional = true }
 pin-project = "1.1.5"
 pollster = "0.3.0"
 seq-macro = "0.3.5"
+serde = { version = "1.0.204", features = ["derive"], optional = true }
 slotmap = "1.0.7"
 vek = { version = "0.17.0", features = ["bytemuck"] }
 wgpu = { version = "0.20", default-features = false, features = ["wgsl"] }
@@ -40,3 +42,6 @@ strip = true      # Automatically strip symbols from the binary.
 lto = true
 codegen-units = 1
 opt-level = 's'
+
+[dev-dependencies]
+toml = "0.8.15"

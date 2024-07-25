@@ -13,6 +13,7 @@ impl UIFragment for () {
         AllocationInfo {
             buffer_size: 0,
             primitive_count: 0,
+            reactor_count: 0,
         }
     }
 }
@@ -37,6 +38,7 @@ where
         AllocationInfo {
             buffer_size: inner_alloc_info.buffer_size * N,
             primitive_count: inner_alloc_info.primitive_count * N,
+            reactor_count: inner_alloc_info.reactor_count * N,
         }
     }
 }
@@ -59,7 +61,34 @@ where
             offset.offset_by_allocation(&AllocationInfo {
                 buffer_size: inner_allocation_info.buffer_size,
                 primitive_count: inner_allocation_info.primitive_count,
+                reactor_count: inner_allocation_info.reactor_count,
             });
+        }
+    }
+}
+
+impl<T> UIFragment for Option<T>
+where
+    T: UIFragment,
+{
+    fn get_allocation_info() -> AllocationInfo {
+        T::get_allocation_info()
+    }
+}
+
+impl<T> UIFragmentLive for Option<T>
+where
+    T: UIFragment,
+{
+    fn splat_allocation(
+        &mut self,
+        allocation_offset: AllocationOffset,
+        render_module: &mut dyn RenderModule,
+        initial: bool,
+    ) {
+        match self {
+            Some(value) => value.splat_allocation(allocation_offset, render_module, initial),
+            None => T::splat_allocation_empty(allocation_offset, render_module, initial),
         }
     }
 }
@@ -79,8 +108,12 @@ where
                 allocation_info_err.buffer_size,
             ),
             primitive_count: Ord::max(
+                allocation_info_ok.primitive_count,
                 allocation_info_err.primitive_count,
-                allocation_info_err.primitive_count,
+            ),
+            reactor_count: Ord::max(
+                allocation_info_ok.reactor_count,
+                allocation_info_err.reactor_count,
             ),
         }
     }
@@ -127,6 +160,7 @@ where
         AllocationInfo {
             buffer_size: inner_alloc_info.buffer_size * N,
             primitive_count: inner_alloc_info.primitive_count * N,
+            reactor_count: inner_alloc_info.reactor_count * N,
         }
     }
 }
@@ -162,10 +196,12 @@ macro_rules! tuple_impls {
                         AllocationInfo {
                             buffer_size: 0,
                             primitive_count: 0,
+                            reactor_count: 0,
                         },
                         |acc, fragment| AllocationInfo {
                             buffer_size: acc.buffer_size + fragment.buffer_size,
                             primitive_count: acc.primitive_count + fragment.primitive_count,
+                            reactor_count: acc.reactor_count + fragment.reactor_count,
                         },
                     )
             }

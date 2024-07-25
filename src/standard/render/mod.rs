@@ -6,13 +6,38 @@ use crate::{
     reaction::Reactor,
     render_module::{IntoRenderModule, RenderModule},
 };
-use futures_signals::signal::{Signal, SignalExt as _};
+use futures_signals::signal::{Mutable, Signal, SignalExt as _};
 use tuple_render_module::TupleRenderModule;
 use wgpu::{util::DeviceExt as _, BufferUsages};
 pub mod tuple_render_module;
 
 pub trait UIFragment: UIFragmentLive + Send {
     fn get_allocation_info() -> AllocationInfo;
+
+    /// Allocates on a render module space for this fragment, but with dummy elements inside.
+    /// TODO: Allocate interactors, reactors and submodules.
+    fn splat_allocation_empty(
+        allocation_offset: AllocationOffset,
+        render_module: &mut dyn RenderModule,
+        initial: bool,
+    ) {
+        let info = Self::get_allocation_info();
+        if initial {
+            for i in 0..info.primitive_count {
+                render_module.primitive_buffer().push(Primitive::default())
+            }
+            for i in 0..info.reactor_count {
+                let mut inner_offset = allocation_offset;
+                inner_offset.reactor_buffer_offset += 1;
+                render_module.reactors().push(None)
+            }
+        } else {
+            for i in 0..info.primitive_count {
+                render_module.primitive_buffer()[allocation_offset.primitive_buffer_offset + i] =
+                    Primitive::default()
+            }
+        }
+    }
 }
 
 pub trait UIFragmentLive: Send {
@@ -28,6 +53,7 @@ pub trait UIFragmentLive: Send {
 pub struct AllocationInfo {
     pub buffer_size: usize,
     pub primitive_count: usize,
+    pub reactor_count: usize,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -45,7 +71,8 @@ impl AllocationOffset {
     }
 
     pub fn offset_by_allocation(&mut self, allocation: &AllocationInfo) {
-        self.primitive_buffer_offset += allocation.primitive_count
+        self.primitive_buffer_offset += allocation.primitive_count;
+        self.reactor_buffer_offset += allocation.reactor_count;
     }
 }
 

@@ -1,22 +1,24 @@
-use vek::Aabr;
+use vek::{Extent2, Rect};
 
 use crate::standard::render::UIFragment;
 
-pub struct ReshapableFragment<T, F>
+/// A UI Fragment that can be reshaped by a parent.
+#[derive(Clone)]
+pub struct ResizableItem<T, F>
 where
-    T: UIFragment,
-    F: FnOnce(Aabr<i32>) -> T,
+    T: UIFragment + 'static,
+    F: 'static + Fn(Rect<f32, f32>) -> T,
 {
-    min_size: (i32, i32),
+    min_size: Extent2<f32>,
     factory: F,
 }
 
-impl<T, F> ReshapableFragment<T, F>
+impl<T, F> ResizableItem<T, F>
 where
-    T: UIFragment,
-    F: FnOnce(Aabr<i32>) -> T,
+    T: UIFragment + 'static,
+    F: 'static + Fn(Rect<f32, f32>) -> T,
 {
-    pub fn new(min_size: (i32, i32), factory: F) -> Self {
+    pub fn new(min_size: Extent2<f32>, factory: F) -> Self {
         Self { min_size, factory }
     }
 }
@@ -25,20 +27,24 @@ where
 /// It delays the production of AABBs so that we can do layouting on it,
 /// while still providing some internal hints such as its minimum size.
 pub trait LayoutItem {
-    fn get_natural_size(&self) -> (i32, i32);
-    fn bake(self, aabb: Aabr<i32>) -> impl UIFragment;
+    type BakeResult: UIFragment;
+    fn get_natural_size(&self) -> Extent2<f32>;
+    fn bake(&self, rect: Rect<f32, f32>) -> Self::BakeResult;
 }
 
-impl<T, F> LayoutItem for ReshapableFragment<T, F>
+impl<T, F> LayoutItem for ResizableItem<T, F>
 where
-    T: UIFragment,
-    F: FnOnce(Aabr<i32>) -> T,
+    T: UIFragment + 'static,
+    F: (Fn(Rect<f32, f32>) -> T) + 'static,
 {
-    fn get_natural_size(&self) -> (i32, i32) {
+    type BakeResult = T;
+
+    fn get_natural_size(&self) -> Extent2<f32> {
         self.min_size
     }
 
-    fn bake(self, aabb: Aabr<i32>) -> impl UIFragment {
-        (self.factory)(aabb)
+    fn bake(&self, rect: Rect<f32, f32>) -> T {
+        let val: T = (self.factory)(rect);
+        val
     }
 }

@@ -1,20 +1,21 @@
 use super::InteractorNode;
 use futures_signals::signal::{Mutable, MutableSignal};
-use vek::{Aabr, Vec2};
+use vek::{Aabr, Rect, Vec2};
 use winit::event::MouseButton;
 
+#[derive(Clone)]
 pub struct TapInteraction {
     tap: Mutable<Option<()>>,
     cursor_inside_bounds: bool,
-    pub aabb: Aabr<i32>,
+    pub aabr: Aabr<f32>,
 }
 
 impl TapInteraction {
-    pub fn new(aabb: Aabr<i32>) -> Self {
+    pub fn new(rect: Rect<f32, f32>) -> Self {
         Self {
             tap: Mutable::new(None),
             cursor_inside_bounds: false,
-            aabb,
+            aabr: rect.into_aabr(),
         }
     }
 
@@ -31,8 +32,8 @@ impl InteractorNode for TapInteraction {
                 device_id,
                 position,
             } => {
-                let position = Vec2::new(position.x as i32, position.y as i32);
-                self.cursor_inside_bounds = self.aabb.contains_point(position);
+                let position = Vec2::new(position.x as f32, position.y as f32);
+                self.cursor_inside_bounds = self.aabr.contains_point(position);
                 false
             }
             winit::event::WindowEvent::MouseInput {

@@ -15,7 +15,8 @@ use vek::{Aabr, Vec2};
 use wgpu::MultisampleState;
 
 pub struct TextRenderModule<'window> {
-    reactors: Vec<Reactor>,
+    initial: bool,
+    reactors: Vec<Option<Reactor>>,
     primitive_buffer_cpu: Vec<Primitive>,
     interactors: Vec<Box<dyn InteractorNode>>,
     text_areas: Vec<TextArea>,
@@ -115,6 +116,7 @@ where
         let text_areas = vec![text_area];
 
         Box::new(TextRenderModule {
+            initial: true,
             text_areas,
             text_renderer,
             render_stuff,
@@ -130,6 +132,14 @@ where
 }
 
 impl<'window> RenderModule for TextRenderModule<'window> {
+    fn initial(&self) -> bool {
+        self.initial
+    }
+
+    fn set_setup_finished(&mut self) {
+        self.initial = false;
+    }
+
     fn create_render_frame(&self) -> (wgpu::SurfaceTexture, wgpu::TextureView) {
         let surface_texture = self
             .render_stuff
@@ -215,7 +225,7 @@ impl<'window> RenderModule for TextRenderModule<'window> {
         queue.submit(Some(encoder.finish()));
     }
 
-    fn reactors(&mut self) -> &mut Vec<crate::reaction::Reactor> {
+    fn reactors(&mut self) -> &mut Vec<Option<Reactor>> {
         &mut self.reactors
     }
 

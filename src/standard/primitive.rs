@@ -44,6 +44,7 @@ impl UIFragment for Primitive {
         AllocationInfo {
             buffer_size: size_of::<Self>(),
             primitive_count: 1,
+            reactor_count: 0,
         }
     }
 }

@@ -3,6 +3,8 @@ pub mod reactivity_processing;
 use crate::{interaction::InteractorNode, prelude::Primitive, reaction::Reactor};
 
 pub trait RenderModule: Send {
+    fn initial(&self) -> bool;
+    fn set_setup_finished(&mut self);
     fn create_render_frame(&self) -> (wgpu::SurfaceTexture, wgpu::TextureView);
     fn resize(
         &mut self,
@@ -21,7 +23,7 @@ pub trait RenderModule: Send {
         render_pass: &mut wgpu::RenderPass<'pass>,
     );
     fn present(&self, queue: &wgpu::Queue, encoder: wgpu::CommandEncoder);
-    fn reactors(&mut self) -> &mut Vec<Reactor>;
+    fn reactors(&mut self) -> &mut Vec<Option<Reactor>>;
     fn primitive_buffer(&mut self) -> &mut Vec<Primitive>;
     fn interactors(&mut self) -> &mut Vec<Box<dyn InteractorNode>>;
 }

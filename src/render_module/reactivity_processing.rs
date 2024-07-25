@@ -45,27 +45,32 @@ impl Signal for ReactorProcessor {
             .lock()
             .expect("Could not lock Render Module to poll reactors.");
 
-        for reactor in render_module.reactors().iter_mut() {
-            match reactor.poll_change_unpin(cx) {
-                Poll::Ready(opt) => match opt {
-                    Some(mut value) => {
-                        value.splat_allocation(
-                            reactor.allocation_offset,
-                            render_module.as_mut(),
-                            false,
-                        );
-                        drop(render_module);
-                        self.dirty = true;
-                        return Poll::Ready(Some(ReactorProcessorEvent::DoNothing));
+        let initial = render_module.initial();
+
+        for reactor_opt in render_module.reactors().iter_mut() {
+            if let Some(reactor) = reactor_opt {
+                match reactor.poll_change_unpin(cx) {
+                    Poll::Ready(opt) => match opt {
+                        Some(mut value) => {
+                            value.splat_allocation(
+                                reactor.allocation_offset,
+                                render_module.as_mut(),
+                                false,
+                            );
+                            drop(render_module);
+                            self.dirty = true;
+                            return Poll::Ready(Some(ReactorProcessorEvent::DoNothing));
+                        }
+                        None => (),
+                    },
+                    Poll::Pending => {
+                        any_pending = true;
                     }
-                    None => (),
-                },
-                Poll::Pending => {
-                    any_pending = true;
                 }
             }
         }
 
+        render_module.set_setup_finished();
         drop(render_module);
 
         // TODO: I have no idea if this works, to be honest, but the idea is that

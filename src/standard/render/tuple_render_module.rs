@@ -15,7 +15,8 @@ use wgpu::RenderPipeline;
 use winit::dpi::PhysicalSize;
 
 pub struct TupleRenderModule<'window> {
-    pub reactors: Vec<Reactor>,
+    pub initial: bool,
+    pub reactors: Vec<Option<Reactor>>,
     pub interactors: Vec<Box<dyn InteractorNode>>,
     pub primitive_count: u32,
     pub primitive_buffer_cpu: Vec<Primitive>,
@@ -58,7 +59,11 @@ impl<'window> TupleRenderModule<'window> {
         render_pipeline: RenderModulePipeline<'window>,
     ) -> Self {
         let tuple_render_module = Self {
-            reactors,
+            initial: true,
+            reactors: reactors
+                .into_iter()
+                .map(|reactor| Some(reactor))
+                .collect::<Vec<_>>(),
             interactors: vec![],
             primitive_count,
             primitive_buffer_cpu,
@@ -79,6 +84,14 @@ impl<'window> TupleRenderModule<'window> {
 }
 
 impl<'window> RenderModule for TupleRenderModule<'window> {
+    fn initial(&self) -> bool {
+        self.initial
+    }
+
+    fn set_setup_finished(&mut self) {
+        self.initial = false;
+    }
+
     fn create_render_frame(&self) -> (wgpu::SurfaceTexture, wgpu::TextureView) {
         let surface_texture = self
             .render_pipeline
@@ -151,7 +164,7 @@ impl<'window> RenderModule for TupleRenderModule<'window> {
         queue.submit(Some(command_encoder.finish()));
     }
 
-    fn reactors(&mut self) -> &mut Vec<Reactor> {
+    fn reactors(&mut self) -> &mut Vec<Option<Reactor>> {
         &mut self.reactors
     }
 

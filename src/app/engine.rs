@@ -3,9 +3,10 @@ use crate::render_module::{
     IntoRenderModule, RenderModule,
 };
 use futures::{FutureExt, StreamExt};
-use futures_signals::signal::SignalExt;
+use futures_signals::signal::{Mutable, SignalExt};
 use pollster::FutureExt as _;
 use std::sync::{Arc, Mutex, RwLock};
+use vek::Extent2;
 use winit::{dpi::PhysicalSize, window::Window};
 
 const DEFAULT_CLEAR_COLOR: wgpu::Color = wgpu::Color {
@@ -24,11 +25,16 @@ pub struct UIEngine {
     queue: wgpu::Queue,
     adapter: wgpu::Adapter,
 
+    pub window_size_state: Mutable<Extent2<f32>>,
     pub window: std::sync::Arc<Window>,
 }
 
 impl UIEngine {
-    pub fn new<I>(window: Window, root_render_fragment: I) -> Arc<Mutex<Self>>
+    pub fn new<I>(
+        window: Window,
+        window_size_state: Mutable<Extent2<f32>>,
+        root_render_fragment: I,
+    ) -> Arc<Mutex<Self>>
     where
         I: IntoRenderModule,
     {
@@ -61,6 +67,7 @@ impl UIEngine {
             current_pipeline_id: None,
             root_render_module: None,
             window,
+            window_size_state,
             instance,
             device,
             queue,
@@ -114,6 +121,9 @@ impl UIEngine {
     }
 
     pub fn handle_resize(&mut self, new_size: PhysicalSize<u32>) {
+        self.window_size_state
+            .set(Extent2::new(new_size.width as f32, new_size.height as f32));
+
         if let Some(root_render_module) = &mut self.root_render_module {
             let mut root_render_module = root_render_module
                 .lock()

@@ -59,8 +59,8 @@ where
     T: UIFragment + 'static,
 {
     fn get_allocation_info() -> crate::standard::render::AllocationInfo {
-        let base_info = T::get_allocation_info();
-        // TODO: Need to allocate a reactor, too, duh!
+        let mut base_info = T::get_allocation_info();
+        base_info.reactor_count += 1;
         base_info
     }
 }
@@ -76,27 +76,27 @@ where
         render_module: &mut dyn RenderModule,
         initial: bool,
     ) {
-        // TODO: This is awful... I wonder if I can rewrite this to remove the indirection.
+        // TODO: I wonder if I can remove this indirection?
         let dyn_signal: Pin<Box<dyn Signal<Item = Box<dyn UIFragmentLive>> + Send>> = Box::pin(
             self.0
                 .take()
                 .unwrap()
                 .map(|fragment| Box::new(fragment) as Box<dyn UIFragmentLive>),
         );
+        let mut inner_offset = allocation_offset;
+        inner_offset.reactor_buffer_offset += 1;
+
         let reactor = Reactor {
-            allocation_offset,
+            allocation_offset: inner_offset,
             signal: dyn_signal,
         };
-        let base_info = T::get_allocation_info();
 
-        if render_module.primitive_buffer().len() == allocation_offset.primitive_buffer_offset {
-            render_module.reactors().push(reactor);
-            // Fill the primitive buffer with some dummy primitives.
-            for i in 0..base_info.primitive_count {
-                render_module.primitive_buffer().push(Primitive::default())
-            }
+        dbg!(initial, allocation_offset);
+        if initial {
+            render_module.reactors().push(Some(reactor));
+            T::splat_allocation_empty(inner_offset, render_module, initial)
         } else {
-            render_module.reactors()[allocation_offset.reactor_buffer_offset] = reactor;
+            render_module.reactors()[allocation_offset.reactor_buffer_offset] = Some(reactor);
         }
     }
 }

@@ -36,6 +36,7 @@ where
         AllocationInfo {
             buffer_size: 0,
             primitive_count: 0,
+            reactor_count: 0,
         }
     }
 }

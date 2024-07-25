@@ -1,0 +1,9 @@
+project_name = "Untitled"
+
+[[todos]]
+text = "Do dishes!"
+done = false
+
+[[todos]]
+text = "Say hi to benichi!"
+done = false

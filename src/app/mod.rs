@@ -1,16 +1,22 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 
-use crate::render_module::IntoRenderModule;
+use crate::{
+    prelude::{Primitive, SignalReactExt},
+    render_module::IntoRenderModule,
+    standard::layout::item::LayoutItem,
+};
 use engine::UIEngine;
+use futures_signals::signal::{Mutable, SignalExt};
+use vek::Extent2;
 use winit::{
-    application::ApplicationHandler, event::WindowEvent,
+    application::ApplicationHandler, dpi::PhysicalSize, event::WindowEvent,
     platform::wayland::WindowAttributesExtWayland, window::WindowAttributes,
 };
 pub mod engine;
 
 /// App builder, receives an UI fragment with the entirety of your app.
-pub struct AppBuilder<I: IntoRenderModule> {
-    root_render_fragment: Option<I>,
+pub struct AppBuilder<I: LayoutItem> {
+    root_item: Option<I>,
     event_loop: Option<winit::event_loop::EventLoop<()>>,
     window: Option<winit::window::Window>,
     window_attributes: Option<WindowAttributes>,
@@ -23,13 +29,13 @@ pub struct RunningApp {
 }
 
 /// TODO: PRovide methods to bind to an existing Event Loop or window.
-impl<I: IntoRenderModule> AppBuilder<I> {
+impl<I: LayoutItem + Send + 'static> AppBuilder<I> {
     // Creates a new app.
     // For cross-platform compatibility, this should be called in the main thread,
     // and only once in your program.
     pub fn new(root_fragment: I) -> Self {
         Self {
-            root_render_fragment: Some(root_fragment),
+            root_item: Some(root_fragment),
             event_loop: None,
             window: None,
             running_app: None,
@@ -55,7 +61,7 @@ impl<I: IntoRenderModule> AppBuilder<I> {
     }
 
     fn build(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        let window = self.window.take().unwrap_or_else(|| {
+        let mut window = self.window.take().unwrap_or_else(|| {
             event_loop
                 .create_window(self.window_attributes.take().unwrap_or_else(|| {
                     winit::window::WindowAttributes::default()
@@ -67,14 +73,34 @@ impl<I: IntoRenderModule> AppBuilder<I> {
                 .unwrap()
         });
 
-        let root_render_fragment = self.root_render_fragment.take().unwrap();
-        let engine = UIEngine::new(window, root_render_fragment);
+        let root_item = self.root_item.take().expect("No root item? What?");
+
+        let window_min_size = root_item.get_natural_size();
+        window.set_min_inner_size(Some(PhysicalSize::new(
+            window_min_size.w,
+            window_min_size.h,
+        )));
+
+        let window_size_state = Mutable::new(Extent2::new(
+            window.inner_size().width as f32,
+            window.inner_size().height as f32,
+        ));
+        let root_item = window_size_state
+            .signal()
+            .map(move |window_size| {
+                let fragment =
+                    root_item.bake(vek::Rect::new(0.0, 0.0, window_size.w, window_size.h));
+                fragment
+            })
+            .into_fragment();
+
+        let engine = UIEngine::new(window, window_size_state, root_item);
 
         self.running_app = Some(RunningApp { engine });
     }
 }
 
-impl<I: IntoRenderModule> ApplicationHandler for AppBuilder<I> {
+impl<I: LayoutItem + Send + 'static> ApplicationHandler for AppBuilder<I> {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         self.build(event_loop);
     }
