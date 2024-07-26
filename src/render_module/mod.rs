@@ -25,7 +25,7 @@ pub trait RenderModule: Send {
     fn present(&self, queue: &wgpu::Queue, encoder: wgpu::CommandEncoder);
     fn reactors(&mut self) -> &mut Vec<Option<Reactor>>;
     fn primitive_buffer(&mut self) -> &mut Vec<Primitive>;
-    fn interactors(&mut self) -> &mut Vec<Box<dyn InteractorNode>>;
+    fn interactors(&mut self) -> &mut Vec<Option<Box<dyn InteractorNode>>>;
 }
 
 pub trait IntoRenderModule {

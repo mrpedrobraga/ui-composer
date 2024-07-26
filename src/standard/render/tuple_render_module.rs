@@ -17,7 +17,7 @@ use winit::dpi::PhysicalSize;
 pub struct TupleRenderModule<'window> {
     pub initial: bool,
     pub reactors: Vec<Option<Reactor>>,
-    pub interactors: Vec<Box<dyn InteractorNode>>,
+    pub interactors: Vec<Option<Box<dyn InteractorNode>>>,
     pub primitive_count: u32,
     pub primitive_buffer_cpu: Vec<Primitive>,
     pub primitive_buffer: wgpu::Buffer,
@@ -122,7 +122,9 @@ impl<'window> RenderModule for TupleRenderModule<'window> {
     fn handle_event(&mut self, event: winit::event::WindowEvent) -> bool {
         let any_handled = false;
         for interactor in self.interactors().iter_mut() {
-            interactor.handle_event(event.clone());
+            if let Some(interactor) = interactor {
+                interactor.handle_event(event.clone());
+            }
         }
         return any_handled;
     }
@@ -172,7 +174,7 @@ impl<'window> RenderModule for TupleRenderModule<'window> {
         &mut self.primitive_buffer_cpu
     }
 
-    fn interactors(&mut self) -> &mut Vec<Box<dyn InteractorNode>> {
+    fn interactors(&mut self) -> &mut Vec<Option<Box<dyn InteractorNode>>> {
         &mut self.interactors
     }
 }

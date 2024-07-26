@@ -45,6 +45,7 @@ impl UIFragment for Primitive {
             buffer_size: size_of::<Self>(),
             primitive_count: 1,
             reactor_count: 0,
+            interactor_count: 0,
         }
     }
 }

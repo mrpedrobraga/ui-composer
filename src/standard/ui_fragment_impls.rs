@@ -14,6 +14,7 @@ impl UIFragment for () {
             buffer_size: 0,
             primitive_count: 0,
             reactor_count: 0,
+            interactor_count: 0,
         }
     }
 }
@@ -39,6 +40,7 @@ where
             buffer_size: inner_alloc_info.buffer_size * N,
             primitive_count: inner_alloc_info.primitive_count * N,
             reactor_count: inner_alloc_info.reactor_count * N,
+            interactor_count: inner_alloc_info.interactor_count * N,
         }
     }
 }
@@ -62,6 +64,7 @@ where
                 buffer_size: inner_allocation_info.buffer_size,
                 primitive_count: inner_allocation_info.primitive_count,
                 reactor_count: inner_allocation_info.reactor_count,
+                interactor_count: inner_allocation_info.reactor_count,
             });
         }
     }
@@ -115,6 +118,10 @@ where
                 allocation_info_ok.reactor_count,
                 allocation_info_err.reactor_count,
             ),
+            interactor_count: Ord::max(
+                allocation_info_ok.interactor_count,
+                allocation_info_err.interactor_count,
+            ),
         }
     }
 }
@@ -161,6 +168,7 @@ where
             buffer_size: inner_alloc_info.buffer_size * N,
             primitive_count: inner_alloc_info.primitive_count * N,
             reactor_count: inner_alloc_info.reactor_count * N,
+            interactor_count: inner_alloc_info.reactor_count * N,
         }
     }
 }
@@ -197,11 +205,13 @@ macro_rules! tuple_impls {
                             buffer_size: 0,
                             primitive_count: 0,
                             reactor_count: 0,
+                            interactor_count: 0,
                         },
                         |acc, fragment| AllocationInfo {
                             buffer_size: acc.buffer_size + fragment.buffer_size,
                             primitive_count: acc.primitive_count + fragment.primitive_count,
                             reactor_count: acc.reactor_count + fragment.reactor_count,
+                            interactor_count: acc.interactor_count + fragment.interactor_count,
                         },
                     )
             }

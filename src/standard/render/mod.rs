@@ -31,10 +31,19 @@ pub trait UIFragment: UIFragmentLive + Send {
                 inner_offset.reactor_buffer_offset += 1;
                 render_module.reactors().push(None)
             }
+            for i in 0..info.interactor_count {
+                render_module.interactors().push(None)
+            }
         } else {
             for i in 0..info.primitive_count {
                 render_module.primitive_buffer()[allocation_offset.primitive_buffer_offset + i] =
                     Primitive::default()
+            }
+            for i in 0..info.reactor_count {
+                render_module.reactors()[allocation_offset.reactor_buffer_offset] = None
+            }
+            for i in 0..info.interactor_count {
+                render_module.interactors()[allocation_offset.interactor_buffer_offset] = None
             }
         }
     }
@@ -53,6 +62,7 @@ pub trait UIFragmentLive: Send {
 pub struct AllocationInfo {
     pub buffer_size: usize,
     pub primitive_count: usize,
+    pub interactor_count: usize,
     pub reactor_count: usize,
 }
 
@@ -60,6 +70,7 @@ pub struct AllocationInfo {
 pub struct AllocationOffset {
     pub primitive_buffer_offset: usize,
     pub reactor_buffer_offset: usize,
+    pub interactor_buffer_offset: usize,
 }
 
 impl AllocationOffset {
@@ -67,6 +78,7 @@ impl AllocationOffset {
         Self {
             primitive_buffer_offset: 0,
             reactor_buffer_offset: 0,
+            interactor_buffer_offset: 0,
         }
     }
 

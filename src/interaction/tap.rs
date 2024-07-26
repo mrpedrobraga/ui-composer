@@ -1,5 +1,5 @@
 use super::InteractorNode;
-use futures_signals::signal::{Mutable, MutableSignal};
+use futures_signals::signal::{FilterMap, Mutable, MutableSignal, Signal, SignalExt};
 use vek::{Aabr, Rect, Vec2};
 use winit::event::MouseButton;
 

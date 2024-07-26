@@ -91,7 +91,6 @@ where
             signal: dyn_signal,
         };
 
-        dbg!(initial, allocation_offset);
         if initial {
             render_module.reactors().push(Some(reactor));
             T::splat_allocation_empty(inner_offset, render_module, initial)

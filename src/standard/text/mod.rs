@@ -18,7 +18,7 @@ pub struct TextRenderModule<'window> {
     initial: bool,
     reactors: Vec<Option<Reactor>>,
     primitive_buffer_cpu: Vec<Primitive>,
-    interactors: Vec<Box<dyn InteractorNode>>,
+    interactors: Vec<Option<Box<dyn InteractorNode>>>,
     text_areas: Vec<TextArea>,
     text_renderer: TextRenderer,
     font_system: FontSystem,
@@ -233,7 +233,7 @@ impl<'window> RenderModule for TextRenderModule<'window> {
         &mut self.primitive_buffer_cpu
     }
 
-    fn interactors(&mut self) -> &mut Vec<Box<dyn InteractorNode>> {
+    fn interactors(&mut self) -> &mut Vec<Option<Box<dyn InteractorNode>>> {
         &mut self.interactors
     }
 }

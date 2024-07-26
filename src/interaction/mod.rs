@@ -37,6 +37,7 @@ where
             buffer_size: 0,
             primitive_count: 0,
             reactor_count: 0,
+            interactor_count: 1,
         }
     }
 }
@@ -51,7 +52,14 @@ where
         render_module: &mut dyn RenderModule,
         initial: bool,
     ) {
-        render_module.interactors().push(Box::new(self.clone()));
+        if initial {
+            render_module
+                .interactors()
+                .push(Some(Box::new(self.clone())));
+        } else {
+            render_module.interactors()[allocation_offset.interactor_buffer_offset] =
+                Some(Box::new(self.clone()))
+        }
     }
 }
 

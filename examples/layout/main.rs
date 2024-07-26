@@ -23,21 +23,27 @@ fn main() {
 }
 
 fn App(state: Editable<bool>) -> impl LayoutItem {
-    ResizableItem::new(Extent2::new(200.0, 200.0), move |rect| {
-        Primitive::rect(rect.expand_radius(300.0), Rgb::new(1.0, 1.0, 1.0))
+    Center(Checkbox(state))
+}
+
+fn Center<I: LayoutItem + 'static>(item: I) -> impl LayoutItem {
+    ResizableItem::new(Extent2::default(), move |rect| {
+        let extents = item.get_natural_size();
+        let position = rect.center() - extents / 2.0;
+        item.bake(Rect::new(position.x, position.y, extents.w, extents.h))
     })
 }
 
 fn Checkbox(state: Editable<bool>) -> impl LayoutItem {
     return ResizableItem::new(Extent2::new(32.0, 32.0), move |rect| {
-        let rect = rect.expand_radius(-16.0);
-
         let tap_interaction = TapInteraction::new(rect);
         let tap_clone = tap_interaction.clone();
         let state_clone = state.clone();
         std::thread::spawn(move || {
-            pollster::block_on(tap_clone.get_signal().for_each(move |_| {
-                state_clone.set(!state_clone.get());
+            pollster::block_on(tap_clone.get_signal().for_each(move |what| {
+                if what.is_some() {
+                    state_clone.set(!state_clone.get());
+                }
                 async {}
             }))
         });
