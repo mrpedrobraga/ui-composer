@@ -23,8 +23,11 @@ pub trait RenderModule: Send {
         render_pass: &mut wgpu::RenderPass<'pass>,
     );
     fn present(&self, queue: &wgpu::Queue, encoder: wgpu::CommandEncoder);
+
+    ///TODO: Make the type signature perhaps not use Option?
     fn reactors(&mut self) -> &mut Vec<Option<Reactor>>;
     fn primitive_buffer(&mut self) -> &mut Vec<Primitive>;
+    ///TODO: Get rid of the Option? Maybe perhaps even the Box<dyn InteractorNode>?
     fn interactors(&mut self) -> &mut Vec<Option<Box<dyn InteractorNode>>>;
 }
 
