@@ -80,15 +80,17 @@ impl UIEngine {
     }
 
     pub fn handle_window_event(&mut self, event: winit::event::WindowEvent) {
-        unimplemented!()
+        // TODO: Handle these lmao!
     }
 
     pub fn handle_resize(&mut self, new_size: PhysicalSize<u32>) {
+        // This resizes the layout items composing the ui tree,
+        // since in `App::build` the layout item is baked with the window state.
         self.window_state
             .window_size
             .set(Extent2::new(new_size.width as f32, new_size.height as f32));
 
-        unimplemented!()
+        // TODO: Resize the main render target.
     }
 
     pub fn request_redraw(&mut self) {
@@ -103,25 +105,25 @@ impl UIEngine {
                     label: Some("Command Encoder"),
                 });
 
-        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: None,
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: todo!(),
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(DEFAULT_CLEAR_COLOR),
-                    store: wgpu::StoreOp::Store,
-                },
-            })],
-            depth_stencil_attachment: None,
-            timestamp_writes: None,
-            occlusion_query_set: None,
-        });
+        // let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        //     label: None,
+        //     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+        //         view: todo!(),
+        //         resolve_target: None,
+        //         ops: wgpu::Operations {
+        //             load: wgpu::LoadOp::Clear(DEFAULT_CLEAR_COLOR),
+        //             store: wgpu::StoreOp::Store,
+        //         },
+        //     })],
+        //     depth_stencil_attachment: None,
+        //     timestamp_writes: None,
+        //     occlusion_query_set: None,
+        // });
 
-        {
-            // TODO: Draw stuff onto render pass!
-        }
-        drop(render_pass);
+        // {
+        //      TODO: Draw stuff onto render pass!
+        // }
+        // drop(render_pass);
 
         // TODO: Present the frame, in the case of a window redraw!
     }

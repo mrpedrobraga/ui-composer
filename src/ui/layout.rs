@@ -11,3 +11,37 @@ pub trait LayoutItem {
 
     fn bake(&self, rect: Rect<f32, f32>) -> Self::UINodeType;
 }
+
+pub struct Resizable<F, T>
+where
+    F: Fn(Rect<f32, f32>) -> T,
+{
+    min_size: Extent2<f32>,
+    factory: F,
+}
+
+impl<F, T> Resizable<F, T>
+where
+    F: Fn(Rect<f32, f32>) -> T,
+    T: UINode,
+{
+    pub fn new(min_size: Extent2<f32>, factory: F) -> Self {
+        Self { min_size, factory }
+    }
+}
+
+impl<F, T> LayoutItem for Resizable<F, T>
+where
+    F: Fn(Rect<f32, f32>) -> T,
+    T: UINode,
+{
+    type UINodeType = T;
+
+    fn get_natural_size(&self) -> Extent2<f32> {
+        self.min_size
+    }
+
+    fn bake(&self, rect: Rect<f32, f32>) -> Self::UINodeType {
+        (self.factory)(rect)
+    }
+}
