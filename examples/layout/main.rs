@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 use std::ops::{Add, Sub};
 
+use futures::StreamExt as _;
 use ui_composer::{
     interaction::tap::TapInteraction,
     prelude::*,
@@ -40,10 +41,8 @@ fn Checkbox(state: Editable<bool>) -> impl LayoutItem {
         let tap_clone = tap_interaction.clone();
         let state_clone = state.clone();
         std::thread::spawn(move || {
-            pollster::block_on(tap_clone.get_signal().for_each(move |what| {
-                if what.is_some() {
-                    state_clone.set(!state_clone.get());
-                }
+            pollster::block_on(tap_clone.stream().for_each(move |_| {
+                state_clone.set(!state_clone.get());
                 async {}
             }))
         });

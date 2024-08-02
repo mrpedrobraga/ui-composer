@@ -1,4 +1,5 @@
 use super::InteractorNode;
+use futures::{Stream, StreamExt};
 use futures_signals::signal::{FilterMap, Mutable, MutableSignal, Signal, SignalExt};
 use vek::{Aabr, Rect, Vec2};
 use winit::event::MouseButton;
@@ -20,8 +21,11 @@ impl TapInteraction {
     }
 
     /// Returns a signal to the internal state of this node.
-    pub fn get_signal(&self) -> MutableSignal<Option<()>> {
-        self.tap.signal()
+    pub fn stream(&self) -> impl Stream {
+        self.tap
+            .signal()
+            .to_stream()
+            .filter_map(|f| async move { f })
     }
 }
 

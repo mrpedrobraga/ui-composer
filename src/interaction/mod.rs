@@ -57,6 +57,8 @@ where
                 .interactors()
                 .push(Some(Box::new(self.clone())));
         } else {
+            // TODO: A new heap allocation on each fucking reactive bound is madness.
+            //       Finding a way to make this
             render_module.interactors()[allocation_offset.interactor_buffer_offset] =
                 Some(Box::new(self.clone()))
         }
