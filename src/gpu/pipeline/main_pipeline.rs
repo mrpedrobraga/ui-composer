@@ -1,44 +1,29 @@
-use std::mem::size_of;
-
-use crate::app::engine::RenderTarget;
 use bytemuck::{Pod, Zeroable};
+use std::mem::size_of;
+use vek::Extent2;
 use wgpu::{util::DeviceExt as _, BufferAddress, BufferUsages};
 
-use super::{primitive::Primitive, render::tuple_render_module::RenderModulePipeline};
+use crate::{gpu::render_target::GPURenderTarget, ui::graphics::Primitive};
+
+pub struct MainRenderPipeline {
+    mesh_vertex_buffer: wgpu::Buffer,
+    mesh_index_buffer: wgpu::Buffer,
+    mesh_index_count: usize,
+    uniform_buffer: wgpu::Buffer,
+    uniform_bind_group: wgpu::BindGroup,
+}
 
 // Only generate a single render stack pipeline and share it across stacks.
-pub fn get_main_render_stack_pipeline<'a, 'window>(
-    window: std::sync::Arc<winit::window::Window>,
-    surface: wgpu::Surface<'window>,
+pub fn main_render_pipeline<'a>(
     adapter: &'a wgpu::Adapter,
     device: &'a wgpu::Device,
     queue: &'a wgpu::Queue,
-) -> RenderModulePipeline<'window> {
-    let surface_config = surface
-        .get_default_config(
-            &adapter,
-            window.inner_size().width,
-            window.inner_size().height,
-        )
-        .unwrap();
-    surface.configure(&device, &surface_config);
-
-    let render_target = RenderTarget {
-        size: window.inner_size(),
-        surface,
-        surface_config,
-    };
-
-    let swapchain_capabilities = render_target.surface.get_capabilities(&adapter);
-    let swapchain_format = swapchain_capabilities.formats[0];
-
-    let uniforms = StandardUniform {
-        world_to_wgpu_mat: world_to_wgpu_mat(window.inner_size()),
-    };
-
-    let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    render_target_opt: Option<GPURenderTarget>,
+) -> MainRenderPipeline {
+    let uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("Render Stack Uniform Buffer"),
-        contents: bytemuck::cast_slice(&[uniforms]),
+        size: std::mem::size_of::<Uniforms>() as u64,
+        mapped_at_creation: false,
         usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
     });
 
@@ -71,7 +56,7 @@ pub fn get_main_render_stack_pipeline<'a, 'window>(
         bind_group_layouts: &[&uniform_bind_group_layout],
         push_constant_ranges: &[],
     });
-    let shader = device.create_shader_module(wgpu::include_wgsl!("./standard-shader.wgsl"));
+    let shader = device.create_shader_module(wgpu::include_wgsl!("./main_shader.wgsl"));
     let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: None,
         layout: Some(&pipeline_layout),
@@ -85,7 +70,9 @@ pub fn get_main_render_stack_pipeline<'a, 'window>(
             module: &shader,
             entry_point: "fs_main",
             compilation_options: Default::default(),
-            targets: &[Some(swapchain_format.into())],
+            targets: &[
+                render_target_opt.map(|render_target| render_target.surface_config.format.into())
+            ],
         }),
         primitive: wgpu::PrimitiveState::default(),
         depth_stencil: None, // yet
@@ -93,28 +80,24 @@ pub fn get_main_render_stack_pipeline<'a, 'window>(
         multiview: None,
     });
 
-    let (vertices, indices) = get_quad_mesh();
+    let (vertices, indices) = quad_mesh();
 
-    let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    let mesh_vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: None,
         contents: bytemuck::cast_slice(&vertices[..]),
         usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
     });
 
-    let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    let mesh_index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: None,
         contents: bytemuck::cast_slice(&indices[..]),
         usage: BufferUsages::INDEX | BufferUsages::COPY_DST,
     });
 
-    RenderModulePipeline {
-        id: 0,
-        pipeline: render_pipeline,
-        vertex_buffer,
-        index_buffer,
-        index_count: indices.len() as u32,
-        render_texture: render_target,
-        uniforms,
+    MainRenderPipeline {
+        mesh_vertex_buffer,
+        mesh_index_buffer,
+        mesh_index_count: indices.len(),
         uniform_buffer,
         uniform_bind_group,
     }
@@ -158,19 +141,19 @@ impl Primitive {
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
-pub struct StandardUniform {
+pub struct Uniforms {
     world_to_wgpu_mat: [[f32; 4]; 4],
 }
 
-impl StandardUniform {
-    pub fn resize(&mut self, container_size: winit::dpi::PhysicalSize<u32>) {
+impl Uniforms {
+    pub fn resize(&mut self, container_size: Extent2<f32>) {
         self.world_to_wgpu_mat = world_to_wgpu_mat(container_size);
     }
 }
 
-fn world_to_wgpu_mat(window_size: winit::dpi::PhysicalSize<u32>) -> [[f32; 4]; 4] {
-    let ww = window_size.width as f32;
-    let wh = window_size.height as f32;
+fn world_to_wgpu_mat(window_size: Extent2<f32>) -> [[f32; 4]; 4] {
+    let ww = window_size.w as f32;
+    let wh = window_size.h as f32;
 
     return [
         [2.0 / ww, 0.0, 0.0, 0.0],
@@ -219,9 +202,9 @@ impl Vertex {
 /// *-------------*
 /// 1
 /// ```
-fn get_quad_mesh() -> (Vec<Vertex>, Vec<u32>) {
+const fn quad_mesh() -> ([Vertex; 4], [u32; 6]) {
     (
-        vec![
+        [
             Vertex {
                 position: [0.0, 0.0, 0.0],
                 color: [1.0, 0.0, 0.0],
@@ -239,6 +222,6 @@ fn get_quad_mesh() -> (Vec<Vertex>, Vec<u32>) {
                 color: [0.5, 0.5, 0.5],
             },
         ],
-        vec![0, 1, 2, 2, 3, 0],
+        [0, 1, 2, 2, 3, 0],
     )
 }

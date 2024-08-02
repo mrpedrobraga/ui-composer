@@ -1,20 +1,16 @@
-use std::sync::{Arc, Mutex, RwLock};
-
 use crate::{
-    prelude::{Primitive, SignalReactExt},
-    render_module::IntoRenderModule,
-    standard::layout::item::LayoutItem,
+    gpu::engine::{UIEngine, WindowState},
+    ui::{layout::LayoutItem, react::UISignalExt as _},
 };
-use engine::UIEngine;
 use futures_signals::signal::{Mutable, SignalExt};
+use std::sync::{Arc, Mutex, RwLock};
 use vek::Extent2;
 use winit::{
     application::ApplicationHandler, dpi::PhysicalSize, event::WindowEvent,
     platform::wayland::WindowAttributesExtWayland, window::WindowAttributes,
 };
-pub mod engine;
 
-/// App builder, receives an UI fragment with the entirety of your app.
+/// App builder, receives a layout item with the entirety of your app.
 pub struct AppBuilder<I: LayoutItem> {
     root_item: Option<I>,
     event_loop: Option<winit::event_loop::EventLoop<()>>,
@@ -81,20 +77,24 @@ impl<I: LayoutItem + Send + 'static> AppBuilder<I> {
             window_min_size.h,
         )));
 
-        let window_size_state = Mutable::new(Extent2::new(
-            window.inner_size().width as f32,
-            window.inner_size().height as f32,
-        ));
-        let root_item = window_size_state
+        let window_state = WindowState {
+            window_size: Mutable::new(Extent2::new(
+                window.inner_size().width as f32,
+                window.inner_size().height as f32,
+            )),
+        };
+
+        let root_item = window_state
+            .window_size
             .signal()
             .map(move |window_size| {
                 let fragment =
                     root_item.bake(vek::Rect::new(0.0, 0.0, window_size.w, window_size.h));
                 fragment
             })
-            .into_fragment();
+            .into_ui();
 
-        let engine = UIEngine::new(window, window_size_state, root_item);
+        let engine = UIEngine::new(Arc::new(window), window_state, root_item);
 
         self.running_app = Some(RunningApp { engine });
     }

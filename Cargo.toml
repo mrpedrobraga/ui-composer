@@ -8,8 +8,7 @@ name = "ui_composer"
 # crate-type = ["dylib"]
 
 [features]
-default = ["standard"]
-standard = ["text", "serde"]
+default = ["text", "serde"]
 text = ["dep:glyphon"]
 serde = ["dep:serde"]
 

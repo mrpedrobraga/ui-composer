@@ -1,11 +1,11 @@
-
 struct StandardUniform {
     world_to_wgpu_mat_x: vec4<f32>,
     world_to_wgpu_mat_y: vec4<f32>,
     world_to_wgpu_mat_z: vec4<f32>,
     world_to_wgpu_mat_w: vec4<f32>,
 };
-@group(0) @binding(0) // 1.
+
+@group(0) @binding(0)
 var<uniform> uniforms: StandardUniform;
 
 struct VertexInput {
@@ -53,8 +53,6 @@ fn vs_main(
     return out;
 }
 
-// Fragment shader
-
 @fragment
 fn fs_main(
     in: VertexOutput,
@@ -62,11 +60,7 @@ fn fs_main(
     return vec4<f32>(srgb_to_linear(in.color), 1.0);
 }
 
-// Function to convert sRGB color to linear RGB
 fn srgb_to_linear(color_srgb: vec3<f32>) -> vec3<f32> {
-    // Apply inverse gamma correction
     let color_linear = pow(color_srgb, vec3<f32>(2.2));
-
-    // Ensure the resulting linear RGB color values are clamped between 0 and 1
     return min(max(color_linear, vec3<f32>(0.0)), vec3<f32>(1.0));
 }
