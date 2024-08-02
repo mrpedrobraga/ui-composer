@@ -2,15 +2,28 @@ use futures_signals::signal::{Map, Signal};
 use pin_project::pin_project;
 use std::{mem::MaybeUninit, task::Poll};
 
-use super::node::UINode;
+use super::node::{LiveUINode, UINode};
 
 /// UI Node that reacts to a signal and updates part of the UI tree.
 pub struct React<S, T>
 where
     S: Signal<Item = T>,
-    T: UINode,
+    T: LiveUINode,
 {
     signal: Hold<S, T>,
+}
+
+impl<S, T> LiveUINode for React<S, T>
+where
+    S: Signal<Item = T>,
+    T: LiveUINode,
+{
+    fn handle_event(&mut self, event: super::node::UIEvent) -> bool {
+        // This should be safe if you process the React before sending any events...
+        // But maaaaybe I should change this MaybeUninit to an Option?
+        let inner = unsafe { self.signal.held_item.assume_init_mut() };
+        inner.handle_event(event)
+    }
 }
 
 impl<S, T> UINode for React<S, T>
@@ -25,7 +38,7 @@ pub trait UISignalExt: Signal {
     fn into_ui(self) -> React<Self, Self::Item>
     where
         Self: Sized,
-        Self::Item: UINode,
+        Self::Item: LiveUINode,
     {
         React {
             signal: Hold {

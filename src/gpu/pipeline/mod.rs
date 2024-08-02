@@ -4,4 +4,4 @@ pub mod main_pipeline;
 pub mod text_pipeline;
 
 /// A render pipeline for rendering on the GPU.
-pub trait RenderPipeline {}
+pub trait GPURenderPipeline {}

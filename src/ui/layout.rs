@@ -1,6 +1,6 @@
 use vek::{Extent2, Rect};
 
-use super::node::UINode;
+use super::node::{LiveUINode, UINode};
 
 /// An item that can be included in a layouting context.
 pub trait LayoutItem {
@@ -23,7 +23,7 @@ where
 impl<F, T> Resizable<F, T>
 where
     F: Fn(Rect<f32, f32>) -> T,
-    T: UINode,
+    T: LiveUINode,
 {
     pub fn new(min_size: Extent2<f32>, factory: F) -> Self {
         Self { min_size, factory }

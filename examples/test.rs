@@ -1,8 +1,6 @@
 #![allow(non_snake_case)]
-use ui_composer::{
-    app::AppBuilder,
-    ui::layout::{LayoutItem, Resizable},
-};
+
+use ui_composer::{app::AppBuilder, gpu::window::View, ui::layout::LayoutItem};
 use vek::Extent2;
 
 fn main() {
@@ -11,5 +9,5 @@ fn main() {
 }
 
 fn App() -> impl LayoutItem {
-    Resizable::new(Extent2::new(10.0, 10.0), |_| ())
+    View(Extent2::new(100.0, 100.0), ())
 }

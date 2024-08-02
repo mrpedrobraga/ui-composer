@@ -2,6 +2,8 @@ use bytemuck::{Pod, Zeroable};
 use std::mem::size_of;
 use vek::{Extent3, Mat4, Rect, Rgb};
 
+use super::node::{LiveUINode, UINode};
+
 /// A small fragment of graphics that can be sent to the GPU and rendered.
 /// You can compose several primitives to make more impressive graphics.
 #[repr(C)]
@@ -29,4 +31,14 @@ impl Default for Primitive {
             color: Default::default(),
         }
     }
+}
+
+impl LiveUINode for Primitive {
+    fn handle_event(&mut self, event: super::node::UIEvent) -> bool {
+        false
+    }
+}
+
+impl UINode for Primitive {
+    const PRIMITIVE_COUNT: usize = 1;
 }
