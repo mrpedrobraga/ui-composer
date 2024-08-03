@@ -1,9 +1,15 @@
 use crate::{
-    gpu::engine::{UIEngine, WindowState},
-    ui::{layout::LayoutItem, react::UISignalExt as _},
+    gpu::{
+        engine::{LiveNode, Node, UIEngine, UIEngineInterface},
+        window::WindowNode,
+    },
+    ui::{layout::LayoutItem, node::UINode, react::UISignalExt as _},
 };
 use futures_signals::signal::{Mutable, SignalExt};
-use std::sync::{Arc, Mutex, RwLock};
+use std::{
+    marker::PhantomData,
+    sync::{Arc, Mutex, RwLock},
+};
 use vek::Extent2;
 use winit::{
     application::ApplicationHandler, dpi::PhysicalSize, event::WindowEvent,
@@ -11,40 +17,30 @@ use winit::{
 };
 
 /// App builder, receives a layout item with the entirety of your app.
-pub struct AppBuilder<I: LayoutItem> {
-    root_item: Option<I>,
+pub struct AppBuilder<'app, N: LiveNode, W: Node<LiveType = N>> {
+    root_item: Option<W>,
     event_loop: Option<winit::event_loop::EventLoop<()>>,
-    window: Option<winit::window::Window>,
-    window_attributes: Option<WindowAttributes>,
-    running_app: Option<RunningApp>,
+    running_app: Option<RunningApp<N>>,
+    _marker: PhantomData<&'app ()>,
 }
 
 /// An app in execution (the ui fragment has been transformed into a [`RenderModule`]).
-pub struct RunningApp {
-    engine: Arc<Mutex<UIEngine>>,
+pub struct RunningApp<N: LiveNode> {
+    engine: Arc<Mutex<Box<dyn UIEngineInterface<RootNodeType = N>>>>,
 }
 
 /// TODO: PRovide methods to bind to an existing Event Loop or window.
-impl<I: LayoutItem + Send + 'static> AppBuilder<I> {
+impl<'app, N: LiveNode + 'static, W: Node<LiveType = N> + 'static> AppBuilder<'app, N, W> {
     // Creates a new app.
     // For cross-platform compatibility, this should be called in the main thread,
     // and only once in your program.
-    pub fn new(root_fragment: I) -> Self {
+    pub fn new(root_fragment: W) -> Self {
         Self {
             root_item: Some(root_fragment),
             event_loop: None,
-            window: None,
             running_app: None,
-            window_attributes: None,
+            _marker: PhantomData,
         }
-    }
-
-    pub fn with_window_attributes(
-        mut self,
-        window_attributes: winit::window::WindowAttributes,
-    ) -> Self {
-        self.window_attributes = Some(window_attributes);
-        self
     }
 
     pub fn run(mut self) {
@@ -57,50 +53,16 @@ impl<I: LayoutItem + Send + 'static> AppBuilder<I> {
     }
 
     fn build(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        let mut window = self.window.take().unwrap_or_else(|| {
-            event_loop
-                .create_window(self.window_attributes.take().unwrap_or_else(|| {
-                    winit::window::WindowAttributes::default()
-                        .with_inner_size(winit::dpi::LogicalSize::new(640, 640))
-                        .with_title("UI Composer App")
-                        .with_name("UI Composer App", "")
-                        .with_visible(true)
-                }))
-                .unwrap()
-        });
-
-        let root_item = self.root_item.take().expect("No root item? What?");
-
-        let window_min_size = root_item.get_natural_size();
-        window.set_min_inner_size(Some(PhysicalSize::new(
-            window_min_size.w,
-            window_min_size.h,
-        )));
-
-        let window_state = WindowState {
-            window_size: Mutable::new(Extent2::new(
-                window.inner_size().width as f32,
-                window.inner_size().height as f32,
-            )),
-        };
-
-        let root_item = window_state
-            .window_size
-            .signal()
-            .map(move |window_size| {
-                let fragment =
-                    root_item.bake(vek::Rect::new(0.0, 0.0, window_size.w, window_size.h));
-                fragment
-            })
-            .into_ui();
-
-        let engine = UIEngine::new(Arc::new(window), window_state, root_item);
-
-        self.running_app = Some(RunningApp { engine });
+        if let Some(root_item) = self.root_item.take() {
+            let engine = UIEngine::new(event_loop, root_item);
+            self.running_app = Some(RunningApp { engine });
+        }
     }
 }
 
-impl<I: LayoutItem + Send + 'static> ApplicationHandler for AppBuilder<I> {
+impl<'app, N: LiveNode + 'static, W: Node<LiveType = N> + 'static> ApplicationHandler
+    for AppBuilder<'app, N, W>
+{
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         self.build(event_loop);
     }
@@ -117,38 +79,19 @@ impl<I: LayoutItem + Send + 'static> ApplicationHandler for AppBuilder<I> {
     }
 }
 
-impl ApplicationHandler for RunningApp {
+impl<N: LiveNode> ApplicationHandler for RunningApp<N> {
     fn resumed(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {}
 
     fn window_event(
         &mut self,
         event_loop: &winit::event_loop::ActiveEventLoop,
-        _window_id: winit::window::WindowId,
+        window_id: winit::window::WindowId,
         event: WindowEvent,
     ) {
-        match event {
-            WindowEvent::CloseRequested => event_loop.exit(),
-            WindowEvent::Resized(new_size) => {
-                let mut engine = self
-                    .engine
-                    .lock()
-                    .expect("Could not lock Render Engine to resize");
-                engine.handle_resize(new_size);
-            }
-            WindowEvent::RedrawRequested => {
-                let mut engine = self
-                    .engine
-                    .lock()
-                    .expect("Could not lock Render Engine to request redraw");
-                engine.handle_redraw_requested()
-            }
-            _ => (),
-        }
-
         let mut engine = self
             .engine
             .lock()
             .expect("Could not lock Render Engine to pump window event");
-        engine.handle_window_event(event);
+        engine.handle_window_event(window_id, event);
     }
 }

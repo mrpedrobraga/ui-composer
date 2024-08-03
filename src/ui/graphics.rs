@@ -1,6 +1,6 @@
 use bytemuck::{Pod, Zeroable};
 use std::mem::size_of;
-use vek::{Extent3, Mat4, Rect, Rgb};
+use vek::{Aabr, Extent3, Mat4, Rect, Rgb, Vec2, Vec4};
 
 use super::node::{LiveUINode, UINode};
 
@@ -34,11 +34,19 @@ impl Default for Primitive {
 }
 
 impl LiveUINode for Primitive {
-    fn handle_event(&mut self, event: super::node::UIEvent) -> bool {
+    fn handle_ui_event(&mut self, event: super::node::UIEvent) -> bool {
         false
     }
 }
 
 impl UINode for Primitive {
     const PRIMITIVE_COUNT: usize = 1;
+
+    fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
+        // Beautifully calculating the bounds of this Primitive
+        // as a Rect!
+        let zero = self.transform * Vec4::zero();
+        let one = self.transform * Vec4::one();
+        Some(Rect::new(zero.x, zero.y, one.x - zero.x, one.y - zero.y))
+    }
 }

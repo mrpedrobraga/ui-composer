@@ -1,64 +1,90 @@
+use std::sync::Arc;
+
 use futures_signals::signal::{Mutable, Signal, SignalExt};
 use vek::{Extent2, Rect, Rgb};
+use winit::{
+    event_loop::{self, ActiveEventLoop},
+    window::{Window, WindowId},
+};
 
-use super::engine::WindowState;
+use super::{
+    engine::{GPUResources, LiveNode, Node},
+    render_target::WindowRenderTarget,
+    view::{View, ViewNode},
+};
 use crate::ui::{
     graphics::Primitive,
     layout::LayoutItem,
-    node::UINode,
+    node::{LiveUINode, UINode},
     react::{React, UISignalExt},
 };
 
 /// A node that describes the existence of a new window in the UI tree.
 pub struct WindowNode<T: UINode> {
+    attributes: WindowAttributes,
     state: WindowState,
-    view: ViewNode<T>,
-}
-
-/// A node that describes the existence of a View in the UI tree.
-///
-/// A "View" is a render indirection. Primitives will render to the view,
-/// and the view will render to its parent within the bounds of a certain rect.
-///
-/// There are two relevant Rects when it comes to Views. Since View is a LayoutItem,
-/// it will be rendered to a rect on its parent. But there's also a Rect that exists
-pub struct ViewNode<T: UINode> {
-    min_size: Extent2<f32>,
     content: T,
 }
 
-impl<T> LayoutItem for ViewNode<T>
+impl<T> Node for WindowNode<T>
 where
-    T: UINode,
+    T: UINode + 'static,
 {
-    type UINodeType = Primitive;
+    type LiveType = LiveWindowNode;
 
-    fn get_natural_size(&self) -> vek::Extent2<f32> {
-        self.min_size
-    }
+    /// Transforms a WindowNode descriptor into a live window node which can be really used!
+    fn reify(self, event_loop: &ActiveEventLoop, gpu_resources: GPUResources) -> Self::LiveType {
+        let window_default_size = Extent2::new(100, 100);
 
-    fn bake(&self, rect: Rect<f32, f32>) -> Self::UINodeType {
-        /// TODO: Bind this primitive to the texture that
-        /// the contents of the view render to.
-        Primitive::rect(rect, Rgb::new(0.0, 0.0, 0.0))
+        let window = event_loop
+            .create_window(
+                winit::window::WindowAttributes::default()
+                    .with_title(self.attributes.title.get_cloned()),
+            )
+            .expect("Couldn't reify window!");
+
+        let window = std::sync::Arc::new(window);
+
+        LiveWindowNode {
+            content: Box::new(self.content),
+            render_target: WindowRenderTarget::new(
+                gpu_resources,
+                window.clone(),
+                window_default_size,
+            ),
+            window,
+        }
     }
 }
 
-/// Creates a new view as the render target for the nodes inside.
-#[allow(non_snake_case)]
-pub fn View<T>(min_size: Extent2<f32>, item: T) -> ViewNode<impl UINode>
-where
-    T: UINode,
-{
-    ViewNode {
-        min_size,
-        content: item,
+/// A live window which contains a UI tree inside.
+pub struct LiveWindowNode {
+    content: Box<dyn LiveUINode>,
+    render_target: WindowRenderTarget,
+    window: Arc<Window>,
+}
+
+impl<'window> LiveNode for LiveWindowNode {
+    fn handle_window_event(&mut self, window_id: WindowId, event: crate::ui::node::UIEvent) {
+        self.content.handle_ui_event(event);
     }
 }
 
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Default, Clone)]
 pub struct WindowAttributes {
-    pub minimum_size: Extent2<f32>,
+    pub title: Mutable<String>,
+}
+
+pub struct WindowState {
+    pub window_size: Mutable<Extent2<f32>>,
+}
+
+impl WindowState {
+    fn new(window_size: Extent2<f32>) -> Self {
+        Self {
+            window_size: Mutable::new(window_size),
+        }
+    }
 }
 
 /// Creates a new window as the render target for the nodes inside.
@@ -71,13 +97,18 @@ where
         window_size: Mutable::new(item.get_natural_size()),
     };
 
+    let window_size_signal = window_state.window_size.signal();
+
+    let minimum_size = item.get_natural_size();
     let item = window_state
         .window_size
         .signal()
         .map(move |window_size| item.bake(Rect::new(0.0, 0.0, window_size.w, window_size.h)))
         .into_ui();
+
     WindowNode {
+        attributes,
         state: window_state,
-        view: View(attributes.minimum_size, item),
+        content: View(minimum_size, item).bake_react(window_size_signal),
     }
 }

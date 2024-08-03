@@ -1,7 +1,11 @@
+use super::engine::{LiveNode, UIEngine};
+
 pub mod main_pipeline;
 
 #[cfg(feature = "text")]
 pub mod text_pipeline;
 
 /// A render pipeline for rendering on the GPU.
-pub trait GPURenderPipeline {}
+pub trait GPURenderPipeline {
+    //fn set_pipeline<E: UIEngineNode>(&self, engine: &mut UIEngine<E>) {}
+}

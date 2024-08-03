@@ -1,9 +1,11 @@
 use bytemuck::{Pod, Zeroable};
 use std::mem::size_of;
 use vek::Extent2;
-use wgpu::{util::DeviceExt as _, BufferAddress, BufferUsages};
+use wgpu::{util::DeviceExt as _, BufferAddress, BufferUsages, ColorTargetState};
 
 use crate::{gpu::render_target::GPURenderTarget, ui::graphics::Primitive};
+
+use super::GPURenderPipeline;
 
 pub struct MainRenderPipeline {
     mesh_vertex_buffer: wgpu::Buffer,
@@ -13,13 +15,18 @@ pub struct MainRenderPipeline {
     uniform_bind_group: wgpu::BindGroup,
 }
 
+impl GPURenderPipeline for MainRenderPipeline {}
+
 // Only generate a single render stack pipeline and share it across stacks.
-pub fn main_render_pipeline<'a>(
+pub fn main_render_pipeline<'a, Target>(
     adapter: &'a wgpu::Adapter,
     device: &'a wgpu::Device,
     queue: &'a wgpu::Queue,
-    render_target_opt: Option<GPURenderTarget>,
-) -> MainRenderPipeline {
+    render_target_opt: Option<Target>,
+) -> MainRenderPipeline
+where
+    Target: GPURenderTarget,
+{
     let uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("Render Stack Uniform Buffer"),
         size: std::mem::size_of::<Uniforms>() as u64,
@@ -71,7 +78,7 @@ pub fn main_render_pipeline<'a>(
             entry_point: "fs_main",
             compilation_options: Default::default(),
             targets: &[
-                render_target_opt.map(|render_target| render_target.surface_config.format.into())
+                render_target_opt.map(|render_target| render_target.get_texture_format().into())
             ],
         }),
         primitive: wgpu::PrimitiveState::default(),

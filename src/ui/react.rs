@@ -18,11 +18,11 @@ where
     S: Signal<Item = T>,
     T: LiveUINode,
 {
-    fn handle_event(&mut self, event: super::node::UIEvent) -> bool {
+    fn handle_ui_event(&mut self, event: super::node::UIEvent) -> bool {
         // This should be safe if you process the React before sending any events...
         // But maaaaybe I should change this MaybeUninit to an Option?
         let inner = unsafe { self.signal.held_item.assume_init_mut() };
-        inner.handle_event(event)
+        inner.handle_ui_event(event)
     }
 }
 
@@ -32,6 +32,12 @@ where
     T: UINode,
 {
     const PRIMITIVE_COUNT: usize = T::PRIMITIVE_COUNT;
+
+    fn get_render_rect(&self) -> Option<vek::Rect<f32, f32>> {
+        // This should be safe if you only ever do this after the React is polled once (yielding a value).
+        // If you need to run this before the React receives a value, then, well, change the MaybeUninit to an Option.
+        unsafe { self.signal.held_item.assume_init_ref() }.get_render_rect()
+    }
 }
 
 pub trait UISignalExt: Signal {

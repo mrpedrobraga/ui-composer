@@ -1,6 +1,10 @@
+use futures_signals::signal::{Signal, SignalExt};
 use vek::{Extent2, Rect};
 
-use super::node::{LiveUINode, UINode};
+use super::{
+    node::{LiveUINode, UINode},
+    react::{React, UISignalExt},
+};
 
 /// An item that can be included in a layouting context.
 pub trait LayoutItem {
@@ -9,7 +13,22 @@ pub trait LayoutItem {
     /// The size this component prefers to be at. It's usually it's minimum size.
     fn get_natural_size(&self) -> Extent2<f32>;
 
+    /// Renders the content of this layout item with a specific rect.
     fn bake(&self, rect: Rect<f32, f32>) -> Self::UINodeType;
+
+    /// Creates a reactive node that re-bakes the layout item to fit a container that can change shape.
+    fn bake_react<S>(
+        self,
+        size_signal: S,
+    ) -> React<impl Signal<Item = Self::UINodeType>, Self::UINodeType>
+    where
+        S: Signal<Item = Extent2<f32>>,
+        Self: Sized,
+    {
+        size_signal
+            .map(move |new_size| self.bake(Rect::new(0.0, 0.0, new_size.w, new_size.h)))
+            .into_ui()
+    }
 }
 
 pub struct Resizable<F, T>
