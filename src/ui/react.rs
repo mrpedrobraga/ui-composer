@@ -1,19 +1,19 @@
-use futures_signals::signal::{Map, Signal};
+use futures_signals::signal::{Map, Signal, SignalExt};
 use pin_project::pin_project;
-use std::{mem::MaybeUninit, task::Poll};
+use std::{mem::MaybeUninit, pin::Pin, task::Poll};
 
 use super::node::{LiveUINode, UINode};
 
 /// UI Node that reacts to a signal and updates part of the UI tree.
-pub struct React<S, T>
+pub struct React<S: Send, T>
 where
     S: Signal<Item = T>,
     T: LiveUINode,
 {
-    signal: Hold<S, T>,
+    signal: Box<Hold<S, T>>,
 }
 
-impl<S, T> LiveUINode for React<S, T>
+impl<S: Send, T> LiveUINode for React<S, T>
 where
     S: Signal<Item = T>,
     T: LiveUINode,
@@ -33,9 +33,14 @@ where
             .expect("Process the React before trying to render it.")
             .push_quads(quad_buffer)
     }
+
+    fn poll_reactivity_change(&mut self, cx: &mut std::task::Context) -> Poll<Option<()>> {
+        let s = Box::pin(self.signal);
+        s.poll_change_unpin(cx)
+    }
 }
 
-impl<S, T> UINode for React<S, T>
+impl<S: Send, T> UINode for React<S, T>
 where
     S: Signal<Item = T>,
     T: UINode,
@@ -51,7 +56,7 @@ where
     }
 }
 
-pub trait UISignalExt: Signal {
+pub trait UISignalExt: Signal + Send {
     fn into_ui(self) -> React<Self, Self::Item>
     where
         Self: Sized,
@@ -65,7 +70,7 @@ pub trait UISignalExt: Signal {
         }
     }
 }
-impl<T> UISignalExt for T where T: Signal {}
+impl<T: Send> UISignalExt for T where T: Signal {}
 
 #[pin_project(project = HoldProj)]
 #[derive(Debug)]

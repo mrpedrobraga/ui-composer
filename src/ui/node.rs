@@ -1,6 +1,6 @@
-use vek::Rect;
-
 use crate::ui::graphics::Quad;
+use std::task::{Context, Poll};
+use vek::Rect;
 
 pub type UIEvent = winit::event::WindowEvent;
 
@@ -8,12 +8,15 @@ pub type UIEvent = winit::event::WindowEvent;
 ///
 /// A UINode receives an order to render, to update child nodes or to handle an interaction. In practice, it should handle as little as possible.
 /// The entire user interface interaction and render pipelines are created with UI Nodes.
-pub trait LiveUINode {
+pub trait LiveUINode: Send {
     /// Handles an UI Event (or not). Returns whether the event was handled.
     fn handle_ui_event(&mut self, event: UIEvent) -> bool;
 
     /// Pushes quads to a quad buffer slice.
     fn push_quads(&self, quad_buffer: &mut [Quad]);
+
+    /// Checks if a reactive change happened, using the typical future model.
+    fn poll_reactivity_change(&mut self, cx: &mut Context) -> Poll<Option<()>>;
 }
 
 /// Trait to get the info about an UI node statically.
@@ -33,6 +36,10 @@ impl LiveUINode for () {
 
     fn push_quads(&self, quad_buffer: &mut [Quad]) {
         /* No quads to push! */
+    }
+
+    fn poll_reactivity_change(&mut self, cx: &mut Context) -> Poll<Option<()>> {
+        Poll::Ready(None)
     }
 }
 
@@ -59,6 +66,13 @@ where
             self.push_quads(quad_buffer)
         }
     }
+
+    fn poll_reactivity_change(&mut self, cx: &mut Context) -> Poll<Option<()>> {
+        // TODO: Maybe I shouldn't return Some(()) in the option by default?
+        self.as_mut()
+            .map(|inner| inner.poll_reactivity_change(cx))
+            .unwrap_or(Poll::Ready(Some(())))
+    }
 }
 
 impl<T> UINode for Option<T>
@@ -82,6 +96,10 @@ where
 
     fn push_quads(&self, quad_buffer: &mut [Quad]) {
         self.as_ref().push_quads(quad_buffer)
+    }
+
+    fn poll_reactivity_change(&mut self, cx: &mut Context) -> Poll<Option<()>> {
+        self.as_mut().poll_reactivity_change(cx)
     }
 }
 
@@ -112,6 +130,23 @@ where
         let (slice_a, slice_b) = quad_buffer.split_at_mut(A::QUAD_COUNT);
         self.0.push_quads(slice_a);
         self.1.push_quads(slice_b);
+    }
+
+    fn poll_reactivity_change(&mut self, cx: &mut Context) -> Poll<Option<()>> {
+        let poll_a = self.0.poll_reactivity_change(cx);
+        let poll_b = self.0.poll_reactivity_change(cx);
+
+        match (poll_a, poll_b) {
+            (Poll::Ready(None), Poll::Ready(None)) => Poll::Ready(None),
+            (Poll::Pending, Poll::Pending) => Poll::Pending,
+            (Poll::Ready(None), Poll::Pending) => Poll::Pending,
+            (Poll::Pending, Poll::Ready(None)) => Poll::Pending,
+            (Poll::Ready(Some(())), Poll::Ready(Some(()))) => Poll::Ready(Some(())),
+            (Poll::Ready(None), Poll::Ready(Some(()))) => Poll::Ready(Some(())),
+            (Poll::Ready(Some(())), Poll::Ready(None)) => Poll::Ready(Some(())),
+            (Poll::Ready(Some(())), Poll::Pending) => Poll::Ready(Some(())),
+            (Poll::Pending, Poll::Ready(Some(()))) => Poll::Ready(Some(())),
+        }
     }
 }
 

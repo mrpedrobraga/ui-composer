@@ -41,6 +41,13 @@ impl LiveUINode for Quad {
     fn push_quads(&self, quad_buffer: &mut [Quad]) {
         quad_buffer[0] = *self;
     }
+
+    fn poll_reactivity_change(
+        &mut self,
+        cx: &mut std::task::Context,
+    ) -> std::task::Poll<Option<()>> {
+        std::task::Poll::Ready(None)
+    }
 }
 
 impl UINode for Quad {

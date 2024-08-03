@@ -1,10 +1,11 @@
 use futures::{FutureExt, StreamExt};
-use futures_signals::signal::{Mutable, SignalExt};
+use futures_signals::signal::{Mutable, Signal, SignalExt};
 use pollster::FutureExt as _;
 use std::{
     collections::HashSet,
     marker::PhantomData,
     sync::{Arc, Mutex, RwLock},
+    task::{Context, Poll},
 };
 use vek::Extent2;
 use winit::{
@@ -41,13 +42,15 @@ pub struct UIEngine<'engine, E: LiveNode> {
     _marker: PhantomData<&'engine ()>,
 }
 
-pub trait UIEngineInterface {
+pub trait UIEngineInterface: Send {
     type RootNodeType: LiveNode;
 
     fn handle_window_event(&mut self, window_id: WindowId, event: UIEvent);
+
+    fn poll_reactor_change(&mut self, cx: &mut Context) -> Poll<Option<()>>;
 }
 
-impl<'engine, E: LiveNode + 'engine> UIEngine<'engine, E> {
+impl<'engine: 'static, E: LiveNode + Send + 'engine> UIEngine<'engine, E> {
     pub fn new<W>(
         event_loop: &ActiveEventLoop,
         root_engine_node: W,
@@ -111,7 +114,11 @@ impl<'engine, E: LiveNode + 'engine> UIEngine<'engine, E> {
         // TODO: Process the render engine's processors and reactors on another execution context.
         // Perhaps return a `Future` here to be polled by the executor!
         let render_engine_clone = render_engine.clone();
-        std::thread::spawn(move || dbg!("Other thread."));
+        std::thread::spawn(|| {
+            pollster::block_on(async move {
+                let processor = EngineProcessor::new(render_engine_clone);
+            })
+        });
 
         return render_engine;
     }
@@ -142,7 +149,7 @@ fn get_dummy_texture_format(
     dummy_format
 }
 
-impl<'engine, E: LiveNode> UIEngineInterface for UIEngine<'engine, E> {
+impl<'engine, E: LiveNode + Send> UIEngineInterface for UIEngine<'engine, E> {
     type RootNodeType = E;
 
     fn handle_window_event(&mut self, window_id: WindowId, event: UIEvent) {
@@ -153,14 +160,23 @@ impl<'engine, E: LiveNode> UIEngineInterface for UIEngine<'engine, E> {
             Err(_) => unimplemented!("Could not unlock mutex for handling event!"),
         };
     }
+
+    fn poll_reactor_change(&mut self, cx: &mut Context) -> Poll<Option<()>> {
+        let mut engine_tree = self
+            .engine_tree
+            .lock()
+            .expect("Couldn't lock engine tree for polling!");
+
+        engine_tree.poll_reactivity_change(cx)
+    }
 }
 
-pub trait Node {
+pub trait Node: Send {
     type LiveType: LiveNode;
     fn reify(self, event_loop: &ActiveEventLoop, gpu_resources: &GPUResources) -> Self::LiveType;
 }
 
-pub trait LiveNode {
+pub trait LiveNode: Send {
     /// Handles an event by broadcasting it around.
     fn handle_window_event(
         &mut self,
@@ -168,4 +184,38 @@ pub trait LiveNode {
         window_id: WindowId,
         event: UIEvent,
     );
+
+    /// Polls a reactor's change.
+    fn poll_reactivity_change(
+        &mut self,
+        cx: &mut std::task::Context,
+    ) -> std::task::Poll<Option<()>>;
+}
+
+/// A futures-based construct that watches and processes the engine for its reactors and processors, etc.
+pub struct EngineProcessor<E> {
+    engine: Arc<Mutex<Box<dyn UIEngineInterface<RootNodeType = E>>>>,
+}
+
+impl<E> EngineProcessor<E> {
+    pub fn new(engine: Arc<Mutex<Box<dyn UIEngineInterface<RootNodeType = E>>>>) -> Self {
+        EngineProcessor { engine }
+    }
+}
+
+impl<E: LiveNode> Signal for EngineProcessor<E> {
+    type Item = ();
+
+    fn poll_change(self: std::pin::Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
+        let mut any_pending = false;
+
+        let mut ui = self
+            .engine
+            .lock()
+            .expect("Could not lock the engine to process.");
+
+        let poll = ui.poll_reactor_change(cx);
+
+        Poll::Ready(None)
+    }
 }

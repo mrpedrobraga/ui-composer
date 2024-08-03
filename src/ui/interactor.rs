@@ -21,4 +21,11 @@ impl LiveUINode for Inspect {
     fn push_quads(&self, quad_buffer: &mut [crate::prelude::Quad]) {
         /* No quads to push in release mode. But maybe in debug? */
     }
+
+    fn poll_reactivity_change(
+        &mut self,
+        cx: &mut std::task::Context,
+    ) -> std::task::Poll<Option<()>> {
+        std::task::Poll::Ready(None)
+    }
 }

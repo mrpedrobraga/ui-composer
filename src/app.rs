@@ -28,7 +28,7 @@ pub struct RunningApp<N: LiveNode> {
 }
 
 /// TODO: PRovide methods to bind to an existing Event Loop or window.
-impl<N: LiveNode + 'static, W: Node<LiveType = N> + 'static> App<N, W> {
+impl<N: LiveNode + Send + 'static, W: Node<LiveType = N> + 'static> App<N, W> {
     // Creates and runs a new app.
     // For cross-platform compatibility, this should be called in the main thread,
     // and only once in your program.
@@ -44,7 +44,9 @@ impl<N: LiveNode + 'static, W: Node<LiveType = N> + 'static> App<N, W> {
     }
 }
 
-impl<N: LiveNode + 'static, W: Node<LiveType = N> + 'static> ApplicationHandler for App<N, W> {
+impl<N: LiveNode + Send + 'static, W: Node<LiveType = N> + 'static> ApplicationHandler
+    for App<N, W>
+{
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         let engine = UIEngine::new(event_loop, unsafe {
             self.root_item.take().unwrap_unchecked()

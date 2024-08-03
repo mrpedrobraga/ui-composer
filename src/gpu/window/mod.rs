@@ -165,6 +165,15 @@ impl<'window> LiveNode for LiveWindowNode {
 
         self.content.handle_ui_event(event);
     }
+
+    fn poll_reactivity_change(
+        &mut self,
+        cx: &mut std::task::Context,
+    ) -> std::task::Poll<Option<()>> {
+        // TODO: Figure out what do to with the result of this poll (as it might introduce a need for redrawing!!!);
+
+        self.content.poll_reactivity_change(cx)
+    }
 }
 
 impl LiveWindowNode {

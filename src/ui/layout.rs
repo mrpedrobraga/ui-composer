@@ -7,7 +7,7 @@ use super::{
 };
 
 /// An item that can be included in a layouting context.
-pub trait LayoutItem {
+pub trait LayoutItem: Send {
     type UINodeType: UINode;
 
     /// The size this component prefers to be at. It's usually it's minimum size.
@@ -22,8 +22,8 @@ pub trait LayoutItem {
         size_signal: S,
     ) -> React<impl Signal<Item = Self::UINodeType>, Self::UINodeType>
     where
-        S: Signal<Item = Extent2<f32>>,
-        Self: Sized,
+        S: Signal<Item = Extent2<f32>> + Send,
+        Self: Sized + Send,
     {
         size_signal
             .map(move |new_size| self.bake(Rect::new(0.0, 0.0, new_size.w, new_size.h)))
@@ -31,7 +31,7 @@ pub trait LayoutItem {
     }
 }
 
-pub struct Resizable<F, T>
+pub struct Resizable<F: Send, T>
 where
     F: Fn(Rect<f32, f32>) -> T,
 {
@@ -41,7 +41,7 @@ where
 
 impl<F, T> Resizable<F, T>
 where
-    F: Fn(Rect<f32, f32>) -> T,
+    F: Fn(Rect<f32, f32>) -> T + Send,
     T: LiveUINode,
 {
     pub fn new(min_size: Extent2<f32>, factory: F) -> Self {
@@ -49,7 +49,7 @@ where
     }
 }
 
-impl<F, T> LayoutItem for Resizable<F, T>
+impl<F: Send, T> LayoutItem for Resizable<F, T>
 where
     F: Fn(Rect<f32, f32>) -> T,
     T: UINode,
