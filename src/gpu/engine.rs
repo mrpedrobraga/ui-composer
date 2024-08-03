@@ -10,7 +10,7 @@ use vek::Extent2;
 use winit::{
     dpi::PhysicalSize,
     event_loop::ActiveEventLoop,
-    window::{Window, WindowId},
+    window::{Window, WindowAttributes, WindowId},
 };
 
 use crate::ui::node::{LiveUINode, UIEvent, UINode};
@@ -29,13 +29,13 @@ pub struct GPUResources {
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
     pub adapter: wgpu::Adapter,
+
+    pub main_pipeline: MainRenderPipeline,
 }
 
 /// An engine that can render our application to the GPU as well as forward interactive events.
 pub struct UIEngine<'engine, E: LiveNode> {
     pub engine_tree: Arc<Mutex<E>>,
-    pub pipelines: HashSet<Box<dyn GPURenderPipeline>>,
-    pub main_render_pipeline: MainRenderPipeline,
     pub gpu_resources: GPUResources,
 
     _marker: PhantomData<&'engine ()>,
@@ -78,27 +78,42 @@ impl<'engine, E: LiveNode + 'engine> UIEngine<'engine, E> {
             .block_on()
             .unwrap();
 
+        let dummy_window = event_loop
+            .create_window(WindowAttributes::default())
+            .expect("Failure to create dummy window");
+        let dummy_surface = instance
+            .create_surface(dummy_window)
+            .expect("Failure to get dummy window surface.");
+        dummy_surface.configure(
+            &device,
+            &dummy_surface
+                .get_default_config(&adapter, 20, 20)
+                .expect("No valid config between this surface and the adapter."),
+        );
+        let dummy_texture = dummy_surface
+            .get_current_texture()
+            .expect("Failure to get dummy texture.");
+        let dummy_format = dummy_texture.texture.format();
+
+        // TODO: Pass a proper render target!!!
+        let main_pipeline = main_render_pipeline::<WindowRenderTarget>(
+            &adapter,
+            &device,
+            &queue,
+            &[Some(dummy_format.into())],
+        );
+
         let gpu_resources = GPUResources {
             instance,
             device,
             queue,
             adapter,
+            main_pipeline,
         };
-
-        // TODO: Pass a proper render target!!!
-        let main_render_pipeline = main_render_pipeline::<WindowRenderTarget>(
-            &gpu_resources.adapter,
-            &gpu_resources.device,
-            &gpu_resources.queue,
-            None,
-        );
-        let pipelines = HashSet::new();
 
         let engine_node = root_engine_node.reify(event_loop, &gpu_resources);
 
         let mut render_engine = Self {
-            pipelines,
-            main_render_pipeline,
             engine_tree: Arc::new(Mutex::new(engine_node)),
             _marker: PhantomData,
             gpu_resources,

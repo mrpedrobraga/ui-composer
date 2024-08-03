@@ -1,9 +1,11 @@
-use super::engine::GPUResources;
+use crate::ui::node::LiveUINode;
+
+use super::{engine::GPUResources, window::UINodeRenderingArtifacts};
 use std::sync::Arc;
 use vek::Extent2;
 use wgpu::{
     rwh::{HasDisplayHandle, HasWindowHandle},
-    Surface, SurfaceConfiguration, SurfaceTarget, Texture, TextureFormat, TextureView,
+    RenderPass, Surface, SurfaceConfiguration, SurfaceTarget, Texture, TextureFormat, TextureView,
 };
 use winit::{dpi::PhysicalSize, window::Window};
 
@@ -13,7 +15,12 @@ pub trait GPURenderTarget {
     fn resize(&mut self, gpu_resources: &GPUResources, new_size: Extent2<u32>);
 
     /// Returns a reference to the render target's texture;
-    fn draw(&mut self, gpu_resources: &GPUResources);
+    fn draw(
+        &mut self,
+        gpu_resources: &GPUResources,
+        content: &dyn LiveUINode,
+        render_artifacts: &UINodeRenderingArtifacts,
+    );
 
     /// Returns the texture format;
     fn get_texture_format(&self) -> TextureFormat;

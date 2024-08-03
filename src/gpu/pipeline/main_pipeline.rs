@@ -1,28 +1,36 @@
 use bytemuck::{Pod, Zeroable};
 use std::mem::size_of;
-use vek::Extent2;
+use vek::{Extent2, Mat4, Vec2, Vec3};
 use wgpu::{util::DeviceExt as _, BufferAddress, BufferUsages, ColorTargetState};
 
-use crate::{gpu::render_target::GPURenderTarget, ui::graphics::Primitive};
+use crate::{gpu::render_target::GPURenderTarget, ui::graphics::Quad};
 
 use super::GPURenderPipeline;
 
 pub struct MainRenderPipeline {
-    mesh_vertex_buffer: wgpu::Buffer,
-    mesh_index_buffer: wgpu::Buffer,
-    mesh_index_count: usize,
-    uniform_buffer: wgpu::Buffer,
+    pipeline: wgpu::RenderPipeline,
+    pub mesh_vertex_buffer: wgpu::Buffer,
+    pub mesh_index_buffer: wgpu::Buffer,
+    pub mesh_index_count: usize,
+    pub uniform_buffer: wgpu::Buffer,
     uniform_bind_group: wgpu::BindGroup,
 }
 
-impl GPURenderPipeline for MainRenderPipeline {}
+impl GPURenderPipeline for MainRenderPipeline {
+    fn apply_onto<'pass>(&'pass self, render_pass: &mut wgpu::RenderPass<'pass>) {
+        render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
+        render_pass.set_vertex_buffer(0, self.mesh_vertex_buffer.slice(..));
+        render_pass.set_index_buffer(self.mesh_index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+    }
+}
 
 // Only generate a single render stack pipeline and share it across stacks.
 pub fn main_render_pipeline<'a, Target>(
     adapter: &'a wgpu::Adapter,
     device: &'a wgpu::Device,
     queue: &'a wgpu::Queue,
-    render_target_opt: Option<Target>,
+    render_target_formats: &'a [Option<ColorTargetState>],
 ) -> MainRenderPipeline
 where
     Target: GPURenderTarget,
@@ -64,22 +72,20 @@ where
         push_constant_ranges: &[],
     });
     let shader = device.create_shader_module(wgpu::include_wgsl!("./main_shader.wgsl"));
-    let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+    let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: None,
         layout: Some(&pipeline_layout),
         vertex: wgpu::VertexState {
             module: &shader,
             entry_point: "vs_main",
-            buffers: &[Vertex::buffer_layout(), Primitive::buffer_layout()],
+            buffers: &[Vertex::buffer_layout(), Quad::buffer_layout()],
             compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: &shader,
             entry_point: "fs_main",
             compilation_options: Default::default(),
-            targets: &[
-                render_target_opt.map(|render_target| render_target.get_texture_format().into())
-            ],
+            targets: render_target_formats,
         }),
         primitive: wgpu::PrimitiveState::default(),
         depth_stencil: None, // yet
@@ -102,6 +108,7 @@ where
     });
 
     MainRenderPipeline {
+        pipeline,
         mesh_vertex_buffer,
         mesh_index_buffer,
         mesh_index_count: indices.len(),
@@ -110,7 +117,7 @@ where
     }
 }
 
-impl Primitive {
+impl Quad {
     fn buffer_layout() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Self>() as BufferAddress,
@@ -149,25 +156,20 @@ impl Primitive {
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
 pub struct Uniforms {
-    world_to_wgpu_mat: [[f32; 4]; 4],
+    pub world_to_wgpu_mat: Mat4<f32>,
 }
 
 impl Uniforms {
     pub fn resize(&mut self, container_size: Extent2<f32>) {
-        self.world_to_wgpu_mat = world_to_wgpu_mat(container_size);
+        self.world_to_wgpu_mat = container_size_to_wgpu_mat(container_size);
     }
 }
 
-fn world_to_wgpu_mat(window_size: Extent2<f32>) -> [[f32; 4]; 4] {
-    let ww = window_size.w as f32;
-    let wh = window_size.h as f32;
-
-    return [
-        [2.0 / ww, 0.0, 0.0, 0.0],
-        [0.0, -2.0 / wh, 0.0, 0.0],
-        [0.0, 0.0, 1.0, 0.0],
-        [-1.0, 1.0, 0.0, 1.0],
-    ];
+#[inline(always)]
+pub fn container_size_to_wgpu_mat(Extent2 { w, h }: Extent2<f32>) -> Mat4<f32> {
+    Mat4::identity()
+        .scaled_3d(Vec3::new(2.0 / w, -2.0 / h, 1.0))
+        .translated_2d(Vec2::new(-1.0, 1.0))
 }
 
 #[repr(C)]
@@ -178,7 +180,7 @@ struct Vertex {
 }
 
 impl Vertex {
-    fn buffer_layout() -> wgpu::VertexBufferLayout<'static> {
+    const fn buffer_layout() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Self>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,

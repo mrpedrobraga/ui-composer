@@ -1,3 +1,5 @@
+use wgpu::RenderPass;
+
 use super::engine::{LiveNode, UIEngine};
 
 pub mod main_pipeline;
@@ -7,5 +9,5 @@ pub mod text_pipeline;
 
 /// A render pipeline for rendering on the GPU.
 pub trait GPURenderPipeline {
-    //fn set_pipeline<E: UIEngineNode>(&self, engine: &mut UIEngine<E>) {}
+    fn apply_onto<'pass>(&'pass self, render_pass: &mut RenderPass<'pass>);
 }

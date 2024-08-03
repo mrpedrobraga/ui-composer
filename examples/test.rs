@@ -5,11 +5,12 @@ use ui_composer::{
     app::AppBuilder,
     gpu::window::{Window, WindowAttributes, WindowNode},
     ui::{
+        graphics::Quad,
         layout::{LayoutItem, Resizable},
         node::UINode,
     },
 };
-use vek::Extent2;
+use vek::{Extent2, Rect, Rgb};
 
 fn main() {
     let ui = App();
@@ -25,5 +26,7 @@ fn App() -> WindowNode<impl UINode> {
 }
 
 fn Empty() -> impl LayoutItem {
-    Resizable::new(Extent2::new(100.0, 100.0), |_| ())
+    Resizable::new(Extent2::new(100.0, 100.0), |rect| {
+        Quad::rect(Rect::new(0.0, 0.0, 1.0, 1.0), Rgb::red())
+    })
 }

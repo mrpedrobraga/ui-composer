@@ -1,8 +1,11 @@
-use std::sync::Arc;
+use std::{mem::size_of, sync::Arc};
 
 use futures_signals::signal::{Mutable, Signal, SignalExt};
 use vek::{Extent2, Rect, Rgb};
-use wgpu::{Surface, SurfaceConfiguration, TextureFormat, TextureView};
+use wgpu::{
+    core::device::queue, BufferUsages, RenderPass, Surface, SurfaceConfiguration, TextureFormat,
+    TextureView,
+};
 use winit::{
     event::WindowEvent,
     event_loop::{self, ActiveEventLoop},
@@ -11,11 +14,15 @@ use winit::{
 
 use super::{
     engine::{GPUResources, LiveNode, Node},
-    render_target::GPURenderTarget,
+    pipeline::{
+        main_pipeline::{container_size_to_wgpu_mat, Uniforms},
+        GPURenderPipeline,
+    },
+    render_target::{self, GPURenderTarget},
     view::{View, ViewNode},
 };
 use crate::ui::{
-    graphics::Primitive,
+    graphics::Quad,
     layout::LayoutItem,
     node::{LiveUINode, UINode},
     react::{React, UISignalExt},
@@ -73,8 +80,19 @@ where
 
         let window = std::sync::Arc::new(window);
 
+        let render_artifacts = UINodeRenderingArtifacts {
+            instance_buffer_cpu: vec![Quad::default(); T::PRIMITIVE_COUNT],
+            instance_buffer: gpu_resources.device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("Instance Buffer for a Window"),
+                size: (size_of::<Quad>() as u64 * T::PRIMITIVE_COUNT as u64),
+                usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            }),
+        };
+
         LiveWindowNode {
             content: Box::new(self.content),
+            render_artifacts,
             render_target: WindowRenderTarget::new(
                 &gpu_resources,
                 window.clone(),
@@ -105,8 +123,15 @@ impl WindowNodeState {
 /// A live window which contains a UI tree inside.
 pub struct LiveWindowNode {
     content: Box<dyn LiveUINode>,
+    render_artifacts: UINodeRenderingArtifacts,
     render_target: WindowRenderTarget,
     window: Arc<Window>,
+}
+
+/// TODO: Move out of here and find a better name.
+pub struct UINodeRenderingArtifacts {
+    instance_buffer_cpu: Vec<Quad>,
+    instance_buffer: wgpu::Buffer,
 }
 
 impl<'window> LiveNode for LiveWindowNode {
@@ -122,10 +147,18 @@ impl<'window> LiveNode for LiveWindowNode {
                     &gpu_resources,
                     Extent2::new(new_size.width, new_size.height),
                 ),
+                WindowEvent::CloseRequested => {
+                    // TODO: Handle closing of windows.
+                    println!(
+                        "[{}:{}] Find a better way to handle window close requests; Likely use monads or WindowState for this!",
+                        file!(),
+                        line!()
+                    );
+                    std::process::exit(0);
+                }
                 WindowEvent::RedrawRequested => {
                     self.redraw(gpu_resources);
                 }
-
                 _ => (),
             }
         }
@@ -134,16 +167,10 @@ impl<'window> LiveNode for LiveWindowNode {
     }
 }
 
-const DEFAULT_CLEAR_COLOR: wgpu::Color = wgpu::Color {
-    r: 0.95,
-    g: 0.95,
-    b: 0.95,
-    a: 1.0,
-};
-
 impl LiveWindowNode {
     fn redraw(&mut self, gpu_resources: &GPUResources) {
-        self.render_target.draw(gpu_resources);
+        self.render_target
+            .draw(gpu_resources, self.content.as_ref(), &self.render_artifacts);
     }
 }
 
@@ -177,16 +204,15 @@ impl GPURenderTarget for WindowRenderTarget {
             .unwrap();
         self.surface
             .configure(&gpu_resources.device, &self.surface_config);
+        self.size = new_size;
     }
 
-    fn draw(&mut self, gpu_resources: &GPUResources) {
-        let mut encoder =
-            gpu_resources
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: Some("Command Encoder"),
-                });
-
+    fn draw(
+        &mut self,
+        gpu_resources: &GPUResources,
+        content: &dyn LiveUINode,
+        render_artifacts: &UINodeRenderingArtifacts,
+    ) {
         let texture = self
             .surface
             .get_current_texture()
@@ -195,13 +221,25 @@ impl GPURenderTarget for WindowRenderTarget {
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
+        let mut encoder =
+            gpu_resources
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("Command Encoder"),
+                });
+
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: None,
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: &view,
                 resolve_target: None,
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(DEFAULT_CLEAR_COLOR),
+                    load: wgpu::LoadOp::Clear(wgpu::Color {
+                        r: 0.95,
+                        g: 0.95,
+                        b: 0.95,
+                        a: 1.0,
+                    }),
                     store: wgpu::StoreOp::Store,
                 },
             })],
@@ -211,7 +249,36 @@ impl GPURenderTarget for WindowRenderTarget {
         });
 
         {
-            // TODO: Render the things that go inside this render target.
+            // TODO: Flush uniforms here!
+            gpu_resources.queue.write_buffer(
+                &gpu_resources.main_pipeline.uniform_buffer,
+                0,
+                bytemuck::cast_slice(&[Uniforms {
+                    world_to_wgpu_mat: container_size_to_wgpu_mat(self.size.as_()),
+                }]),
+            );
+
+            // TODO: Flush primitives to GPU here!
+            let dummy_primitives = [Quad::rect(
+                Rect::new(0.0, 0.0, 16.0, 16.0),
+                Rgb::new(1.0, 0.0, 0.0),
+            )];
+            gpu_resources.queue.write_buffer(
+                &render_artifacts.instance_buffer,
+                0,
+                bytemuck::cast_slice(&dummy_primitives),
+            );
+            gpu_resources.queue.submit([]);
+
+            // TODO: Allow partial renders of the UI...
+            gpu_resources.main_pipeline.apply_onto(&mut render_pass);
+            render_pass.set_vertex_buffer(1, render_artifacts.instance_buffer.slice(..));
+
+            render_pass.draw_indexed(
+                0..gpu_resources.main_pipeline.mesh_index_count as u32,
+                0,
+                0..1,
+            );
         }
 
         drop(render_pass);

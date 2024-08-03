@@ -8,12 +8,12 @@ use super::node::{LiveUINode, UINode};
 /// You can compose several primitives to make more impressive graphics.
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
-pub struct Primitive {
+pub struct Quad {
     pub transform: Mat4<f32>,
     pub color: Rgb<f32>,
 }
 
-impl Primitive {
+impl Quad {
     pub fn rect(rect: Rect<f32, f32>, color: Rgb<f32>) -> Self {
         Self {
             transform: Mat4::identity()
@@ -24,22 +24,22 @@ impl Primitive {
     }
 }
 
-impl Default for Primitive {
+impl Default for Quad {
     fn default() -> Self {
-        Primitive {
+        Quad {
             transform: Default::default(),
             color: Default::default(),
         }
     }
 }
 
-impl LiveUINode for Primitive {
+impl LiveUINode for Quad {
     fn handle_ui_event(&mut self, event: super::node::UIEvent) -> bool {
         false
     }
 }
 
-impl UINode for Primitive {
+impl UINode for Quad {
     const PRIMITIVE_COUNT: usize = 1;
 
     fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
