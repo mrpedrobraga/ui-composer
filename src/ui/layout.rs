@@ -6,6 +6,11 @@ use super::{
     react::{React, UISignalExt},
 };
 
+#[derive(Debug, Clone, Copy)]
+pub struct LayoutHints {
+    pub rect: Rect<f32, f32>,
+}
+
 /// An item that can be included in a layouting context.
 pub trait LayoutItem: Send {
     type UINodeType: UINode;
@@ -14,7 +19,7 @@ pub trait LayoutItem: Send {
     fn get_natural_size(&self) -> Extent2<f32>;
 
     /// Renders the content of this layout item with a specific rect.
-    fn bake(&self, rect: Rect<f32, f32>) -> Self::UINodeType;
+    fn bake(&self, layout_hints: LayoutHints) -> Self::UINodeType;
 
     /// Creates a reactive node that re-bakes the layout item to fit a container that can change shape.
     fn bake_react<S>(
@@ -26,14 +31,18 @@ pub trait LayoutItem: Send {
         Self: Sized + Send,
     {
         size_signal
-            .map(move |new_size| self.bake(Rect::new(0.0, 0.0, new_size.w, new_size.h)))
+            .map(move |new_size| {
+                self.bake(LayoutHints {
+                    rect: Rect::new(0.0, 0.0, new_size.w, new_size.h),
+                })
+            })
             .into_ui()
     }
 }
 
 pub struct Resizable<F: Send, T>
 where
-    F: Fn(Rect<f32, f32>) -> T,
+    F: Fn(LayoutHints) -> T,
 {
     min_size: Extent2<f32>,
     factory: F,
@@ -41,17 +50,29 @@ where
 
 impl<F, T> Resizable<F, T>
 where
-    F: Fn(Rect<f32, f32>) -> T + Send,
+    F: Fn(LayoutHints) -> T + Send,
     T: LiveUINode,
 {
-    pub fn new(min_size: Extent2<f32>, factory: F) -> Self {
-        Self { min_size, factory }
+    /// Creates a new resizable [`LayoutItem`] that redraws using this factory function.
+    pub fn new(factory: F) -> Self {
+        Self {
+            min_size: Extent2::default(),
+            factory,
+        }
+    }
+
+    /// Consumes this [`Resizable`] and returns a similar one with the minimum size set.
+    pub fn with_minimum_size(self, size: Extent2<f32>) -> Self {
+        Self {
+            min_size: size,
+            ..self
+        }
     }
 }
 
 impl<F: Send, T> LayoutItem for Resizable<F, T>
 where
-    F: Fn(Rect<f32, f32>) -> T,
+    F: Fn(LayoutHints) -> T,
     T: UINode,
 {
     type UINodeType = T;
@@ -60,7 +81,7 @@ where
         self.min_size
     }
 
-    fn bake(&self, rect: Rect<f32, f32>) -> Self::UINodeType {
-        (self.factory)(rect)
+    fn bake(&self, layout_hints: LayoutHints) -> Self::UINodeType {
+        (self.factory)(layout_hints)
     }
 }

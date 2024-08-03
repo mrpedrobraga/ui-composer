@@ -10,7 +10,7 @@ where
     S: Signal<Item = T>,
     T: LiveUINode,
 {
-    signal: Box<Hold<S, T>>,
+    signal: Hold<S, T>,
 }
 
 impl<S: Send, T> LiveUINode for React<S, T>
@@ -34,9 +34,12 @@ where
             .push_quads(quad_buffer)
     }
 
-    fn poll_reactivity_change(&mut self, cx: &mut std::task::Context) -> Poll<Option<()>> {
-        let s = Box::pin(self.signal);
-        s.poll_change_unpin(cx)
+    fn poll_reactivity_change(
+        self: Pin<&mut Self>,
+        cx: &mut std::task::Context,
+    ) -> Poll<Option<()>> {
+        let mut signal = unsafe { self.map_unchecked_mut(|me| &mut me.signal) };
+        signal.poll_change_unpin(cx)
     }
 }
 

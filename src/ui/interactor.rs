@@ -1,3 +1,5 @@
+use std::pin::Pin;
+
 use super::node::{LiveUINode, UIEvent, UINode};
 
 pub trait Interactor: UINode {}
@@ -23,7 +25,7 @@ impl LiveUINode for Inspect {
     }
 
     fn poll_reactivity_change(
-        &mut self,
+        self: Pin<&mut Self>,
         cx: &mut std::task::Context,
     ) -> std::task::Poll<Option<()>> {
         std::task::Poll::Ready(None)

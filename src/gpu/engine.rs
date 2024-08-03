@@ -4,6 +4,8 @@ use pollster::FutureExt as _;
 use std::{
     collections::HashSet,
     marker::PhantomData,
+    ops::DerefMut,
+    pin::Pin,
     sync::{Arc, Mutex, RwLock},
     task::{Context, Poll},
 };
@@ -47,7 +49,7 @@ pub trait UIEngineInterface: Send {
 
     fn handle_window_event(&mut self, window_id: WindowId, event: UIEvent);
 
-    fn poll_reactor_change(&mut self, cx: &mut Context) -> Poll<Option<()>>;
+    fn poll_reactor_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>>;
 }
 
 impl<'engine: 'static, E: LiveNode + Send + 'engine> UIEngine<'engine, E> {
@@ -161,13 +163,8 @@ impl<'engine, E: LiveNode + Send> UIEngineInterface for UIEngine<'engine, E> {
         };
     }
 
-    fn poll_reactor_change(&mut self, cx: &mut Context) -> Poll<Option<()>> {
-        let mut engine_tree = self
-            .engine_tree
-            .lock()
-            .expect("Couldn't lock engine tree for polling!");
-
-        engine_tree.poll_reactivity_change(cx)
+    fn poll_reactor_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+        Poll::Ready(Some(()))
     }
 }
 
@@ -187,7 +184,7 @@ pub trait LiveNode: Send {
 
     /// Polls a reactor's change.
     fn poll_reactivity_change(
-        &mut self,
+        self: Pin<&mut Self>,
         cx: &mut std::task::Context,
     ) -> std::task::Poll<Option<()>>;
 }
@@ -214,7 +211,7 @@ impl<E: LiveNode> Signal for EngineProcessor<E> {
             .lock()
             .expect("Could not lock the engine to process.");
 
-        let poll = ui.poll_reactor_change(cx);
+        //let poll = ui.poll_reactor_change(cx);
 
         Poll::Ready(None)
     }

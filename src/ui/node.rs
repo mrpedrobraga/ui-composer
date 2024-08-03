@@ -1,5 +1,9 @@
 use crate::ui::graphics::Quad;
-use std::task::{Context, Poll};
+use std::{
+    ops::{Deref, DerefMut},
+    pin::{pin, Pin},
+    task::{Context, Poll},
+};
 use vek::Rect;
 
 pub type UIEvent = winit::event::WindowEvent;
@@ -16,7 +20,7 @@ pub trait LiveUINode: Send {
     fn push_quads(&self, quad_buffer: &mut [Quad]);
 
     /// Checks if a reactive change happened, using the typical future model.
-    fn poll_reactivity_change(&mut self, cx: &mut Context) -> Poll<Option<()>>;
+    fn poll_reactivity_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>>;
 }
 
 /// Trait to get the info about an UI node statically.
@@ -38,7 +42,7 @@ impl LiveUINode for () {
         /* No quads to push! */
     }
 
-    fn poll_reactivity_change(&mut self, cx: &mut Context) -> Poll<Option<()>> {
+    fn poll_reactivity_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         Poll::Ready(None)
     }
 }
@@ -67,9 +71,9 @@ where
         }
     }
 
-    fn poll_reactivity_change(&mut self, cx: &mut Context) -> Poll<Option<()>> {
+    fn poll_reactivity_change(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         // TODO: Maybe I shouldn't return Some(()) in the option by default?
-        self.as_mut()
+        self.as_pin_mut()
             .map(|inner| inner.poll_reactivity_change(cx))
             .unwrap_or(Poll::Ready(Some(())))
     }
@@ -98,8 +102,10 @@ where
         self.as_ref().push_quads(quad_buffer)
     }
 
-    fn poll_reactivity_change(&mut self, cx: &mut Context) -> Poll<Option<()>> {
-        self.as_mut().poll_reactivity_change(cx)
+    fn poll_reactivity_change(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+        // TODO: Why is this unsafe?
+        let inner = unsafe { self.as_mut().map_unchecked_mut(|v| &mut **v) };
+        inner.poll_reactivity_change(cx)
     }
 }
 
@@ -132,21 +138,28 @@ where
         self.1.push_quads(slice_b);
     }
 
-    fn poll_reactivity_change(&mut self, cx: &mut Context) -> Poll<Option<()>> {
-        let poll_a = self.0.poll_reactivity_change(cx);
-        let poll_b = self.0.poll_reactivity_change(cx);
+    fn poll_reactivity_change(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+        return Poll::Pending;
+        // let (pinned_a, pinned_b) = {
+        //     let mut mut_ref = self.as_mut();
+        //     let (a, b) = unsafe { mut_ref.map_unchecked_mut(|r| (&mut r.0, &mut r.1)) };
+        //     (a, b)
+        // };
 
-        match (poll_a, poll_b) {
-            (Poll::Ready(None), Poll::Ready(None)) => Poll::Ready(None),
-            (Poll::Pending, Poll::Pending) => Poll::Pending,
-            (Poll::Ready(None), Poll::Pending) => Poll::Pending,
-            (Poll::Pending, Poll::Ready(None)) => Poll::Pending,
-            (Poll::Ready(Some(())), Poll::Ready(Some(()))) => Poll::Ready(Some(())),
-            (Poll::Ready(None), Poll::Ready(Some(()))) => Poll::Ready(Some(())),
-            (Poll::Ready(Some(())), Poll::Ready(None)) => Poll::Ready(Some(())),
-            (Poll::Ready(Some(())), Poll::Pending) => Poll::Ready(Some(())),
-            (Poll::Pending, Poll::Ready(Some(()))) => Poll::Ready(Some(())),
-        }
+        // let poll_a = pinned_a.poll_reactivity_change(cx);
+        // let poll_b = pinned_b.poll_reactivity_change(cx);
+
+        // match (poll_a, poll_b) {
+        //     (Poll::Ready(None), Poll::Ready(None)) => Poll::Ready(None),
+        //     (Poll::Pending, Poll::Pending) => Poll::Pending,
+        //     (Poll::Ready(None), Poll::Pending) => Poll::Pending,
+        //     (Poll::Pending, Poll::Ready(None)) => Poll::Pending,
+        //     (Poll::Ready(Some(())), Poll::Ready(Some(()))) => Poll::Ready(Some(())),
+        //     (Poll::Ready(None), Poll::Ready(Some(()))) => Poll::Ready(Some(())),
+        //     (Poll::Ready(Some(())), Poll::Ready(None)) => Poll::Ready(Some(())),
+        //     (Poll::Ready(Some(())), Poll::Pending) => Poll::Ready(Some(())),
+        //     (Poll::Pending, Poll::Ready(Some(()))) => Poll::Ready(Some(())),
+        // }
     }
 }
 

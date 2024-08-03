@@ -2,16 +2,13 @@
 use ui_composer::prelude::*;
 
 fn main() {
-    let ui = Main();
-    App::run(ui);
+    App::run(Main());
 }
 
 fn Main() -> impl Node {
-    Window(WindowAttributes::default(), SingleQuadThingy())
+    Window(Square())
 }
 
-fn SingleQuadThingy() -> impl LayoutItem {
-    Resizable::new(Extent2::new(100.0, 100.0), |rect| {
-        Quad::new(rect, Rgb::red())
-    })
+fn Square() -> impl LayoutItem {
+    Resizable::new(|hx| Quad::new(hx.rect, Rgb::red()))
 }

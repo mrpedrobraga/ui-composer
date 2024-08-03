@@ -1,6 +1,10 @@
 use vek::{Extent2, Rect, Rgb};
 
-use crate::ui::{graphics::Quad, layout::LayoutItem, node::UINode};
+use crate::ui::{
+    graphics::Quad,
+    layout::{LayoutHints, LayoutItem},
+    node::UINode,
+};
 
 /// A node that describes the existence of a View in the UI tree.
 ///
@@ -24,10 +28,10 @@ where
         self.min_size
     }
 
-    fn bake(&self, rect: Rect<f32, f32>) -> Self::UINodeType {
+    fn bake(&self, layout_hints: LayoutHints) -> Self::UINodeType {
         /// TODO: Bind this primitive to the texture that
         /// the contents of the view render to.
-        Quad::new(rect, Rgb::new(0.0, 0.0, 0.0))
+        Quad::new(layout_hints.rect, Rgb::new(0.0, 0.0, 0.0))
     }
 }
 

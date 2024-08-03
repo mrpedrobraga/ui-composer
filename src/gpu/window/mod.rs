@@ -1,4 +1,4 @@
-use std::{mem::size_of, sync::Arc};
+use std::{mem::size_of, pin::Pin, sync::Arc};
 
 use futures_signals::signal::{Mutable, Signal, SignalExt};
 use vek::{Extent2, Rect, Rgb};
@@ -23,45 +23,79 @@ use super::{
 };
 use crate::ui::{
     graphics::Quad,
-    layout::LayoutItem,
+    layout::{LayoutHints, LayoutItem},
     node::{LiveUINode, UINode},
     react::{React, UISignalExt},
 };
 
 /// A node that describes the existence of a new window in the UI tree.
-pub struct WindowNode<T: UINode> {
-    attributes: WindowAttributes,
-    state: WindowNodeState,
+pub struct WindowNode<T: UINode, S: WindowState> {
+    state: S,
     content: T,
+}
+
+impl<T: UINode, S: WindowState> WindowNode<T, S> {
+    /// Consumes this window node and returns a new one with the set title.
+    pub fn with_title<Str: Into<String>>(self, title: Str) -> WindowNode<T, impl WindowState> {
+        let (size_state, _) = self.state.parts();
+
+        WindowNode {
+            state: WindowNodeState {
+                title: Mutable::new(title.into()).signal_cloned(),
+                size: size_state,
+            },
+            content: self.content,
+        }
+    }
+
+    /// Consumes this window node and returns a new one with a reactive title.
+    /// The window's title will change every time this signal changes.
+    pub fn with_reactive_title<Sig>(self, title_signal: Sig) -> WindowNode<T, impl WindowState>
+    where
+        Sig: Signal<Item = String>,
+    {
+        let (size_state, title_signal) = self.state.parts();
+
+        WindowNode {
+            state: WindowNodeState {
+                title: title_signal,
+                size: size_state,
+            },
+            content: self.content,
+        }
+    }
 }
 
 /// Creates a new window as the render target for the nodes inside.
 #[allow(non_snake_case)]
-pub fn Window<T>(attributes: WindowAttributes, item: T) -> WindowNode<impl UINode>
+pub fn Window<T>(item: T) -> WindowNode<impl UINode, impl WindowState>
 where
     T: LayoutItem + 'static,
 {
     let state = WindowNodeState {
-        window_size: Mutable::new(item.get_natural_size()),
+        size: Mutable::new(item.get_natural_size()),
+        title: Mutable::new(String::new()).signal_cloned(),
     };
 
-    let window_size_signal = state.window_size.signal();
-
+    let window_size_signal = state.size.signal();
     let minimum_size = item.get_natural_size();
     let item = state
-        .window_size
+        .size
         .signal()
-        .map(move |window_size| item.bake(Rect::new(0.0, 0.0, window_size.w, window_size.h)))
+        .map(move |window_size| {
+            item.bake(LayoutHints {
+                rect: Rect::new(0.0, 0.0, window_size.w, window_size.h),
+            })
+        })
         .into_ui();
 
     WindowNode {
-        attributes,
         state,
         content: View(minimum_size, item).bake_react(window_size_signal),
     }
 }
 
-impl<T> Node for WindowNode<T>
+impl<T, S: WindowState + Send> Node for WindowNode<T, S>
 where
     T: UINode + 'static,
 {
@@ -72,10 +106,7 @@ where
         let window_default_size = Extent2::new(100, 100);
 
         let window = event_loop
-            .create_window(
-                winit::window::WindowAttributes::default()
-                    .with_title(self.attributes.title.get_cloned()),
-            )
+            .create_window(winit::window::WindowAttributes::default())
             .expect("Couldn't reify window node!");
 
         let window = std::sync::Arc::new(window);
@@ -104,19 +135,31 @@ where
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct WindowAttributes {
-    pub title: Mutable<String>,
+pub struct WindowAttributes<TitleSignal: Signal<Item = String>> {
+    pub title: TitleSignal,
 }
 
-pub struct WindowNodeState {
-    pub window_size: Mutable<Extent2<f32>>,
+pub struct WindowNodeState<A>
+where
+    A: Signal<Item = String>,
+{
+    pub title: A,
+    pub size: Mutable<Extent2<f32>>,
 }
 
-impl WindowNodeState {
-    fn new(window_size: Extent2<f32>) -> Self {
-        Self {
-            window_size: Mutable::new(window_size),
-        }
+pub trait WindowState {
+    fn parts(self) -> (Mutable<Extent2<f32>>, impl Signal<Item = String>);
+}
+impl<A: Signal<Item = String>> WindowState for WindowNodeState<A> {
+    fn parts(self) -> (Mutable<Extent2<f32>>, impl Signal<Item = String>) {
+        (self.size, self.title)
+    }
+}
+
+fn new_window_state(window_size: Extent2<f32>) -> impl WindowState {
+    WindowNodeState {
+        size: Mutable::new(window_size),
+        title: Mutable::new(String::new()).signal_cloned(),
     }
 }
 
@@ -167,12 +210,13 @@ impl<'window> LiveNode for LiveWindowNode {
     }
 
     fn poll_reactivity_change(
-        &mut self,
+        self: Pin<&mut Self>,
         cx: &mut std::task::Context,
     ) -> std::task::Poll<Option<()>> {
         // TODO: Figure out what do to with the result of this poll (as it might introduce a need for redrawing!!!);
 
-        self.content.poll_reactivity_change(cx)
+        let content = unsafe { self.map_unchecked_mut(|me| &mut *me.content) };
+        content.poll_reactivity_change(cx)
     }
 }
 
