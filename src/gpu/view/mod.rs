@@ -27,7 +27,7 @@ where
     fn bake(&self, rect: Rect<f32, f32>) -> Self::UINodeType {
         /// TODO: Bind this primitive to the texture that
         /// the contents of the view render to.
-        Quad::rect(rect, Rgb::new(0.0, 0.0, 0.0))
+        Quad::new(rect, Rgb::new(0.0, 0.0, 0.0))
     }
 }
 

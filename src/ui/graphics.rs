@@ -14,7 +14,7 @@ pub struct Quad {
 }
 
 impl Quad {
-    pub fn rect(rect: Rect<f32, f32>, color: Rgb<f32>) -> Self {
+    pub fn new(rect: Rect<f32, f32>, color: Rgb<f32>) -> Self {
         Self {
             transform: Mat4::identity()
                 .scaled_3d(Extent3::new(rect.extent().w, rect.extent().h, 1.0))
@@ -37,10 +37,14 @@ impl LiveUINode for Quad {
     fn handle_ui_event(&mut self, event: super::node::UIEvent) -> bool {
         false
     }
+
+    fn push_quads(&self, quad_buffer: &mut [Quad]) {
+        quad_buffer[0] = *self;
+    }
 }
 
 impl UINode for Quad {
-    const PRIMITIVE_COUNT: usize = 1;
+    const QUAD_COUNT: usize = 1;
 
     fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
         // Beautifully calculating the bounds of this Primitive

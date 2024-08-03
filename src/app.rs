@@ -17,11 +17,9 @@ use winit::{
 };
 
 /// App builder, receives a layout item with the entirety of your app.
-pub struct AppBuilder<'app, N: LiveNode, W: Node<LiveType = N>> {
+pub struct App<N: LiveNode, W: Node<LiveType = N>> {
     root_item: Option<W>,
-    event_loop: Option<winit::event_loop::EventLoop<()>>,
     running_app: Option<RunningApp<N>>,
-    _marker: PhantomData<&'app ()>,
 }
 
 /// An app in execution (the ui fragment has been transformed into a [`RenderModule`]).
@@ -30,41 +28,28 @@ pub struct RunningApp<N: LiveNode> {
 }
 
 /// TODO: PRovide methods to bind to an existing Event Loop or window.
-impl<'app, N: LiveNode + 'static, W: Node<LiveType = N> + 'static> AppBuilder<'app, N, W> {
-    // Creates a new app.
+impl<N: LiveNode + 'static, W: Node<LiveType = N> + 'static> App<N, W> {
+    // Creates and runs a new app.
     // For cross-platform compatibility, this should be called in the main thread,
     // and only once in your program.
-    pub fn new(root_fragment: W) -> Self {
-        Self {
-            root_item: Some(root_fragment),
-            event_loop: None,
-            running_app: None,
-            _marker: PhantomData,
-        }
-    }
-
-    pub fn run(mut self) {
-        let event_loop = self.event_loop.take().unwrap_or_else(|| {
-            let event_loop = winit::event_loop::EventLoop::builder().build().unwrap();
-            event_loop.set_control_flow(winit::event_loop::ControlFlow::Wait);
-            event_loop
-        });
-        event_loop.run_app(&mut self).unwrap();
-    }
-
-    fn build(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        if let Some(root_item) = self.root_item.take() {
-            let engine = UIEngine::new(event_loop, root_item);
-            self.running_app = Some(RunningApp { engine });
-        }
+    pub fn run(root_fragment: W) {
+        let event_loop = winit::event_loop::EventLoop::builder().build().unwrap();
+        event_loop.set_control_flow(winit::event_loop::ControlFlow::Wait);
+        event_loop
+            .run_app(&mut App {
+                root_item: Some(root_fragment),
+                running_app: None,
+            })
+            .unwrap();
     }
 }
 
-impl<'app, N: LiveNode + 'static, W: Node<LiveType = N> + 'static> ApplicationHandler
-    for AppBuilder<'app, N, W>
-{
+impl<N: LiveNode + 'static, W: Node<LiveType = N> + 'static> ApplicationHandler for App<N, W> {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        self.build(event_loop);
+        let engine = UIEngine::new(event_loop, unsafe {
+            self.root_item.take().unwrap_unchecked()
+        });
+        self.running_app = Some(RunningApp { engine });
     }
 
     fn window_event(

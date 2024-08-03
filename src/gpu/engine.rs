@@ -78,24 +78,8 @@ impl<'engine, E: LiveNode + 'engine> UIEngine<'engine, E> {
             .block_on()
             .unwrap();
 
-        let dummy_window = event_loop
-            .create_window(WindowAttributes::default())
-            .expect("Failure to create dummy window");
-        let dummy_surface = instance
-            .create_surface(dummy_window)
-            .expect("Failure to get dummy window surface.");
-        dummy_surface.configure(
-            &device,
-            &dummy_surface
-                .get_default_config(&adapter, 20, 20)
-                .expect("No valid config between this surface and the adapter."),
-        );
-        let dummy_texture = dummy_surface
-            .get_current_texture()
-            .expect("Failure to get dummy texture.");
-        let dummy_format = dummy_texture.texture.format();
-
-        // TODO: Pass a proper render target!!!
+        // TODO: Not do this:
+        let dummy_format = get_dummy_texture_format(event_loop, &instance, &device, &adapter);
         let main_pipeline = main_render_pipeline::<WindowRenderTarget>(
             &adapter,
             &device,
@@ -126,9 +110,36 @@ impl<'engine, E: LiveNode + 'engine> UIEngine<'engine, E> {
 
         // TODO: Process the render engine's processors and reactors on another execution context.
         // Perhaps return a `Future` here to be polled by the executor!
+        let render_engine_clone = render_engine.clone();
+        std::thread::spawn(move || dbg!("Other thread."));
 
         return render_engine;
     }
+}
+
+fn get_dummy_texture_format(
+    event_loop: &ActiveEventLoop,
+    instance: &wgpu::Instance,
+    device: &wgpu::Device,
+    adapter: &wgpu::Adapter,
+) -> wgpu::TextureFormat {
+    let dummy_window = event_loop
+        .create_window(WindowAttributes::default())
+        .expect("Failure to create dummy window");
+    let dummy_surface = instance
+        .create_surface(dummy_window)
+        .expect("Failure to get dummy window surface.");
+    dummy_surface.configure(
+        device,
+        &dummy_surface
+            .get_default_config(adapter, 20, 20)
+            .expect("No valid config between this surface and the adapter."),
+    );
+    let dummy_texture = dummy_surface
+        .get_current_texture()
+        .expect("Failure to get dummy texture.");
+    let dummy_format = dummy_texture.texture.format();
+    dummy_format
 }
 
 impl<'engine, E: LiveNode> UIEngineInterface for UIEngine<'engine, E> {

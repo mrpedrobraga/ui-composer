@@ -76,15 +76,15 @@ where
                 winit::window::WindowAttributes::default()
                     .with_title(self.attributes.title.get_cloned()),
             )
-            .expect("Couldn't reify window!");
+            .expect("Couldn't reify window node!");
 
         let window = std::sync::Arc::new(window);
 
         let render_artifacts = UINodeRenderingArtifacts {
-            instance_buffer_cpu: vec![Quad::default(); T::PRIMITIVE_COUNT],
+            instance_buffer_cpu: vec![Quad::default(); T::QUAD_COUNT],
             instance_buffer: gpu_resources.device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some("Instance Buffer for a Window"),
-                size: (size_of::<Quad>() as u64 * T::PRIMITIVE_COUNT as u64),
+                size: (size_of::<Quad>() as u64 * T::QUAD_COUNT as u64),
                 usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
                 mapped_at_creation: false,
             }),
@@ -259,14 +259,12 @@ impl GPURenderTarget for WindowRenderTarget {
             );
 
             // TODO: Flush primitives to GPU here!
-            let dummy_primitives = [Quad::rect(
-                Rect::new(0.0, 0.0, 16.0, 16.0),
-                Rgb::new(1.0, 0.0, 0.0),
-            )];
-            gpu_resources.queue.write_buffer(
+            let mut quads = vec![Quad::default(); 1];
+            content.push_quads(&mut quads[..]);
+            let dummy_primitives = gpu_resources.queue.write_buffer(
                 &render_artifacts.instance_buffer,
                 0,
-                bytemuck::cast_slice(&dummy_primitives),
+                bytemuck::cast_slice(&quads),
             );
             gpu_resources.queue.submit([]);
 

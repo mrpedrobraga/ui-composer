@@ -19,10 +19,19 @@ where
     T: LiveUINode,
 {
     fn handle_ui_event(&mut self, event: super::node::UIEvent) -> bool {
-        // This should be safe if you process the React before sending any events...
-        // But maaaaybe I should change this MaybeUninit to an Option?
-        let inner = unsafe { self.signal.held_item.assume_init_mut() };
-        inner.handle_ui_event(event)
+        self.signal
+            .held_item
+            .as_mut()
+            .expect("Process the React before trying to handle an event.")
+            .handle_ui_event(event)
+    }
+
+    fn push_quads(&self, quad_buffer: &mut [crate::prelude::Quad]) {
+        self.signal
+            .held_item
+            .as_ref()
+            .expect("Process the React before trying to render it.")
+            .push_quads(quad_buffer)
     }
 }
 
@@ -31,12 +40,14 @@ where
     S: Signal<Item = T>,
     T: UINode,
 {
-    const PRIMITIVE_COUNT: usize = T::PRIMITIVE_COUNT;
+    const QUAD_COUNT: usize = T::QUAD_COUNT;
 
     fn get_render_rect(&self) -> Option<vek::Rect<f32, f32>> {
-        // This should be safe if you only ever do this after the React is polled once (yielding a value).
-        // If you need to run this before the React receives a value, then, well, change the MaybeUninit to an Option.
-        unsafe { self.signal.held_item.assume_init_ref() }.get_render_rect()
+        self.signal
+            .held_item
+            .as_ref()
+            .expect("Process the React before trying to get its render rect.")
+            .get_render_rect()
     }
 }
 
@@ -49,7 +60,7 @@ pub trait UISignalExt: Signal {
         React {
             signal: Hold {
                 signal: self,
-                held_item: MaybeUninit::uninit(),
+                held_item: None,
             },
         }
     }
@@ -65,7 +76,7 @@ where
 {
     #[pin]
     signal: A,
-    pub held_item: MaybeUninit<B>,
+    pub held_item: Option<B>,
 }
 
 impl<A, B> Signal for Hold<A, B>
@@ -82,7 +93,7 @@ where
 
         match signal.poll_change(cx) {
             Poll::Ready(Some(v)) => {
-                held_item.write(v);
+                *held_item = Some(v);
                 Poll::Ready(Some(()))
             }
             Poll::Ready(None) => Poll::Ready(None),
