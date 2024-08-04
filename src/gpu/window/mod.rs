@@ -1,4 +1,4 @@
-use std::{mem::size_of, pin::Pin, sync::Arc};
+use std::{mem::size_of, pin::Pin, sync::Arc, time::Instant};
 
 use futures_signals::signal::{Mutable, Signal, SignalExt};
 use vek::{Extent2, Rect, Rgb};
@@ -7,9 +7,11 @@ use wgpu::{
     TextureView,
 };
 use winit::{
+    dpi::{LogicalPosition, PhysicalPosition, PhysicalSize},
     event::WindowEvent,
     event_loop::{self, ActiveEventLoop},
-    window::{Window, WindowId},
+    platform::x11::WindowAttributesExtX11,
+    window::{Window, WindowButtons, WindowId},
 };
 
 use super::{
@@ -106,10 +108,35 @@ where
         let window_default_size = Extent2::new(100, 100);
 
         let window = event_loop
-            .create_window(winit::window::WindowAttributes::default())
+            .create_window(
+                winit::window::WindowAttributes::default()
+                    .with_title("")
+                    .with_name("UI Composer App", "UI Composer App"),
+            )
             .expect("Couldn't reify window node!");
 
         let window = std::sync::Arc::new(window);
+
+        let window_clone = window.clone();
+        std::thread::spawn(move || {
+            let start = std::time::Instant::now();
+
+            window_clone.set_resizable(false);
+            window_clone.set_enabled_buttons(WindowButtons::empty());
+            window_clone.set_cursor_hittest(false);
+
+            loop {
+                let t = Instant::now().duration_since(start).as_secs_f32();
+                window_clone.request_redraw();
+                window_clone
+                    .set_outer_position(PhysicalPosition::new(100.0 + 1000.0 * t.sin(), 100.0));
+                window_clone.request_inner_size(PhysicalSize::new(
+                    400.0 + 100.0 * t.sin(),
+                    400.0 + 100.0 * t.cos(),
+                ));
+                std::thread::sleep(std::time::Duration::from_millis(16))
+            }
+        });
 
         let render_artifacts = UINodeRenderingArtifacts {
             instance_buffer_cpu: vec![Quad::default(); T::QUAD_COUNT],
@@ -206,7 +233,7 @@ impl<'window> LiveNode for LiveWindowNode {
             }
         }
 
-        self.content.handle_ui_event(event);
+        //self.content.handle_ui_event(event);
     }
 
     fn poll_reactivity_change(
@@ -312,8 +339,16 @@ impl GPURenderTarget for WindowRenderTarget {
             );
 
             // TODO: Flush primitives to GPU here!
-            let mut quads = vec![Quad::default(); 1];
-            content.push_quads(&mut quads[..]);
+            let mut quads = vec![
+                Quad::new(
+                    Rect::new(0.0, 0.0, self.size.w as f32, self.size.h as f32),
+                    Rgb::new(1.0, 0.0, 0.0)
+                );
+                1
+            ];
+
+            //content.push_quads(&mut quads[..]);
+
             let dummy_primitives = gpu_resources.queue.write_buffer(
                 &render_artifacts.instance_buffer,
                 0,

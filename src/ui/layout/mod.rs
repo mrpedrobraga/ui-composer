@@ -1,6 +1,9 @@
 use futures_signals::signal::{Signal, SignalExt};
 use vek::{Extent2, Rect};
 
+pub mod flow;
+pub mod functions;
+
 use super::{
     node::{LiveUINode, UINode},
     react::{React, UISignalExt},
@@ -16,6 +19,7 @@ pub trait LayoutItem: Send {
     type UINodeType: UINode;
 
     /// The size this component prefers to be at. It's usually it's minimum size.
+    #[inline(always)]
     fn get_natural_size(&self) -> Extent2<f32>;
 
     /// Renders the content of this layout item with a specific rect.

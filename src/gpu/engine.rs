@@ -46,9 +46,7 @@ pub struct UIEngine<'engine, E: LiveNode> {
 
 pub trait UIEngineInterface: Send {
     type RootNodeType: LiveNode;
-
     fn handle_window_event(&mut self, window_id: WindowId, event: UIEvent);
-
     fn poll_reactor_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>>;
 }
 
