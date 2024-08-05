@@ -1,14 +1,10 @@
 #![allow(non_snake_case)]
 use ui_composer::prelude::*;
 
-fn main() {
-    App::run(Main());
+pub fn main() {
+    App::run(MyApp());
 }
 
-fn Main() -> impl Node {
-    Window(Square())
-}
-
-fn Square() -> impl LayoutItem {
-    Resizable::new(|hx| Quad::new(hx.rect, Rgb::red()))
+pub fn MyApp() -> impl Node {
+    Window(Empty())
 }

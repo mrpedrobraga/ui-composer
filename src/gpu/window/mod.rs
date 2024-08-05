@@ -117,26 +117,26 @@ where
 
         let window = std::sync::Arc::new(window);
 
-        let window_clone = window.clone();
-        std::thread::spawn(move || {
-            let start = std::time::Instant::now();
+        // let window_clone = window.clone();
+        // std::thread::spawn(move || {
+        //     let start = std::time::Instant::now();
 
-            window_clone.set_resizable(false);
-            window_clone.set_enabled_buttons(WindowButtons::empty());
-            window_clone.set_cursor_hittest(false);
+        //     window_clone.set_resizable(false);
+        //     window_clone.set_enabled_buttons(WindowButtons::empty());
+        //     window_clone.set_cursor_hittest(false);
 
-            loop {
-                let t = Instant::now().duration_since(start).as_secs_f32();
-                window_clone.request_redraw();
-                window_clone
-                    .set_outer_position(PhysicalPosition::new(100.0 + 1000.0 * t.sin(), 100.0));
-                window_clone.request_inner_size(PhysicalSize::new(
-                    400.0 + 100.0 * t.sin(),
-                    400.0 + 100.0 * t.cos(),
-                ));
-                std::thread::sleep(std::time::Duration::from_millis(16))
-            }
-        });
+        //     loop {
+        //         let t = Instant::now().duration_since(start).as_secs_f32();
+        //         window_clone.request_redraw();
+        //         window_clone
+        //             .set_outer_position(PhysicalPosition::new(100.0 + 1000.0 * t.sin(), 100.0));
+        //         window_clone.request_inner_size(PhysicalSize::new(
+        //             400.0 + 100.0 * t.sin(),
+        //             400.0 + 100.0 * t.cos(),
+        //         ));
+        //         std::thread::sleep(std::time::Duration::from_millis(16))
+        //     }
+        // });
 
         let render_artifacts = UINodeRenderingArtifacts {
             instance_buffer_cpu: vec![Quad::default(); T::QUAD_COUNT],

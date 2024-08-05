@@ -89,3 +89,23 @@ where
         (self.factory)(layout_hints)
     }
 }
+
+pub struct EmptyItem {}
+
+impl LayoutItem for EmptyItem {
+    type UINodeType = ();
+
+    fn get_natural_size(&self) -> Extent2<f32> {
+        Extent2::new(0.0, 0.0)
+    }
+
+    fn bake(&self, layout_hints: LayoutHints) -> Self::UINodeType {
+        ()
+    }
+}
+
+#[allow(non_snake_case)]
+/// Creates an empty layout item.
+pub fn Empty() -> EmptyItem {
+    EmptyItem {}
+}
