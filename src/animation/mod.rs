@@ -105,6 +105,17 @@ pub struct SlideTo<A: Animatable> {
     target_value: A::Item,
     transition: Transition,
 }
+impl<A: Animatable> Animatable for SlideTo<A> {
+    type Item = A::Item;
+
+    fn set_state(&self, new_value: Self::Item) {
+        self.animation.set_state(new_value)
+    }
+
+    fn animate(&self) -> impl Future<Output = ()> {
+        async { /* Emit frames until you reach the destination. */ }
+    }
+}
 
 pub enum Transition {
     /// Sets the new value immediately

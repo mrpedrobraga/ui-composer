@@ -14,7 +14,14 @@ fn main() {
     });
 
     animate(state.clone())
-        .set(10) // !!!
+        .set(10)
+        .slide_to(
+            0,
+            Transition::WithDuration(
+                Duration::from_secs(1),
+                EasePair(EaseFn::Linear, EaseFn::Linear),
+            ),
+        )
         .slide_to(
             0,
             Transition::WithDuration(

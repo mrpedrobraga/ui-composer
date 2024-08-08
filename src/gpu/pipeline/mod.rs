@@ -3,6 +3,7 @@ use wgpu::RenderPass;
 use super::engine::{LiveNode, UIEngine};
 
 pub mod main_pipeline;
+pub mod three_dee;
 
 #[cfg(feature = "text")]
 pub mod text_pipeline;

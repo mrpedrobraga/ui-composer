@@ -10,6 +10,7 @@ use std::{
     task::{Context, Poll},
 };
 use vek::Extent2;
+use wgpu::TextureFormat;
 use winit::{
     dpi::PhysicalSize,
     event_loop::ActiveEventLoop,
@@ -82,7 +83,7 @@ impl<'engine: 'static, E: LiveNode + Send + 'engine> UIEngine<'engine, E> {
             .unwrap();
 
         // TODO: Not do this:
-        let dummy_format = get_dummy_texture_format(event_loop, &instance, &device, &adapter);
+        let dummy_format = TextureFormat::Rgba8UnormSrgb; //;get_dummy_texture_format(event_loop, &instance, &device, &adapter);
         let main_pipeline = main_render_pipeline::<WindowRenderTarget>(
             &adapter,
             &device,
