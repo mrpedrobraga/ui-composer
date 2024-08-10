@@ -11,4 +11,5 @@ pub fn MyApp() -> impl Node {
 
 pub fn Square() -> impl LayoutItem {
     Resizable::new(|hx| Quad::new(hx.rect, Rgb::green()))
+        .with_minimum_size(Extent2::new(300.0, 150.0))
 }

@@ -18,6 +18,7 @@ pub struct ViewNode<T: UINode> {
     content: T,
 }
 
+/// TODO: A View should create a single primitive bound to a texture that the contents draw onto.
 impl<T> LayoutItem for ViewNode<T>
 where
     T: UINode,
@@ -29,9 +30,7 @@ where
     }
 
     fn bake(&self, layout_hints: LayoutHints) -> Self::UINodeType {
-        /// TODO: Bind this primitive to the texture that
-        /// the contents of the view render to.
-        Quad::new(layout_hints.rect, Rgb::new(0.0, 0.0, 0.0))
+        Quad::new(layout_hints.rect, Rgb::green())
     }
 }
 

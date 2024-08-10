@@ -2,14 +2,19 @@ use futures_signals::signal::{Map, Signal, SignalExt};
 use pin_project::pin_project;
 use std::{mem::MaybeUninit, pin::Pin, task::Poll};
 
-use super::node::{LiveUINode, UINode};
+use super::{
+    layout::LayoutItem,
+    node::{LiveUINode, UINode},
+};
 
 /// UI Node that reacts to a signal and updates part of the UI tree.
+#[pin_project(project = ReactProj)]
 pub struct React<S: Send, T>
 where
     S: Signal<Item = T>,
     T: LiveUINode,
 {
+    #[pin]
     signal: Hold<S, T>,
 }
 
@@ -38,8 +43,7 @@ where
         self: Pin<&mut Self>,
         cx: &mut std::task::Context,
     ) -> Poll<Option<()>> {
-        let mut signal = unsafe { self.map_unchecked_mut(|me| &mut me.signal) };
-        signal.poll_change_unpin(cx)
+        self.poll_change(cx)
     }
 }
 
@@ -107,5 +111,14 @@ where
             Poll::Ready(None) => Poll::Ready(None),
             Poll::Pending => Poll::Pending,
         }
+    }
+}
+
+impl<S: Signal<Item = T> + Send, T: LiveUINode> Signal for React<S, T> {
+    type Item = ();
+
+    fn poll_change(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<Self::Item>> {
+        let ReactProj { signal } = self.project();
+        signal.poll_change(cx)
     }
 }

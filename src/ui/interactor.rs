@@ -1,4 +1,7 @@
-use std::pin::Pin;
+use std::{
+    pin::Pin,
+    task::{Context, Poll},
+};
 
 use super::node::{LiveUINode, UIEvent, UINode};
 
@@ -24,10 +27,7 @@ impl LiveUINode for Inspect {
         /* No quads to push in release mode. But maybe in debug? */
     }
 
-    fn poll_reactivity_change(
-        self: Pin<&mut Self>,
-        cx: &mut std::task::Context,
-    ) -> std::task::Poll<Option<()>> {
-        std::task::Poll::Ready(None)
+    fn poll_reactivity_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+        Poll::Ready(None)
     }
 }

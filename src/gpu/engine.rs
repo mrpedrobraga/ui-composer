@@ -120,14 +120,7 @@ impl<'engine: 'static, E: LiveNode + Send + 'engine> UIEngine<'engine, E> {
         // Perhaps return a `Future` here to be polled by the executor!
         let render_engine_clone = render_engine.clone();
         std::thread::spawn(|| {
-            pollster::block_on(async move {
-                let processor = EngineProcessor::new(render_engine_clone);
-                processor
-                    .for_each(|update| async {
-                        println!("There was an engine update!");
-                    })
-                    .await;
-            })
+            pollster::block_on(EngineProcessor::new(render_engine_clone).to_future())
         });
 
         return render_engine;
@@ -181,6 +174,7 @@ impl<'engine, E: LiveNode + Send> UIEngineInterface for UIEngine<'engine, E> {
         let mut ui = engine_tree.lock().expect("Failed to lock tree for polling");
         let ui = ui.deref_mut();
         let ui_pin = unsafe { Pin::new_unchecked(ui) };
+
         ui_pin.poll_reactivity_change(cx)
     }
 }
@@ -199,7 +193,7 @@ pub trait LiveNode: Send {
         event: UIEvent,
     );
 
-    /// Polls a reactor's change.
+    /// Polls reacitivity changes.
     fn poll_reactivity_change(
         self: Pin<&mut Self>,
         cx: &mut std::task::Context,

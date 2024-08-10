@@ -1,5 +1,9 @@
 use bytemuck::{Pod, Zeroable};
-use std::{mem::size_of, pin::Pin};
+use std::{
+    mem::size_of,
+    pin::Pin,
+    task::{Context, Poll},
+};
 use vek::{Aabr, Extent3, Mat4, Rect, Rgb, Vec2, Vec4};
 
 use super::node::{LiveUINode, UINode};
@@ -42,11 +46,8 @@ impl LiveUINode for Quad {
         quad_buffer[0] = *self;
     }
 
-    fn poll_reactivity_change(
-        self: Pin<&mut Self>,
-        cx: &mut std::task::Context,
-    ) -> std::task::Poll<Option<()>> {
-        std::task::Poll::Ready(None)
+    fn poll_reactivity_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+        Poll::Ready(None)
     }
 }
 

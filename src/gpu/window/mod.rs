@@ -1,4 +1,11 @@
-use std::{mem::size_of, ops::DerefMut, pin::Pin, sync::Arc, time::Instant};
+use std::{
+    mem::size_of,
+    ops::DerefMut,
+    pin::Pin,
+    sync::Arc,
+    task::{Context, Poll},
+    time::Instant,
+};
 
 use futures_signals::signal::{Mutable, Signal, SignalExt};
 use pin_project::pin_project;
@@ -32,20 +39,20 @@ use crate::ui::{
 };
 
 /// A node that describes the existence of a new window in the UI tree.
-pub struct WindowNode<T: UINode, S: WindowState> {
-    state: S,
+pub struct WindowNode<T: UINode> {
+    state: WindowNodeState,
     content: T,
 }
 
-impl<T: UINode, S: WindowState> WindowNode<T, S> {
+impl<T: UINode> WindowNode<T> {
     /// Consumes this window node and returns a new one with the set title.
-    pub fn with_title<Str: Into<String>>(self, title: Str) -> WindowNode<T, impl WindowState> {
-        let (size_state, _) = self.state.parts();
+    pub fn with_title<Str: Into<String>>(self, title: Str) -> WindowNode<T> {
+        let WindowNodeState { title: _, size } = self.state;
 
         WindowNode {
             state: WindowNodeState {
-                title: Mutable::new(title.into()).signal_cloned(),
-                size: size_state,
+                title: Mutable::new(title.into()),
+                size,
             },
             content: self.content,
         }
@@ -53,16 +60,13 @@ impl<T: UINode, S: WindowState> WindowNode<T, S> {
 
     /// Consumes this window node and returns a new one with a reactive title.
     /// The window's title will change every time this signal changes.
-    pub fn with_reactive_title<Sig>(self, title_signal: Sig) -> WindowNode<T, impl WindowState>
-    where
-        Sig: Signal<Item = String>,
-    {
-        let (size_state, title_signal) = self.state.parts();
+    pub fn with_reactive_title<Sig>(self, title_signal: Mutable<String>) -> WindowNode<T> {
+        let WindowNodeState { title, size } = self.state;
 
         WindowNode {
             state: WindowNodeState {
                 title: title_signal,
-                size: size_state,
+                size,
             },
             content: self.content,
         }
@@ -71,13 +75,13 @@ impl<T: UINode, S: WindowState> WindowNode<T, S> {
 
 /// Creates a new window as the render target for the nodes inside.
 #[allow(non_snake_case)]
-pub fn Window<T>(item: T) -> WindowNode<impl UINode, impl WindowState>
+pub fn Window<T>(item: T) -> WindowNode<impl UINode>
 where
     T: LayoutItem + 'static,
 {
     let state = WindowNodeState {
         size: Mutable::new(item.get_natural_size()),
-        title: Mutable::new(String::new()).signal_cloned(),
+        title: Mutable::new(String::new()),
     };
 
     let window_size_signal = state.size.signal();
@@ -94,11 +98,11 @@ where
 
     WindowNode {
         state,
-        content: View(minimum_size, item).bake_react(window_size_signal),
+        content: item,
     }
 }
 
-impl<T, S: WindowState + Send> Node for WindowNode<T, S>
+impl<T> Node for WindowNode<T>
 where
     T: UINode + 'static,
 {
@@ -106,15 +110,20 @@ where
 
     /// Transforms a WindowNode descriptor into a live window node which can be really used!
     fn reify(self, event_loop: &ActiveEventLoop, gpu_resources: &GPUResources) -> Self::LiveType {
-        let window_default_size = Extent2::new(100, 100);
+        let window_default_size = self.state.size.get();
 
-        let window = event_loop
+        let mut window = event_loop
             .create_window(
                 winit::window::WindowAttributes::default()
                     .with_title("")
                     .with_name("UI Composer App", "UI Composer App"),
             )
             .expect("Couldn't reify window node!");
+
+        window.set_min_inner_size(Some(PhysicalSize::new(
+            window_default_size.w,
+            window_default_size.h,
+        )));
 
         let window = std::sync::Arc::new(window);
 
@@ -151,11 +160,12 @@ where
 
         LiveWindowNode {
             content: Box::new(self.content),
+            state: self.state,
             render_artifacts,
             render_target: WindowRenderTarget::new(
                 &gpu_resources,
                 window.clone(),
-                window_default_size,
+                window_default_size.as_(),
             ),
             window,
         }
@@ -167,27 +177,15 @@ pub struct WindowAttributes<TitleSignal: Signal<Item = String>> {
     pub title: TitleSignal,
 }
 
-pub struct WindowNodeState<A>
-where
-    A: Signal<Item = String>,
-{
-    pub title: A,
+pub struct WindowNodeState {
+    pub title: Mutable<String>,
     pub size: Mutable<Extent2<f32>>,
 }
 
-pub trait WindowState {
-    fn parts(self) -> (Mutable<Extent2<f32>>, impl Signal<Item = String>);
-}
-impl<A: Signal<Item = String>> WindowState for WindowNodeState<A> {
-    fn parts(self) -> (Mutable<Extent2<f32>>, impl Signal<Item = String>) {
-        (self.size, self.title)
-    }
-}
-
-fn new_window_state(window_size: Extent2<f32>) -> impl WindowState {
+fn new_window_state(window_size: Extent2<f32>) -> WindowNodeState {
     WindowNodeState {
         size: Mutable::new(window_size),
-        title: Mutable::new(String::new()).signal_cloned(),
+        title: Mutable::new(String::new()),
     }
 }
 
@@ -196,6 +194,7 @@ fn new_window_state(window_size: Extent2<f32>) -> impl WindowState {
 pub struct LiveWindowNode {
     #[pin]
     content: Box<dyn LiveUINode>,
+    state: WindowNodeState,
     render_artifacts: UINodeRenderingArtifacts,
     render_target: WindowRenderTarget,
     window: Arc<Window>,
@@ -216,10 +215,11 @@ impl<'window> LiveNode for LiveWindowNode {
     ) {
         if window_id == self.window.id() {
             match event {
-                WindowEvent::Resized(new_size) => self.render_target.resize(
-                    &gpu_resources,
-                    Extent2::new(new_size.width, new_size.height),
-                ),
+                WindowEvent::Resized(new_size) => {
+                    let new_size = Extent2::new(new_size.width, new_size.height);
+                    self.render_target.resize(&gpu_resources, new_size);
+                    self.state.size.set(new_size.as_());
+                }
                 WindowEvent::CloseRequested => {
                     // TODO: Handle closing of windows.
                     println!(
@@ -239,10 +239,7 @@ impl<'window> LiveNode for LiveWindowNode {
         //self.content.handle_ui_event(event);
     }
 
-    fn poll_reactivity_change(
-        self: Pin<&mut Self>,
-        cx: &mut std::task::Context,
-    ) -> std::task::Poll<Option<()>> {
+    fn poll_reactivity_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         // TODO: Figure out what do to with the result of this poll (as it might introduce a need for redrawing!!!);
 
         let LiveWindowNodeProj {
@@ -250,13 +247,14 @@ impl<'window> LiveNode for LiveWindowNode {
             render_artifacts,
             render_target,
             window,
+            state,
         } = self.project();
+
         let content: &mut _ = &mut **content;
         let content = unsafe { Pin::new_unchecked(content) };
         let poll = content.poll_reactivity_change(cx);
-
         match &poll {
-            std::task::Poll::Ready(Some(_)) => window.request_redraw(),
+            Poll::Ready(_) => window.request_redraw(),
             _ => (),
         }
 
