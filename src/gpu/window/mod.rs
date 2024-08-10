@@ -236,7 +236,7 @@ impl<'window> LiveNode for LiveWindowNode {
             }
         }
 
-        //self.content.handle_ui_event(event);
+        self.content.handle_ui_event(event);
     }
 
     fn poll_reactivity_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
@@ -354,7 +354,7 @@ impl GPURenderTarget for WindowRenderTarget {
             );
 
             // TODO: Flush primitives to GPU here!
-            let mut quads = vec![Quad::default(); 1];
+            let mut quads = vec![Quad::default(); content.get_quad_count()];
 
             content.push_quads(&mut quads[..]);
 
@@ -372,7 +372,7 @@ impl GPURenderTarget for WindowRenderTarget {
             render_pass.draw_indexed(
                 0..gpu_resources.main_pipeline.mesh_index_count as u32,
                 0,
-                0..1,
+                0..quads.len() as u32,
             );
         }
 

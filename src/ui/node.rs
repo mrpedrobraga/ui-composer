@@ -14,12 +14,18 @@ pub type UIEvent = winit::event::WindowEvent;
 /// The entire user interface interaction and render pipelines are created with UI Nodes.
 pub trait LiveUINode: Send {
     /// Handles an UI Event (or not). Returns whether the event was handled.
+    #[inline(always)]
     fn handle_ui_event(&mut self, event: UIEvent) -> bool;
 
     /// Pushes quads to a quad buffer slice.
+    #[inline(always)]
     fn push_quads(&self, quad_buffer: &mut [Quad]);
 
+    /// TODO: Remove this when using generics on the engine?
+    fn get_quad_count(&self) -> usize;
+
     /// Checks if a reactive change happened, using the typical future model.
+    #[inline(always)]
     fn poll_reactivity_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>>;
 }
 
@@ -45,6 +51,10 @@ impl LiveUINode for () {
     fn poll_reactivity_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         Poll::Ready(None)
     }
+
+    fn get_quad_count(&self) -> usize {
+        Self::QUAD_COUNT
+    }
 }
 
 impl UINode for () {
@@ -57,7 +67,7 @@ impl UINode for () {
 
 impl<T> LiveUINode for Option<T>
 where
-    T: LiveUINode,
+    T: UINode,
 {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         self.as_mut()
@@ -66,8 +76,13 @@ where
     }
 
     fn push_quads(&self, quad_buffer: &mut [Quad]) {
-        if let Some(inner) = self {
-            self.push_quads(quad_buffer)
+        match self {
+            Some(inner) => inner.push_quads(quad_buffer),
+            None => {
+                for idx in 0..Self::QUAD_COUNT {
+                    quad_buffer[0] = Quad::default()
+                }
+            }
         }
     }
 
@@ -76,6 +91,10 @@ where
         self.as_pin_mut()
             .map(|inner| inner.poll_reactivity_change(cx))
             .unwrap_or(Poll::Ready(Some(())))
+    }
+
+    fn get_quad_count(&self) -> usize {
+        Self::QUAD_COUNT
     }
 }
 
@@ -90,9 +109,57 @@ where
     }
 }
 
+impl<T, E> LiveUINode for Result<T, E>
+where
+    T: UINode,
+    E: UINode,
+{
+    fn handle_ui_event(&mut self, event: UIEvent) -> bool {
+        match self {
+            Ok(v) => v.handle_ui_event(event),
+            Err(e) => e.handle_ui_event(event),
+        }
+    }
+
+    fn push_quads(&self, quad_buffer: &mut [Quad]) {
+        match self {
+            Ok(v) => v.push_quads(quad_buffer),
+            Err(e) => e.push_quads(quad_buffer),
+        }
+    }
+
+    fn poll_reactivity_change(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+        // let this: &mut Self = self.deref_mut();
+        // match this {
+        //     Ok(v) => todo!(),
+        //     Err(e) => todo!(),
+        // }
+        unimplemented!()
+    }
+
+    fn get_quad_count(&self) -> usize {
+        Self::QUAD_COUNT
+    }
+}
+
+impl<T, E> UINode for Result<T, E>
+where
+    T: UINode,
+    E: UINode,
+{
+    const QUAD_COUNT: usize = T::QUAD_COUNT;
+
+    fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
+        match self {
+            Ok(v) => v.get_render_rect(),
+            Err(e) => e.get_render_rect(),
+        }
+    }
+}
+
 impl<T> LiveUINode for Box<T>
 where
-    T: LiveUINode,
+    T: UINode,
 {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         self.as_mut().handle_ui_event(event)
@@ -106,6 +173,10 @@ where
         // TODO: Why is this unsafe?
         let inner = unsafe { self.as_mut().map_unchecked_mut(|v| &mut **v) };
         inner.poll_reactivity_change(cx)
+    }
+
+    fn get_quad_count(&self) -> usize {
+        Self::QUAD_COUNT
     }
 }
 
@@ -139,27 +210,34 @@ where
     }
 
     fn poll_reactivity_change(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
-        return Poll::Pending;
-        // let (pinned_a, pinned_b) = {
-        //     let mut mut_ref = self.as_mut();
-        //     let (a, b) = unsafe { mut_ref.map_unchecked_mut(|r| (&mut r.0, &mut r.1)) };
-        //     (a, b)
-        // };
+        let (pinned_a, pinned_b) = {
+            let mut mut_ref = unsafe { self.get_unchecked_mut() };
+            let (ref mut a, ref mut b) = mut_ref;
 
-        // let poll_a = pinned_a.poll_reactivity_change(cx);
-        // let poll_b = pinned_b.poll_reactivity_change(cx);
+            let a = unsafe { Pin::new_unchecked(a) };
+            let b = unsafe { Pin::new_unchecked(b) };
 
-        // match (poll_a, poll_b) {
-        //     (Poll::Ready(None), Poll::Ready(None)) => Poll::Ready(None),
-        //     (Poll::Pending, Poll::Pending) => Poll::Pending,
-        //     (Poll::Ready(None), Poll::Pending) => Poll::Pending,
-        //     (Poll::Pending, Poll::Ready(None)) => Poll::Pending,
-        //     (Poll::Ready(Some(())), Poll::Ready(Some(()))) => Poll::Ready(Some(())),
-        //     (Poll::Ready(None), Poll::Ready(Some(()))) => Poll::Ready(Some(())),
-        //     (Poll::Ready(Some(())), Poll::Ready(None)) => Poll::Ready(Some(())),
-        //     (Poll::Ready(Some(())), Poll::Pending) => Poll::Ready(Some(())),
-        //     (Poll::Pending, Poll::Ready(Some(()))) => Poll::Ready(Some(())),
-        // }
+            (a, b)
+        };
+
+        let poll_a = pinned_a.poll_reactivity_change(cx);
+        let poll_b = pinned_b.poll_reactivity_change(cx);
+
+        match (poll_a, poll_b) {
+            (Poll::Ready(None), Poll::Ready(None)) => Poll::Ready(None),
+            (Poll::Pending, Poll::Pending) => Poll::Pending,
+            (Poll::Ready(None), Poll::Pending) => Poll::Pending,
+            (Poll::Pending, Poll::Ready(None)) => Poll::Pending,
+            (Poll::Ready(Some(())), Poll::Ready(Some(()))) => Poll::Ready(Some(())),
+            (Poll::Ready(None), Poll::Ready(Some(()))) => Poll::Ready(Some(())),
+            (Poll::Ready(Some(())), Poll::Ready(None)) => Poll::Ready(Some(())),
+            (Poll::Ready(Some(())), Poll::Pending) => Poll::Ready(Some(())),
+            (Poll::Pending, Poll::Ready(Some(()))) => Poll::Ready(Some(())),
+        }
+    }
+
+    fn get_quad_count(&self) -> usize {
+        Self::QUAD_COUNT
     }
 }
 

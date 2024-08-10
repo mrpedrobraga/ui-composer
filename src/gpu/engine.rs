@@ -221,11 +221,11 @@ impl<E: LiveNode> Signal for EngineProcessor<E> {
 
         let mut any_pending = false;
 
-        let mut engine_guard = engine.lock().expect("Failed to lock ui for polling");
-        let engine_ref: &mut dyn UIEngineInterface<RootNodeType = E> = engine_guard.as_mut();
-        let engine_pinned = unsafe { Pin::new_unchecked(engine_ref) };
-        let engine_poll = engine_pinned.poll_reactor_change(cx);
+        let mut engine = engine.lock().expect("Failed to lock ui for polling");
+        let engine: &mut dyn UIEngineInterface<RootNodeType = E> = engine.as_mut();
+        let engine = unsafe { Pin::new_unchecked(engine) };
+        let poll = engine.poll_reactor_change(cx);
 
-        engine_poll
+        poll
     }
 }

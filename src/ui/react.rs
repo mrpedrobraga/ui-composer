@@ -9,6 +9,7 @@ use super::{
 
 /// UI Node that reacts to a signal and updates part of the UI tree.
 #[pin_project(project = ReactProj)]
+#[must_use = "Reactors are Signals, and therefore do nothing unless polled"]
 pub struct React<S: Send, T>
 where
     S: Signal<Item = T>,
@@ -21,22 +22,20 @@ where
 impl<S: Send, T> LiveUINode for React<S, T>
 where
     S: Signal<Item = T>,
-    T: LiveUINode,
+    T: UINode,
 {
     fn handle_ui_event(&mut self, event: super::node::UIEvent) -> bool {
-        self.signal
-            .held_item
-            .as_mut()
-            .expect("Process the React before trying to handle an event.")
-            .handle_ui_event(event)
+        match &mut self.signal.held_item {
+            Some(item) => item.handle_ui_event(event),
+            None => false, //panic!("Reactor was asked to handle event without being polled first."),
+        }
     }
 
     fn push_quads(&self, quad_buffer: &mut [crate::prelude::Quad]) {
-        self.signal
-            .held_item
-            .as_ref()
-            .expect("Process the React before trying to render it.")
-            .push_quads(quad_buffer)
+        match &self.signal.held_item {
+            Some(item) => item.push_quads(quad_buffer),
+            None => panic!("Reactor was drawn without being polled first!"),
+        }
     }
 
     fn poll_reactivity_change(
@@ -44,6 +43,10 @@ where
         cx: &mut std::task::Context,
     ) -> Poll<Option<()>> {
         self.poll_change(cx)
+    }
+
+    fn get_quad_count(&self) -> usize {
+        Self::QUAD_COUNT
     }
 }
 
@@ -55,11 +58,10 @@ where
     const QUAD_COUNT: usize = T::QUAD_COUNT;
 
     fn get_render_rect(&self) -> Option<vek::Rect<f32, f32>> {
-        self.signal
-            .held_item
-            .as_ref()
-            .expect("Process the React before trying to get its render rect.")
-            .get_render_rect()
+        match &self.signal.held_item {
+            Some(item) => item.get_render_rect(),
+            None => panic!("Reactor was asked for its render rect before being polled!"),
+        }
     }
 }
 
@@ -94,6 +96,7 @@ where
 impl<A, B> Signal for Hold<A, B>
 where
     A: Signal<Item = B>,
+    B: LiveUINode,
 {
     type Item = ();
 
@@ -103,13 +106,21 @@ where
     ) -> std::task::Poll<Option<Self::Item>> {
         let HoldProj { signal, held_item } = self.project();
 
-        match signal.poll_change(cx) {
-            Poll::Ready(Some(v)) => {
-                *held_item = Some(v);
+        let poll = match signal.poll_change(cx) {
+            Poll::Ready(Some(mut v)) => {
+                held_item.replace(v);
                 Poll::Ready(Some(()))
             }
             Poll::Ready(None) => Poll::Ready(None),
             Poll::Pending => Poll::Pending,
+        };
+
+        match held_item {
+            Some(held_item) => {
+                let held_item = unsafe { Pin::new_unchecked(held_item) };
+                held_item.poll_reactivity_change(cx)
+            }
+            None => poll,
         }
     }
 }

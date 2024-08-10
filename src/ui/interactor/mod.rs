@@ -1,12 +1,13 @@
+use super::node::{LiveUINode, UIEvent, UINode};
 use std::{
     pin::Pin,
     task::{Context, Poll},
 };
 
-use super::node::{LiveUINode, UIEvent, UINode};
+pub mod hover;
+pub use hover::*;
 
 pub trait Interactor: UINode {}
-
 pub struct Inspect();
 
 impl Interactor for Inspect {}
@@ -28,6 +29,10 @@ impl LiveUINode for Inspect {
     }
 
     fn poll_reactivity_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
-        Poll::Ready(None)
+        Poll::Ready(Some(()))
+    }
+
+    fn get_quad_count(&self) -> usize {
+        Self::QUAD_COUNT
     }
 }

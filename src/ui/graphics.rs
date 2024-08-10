@@ -47,7 +47,11 @@ impl LiveUINode for Quad {
     }
 
     fn poll_reactivity_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
-        Poll::Ready(None)
+        Poll::Ready(Some(()))
+    }
+
+    fn get_quad_count(&self) -> usize {
+        Self::QUAD_COUNT
     }
 }
 
