@@ -6,5 +6,9 @@ pub fn main() {
 }
 
 pub fn MyApp() -> impl Node {
-    Window(Empty())
+    Window(Square())
+}
+
+pub fn Square() -> impl LayoutItem {
+    Resizable::new(|hx| Quad::new(hx.rect, Rgb::green()))
 }

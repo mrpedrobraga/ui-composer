@@ -1,6 +1,7 @@
-use std::{mem::size_of, pin::Pin, sync::Arc, time::Instant};
+use std::{mem::size_of, ops::DerefMut, pin::Pin, sync::Arc, time::Instant};
 
 use futures_signals::signal::{Mutable, Signal, SignalExt};
+use pin_project::pin_project;
 use vek::{Extent2, Rect, Rgb};
 use wgpu::{
     core::device::queue, BufferUsages, RenderPass, Surface, SurfaceConfiguration, TextureFormat,
@@ -191,7 +192,9 @@ fn new_window_state(window_size: Extent2<f32>) -> impl WindowState {
 }
 
 /// A live window which contains a UI tree inside.
+#[pin_project(project = LiveWindowNodeProj)]
 pub struct LiveWindowNode {
+    #[pin]
     content: Box<dyn LiveUINode>,
     render_artifacts: UINodeRenderingArtifacts,
     render_target: WindowRenderTarget,
@@ -242,8 +245,22 @@ impl<'window> LiveNode for LiveWindowNode {
     ) -> std::task::Poll<Option<()>> {
         // TODO: Figure out what do to with the result of this poll (as it might introduce a need for redrawing!!!);
 
-        let content = unsafe { self.map_unchecked_mut(|me| &mut *me.content) };
-        content.poll_reactivity_change(cx)
+        let LiveWindowNodeProj {
+            mut content,
+            render_artifacts,
+            render_target,
+            window,
+        } = self.project();
+        let content: &mut _ = &mut **content;
+        let content = unsafe { Pin::new_unchecked(content) };
+        let poll = content.poll_reactivity_change(cx);
+
+        match &poll {
+            std::task::Poll::Ready(Some(_)) => window.request_redraw(),
+            _ => (),
+        }
+
+        poll
     }
 }
 
@@ -339,15 +356,9 @@ impl GPURenderTarget for WindowRenderTarget {
             );
 
             // TODO: Flush primitives to GPU here!
-            let mut quads = vec![
-                Quad::new(
-                    Rect::new(0.0, 0.0, self.size.w as f32, self.size.h as f32),
-                    Rgb::new(1.0, 0.0, 0.0)
-                );
-                1
-            ];
+            let mut quads = vec![Quad::default(); 1];
 
-            //content.push_quads(&mut quads[..]);
+            content.push_quads(&mut quads[..]);
 
             let dummy_primitives = gpu_resources.queue.write_buffer(
                 &render_artifacts.instance_buffer,

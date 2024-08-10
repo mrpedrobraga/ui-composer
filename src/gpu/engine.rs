@@ -1,7 +1,9 @@
 use futures::{FutureExt, StreamExt};
 use futures_signals::signal::{Mutable, Signal, SignalExt};
+use pin_project::pin_project;
 use pollster::FutureExt as _;
 use std::{
+    borrow::BorrowMut,
     collections::HashSet,
     marker::PhantomData,
     ops::DerefMut,
@@ -38,7 +40,9 @@ pub struct GPUResources {
 }
 
 /// An engine that can render our application to the GPU as well as forward interactive events.
+#[pin_project(project=UIEngineProj)]
 pub struct UIEngine<'engine, E: LiveNode> {
+    #[pin]
     pub engine_tree: Arc<Mutex<E>>,
     pub gpu_resources: GPUResources,
 
@@ -83,7 +87,7 @@ impl<'engine: 'static, E: LiveNode + Send + 'engine> UIEngine<'engine, E> {
             .unwrap();
 
         // TODO: Not do this:
-        let dummy_format = TextureFormat::Rgba8UnormSrgb; //;get_dummy_texture_format(event_loop, &instance, &device, &adapter);
+        let dummy_format = TextureFormat::Bgra8UnormSrgb; //;get_dummy_texture_format(event_loop, &instance, &device, &adapter);
         let main_pipeline = main_render_pipeline::<WindowRenderTarget>(
             &adapter,
             &device,
@@ -118,6 +122,11 @@ impl<'engine: 'static, E: LiveNode + Send + 'engine> UIEngine<'engine, E> {
         std::thread::spawn(|| {
             pollster::block_on(async move {
                 let processor = EngineProcessor::new(render_engine_clone);
+                processor
+                    .for_each(|update| async {
+                        println!("There was an engine update!");
+                    })
+                    .await;
             })
         });
 
@@ -163,7 +172,16 @@ impl<'engine, E: LiveNode + Send> UIEngineInterface for UIEngine<'engine, E> {
     }
 
     fn poll_reactor_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
-        Poll::Ready(Some(()))
+        let UIEngineProj {
+            engine_tree,
+            gpu_resources,
+            _marker,
+        } = self.project();
+
+        let mut ui = engine_tree.lock().expect("Failed to lock tree for polling");
+        let ui = ui.deref_mut();
+        let ui_pin = unsafe { Pin::new_unchecked(ui) };
+        ui_pin.poll_reactivity_change(cx)
     }
 }
 
@@ -189,7 +207,9 @@ pub trait LiveNode: Send {
 }
 
 /// A futures-based construct that watches and processes the engine for its reactors and processors, etc.
+#[pin_project(project=EngineProcessorProj)]
 pub struct EngineProcessor<E> {
+    #[pin]
     engine: Arc<Mutex<Box<dyn UIEngineInterface<RootNodeType = E>>>>,
 }
 
@@ -203,15 +223,15 @@ impl<E: LiveNode> Signal for EngineProcessor<E> {
     type Item = ();
 
     fn poll_change(self: std::pin::Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
+        let EngineProcessorProj { engine } = self.project();
+
         let mut any_pending = false;
 
-        let mut ui = self
-            .engine
-            .lock()
-            .expect("Could not lock the engine to process.");
+        let mut engine_guard = engine.lock().expect("Failed to lock ui for polling");
+        let engine_ref: &mut dyn UIEngineInterface<RootNodeType = E> = engine_guard.as_mut();
+        let engine_pinned = unsafe { Pin::new_unchecked(engine_ref) };
+        let engine_poll = engine_pinned.poll_reactor_change(cx);
 
-        //let poll = ui.poll_reactor_change(cx);
-
-        Poll::Ready(None)
+        engine_poll
     }
 }
