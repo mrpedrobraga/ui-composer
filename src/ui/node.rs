@@ -223,17 +223,7 @@ where
         let poll_a = pinned_a.poll_reactivity_change(cx);
         let poll_b = pinned_b.poll_reactivity_change(cx);
 
-        match (poll_a, poll_b) {
-            (Poll::Ready(None), Poll::Ready(None)) => Poll::Ready(None),
-            (Poll::Pending, Poll::Pending) => Poll::Pending,
-            (Poll::Ready(None), Poll::Pending) => Poll::Pending,
-            (Poll::Pending, Poll::Ready(None)) => Poll::Pending,
-            (Poll::Ready(Some(())), Poll::Ready(Some(()))) => Poll::Ready(Some(())),
-            (Poll::Ready(None), Poll::Ready(Some(()))) => Poll::Ready(Some(())),
-            (Poll::Ready(Some(())), Poll::Ready(None)) => Poll::Ready(Some(())),
-            (Poll::Ready(Some(())), Poll::Pending) => Poll::Ready(Some(())),
-            (Poll::Pending, Poll::Ready(Some(()))) => Poll::Ready(Some(())),
-        }
+        merge_polls(poll_a, poll_b)
     }
 
     fn get_quad_count(&self) -> usize {
@@ -255,5 +245,73 @@ where
             (Some(a), None) => Some(a),
             (Some(a), Some(b)) => Some(a.union(b)),
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct SizedVec<T, const N: usize> {
+    inner: Vec<T>,
+}
+impl<T, const N: usize> SizedVec<T, N> {
+    pub fn new(inner: Vec<T>) -> Self {
+        Self { inner }
+    }
+}
+impl<A: UINode, const N: usize> LiveUINode for SizedVec<A, N> {
+    fn handle_ui_event(&mut self, event: UIEvent) -> bool {
+        let mut any_handled = false;
+        for item in self.inner.iter_mut() {
+            any_handled = item.handle_ui_event(event.clone()) || any_handled;
+        }
+        any_handled
+    }
+
+    fn push_quads(&self, quad_buffer: &mut [Quad]) {
+        if self.inner.len() == 0 {
+            return;
+        }
+
+        for idx in 0..N {
+            self.inner[idx]
+                .push_quads(&mut quad_buffer[(idx * A::QUAD_COUNT)..((idx + 1) * A::QUAD_COUNT)])
+        }
+    }
+
+    fn get_quad_count(&self) -> usize {
+        N * A::QUAD_COUNT
+    }
+
+    fn poll_reactivity_change(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+        let mut poll_acc = Poll::Pending;
+        let this = unsafe { self.get_unchecked_mut() };
+        for idx in 0..N {
+            let item = unsafe { Pin::new_unchecked(&mut this.inner[idx]) };
+            let item_poll = item.poll_reactivity_change(cx);
+            poll_acc = merge_polls(poll_acc, item_poll)
+        }
+        poll_acc
+    }
+}
+impl<A: UINode, const N: usize> UINode for SizedVec<A, N> {
+    const QUAD_COUNT: usize = N * A::QUAD_COUNT;
+
+    fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
+        let mut iterator = self.inner.iter();
+        let first = iterator.next()?.get_render_rect();
+        iterator.fold(first, |acc, item| Some(acc?.union(item.get_render_rect()?)))
+    }
+}
+
+fn merge_polls(poll_a: Poll<Option<()>>, poll_b: Poll<Option<()>>) -> Poll<Option<()>> {
+    match (poll_a, poll_b) {
+        (Poll::Ready(None), Poll::Ready(None)) => Poll::Ready(None),
+        (Poll::Pending, Poll::Pending) => Poll::Pending,
+        (Poll::Ready(None), Poll::Pending) => Poll::Pending,
+        (Poll::Pending, Poll::Ready(None)) => Poll::Pending,
+        (Poll::Ready(Some(())), Poll::Ready(Some(()))) => Poll::Ready(Some(())),
+        (Poll::Ready(None), Poll::Ready(Some(()))) => Poll::Ready(Some(())),
+        (Poll::Ready(Some(())), Poll::Ready(None)) => Poll::Ready(Some(())),
+        (Poll::Ready(Some(())), Poll::Pending) => Poll::Ready(Some(())),
+        (Poll::Pending, Poll::Ready(Some(()))) => Poll::Ready(Some(())),
     }
 }
