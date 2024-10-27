@@ -1,6 +1,10 @@
 #![allow(non_snake_case)]
 use signal::SignalExt;
-use ui_composer::{components::Center, prelude::*, ui::react::UISignalExt};
+use ui_composer::{
+    components::{Center, WithSize},
+    prelude::*,
+    ui::react::UISignalExt,
+};
 
 #[macro_export]
 macro_rules! all {
@@ -16,7 +20,7 @@ pub fn main() {
 }
 
 pub fn MyApp() -> impl Node {
-    Window(Center(Square()))
+    Window(Center(WithSize(Extent2::new(32.0, 32.0), Square())))
 }
 
 pub fn Square() -> impl LayoutItem {
@@ -29,13 +33,13 @@ pub fn Square() -> impl LayoutItem {
             hover_signal
                 .map(move |is_hovering| {
                     if is_hovering {
-                        Quad::new(hx.rect, Rgb::green())
+                        Quad::new(hx.rect, Rgb::new(0.4, 0.9, 0.4))
                     } else {
-                        Quad::new(hx.rect, Rgb::red())
+                        Quad::new(hx.rect, Rgb::new(0.9, 0.4, 0.4))
                     }
                 })
                 .into_ui(),
         )
     })
-    .with_minimum_size(Extent2::new(400.0, 100.0))
+    .with_minimum_size(Extent2::new(0.0, 0.0))
 }

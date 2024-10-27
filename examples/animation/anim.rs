@@ -1,39 +1,7 @@
-use futures_time::time::{Duration, Instant};
+use futures_time::time::Duration;
 use std::ops::{Add, Mul};
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct AnimationParams {
-    /// The moment the animation started.
-    pub start: Instant,
-    /// The present instant
-    pub now: Instant,
-    /// Time elapsed since the previous frame.
-    pub delta_time: Duration,
-}
-
-impl AnimationParams {
-    pub fn new(start: Instant, now: Instant, delta_time: Duration) -> Self {
-        Self {
-            start,
-            now,
-            delta_time,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum PlayStatus<T> {
-    Playing(T),
-    Done(T),
-}
-
-/// A Stream that can be consumed in real time by passing in the elapsed time since the previous frame.
-pub trait RealTimeStream {
-    /// The item this stream yields.
-    type Item;
-
-    fn next(&self, animation: AnimationParams) -> PlayStatus<Self::Item>;
-}
+use ui_composer::animation::{AnimationParams, Poll, RealTimeStream};
+use vek::Vec2;
 
 pub struct Interpolate<T> {
     start: T,
@@ -56,12 +24,59 @@ where
 {
     type Item = T;
 
-    fn next(&self, animation: AnimationParams) -> PlayStatus<Self::Item> {
+    fn next(&mut self, animation: AnimationParams) -> Poll<Self::Item> {
         let time_since_start = animation.now.duration_since(*animation.start);
         if time_since_start > *self.duration {
-            return PlayStatus::Done(self.end);
+            return Poll::Done(self.end);
         }
         let lerp_factor = time_since_start.as_secs_f64() / self.duration.as_secs_f64();
-        return PlayStatus::Playing(self.start * (1.0 - lerp_factor) + self.end * lerp_factor);
+        return Poll::Playing(self.start * (1.0 - lerp_factor) + self.end * lerp_factor);
+    }
+}
+
+pub struct Spring {
+    target_position: Vec2<f32>,
+    dampening: f32,
+    item_mass: f32,
+    item_position: Vec2<f32>,
+    item_velocity: Vec2<f32>,
+}
+
+impl Spring {
+    pub fn new(
+        target_position: Vec2<f32>,
+        dampening: f32,
+        item_mass: f32,
+        start_position: Vec2<f32>,
+    ) -> Self {
+        Self {
+            target_position,
+            dampening,
+            item_mass,
+            item_position: start_position,
+            item_velocity: Vec2::zero(),
+        }
+    }
+
+    pub fn set_position(&mut self, item_position: Vec2<f32>) {
+        self.item_position = item_position;
+    }
+
+    pub fn set_target_position(&mut self, target_position: Vec2<f32>) {
+        self.target_position = target_position;
+    }
+}
+
+impl RealTimeStream for Spring {
+    type Item = Vec2<f32>;
+
+    fn next(&mut self, animation: AnimationParams) -> Poll<Self::Item> {
+        let force = self.target_position - self.item_position;
+        self.item_velocity += force / self.item_mass;
+        self.item_velocity -=
+            self.item_velocity * self.dampening * animation.delta_time.as_secs_f32();
+        self.item_position += self.item_velocity * animation.delta_time.as_secs_f32();
+
+        Poll::Playing(self.item_position)
     }
 }

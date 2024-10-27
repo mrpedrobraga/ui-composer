@@ -5,7 +5,9 @@ use std::{
 };
 
 pub mod hover;
+pub mod tap;
 pub use hover::*;
+pub use tap::*;
 
 pub trait Interactor: UINode {}
 pub struct Inspect();
