@@ -9,3 +9,12 @@ pub use crate::ui::layout::*;
 pub use futures_signals::signal;
 pub use futures_signals::signal_vec;
 pub use vek::*;
+
+#[macro_export]
+macro_rules! all {
+    ($a:expr $(,)?) => { $a };
+    ($a:expr, $b:expr) => {($a, $b)};
+    ($a:expr, $($rest:tt)*) => {
+        ($a, all!($($rest)*))
+    };
+}

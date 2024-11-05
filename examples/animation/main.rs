@@ -3,7 +3,8 @@ use std::time::Duration;
 use ui_composer::animation::{Animation, Poll, RealTimeStream, Vector};
 
 fn main() {
-    let mut anim = Animation::new(1.0, LerpTo::new(5.0, Duration::from_secs(1)));
+    let timeline = LerpTo::new(5.0, Duration::from_secs(1));
+    let mut anim = Animation::new(1.0, timeline);
 
     loop {
         let frame = anim.process(Duration::from_millis(16));
