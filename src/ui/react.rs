@@ -38,10 +38,7 @@ where
         }
     }
 
-    fn poll_reactivity_change(
-        self: Pin<&mut Self>,
-        cx: &mut std::task::Context,
-    ) -> Poll<Option<()>> {
+    fn poll_processors(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<()>> {
         self.poll_change(cx)
     }
 
@@ -118,7 +115,7 @@ where
         match held_item {
             Some(held_item) => {
                 let held_item = unsafe { Pin::new_unchecked(held_item) };
-                held_item.poll_reactivity_change(cx)
+                held_item.poll_processors(cx)
             }
             None => poll,
         }

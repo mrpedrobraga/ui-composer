@@ -76,7 +76,7 @@ impl LiveUINode for Tap {
         Self::QUAD_COUNT
     }
 
-    fn poll_reactivity_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         Poll::Ready(Some(()))
     }
 }

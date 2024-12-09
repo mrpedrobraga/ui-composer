@@ -46,7 +46,7 @@ impl LiveUINode for Quad {
         quad_buffer[0] = *self;
     }
 
-    fn poll_reactivity_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         Poll::Ready(Some(()))
     }
 

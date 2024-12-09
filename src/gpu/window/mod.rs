@@ -73,7 +73,7 @@ impl<T: UINode> WindowNode<T> {
     }
 }
 
-/// Creates a new window as the render target for the nodes inside.
+/// Describes a new window with its contents and its own state.
 #[allow(non_snake_case)]
 pub fn Window<T>(item: T) -> WindowNode<impl UINode>
 where
@@ -108,14 +108,14 @@ where
 {
     type LiveType = LiveWindowNode;
 
-    /// Transforms a WindowNode descriptor into a live window node which can be really used!
+    /// Transforms a WindowNode, which merely describes a window, into an active node in an engine tree.
     fn reify(self, event_loop: &ActiveEventLoop, gpu_resources: &GPUResources) -> Self::LiveType {
         let window_default_size = self.state.size.get();
 
         let mut window = event_loop
             .create_window(
                 winit::window::WindowAttributes::default()
-                    .with_title("")
+                    .with_title(self.state.title.get_cloned())
                     .with_name("UI Composer App", "UI Composer App"),
             )
             .expect("Couldn't reify window node!");
@@ -126,27 +126,6 @@ where
         )));
 
         let window = std::sync::Arc::new(window);
-
-        // let window_clone = window.clone();
-        // std::thread::spawn(move || {
-        //     let start = std::time::Instant::now();
-
-        //     window_clone.set_resizable(false);
-        //     window_clone.set_enabled_buttons(WindowButtons::empty());
-        //     window_clone.set_cursor_hittest(false);
-
-        //     loop {
-        //         let t = Instant::now().duration_since(start).as_secs_f32();
-        //         window_clone.request_redraw();
-        //         window_clone
-        //             .set_outer_position(PhysicalPosition::new(100.0 + 1000.0 * t.sin(), 100.0));
-        //         window_clone.request_inner_size(PhysicalSize::new(
-        //             400.0 + 100.0 * t.sin(),
-        //             400.0 + 100.0 * t.cos(),
-        //         ));
-        //         std::thread::sleep(std::time::Duration::from_millis(16))
-        //     }
-        // });
 
         let render_artifacts = UINodeRenderingArtifacts {
             instance_buffer_cpu: vec![Quad::default(); T::QUAD_COUNT],
@@ -239,7 +218,7 @@ impl<'window> LiveNode for LiveWindowNode {
         self.content.handle_ui_event(event);
     }
 
-    fn poll_reactivity_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         // TODO: Figure out what do to with the result of this poll (as it might introduce a need for redrawing!!!);
 
         let LiveWindowNodeProj {
@@ -252,7 +231,9 @@ impl<'window> LiveNode for LiveWindowNode {
 
         let content: &mut _ = &mut **content;
         let content = unsafe { Pin::new_unchecked(content) };
-        let poll = content.poll_reactivity_change(cx);
+
+        let poll = content.poll_processors(cx);
+
         match &poll {
             Poll::Ready(_) => window.request_redraw(),
             _ => (),
@@ -343,7 +324,9 @@ impl GPURenderTarget for WindowRenderTarget {
             occlusion_query_set: None,
         });
 
-        {
+        let quad_count = content.get_quad_count();
+
+        if quad_count > 0 {
             // TODO: Flush uniforms here!
             gpu_resources.queue.write_buffer(
                 &gpu_resources.main_pipeline.uniform_buffer,
@@ -354,7 +337,7 @@ impl GPURenderTarget for WindowRenderTarget {
             );
 
             // TODO: Flush primitives to GPU here!
-            let mut quads = vec![Quad::default(); content.get_quad_count()];
+            let mut quads = vec![Quad::default(); quad_count];
 
             content.push_quads(&mut quads[..]);
 

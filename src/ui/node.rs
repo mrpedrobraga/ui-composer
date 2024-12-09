@@ -10,8 +10,9 @@ pub type UIEvent = winit::event::WindowEvent;
 
 /// A node of a UI tree.
 ///
-/// A UINode receives an order to render, to update child nodes or to handle an interaction. In practice, it should handle as little as possible.
-/// The entire user interface interaction and render pipelines are created with UI Nodes.
+/// A UINode receives an order to render, to update child nodes or to handle an interaction.
+/// In practice, any single UI node should handle as little as possible.
+/// The entire user interface is made of UI Nodes arranged in a graph.
 pub trait LiveUINode: Send {
     /// Handles an UI Event (or not). Returns whether the event was handled.
     #[inline(always)]
@@ -24,14 +25,14 @@ pub trait LiveUINode: Send {
     /// TODO: Remove this when using generics on the engine?
     fn get_quad_count(&self) -> usize;
 
-    /// Checks if a reactive change happened, using the typical future model.
+    /// Polls this node's processors: `Future`s and `Signal`s.
     #[inline(always)]
-    fn poll_reactivity_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>>;
+    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>>;
 }
 
-/// Trait to get the info about an UI node statically.
+/// Trait to get compile-time information about an UI Node.
 pub trait UINode: LiveUINode {
-    /// The amount of primitives this UI Node has.
+    /// The amount of primitives this UI Node will have when drawing.
     const QUAD_COUNT: usize;
 
     /// Gets the rectangle this primitive occupies, for rendering purposes.
@@ -48,8 +49,8 @@ impl LiveUINode for () {
         /* No quads to push! */
     }
 
-    fn poll_reactivity_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
-        Poll::Ready(None)
+    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+        Poll::Ready(Some(()))
     }
 
     fn get_quad_count(&self) -> usize {
@@ -86,10 +87,10 @@ where
         }
     }
 
-    fn poll_reactivity_change(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+    fn poll_processors(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         // TODO: Maybe I shouldn't return Some(()) in the option by default?
         self.as_pin_mut()
-            .map(|inner| inner.poll_reactivity_change(cx))
+            .map(|inner| inner.poll_processors(cx))
             .unwrap_or(Poll::Ready(Some(())))
     }
 
@@ -128,7 +129,7 @@ where
         }
     }
 
-    fn poll_reactivity_change(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+    fn poll_processors(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         // let this: &mut Self = self.deref_mut();
         // match this {
         //     Ok(v) => todo!(),
@@ -169,10 +170,10 @@ where
         self.as_ref().push_quads(quad_buffer)
     }
 
-    fn poll_reactivity_change(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+    fn poll_processors(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         // TODO: Why is this unsafe?
         let inner = unsafe { self.as_mut().map_unchecked_mut(|v| &mut **v) };
-        inner.poll_reactivity_change(cx)
+        inner.poll_processors(cx)
     }
 
     fn get_quad_count(&self) -> usize {
@@ -209,7 +210,7 @@ where
         self.1.push_quads(slice_b);
     }
 
-    fn poll_reactivity_change(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+    fn poll_processors(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         let (pinned_a, pinned_b) = {
             let mut mut_ref = unsafe { self.get_unchecked_mut() };
             let (ref mut a, ref mut b) = mut_ref;
@@ -220,8 +221,8 @@ where
             (a, b)
         };
 
-        let poll_a = pinned_a.poll_reactivity_change(cx);
-        let poll_b = pinned_b.poll_reactivity_change(cx);
+        let poll_a = pinned_a.poll_processors(cx);
+        let poll_b = pinned_b.poll_processors(cx);
 
         merge_polls(poll_a, poll_b)
     }
@@ -281,12 +282,12 @@ impl<A: UINode, const N: usize> LiveUINode for SizedVec<A, N> {
         N * A::QUAD_COUNT
     }
 
-    fn poll_reactivity_change(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+    fn poll_processors(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         let mut poll_acc = Poll::Pending;
         let this = unsafe { self.get_unchecked_mut() };
         for idx in 0..N {
             let item = unsafe { Pin::new_unchecked(&mut this.inner[idx]) };
-            let item_poll = item.poll_reactivity_change(cx);
+            let item_poll = item.poll_processors(cx);
             poll_acc = merge_polls(poll_acc, item_poll)
         }
         poll_acc

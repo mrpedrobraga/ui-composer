@@ -30,7 +30,7 @@ impl LiveUINode for Inspect {
         /* No quads to push in release mode. But maybe in debug? */
     }
 
-    fn poll_reactivity_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         Poll::Ready(Some(()))
     }
 

@@ -1,8 +1,7 @@
 #![allow(non_snake_case)]
 
-use vek::{Extent2, Rect};
-
 use crate::{prelude::LayoutItem, ui::layout::LayoutHints};
+use vek::{Extent2, Rect};
 
 /// A container that, as it is reshaped, keeps its item at its natural size, centered within itself.
 pub fn Center<A>(item: A) -> CenterContainer<A>

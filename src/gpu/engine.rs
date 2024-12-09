@@ -39,9 +39,10 @@ pub struct GPUResources {
     pub main_pipeline: MainRenderPipeline,
 }
 
-/// An engine that can render our application to the GPU as well as forward interactive events.
+/// An engine that can render our application to the GPU as well as forward interactive events to the app.
 #[pin_project(project=UIEngineProj)]
 pub struct UIEngine<'engine, E: LiveNode> {
+    /// The node of the UI tree containing the entirety of the app, UI and behaviour.
     #[pin]
     pub engine_tree: Arc<Mutex<E>>,
     pub gpu_resources: GPUResources,
@@ -52,7 +53,7 @@ pub struct UIEngine<'engine, E: LiveNode> {
 pub trait UIEngineInterface: Send {
     type RootNodeType: LiveNode;
     fn handle_window_event(&mut self, window_id: WindowId, event: UIEvent);
-    fn poll_reactor_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>>;
+    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>>;
 }
 
 impl<'engine: 'static, E: LiveNode + Send + 'engine> UIEngine<'engine, E> {
@@ -86,7 +87,7 @@ impl<'engine: 'static, E: LiveNode + Send + 'engine> UIEngine<'engine, E> {
             .block_on()
             .unwrap();
 
-        // TODO: Not do this:
+        // TODO: Get the texture format from a render target and not guess it.
         let dummy_format = TextureFormat::Bgra8UnormSrgb; //;get_dummy_texture_format(event_loop, &instance, &device, &adapter);
         let main_pipeline = main_render_pipeline::<WindowRenderTarget>(
             &adapter,
@@ -111,22 +112,26 @@ impl<'engine: 'static, E: LiveNode + Send + 'engine> UIEngine<'engine, E> {
             gpu_resources,
         };
 
-        // This will be shared between the creator of the engine (i.e., your application) and
-        // the reactor processor.
+        // This render engine will be shared between your application (so that it can receive OS events)
+        // and a reactor processor in another thread (so that it can process its own `Future`s and `Signal`s)
         let render_engine: Box<dyn UIEngineInterface<RootNodeType = E>> = Box::new(render_engine);
         let render_engine = Arc::new(Mutex::new(render_engine));
 
-        // TODO: Process the render engine's processors and reactors on another execution context.
-        // Perhaps return a `Future` here to be polled by the executor!
+        // TODO: Process the render engine's processors and reactors on another thread.
+        // It needs not be an other thread, just a different execution context.
         let render_engine_clone = render_engine.clone();
         std::thread::spawn(|| {
             pollster::block_on(EngineProcessor::new(render_engine_clone).to_future())
         });
 
+        // I should perhaps return a (RenderEngine, impl Future) here!
+        // The problem of course is that winit does not play well with async Rust yet :-(
         return render_engine;
     }
 }
 
+// Little hack to get a "dummy" texture format.
+// This should go unused hopefully!
 fn get_dummy_texture_format(
     event_loop: &ActiveEventLoop,
     instance: &wgpu::Instance,
@@ -155,6 +160,7 @@ fn get_dummy_texture_format(
 impl<'engine, E: LiveNode + Send> UIEngineInterface for UIEngine<'engine, E> {
     type RootNodeType = E;
 
+    /// Forwards window events for the engine tree to process.
     fn handle_window_event(&mut self, window_id: WindowId, event: UIEvent) {
         match self.engine_tree.lock() {
             Ok(mut engine_tree) => {
@@ -164,18 +170,19 @@ impl<'engine, E: LiveNode + Send> UIEngineInterface for UIEngine<'engine, E> {
         };
     }
 
-    fn poll_reactor_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+    /// Polls processor changes for `Future`s and `Signal`s within the engine tree.
+    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         let UIEngineProj {
             engine_tree,
             gpu_resources,
             _marker,
         } = self.project();
 
-        let mut ui = engine_tree.lock().expect("Failed to lock tree for polling");
-        let ui = ui.deref_mut();
-        let ui_pin = unsafe { Pin::new_unchecked(ui) };
+        let mut engine_tree = engine_tree.lock().expect("Failed to lock tree for polling");
+        let engine_tree = engine_tree.deref_mut();
+        let engine_tree_pin = unsafe { Pin::new_unchecked(engine_tree) };
 
-        ui_pin.poll_reactivity_change(cx)
+        engine_tree_pin.poll_processors(cx)
     }
 }
 
@@ -193,14 +200,15 @@ pub trait LiveNode: Send {
         event: UIEvent,
     );
 
-    /// Polls reacitivity changes.
-    fn poll_reactivity_change(
+    /// Polls underlying processors: `Future`s and `Signal`s within the app.
+    /// This should advance animations, async processes and reactivity.
+    fn poll_processors(
         self: Pin<&mut Self>,
         cx: &mut std::task::Context,
     ) -> std::task::Poll<Option<()>>;
 }
 
-/// A futures-based construct that watches and processes the engine for its reactors and processors, etc.
+/// A futures-based construct that polls the engine's processes.
 #[pin_project(project=EngineProcessorProj)]
 pub struct EngineProcessor<E> {
     #[pin]
@@ -219,12 +227,11 @@ impl<E: LiveNode> Signal for EngineProcessor<E> {
     fn poll_change(self: std::pin::Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let EngineProcessorProj { engine } = self.project();
 
-        let mut any_pending = false;
-
         let mut engine = engine.lock().expect("Failed to lock ui for polling");
         let engine: &mut dyn UIEngineInterface<RootNodeType = E> = engine.as_mut();
         let engine = unsafe { Pin::new_unchecked(engine) };
-        let poll = engine.poll_reactor_change(cx);
+
+        let poll = engine.poll_processors(cx);
 
         poll
     }

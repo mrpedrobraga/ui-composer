@@ -48,10 +48,12 @@ impl<N: LiveNode + Send + 'static, W: Node<LiveType = N> + 'static> ApplicationH
     for App<N, W>
 {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        let engine = UIEngine::new(event_loop, unsafe {
-            self.root_item.take().unwrap_unchecked()
-        });
-        self.running_app = Some(RunningApp { engine });
+        // If there's no running app, create a new one using a new UIEngine.
+        if (self.running_app.is_none()) {
+            self.running_app = self.root_item.take().map(move |root_item| RunningApp {
+                engine: UIEngine::new(event_loop, root_item),
+            });
+        }
     }
 
     fn window_event(
@@ -67,7 +69,9 @@ impl<N: LiveNode + Send + 'static, W: Node<LiveType = N> + 'static> ApplicationH
 }
 
 impl<N: LiveNode> ApplicationHandler for RunningApp<N> {
-    fn resumed(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {}
+    fn resumed(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
+        // Nothing happens yet, but in the future the app should be able to respond to this!
+    }
 
     fn window_event(
         &mut self,

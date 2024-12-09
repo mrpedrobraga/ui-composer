@@ -18,7 +18,7 @@ pub struct LayoutHints {
 pub trait LayoutItem: Send {
     type UINodeType: UINode;
 
-    /// The size this component prefers to be at. It's usually it's minimum size.
+    /// The size this component prefers to be at. It's usually its minimum size.
     #[inline(always)]
     fn get_natural_size(&self) -> Extent2<f32>;
 
