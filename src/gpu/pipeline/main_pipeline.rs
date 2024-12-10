@@ -3,7 +3,10 @@ use std::mem::size_of;
 use vek::{Extent2, Mat4, Vec2, Vec3};
 use wgpu::{util::DeviceExt as _, BufferAddress, BufferUsages, ColorTargetState};
 
-use crate::{gpu::render_target::GPURenderTarget, ui::graphics::Quad};
+use crate::{
+    gpu::{engine::GPUResources, render_target::GPURenderTarget, window::UINodeRenderingArtifacts},
+    ui::{graphics::Quad, node::LiveUINode},
+};
 
 use super::GPURenderPipeline;
 
@@ -17,7 +20,7 @@ pub struct MainRenderPipeline {
 }
 
 impl GPURenderPipeline for MainRenderPipeline {
-    fn apply_onto<'pass>(&'pass self, render_pass: &mut wgpu::RenderPass<'pass>) {
+    fn install_on_render_pass<'pass>(&'pass self, render_pass: &mut wgpu::RenderPass<'pass>) {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.mesh_vertex_buffer.slice(..));
@@ -115,6 +118,82 @@ where
         uniform_buffer,
         uniform_bind_group,
     }
+}
+
+pub fn main_render_pipeline_draw(
+    gpu_resources: &GPUResources,
+    container_size: Extent2<f32>,
+    view: wgpu::TextureView,
+    content: &dyn LiveUINode,
+    render_artifacts: &UINodeRenderingArtifacts,
+) {
+    let mut encoder =
+        gpu_resources
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("Command Encoder"),
+            });
+
+    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        label: None,
+        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            view: &view,
+            resolve_target: None,
+            ops: wgpu::Operations {
+                load: wgpu::LoadOp::Clear(wgpu::Color {
+                    r: 0.95,
+                    g: 0.95,
+                    b: 0.95,
+                    a: 1.0,
+                }),
+                store: wgpu::StoreOp::Store,
+            },
+        })],
+        depth_stencil_attachment: None,
+        timestamp_writes: None,
+        occlusion_query_set: None,
+    });
+
+    let quad_count = content.get_quad_count();
+
+    if quad_count > 0 {
+        // TODO: Flush uniforms here!
+        gpu_resources.queue.write_buffer(
+            &gpu_resources.main_pipeline.uniform_buffer,
+            0,
+            bytemuck::cast_slice(&[Uniforms {
+                world_to_wgpu_mat: container_size_to_wgpu_mat(container_size),
+            }]),
+        );
+
+        // TODO: Update the quads using a more efficient method;
+        let mut quads = vec![crate::prelude::Quad::default(); quad_count];
+        content.push_quads(&mut quads[..]);
+        gpu_resources.queue.write_buffer(
+            &render_artifacts.instance_buffer,
+            0,
+            bytemuck::cast_slice(&quads),
+        );
+        gpu_resources.queue.submit([]);
+
+        // TODO: Allow partial renders of the UI...
+        gpu_resources
+            .main_pipeline
+            .install_on_render_pass(&mut render_pass);
+        render_pass.set_vertex_buffer(1, render_artifacts.instance_buffer.slice(..));
+
+        render_pass.draw_indexed(
+            0..gpu_resources.main_pipeline.mesh_index_count as u32,
+            0,
+            0..quads.len() as u32,
+        );
+    }
+
+    drop(render_pass);
+
+    gpu_resources
+        .queue
+        .submit(std::iter::once(encoder.finish()));
 }
 
 impl Quad {

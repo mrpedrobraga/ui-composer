@@ -11,7 +11,7 @@ pub struct ThreeDeeRenderPipeline {
 }
 
 impl GPURenderPipeline for ThreeDeeRenderPipeline {
-    fn apply_onto<'pass>(&'pass self, render_pass: &mut wgpu::RenderPass<'pass>) {
+    fn install_on_render_pass<'pass>(&'pass self, render_pass: &mut wgpu::RenderPass<'pass>) {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
     }

@@ -26,7 +26,7 @@ use winit::{
 use super::{
     engine::{GPUResources, Node, NodeDescriptor},
     pipeline::{
-        main_pipeline::{container_size_to_wgpu_mat, Uniforms},
+        main_pipeline::{container_size_to_wgpu_mat, main_render_pipeline_draw, Uniforms},
         GPURenderPipeline,
     },
     render_target::{self, GPURenderTarget},
@@ -189,8 +189,8 @@ pub struct WindowNode {
 
 /// TODO: Move out of here and find a better name.
 pub struct UINodeRenderingArtifacts {
-    instance_buffer_cpu: Vec<Quad>,
-    instance_buffer: wgpu::Buffer,
+    pub(crate) instance_buffer_cpu: Vec<Quad>,
+    pub(crate) instance_buffer: wgpu::Buffer,
 }
 
 impl<'window> Node for WindowNode {
@@ -309,73 +309,14 @@ impl GPURenderTarget for WindowRenderTarget {
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
-        let mut encoder =
-            gpu_resources
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: Some("Command Encoder"),
-                });
+        main_render_pipeline_draw(
+            gpu_resources,
+            self.size.as_(),
+            view,
+            content,
+            render_artifacts,
+        );
 
-        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: None,
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &view,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: 0.95,
-                        g: 0.95,
-                        b: 0.95,
-                        a: 1.0,
-                    }),
-                    store: wgpu::StoreOp::Store,
-                },
-            })],
-            depth_stencil_attachment: None,
-            timestamp_writes: None,
-            occlusion_query_set: None,
-        });
-
-        let quad_count = content.get_quad_count();
-
-        if quad_count > 0 {
-            // TODO: Flush uniforms here!
-            gpu_resources.queue.write_buffer(
-                &gpu_resources.main_pipeline.uniform_buffer,
-                0,
-                bytemuck::cast_slice(&[Uniforms {
-                    world_to_wgpu_mat: container_size_to_wgpu_mat(self.size.as_()),
-                }]),
-            );
-
-            // TODO: Flush primitives to GPU here!
-            let mut quads = vec![Quad::default(); quad_count];
-
-            content.push_quads(&mut quads[..]);
-
-            let dummy_primitives = gpu_resources.queue.write_buffer(
-                &render_artifacts.instance_buffer,
-                0,
-                bytemuck::cast_slice(&quads),
-            );
-            gpu_resources.queue.submit([]);
-
-            // TODO: Allow partial renders of the UI...
-            gpu_resources.main_pipeline.apply_onto(&mut render_pass);
-            render_pass.set_vertex_buffer(1, render_artifacts.instance_buffer.slice(..));
-
-            render_pass.draw_indexed(
-                0..gpu_resources.main_pipeline.mesh_index_count as u32,
-                0,
-                0..quads.len() as u32,
-            );
-        }
-
-        drop(render_pass);
-
-        gpu_resources
-            .queue
-            .submit(std::iter::once(encoder.finish()));
         texture.present();
     }
 

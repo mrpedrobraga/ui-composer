@@ -10,5 +10,5 @@ pub mod text_pipeline;
 
 /// A render pipeline for rendering on the GPU.
 pub trait GPURenderPipeline {
-    fn apply_onto<'pass>(&'pass self, render_pass: &mut RenderPass<'pass>);
+    fn install_on_render_pass<'pass>(&'pass self, render_pass: &mut RenderPass<'pass>);
 }
