@@ -1,6 +1,6 @@
 use wgpu::RenderPass;
 
-use super::engine::{LiveNode, UIEngine};
+use super::engine::{Node, UIEngine};
 
 pub mod main_pipeline;
 pub mod three_dee;

@@ -1,11 +1,10 @@
 #![allow(non_snake_case)]
-use ui_composer::prelude::*;
+use ui_composer::{prelude::*, tuple};
 
 pub fn main() {
-    App::run(
-        Window(Resizable::new(|hx| {
-            //Quad::new(Rect::new(16.0, 16.0, 32.0, 32.0), Rgb::blue())
-        }))
-        .with_title("Hello window!"),
-    );
+    App::run(tuple!(
+        Window(Empty()),
+        Window(Empty()),
+        Window(Resizable::new(|hx| Quad::new(hx.rect, Rgb::green())))
+    ));
 }

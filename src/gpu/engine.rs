@@ -27,7 +27,7 @@ use super::{
         GPURenderPipeline,
     },
     render_target::{self, GPURenderTarget},
-    window::{LiveWindowNode, WindowNode, WindowRenderTarget},
+    window::{WindowNode, WindowNodeDescriptor, WindowRenderTarget},
 };
 
 pub struct GPUResources {
@@ -41,7 +41,7 @@ pub struct GPUResources {
 
 /// An engine that can render our application to the GPU as well as forward interactive events to the app.
 #[pin_project(project=UIEngineProj)]
-pub struct UIEngine<'engine, E: LiveNode> {
+pub struct UIEngine<'engine, E: Node> {
     /// The node of the UI tree containing the entirety of the app, UI and behaviour.
     #[pin]
     pub engine_tree: Arc<Mutex<E>>,
@@ -50,19 +50,19 @@ pub struct UIEngine<'engine, E: LiveNode> {
     _marker: PhantomData<&'engine ()>,
 }
 
-pub trait UIEngineInterface: Send {
-    type RootNodeType: LiveNode;
+pub trait UIEngineExt: Send {
+    type RootNodeType: Node;
     fn handle_window_event(&mut self, window_id: WindowId, event: UIEvent);
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>>;
 }
 
-impl<'engine: 'static, E: LiveNode + Send + 'engine> UIEngine<'engine, E> {
+impl<'engine: 'static, E: Node + Send + 'engine> UIEngine<'engine, E> {
     pub fn new<W>(
         event_loop: &ActiveEventLoop,
         root_engine_node: W,
-    ) -> Arc<Mutex<Box<dyn UIEngineInterface<RootNodeType = E> + 'engine>>>
+    ) -> Arc<Mutex<Box<dyn UIEngineExt<RootNodeType = E> + 'engine>>>
     where
-        W: Node<LiveType = E>,
+        W: NodeDescriptor<RuntimeType = E>,
     {
         let instance = wgpu::Instance::default();
         let adapter = instance
@@ -114,14 +114,14 @@ impl<'engine: 'static, E: LiveNode + Send + 'engine> UIEngine<'engine, E> {
 
         // This render engine will be shared between your application (so that it can receive OS events)
         // and a reactor processor in another thread (so that it can process its own `Future`s and `Signal`s)
-        let render_engine: Box<dyn UIEngineInterface<RootNodeType = E>> = Box::new(render_engine);
+        let render_engine: Box<dyn UIEngineExt<RootNodeType = E>> = Box::new(render_engine);
         let render_engine = Arc::new(Mutex::new(render_engine));
 
         // TODO: Process the render engine's processors and reactors on another thread.
         // It needs not be an other thread, just a different execution context.
         let render_engine_clone = render_engine.clone();
         std::thread::spawn(|| {
-            pollster::block_on(EngineProcessor::new(render_engine_clone).to_future())
+            pollster::block_on(EngineProcessesSignal::new(render_engine_clone).to_future())
         });
 
         // I should perhaps return a (RenderEngine, impl Future) here!
@@ -157,7 +157,7 @@ fn get_dummy_texture_format(
     dummy_format
 }
 
-impl<'engine, E: LiveNode + Send> UIEngineInterface for UIEngine<'engine, E> {
+impl<'engine, E: Node + Send> UIEngineExt for UIEngine<'engine, E> {
     type RootNodeType = E;
 
     /// Forwards window events for the engine tree to process.
@@ -186,12 +186,17 @@ impl<'engine, E: LiveNode + Send> UIEngineInterface for UIEngine<'engine, E> {
     }
 }
 
-pub trait Node: Send {
-    type LiveType: LiveNode;
-    fn reify(self, event_loop: &ActiveEventLoop, gpu_resources: &GPUResources) -> Self::LiveType;
+/// Trait that represents a descriptor main node of the engine tree.
+/// These nodes are used for creating windows and processes and rendering contexts.
+pub trait NodeDescriptor: Send {
+    /// The type this node descriptor generates when reified.
+    type RuntimeType: Node;
+    fn reify(self, event_loop: &ActiveEventLoop, gpu_resources: &GPUResources)
+        -> Self::RuntimeType;
 }
 
-pub trait LiveNode: Send {
+/// A main node in the engine tree.
+pub trait Node: Send {
     /// Handles an event by broadcasting it around.
     fn handle_window_event(
         &mut self,
@@ -208,27 +213,84 @@ pub trait LiveNode: Send {
     ) -> std::task::Poll<Option<()>>;
 }
 
-/// A futures-based construct that polls the engine's processes.
-#[pin_project(project=EngineProcessorProj)]
-pub struct EngineProcessor<E> {
-    #[pin]
-    engine: Arc<Mutex<Box<dyn UIEngineInterface<RootNodeType = E>>>>,
-}
+impl<A, B> NodeDescriptor for (A, B)
+where
+    A: NodeDescriptor,
+    B: NodeDescriptor,
+{
+    type RuntimeType = (A::RuntimeType, B::RuntimeType);
 
-impl<E> EngineProcessor<E> {
-    pub fn new(engine: Arc<Mutex<Box<dyn UIEngineInterface<RootNodeType = E>>>>) -> Self {
-        EngineProcessor { engine }
+    fn reify(
+        self,
+        event_loop: &ActiveEventLoop,
+        gpu_resources: &GPUResources,
+    ) -> Self::RuntimeType {
+        (
+            self.0.reify(event_loop, gpu_resources),
+            self.1.reify(event_loop, gpu_resources),
+        )
     }
 }
 
-impl<E: LiveNode> Signal for EngineProcessor<E> {
+impl<A, B> Node for (A, B)
+where
+    A: Node,
+    B: Node,
+{
+    fn handle_window_event(
+        &mut self,
+        gpu_resources: &GPUResources,
+        window_id: WindowId,
+        event: UIEvent,
+    ) {
+        let a_handled = self
+            .0
+            .handle_window_event(gpu_resources, window_id, event.clone());
+        let b_handled = self.1.handle_window_event(gpu_resources, window_id, event);
+    }
+
+    fn poll_processors(
+        self: Pin<&mut Self>,
+        cx: &mut std::task::Context,
+    ) -> std::task::Poll<Option<()>> {
+        let (pinned_a, pinned_b) = {
+            let mut mut_ref = unsafe { self.get_unchecked_mut() };
+            let (ref mut a, ref mut b) = mut_ref;
+
+            let a = unsafe { Pin::new_unchecked(a) };
+            let b = unsafe { Pin::new_unchecked(b) };
+
+            (a, b)
+        };
+
+        let poll_a = pinned_a.poll_processors(cx);
+        let poll_b = pinned_b.poll_processors(cx);
+
+        crate::prelude::coalesce_polls(poll_a, poll_b)
+    }
+}
+
+/// A futures-based construct that polls the engine's processes.
+#[pin_project(project=EngineProcessesSignalProj)]
+pub struct EngineProcessesSignal<E> {
+    #[pin]
+    engine: Arc<Mutex<Box<dyn UIEngineExt<RootNodeType = E>>>>,
+}
+
+impl<E> EngineProcessesSignal<E> {
+    pub fn new(engine: Arc<Mutex<Box<dyn UIEngineExt<RootNodeType = E>>>>) -> Self {
+        EngineProcessesSignal { engine }
+    }
+}
+
+impl<E: Node> Signal for EngineProcessesSignal<E> {
     type Item = ();
 
     fn poll_change(self: std::pin::Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
-        let EngineProcessorProj { engine } = self.project();
+        let EngineProcessesSignalProj { engine } = self.project();
 
         let mut engine = engine.lock().expect("Failed to lock ui for polling");
-        let engine: &mut dyn UIEngineInterface<RootNodeType = E> = engine.as_mut();
+        let engine: &mut dyn UIEngineExt<RootNodeType = E> = engine.as_mut();
         let engine = unsafe { Pin::new_unchecked(engine) };
 
         let poll = engine.poll_processors(cx);

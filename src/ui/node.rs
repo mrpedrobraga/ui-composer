@@ -224,7 +224,7 @@ where
         let poll_a = pinned_a.poll_processors(cx);
         let poll_b = pinned_b.poll_processors(cx);
 
-        merge_polls(poll_a, poll_b)
+        crate::prelude::coalesce_polls(poll_a, poll_b)
     }
 
     fn get_quad_count(&self) -> usize {
@@ -288,7 +288,7 @@ impl<A: UINode, const N: usize> LiveUINode for SizedVec<A, N> {
         for idx in 0..N {
             let item = unsafe { Pin::new_unchecked(&mut this.inner[idx]) };
             let item_poll = item.poll_processors(cx);
-            poll_acc = merge_polls(poll_acc, item_poll)
+            poll_acc = crate::prelude::coalesce_polls(poll_acc, item_poll)
         }
         poll_acc
     }
@@ -300,19 +300,5 @@ impl<A: UINode, const N: usize> UINode for SizedVec<A, N> {
         let mut iterator = self.inner.iter();
         let first = iterator.next()?.get_render_rect();
         iterator.fold(first, |acc, item| Some(acc?.union(item.get_render_rect()?)))
-    }
-}
-
-fn merge_polls(poll_a: Poll<Option<()>>, poll_b: Poll<Option<()>>) -> Poll<Option<()>> {
-    match (poll_a, poll_b) {
-        (Poll::Ready(None), Poll::Ready(None)) => Poll::Ready(None),
-        (Poll::Pending, Poll::Pending) => Poll::Pending,
-        (Poll::Ready(None), Poll::Pending) => Poll::Pending,
-        (Poll::Pending, Poll::Ready(None)) => Poll::Pending,
-        (Poll::Ready(Some(())), Poll::Ready(Some(()))) => Poll::Ready(Some(())),
-        (Poll::Ready(None), Poll::Ready(Some(()))) => Poll::Ready(Some(())),
-        (Poll::Ready(Some(())), Poll::Ready(None)) => Poll::Ready(Some(())),
-        (Poll::Ready(Some(())), Poll::Pending) => Poll::Ready(Some(())),
-        (Poll::Pending, Poll::Ready(Some(()))) => Poll::Ready(Some(())),
     }
 }

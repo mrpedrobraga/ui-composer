@@ -1,7 +1,7 @@
 use crate::{
     gpu::{
-        engine::{LiveNode, Node, UIEngine, UIEngineInterface},
-        window::WindowNode,
+        engine::{Node, NodeDescriptor, UIEngine, UIEngineExt},
+        window::WindowNodeDescriptor,
     },
     ui::{layout::LayoutItem, node::UINode, react::UISignalExt as _},
 };
@@ -17,18 +17,18 @@ use winit::{
 };
 
 /// App builder, receives a layout item with the entirety of your app.
-pub struct App<N: LiveNode, W: Node<LiveType = N>> {
+pub struct App<N: Node, W: NodeDescriptor<RuntimeType = N>> {
     root_item: Option<W>,
     running_app: Option<RunningApp<N>>,
 }
 
 /// An app in execution (the ui fragment has been transformed into a [`RenderModule`]).
-pub struct RunningApp<N: LiveNode> {
-    engine: Arc<Mutex<Box<dyn UIEngineInterface<RootNodeType = N>>>>,
+pub struct RunningApp<N: Node> {
+    engine: Arc<Mutex<Box<dyn UIEngineExt<RootNodeType = N>>>>,
 }
 
 /// TODO: PRovide methods to bind to an existing Event Loop or window.
-impl<N: LiveNode + Send + 'static, W: Node<LiveType = N> + 'static> App<N, W> {
+impl<N: Node + Send + 'static, W: NodeDescriptor<RuntimeType = N> + 'static> App<N, W> {
     // Creates and runs a new app.
     // For cross-platform compatibility, this should be called in the main thread,
     // and only once in your program.
@@ -44,7 +44,7 @@ impl<N: LiveNode + Send + 'static, W: Node<LiveType = N> + 'static> App<N, W> {
     }
 }
 
-impl<N: LiveNode + Send + 'static, W: Node<LiveType = N> + 'static> ApplicationHandler
+impl<N: Node + Send + 'static, W: NodeDescriptor<RuntimeType = N> + 'static> ApplicationHandler
     for App<N, W>
 {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
@@ -68,7 +68,7 @@ impl<N: LiveNode + Send + 'static, W: Node<LiveType = N> + 'static> ApplicationH
     }
 }
 
-impl<N: LiveNode> ApplicationHandler for RunningApp<N> {
+impl<N: Node> ApplicationHandler for RunningApp<N> {
     fn resumed(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
         // Nothing happens yet, but in the future the app should be able to respond to this!
     }

@@ -2,6 +2,7 @@ use std::{
     mem::size_of,
     ops::DerefMut,
     pin::Pin,
+    process::ExitCode,
     sync::Arc,
     task::{Context, Poll},
     time::Instant,
@@ -23,7 +24,7 @@ use winit::{
 };
 
 use super::{
-    engine::{GPUResources, LiveNode, Node},
+    engine::{GPUResources, Node, NodeDescriptor},
     pipeline::{
         main_pipeline::{container_size_to_wgpu_mat, Uniforms},
         GPURenderPipeline,
@@ -39,17 +40,17 @@ use crate::ui::{
 };
 
 /// A node that describes the existence of a new window in the UI tree.
-pub struct WindowNode<T: UINode> {
+pub struct WindowNodeDescriptor<T: UINode> {
     state: WindowNodeState,
     content: T,
 }
 
-impl<T: UINode> WindowNode<T> {
+impl<T: UINode> WindowNodeDescriptor<T> {
     /// Consumes this window node and returns a new one with the set title.
-    pub fn with_title<Str: Into<String>>(self, title: Str) -> WindowNode<T> {
+    pub fn with_title<Str: Into<String>>(self, title: Str) -> WindowNodeDescriptor<T> {
         let WindowNodeState { title: _, size } = self.state;
 
-        WindowNode {
+        WindowNodeDescriptor {
             state: WindowNodeState {
                 title: Mutable::new(title.into()),
                 size,
@@ -60,10 +61,13 @@ impl<T: UINode> WindowNode<T> {
 
     /// Consumes this window node and returns a new one with a reactive title.
     /// The window's title will change every time this signal changes.
-    pub fn with_reactive_title<Sig>(self, title_signal: Mutable<String>) -> WindowNode<T> {
+    pub fn with_reactive_title<Sig>(
+        self,
+        title_signal: Mutable<String>,
+    ) -> WindowNodeDescriptor<T> {
         let WindowNodeState { title, size } = self.state;
 
-        WindowNode {
+        WindowNodeDescriptor {
             state: WindowNodeState {
                 title: title_signal,
                 size,
@@ -75,7 +79,7 @@ impl<T: UINode> WindowNode<T> {
 
 /// Describes a new window with its contents and its own state.
 #[allow(non_snake_case)]
-pub fn Window<T>(item: T) -> WindowNode<impl UINode>
+pub fn Window<T>(item: T) -> WindowNodeDescriptor<impl UINode>
 where
     T: LayoutItem + 'static,
 {
@@ -96,20 +100,24 @@ where
         })
         .into_ui();
 
-    WindowNode {
+    WindowNodeDescriptor {
         state,
         content: item,
     }
 }
 
-impl<T> Node for WindowNode<T>
+impl<T> NodeDescriptor for WindowNodeDescriptor<T>
 where
     T: UINode + 'static,
 {
-    type LiveType = LiveWindowNode;
+    type RuntimeType = WindowNode;
 
     /// Transforms a WindowNode, which merely describes a window, into an active node in an engine tree.
-    fn reify(self, event_loop: &ActiveEventLoop, gpu_resources: &GPUResources) -> Self::LiveType {
+    fn reify(
+        self,
+        event_loop: &ActiveEventLoop,
+        gpu_resources: &GPUResources,
+    ) -> Self::RuntimeType {
         let window_default_size = self.state.size.get();
 
         let mut window = event_loop
@@ -137,7 +145,7 @@ where
             }),
         };
 
-        LiveWindowNode {
+        WindowNode {
             content: Box::new(self.content),
             state: self.state,
             render_artifacts,
@@ -170,7 +178,7 @@ fn new_window_state(window_size: Extent2<f32>) -> WindowNodeState {
 
 /// A live window which contains a UI tree inside.
 #[pin_project(project = LiveWindowNodeProj)]
-pub struct LiveWindowNode {
+pub struct WindowNode {
     #[pin]
     content: Box<dyn LiveUINode>,
     state: WindowNodeState,
@@ -185,7 +193,7 @@ pub struct UINodeRenderingArtifacts {
     instance_buffer: wgpu::Buffer,
 }
 
-impl<'window> LiveNode for LiveWindowNode {
+impl<'window> Node for WindowNode {
     fn handle_window_event(
         &mut self,
         gpu_resources: &GPUResources,
@@ -202,10 +210,14 @@ impl<'window> LiveNode for LiveWindowNode {
                 WindowEvent::CloseRequested => {
                     // TODO: Handle closing of windows.
                     println!(
-                        "[{}:{}] Find a better way to handle window close requests; Likely use monads or WindowState for this!",
+                        "[{}:{}] Closing a window, at the moment, kills the process. This behaviour *will* change.",
                         file!(),
                         line!()
                     );
+                    // Close request shouldn't be handled by the window, but by a "WindowManager" node of some sorts.
+                    // The window is then closed by having all references to it dropped.
+                    // Of cours the WindowManager needs to know if the window *can* be closed - if there's any process impeding it from closing,
+                    // but that's a different story.
                     std::process::exit(0);
                 }
                 WindowEvent::RedrawRequested => {
@@ -243,7 +255,7 @@ impl<'window> LiveNode for LiveWindowNode {
     }
 }
 
-impl LiveWindowNode {
+impl WindowNode {
     fn redraw(&mut self, gpu_resources: &GPUResources) {
         self.render_target
             .draw(gpu_resources, self.content.as_ref(), &self.render_artifacts);
