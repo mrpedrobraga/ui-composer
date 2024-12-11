@@ -1,4 +1,4 @@
-use super::node::{LiveUINode, UIEvent, UINode};
+use super::node::{UIEvent, UINode, UINodeDescriptor};
 use std::{
     pin::Pin,
     task::{Context, Poll},
@@ -9,18 +9,18 @@ pub mod tap;
 pub use hover::*;
 pub use tap::*;
 
-pub trait Interactor: UINode {}
+pub trait Interactor: UINodeDescriptor {}
 pub struct Inspect();
 
 impl Interactor for Inspect {}
-impl UINode for Inspect {
+impl UINodeDescriptor for Inspect {
     const QUAD_COUNT: usize = 0;
 
     fn get_render_rect(&self) -> Option<vek::Rect<f32, f32>> {
         None
     }
 }
-impl LiveUINode for Inspect {
+impl UINode for Inspect {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         println!("Event: {:?}", event);
         false

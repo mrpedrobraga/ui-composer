@@ -35,17 +35,17 @@ use super::{
 use crate::ui::{
     graphics::Quad,
     layout::{LayoutHints, LayoutItem},
-    node::{LiveUINode, UINode},
+    node::{UINode, UINodeDescriptor},
     react::{React, UISignalExt},
 };
 
 /// A node that describes the existence of a new window in the UI tree.
-pub struct WindowNodeDescriptor<T: UINode> {
+pub struct WindowNodeDescriptor<T: UINodeDescriptor> {
     state: WindowNodeState,
     content: T,
 }
 
-impl<T: UINode> WindowNodeDescriptor<T> {
+impl<T: UINodeDescriptor> WindowNodeDescriptor<T> {
     /// Consumes this window node and returns a new one with the set title.
     pub fn with_title<Str: Into<String>>(self, title: Str) -> WindowNodeDescriptor<T> {
         let WindowNodeState { title: _, size } = self.state;
@@ -79,7 +79,7 @@ impl<T: UINode> WindowNodeDescriptor<T> {
 
 /// Describes a new window with its contents and its own state.
 #[allow(non_snake_case)]
-pub fn Window<T>(item: T) -> WindowNodeDescriptor<impl UINode>
+pub fn Window<T>(item: T) -> WindowNodeDescriptor<impl UINodeDescriptor>
 where
     T: LayoutItem + 'static,
 {
@@ -108,7 +108,7 @@ where
 
 impl<T> NodeDescriptor for WindowNodeDescriptor<T>
 where
-    T: UINode + 'static,
+    T: UINodeDescriptor + 'static,
 {
     type RuntimeType = WindowNode;
 
@@ -177,10 +177,10 @@ fn new_window_state(window_size: Extent2<f32>) -> WindowNodeState {
 }
 
 /// A live window which contains a UI tree inside.
-#[pin_project(project = LiveWindowNodeProj)]
+#[pin_project(project = WindowNodeProj)]
 pub struct WindowNode {
     #[pin]
-    content: Box<dyn LiveUINode>,
+    content: Box<dyn UINode>,
     state: WindowNodeState,
     render_artifacts: UINodeRenderingArtifacts,
     render_target: WindowRenderTarget,
@@ -189,11 +189,13 @@ pub struct WindowNode {
 
 /// TODO: Move out of here and find a better name.
 pub struct UINodeRenderingArtifacts {
-    pub(crate) instance_buffer_cpu: Vec<Quad>,
-    pub(crate) instance_buffer: wgpu::Buffer,
+    pub instance_buffer_cpu: Vec<Quad>,
+    pub instance_buffer: wgpu::Buffer,
 }
 
 impl<'window> Node for WindowNode {
+    fn setup(&mut self, gpu_resources: &GPUResources) {}
+
     fn handle_window_event(
         &mut self,
         gpu_resources: &GPUResources,
@@ -233,7 +235,7 @@ impl<'window> Node for WindowNode {
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         // TODO: Figure out what do to with the result of this poll (as it might introduce a need for redrawing!!!);
 
-        let LiveWindowNodeProj {
+        let WindowNodeProj {
             mut content,
             render_artifacts,
             render_target,
@@ -298,7 +300,7 @@ impl GPURenderTarget for WindowRenderTarget {
     fn draw(
         &mut self,
         gpu_resources: &GPUResources,
-        content: &dyn LiveUINode,
+        content: &dyn UINode,
         render_artifacts: &UINodeRenderingArtifacts,
     ) {
         let texture = self

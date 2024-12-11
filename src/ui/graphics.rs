@@ -6,7 +6,7 @@ use std::{
 };
 use vek::{Aabr, Extent3, Mat4, Rect, Rgb, Vec2, Vec4};
 
-use super::node::{LiveUINode, UINode};
+use super::node::{UINode, UINodeDescriptor};
 
 /// A small fragment of graphics that can be sent to the GPU and rendered.
 /// You can compose several primitives to make more impressive graphics.
@@ -37,7 +37,7 @@ impl Default for Quad {
     }
 }
 
-impl LiveUINode for Quad {
+impl UINode for Quad {
     fn handle_ui_event(&mut self, event: super::node::UIEvent) -> bool {
         false
     }
@@ -55,7 +55,7 @@ impl LiveUINode for Quad {
     }
 }
 
-impl UINode for Quad {
+impl UINodeDescriptor for Quad {
     const QUAD_COUNT: usize = 1;
 
     fn get_render_rect(&self) -> Option<Rect<f32, f32>> {

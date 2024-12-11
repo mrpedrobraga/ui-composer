@@ -1,5 +1,5 @@
 use super::Interactor;
-use crate::ui::node::{LiveUINode, UIEvent, UINode};
+use crate::ui::node::{UIEvent, UINode, UINodeDescriptor};
 use futures::SinkExt;
 use futures_channel::mpsc::{self, Receiver, Sender};
 use futures_signals::signal::{Mutable, Signal, SignalExt};
@@ -32,14 +32,14 @@ impl Tap {
 }
 
 impl Interactor for Tap {}
-impl UINode for Tap {
+impl UINodeDescriptor for Tap {
     const QUAD_COUNT: usize = 0;
 
     fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
         None // Some(self.area))
     }
 }
-impl LiveUINode for Tap {
+impl UINode for Tap {
     fn handle_ui_event(&mut self, event: crate::ui::node::UIEvent) -> bool {
         match event {
             UIEvent::CursorMoved {

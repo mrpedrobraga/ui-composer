@@ -5,7 +5,7 @@ use wgpu::{util::DeviceExt as _, BufferAddress, BufferUsages, ColorTargetState};
 
 use crate::{
     gpu::{engine::GPUResources, render_target::GPURenderTarget, window::UINodeRenderingArtifacts},
-    ui::{graphics::Quad, node::LiveUINode},
+    ui::{graphics::Quad, node::UINode},
 };
 
 use super::GPURenderPipeline;
@@ -124,7 +124,7 @@ pub fn main_render_pipeline_draw(
     gpu_resources: &GPUResources,
     container_size: Extent2<f32>,
     view: wgpu::TextureView,
-    content: &dyn LiveUINode,
+    content: &dyn UINode,
     render_artifacts: &UINodeRenderingArtifacts,
 ) {
     let mut encoder =

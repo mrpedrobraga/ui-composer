@@ -14,11 +14,11 @@ pub trait Texture {}
 
 /// A texture that draws data from an image file.
 pub struct ImageTexture {
-    texture: wgpu::Texture,
+    pub texture: wgpu::Texture,
 }
 impl ImageTexture {
-    fn new(gpu_resources: &GPUResources) {
-        let texture_size = 256u32;
+    fn new(gpu_resources: &GPUResources) -> Self {
+        let texture_size = 128u32;
 
         let texture_desc = wgpu::TextureDescriptor {
             size: wgpu::Extent3d {
@@ -29,13 +29,14 @@ impl ImageTexture {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            format: wgpu::TextureFormat::Bgra8UnormSrgb,
             usage: wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::RENDER_ATTACHMENT,
             label: None,
-            view_formats: &[wgpu::TextureFormat::Rgba8UnormSrgb],
+            view_formats: &[wgpu::TextureFormat::Bgra8UnormSrgb],
         };
         let texture = gpu_resources.device.create_texture(&texture_desc);
-        let texture_view = texture.create_view(&Default::default());
+
+        Self { texture }
     }
 
     fn resize(&mut self, gpu_resources: &GPUResources, new_size: vek::Extent2<u32>) {}
@@ -50,7 +51,15 @@ pub struct WorldTexture {
 impl Texture for WorldTexture {}
 
 pub struct ImageRenderTarget {
-    image: ImageTexture,
+    pub image: ImageTexture,
+}
+
+impl ImageRenderTarget {
+    pub fn new(gpu_resources: &GPUResources) -> Self {
+        Self {
+            image: ImageTexture::new(gpu_resources),
+        }
+    }
 }
 
 impl GPURenderTarget for ImageRenderTarget {
@@ -61,7 +70,7 @@ impl GPURenderTarget for ImageRenderTarget {
     fn draw(
         &mut self,
         gpu_resources: &GPUResources,
-        content: &dyn crate::ui::node::LiveUINode,
+        content: &dyn crate::ui::node::UINode,
         render_artifacts: &super::window::UINodeRenderingArtifacts,
     ) {
         let texture = &self.image.texture;

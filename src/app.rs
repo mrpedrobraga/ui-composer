@@ -3,7 +3,7 @@ use crate::{
         engine::{Node, NodeDescriptor, UIEngine, UIEngineExt},
         window::WindowNodeDescriptor,
     },
-    ui::{layout::LayoutItem, node::UINode, react::UISignalExt as _},
+    ui::{layout::LayoutItem, node::UINodeDescriptor, react::UISignalExt as _},
 };
 use futures_signals::signal::{Mutable, SignalExt};
 use std::{
@@ -53,6 +53,10 @@ impl<N: Node + Send + 'static, W: NodeDescriptor<RuntimeType = N> + 'static> App
             self.running_app = self.root_item.take().map(move |root_item| RunningApp {
                 engine: UIEngine::new(event_loop, root_item),
             });
+
+            if let Some(running_app) = &mut self.running_app {
+                running_app.resumed(event_loop)
+            }
         }
     }
 
@@ -71,6 +75,11 @@ impl<N: Node + Send + 'static, W: NodeDescriptor<RuntimeType = N> + 'static> App
 impl<N: Node> ApplicationHandler for RunningApp<N> {
     fn resumed(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
         // Nothing happens yet, but in the future the app should be able to respond to this!
+        let mut engine = self
+            .engine
+            .lock()
+            .expect("Could not lock Render Engine to pump resumed event.");
+        engine.handle_resumed();
     }
 
     fn window_event(

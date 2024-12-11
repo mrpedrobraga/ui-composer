@@ -1,4 +1,4 @@
-use crate::ui::node::LiveUINode;
+use crate::ui::node::UINode;
 
 use super::{engine::GPUResources, window::UINodeRenderingArtifacts};
 use std::sync::Arc;
@@ -18,7 +18,7 @@ pub trait GPURenderTarget {
     fn draw(
         &mut self,
         gpu_resources: &GPUResources,
-        content: &dyn LiveUINode,
+        content: &dyn UINode,
         render_artifacts: &UINodeRenderingArtifacts,
     );
 

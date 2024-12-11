@@ -5,7 +5,7 @@ pub mod flow;
 pub mod functions;
 
 use super::{
-    node::{LiveUINode, UINode},
+    node::{UINode, UINodeDescriptor},
     react::{React, UISignalExt},
 };
 
@@ -16,7 +16,7 @@ pub struct LayoutHints {
 
 /// An item that can be included in a layouting context.
 pub trait LayoutItem: Send {
-    type UINodeType: UINode;
+    type UINodeType: UINodeDescriptor;
 
     /// The size this component prefers to be at. It's usually its minimum size.
     #[inline(always)]
@@ -55,7 +55,7 @@ where
 impl<F, T> Resizable<F, T>
 where
     F: Fn(LayoutHints) -> T + Send,
-    T: LiveUINode,
+    T: UINode,
 {
     /// Creates a new resizable [`LayoutItem`] that redraws using this factory function.
     pub fn new(factory: F) -> Self {
@@ -77,7 +77,7 @@ where
 impl<F: Send, T> LayoutItem for Resizable<F, T>
 where
     F: Fn(LayoutHints) -> T,
-    T: UINode,
+    T: UINodeDescriptor,
 {
     type UINodeType = T;
 

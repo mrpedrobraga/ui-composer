@@ -19,7 +19,7 @@ use winit::{
     window::{Window, WindowAttributes, WindowId},
 };
 
-use crate::ui::node::{LiveUINode, UIEvent, UINode};
+use crate::ui::node::{UIEvent, UINode, UINodeDescriptor};
 
 use super::{
     pipeline::{
@@ -52,6 +52,7 @@ pub struct UIEngine<'engine, E: Node> {
 
 pub trait UIEngineExt: Send {
     type RootNodeType: Node;
+    fn handle_resumed(&mut self);
     fn handle_window_event(&mut self, window_id: WindowId, event: UIEvent);
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>>;
 }
@@ -160,6 +161,15 @@ fn get_dummy_texture_format(
 impl<'engine, E: Node + Send> UIEngineExt for UIEngine<'engine, E> {
     type RootNodeType = E;
 
+    fn handle_resumed(&mut self) {
+        match self.engine_tree.lock() {
+            Ok(mut engine_tree) => {
+                engine_tree.setup(&self.gpu_resources);
+            }
+            Err(_) => unimplemented!("Could not lock mutex for handling resumed event!"),
+        }
+    }
+
     /// Forwards window events for the engine tree to process.
     fn handle_window_event(&mut self, window_id: WindowId, event: UIEvent) {
         match self.engine_tree.lock() {
@@ -197,6 +207,8 @@ pub trait NodeDescriptor: Send {
 
 /// A main node in the engine tree.
 pub trait Node: Send {
+    fn setup(&mut self, gpu_resources: &GPUResources);
+
     /// Handles an event by broadcasting it around.
     fn handle_window_event(
         &mut self,
@@ -237,6 +249,11 @@ where
     A: Node,
     B: Node,
 {
+    fn setup(&mut self, gpu_resources: &GPUResources) {
+        self.0.setup(gpu_resources);
+        self.1.setup(gpu_resources);
+    }
+
     fn handle_window_event(
         &mut self,
         gpu_resources: &GPUResources,

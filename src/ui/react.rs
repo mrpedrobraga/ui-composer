@@ -4,7 +4,7 @@ use std::{mem::MaybeUninit, pin::Pin, task::Poll};
 
 use super::{
     layout::LayoutItem,
-    node::{LiveUINode, UINode},
+    node::{UINode, UINodeDescriptor},
 };
 
 /// UI Node that reacts to a signal and updates part of the UI tree.
@@ -13,16 +13,16 @@ use super::{
 pub struct React<S: Send, T>
 where
     S: Signal<Item = T>,
-    T: LiveUINode,
+    T: UINode,
 {
     #[pin]
     signal: Hold<S, T>,
 }
 
-impl<S: Send, T> LiveUINode for React<S, T>
+impl<S: Send, T> UINode for React<S, T>
 where
     S: Signal<Item = T>,
-    T: UINode,
+    T: UINodeDescriptor,
 {
     fn handle_ui_event(&mut self, event: super::node::UIEvent) -> bool {
         match &mut self.signal.held_item {
@@ -47,10 +47,10 @@ where
     }
 }
 
-impl<S: Send, T> UINode for React<S, T>
+impl<S: Send, T> UINodeDescriptor for React<S, T>
 where
     S: Signal<Item = T>,
-    T: UINode,
+    T: UINodeDescriptor,
 {
     const QUAD_COUNT: usize = T::QUAD_COUNT;
 
@@ -66,7 +66,7 @@ pub trait UISignalExt: Signal + Send {
     fn into_ui(self) -> React<Self, Self::Item>
     where
         Self: Sized,
-        Self::Item: LiveUINode,
+        Self::Item: UINode,
     {
         React {
             signal: Hold {
@@ -93,7 +93,7 @@ where
 impl<A, B> Signal for Hold<A, B>
 where
     A: Signal<Item = B>,
-    B: LiveUINode,
+    B: UINode,
 {
     type Item = ();
 
@@ -122,7 +122,7 @@ where
     }
 }
 
-impl<S: Signal<Item = T> + Send, T: LiveUINode> Signal for React<S, T> {
+impl<S: Signal<Item = T> + Send, T: UINode> Signal for React<S, T> {
     type Item = ();
 
     fn poll_change(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<Self::Item>> {

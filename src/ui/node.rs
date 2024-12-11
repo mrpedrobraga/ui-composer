@@ -13,7 +13,7 @@ pub type UIEvent = winit::event::WindowEvent;
 /// A UINode receives an order to render, to update child nodes or to handle an interaction.
 /// In practice, any single UI node should handle as little as possible.
 /// The entire user interface is made of UI Nodes arranged in a graph.
-pub trait LiveUINode: Send {
+pub trait UINode: Send {
     /// Handles an UI Event (or not). Returns whether the event was handled.
     #[inline(always)]
     fn handle_ui_event(&mut self, event: UIEvent) -> bool;
@@ -31,7 +31,7 @@ pub trait LiveUINode: Send {
 }
 
 /// Trait to get compile-time information about an UI Node.
-pub trait UINode: LiveUINode {
+pub trait UINodeDescriptor: UINode {
     /// The amount of primitives this UI Node will have when drawing.
     const QUAD_COUNT: usize;
 
@@ -40,7 +40,7 @@ pub trait UINode: LiveUINode {
     fn get_render_rect(&self) -> Option<Rect<f32, f32>>;
 }
 
-impl LiveUINode for () {
+impl UINode for () {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         false
     }
@@ -58,7 +58,7 @@ impl LiveUINode for () {
     }
 }
 
-impl UINode for () {
+impl UINodeDescriptor for () {
     const QUAD_COUNT: usize = 0;
 
     fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
@@ -66,9 +66,9 @@ impl UINode for () {
     }
 }
 
-impl<T> LiveUINode for Option<T>
+impl<T> UINode for Option<T>
 where
-    T: UINode,
+    T: UINodeDescriptor,
 {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         self.as_mut()
@@ -99,21 +99,21 @@ where
     }
 }
 
-impl<T> UINode for Option<T>
+impl<T> UINodeDescriptor for Option<T>
 where
-    T: UINode,
+    T: UINodeDescriptor,
 {
     const QUAD_COUNT: usize = T::QUAD_COUNT;
 
     fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
-        self.as_ref().and_then(UINode::get_render_rect)
+        self.as_ref().and_then(UINodeDescriptor::get_render_rect)
     }
 }
 
-impl<T, E> LiveUINode for Result<T, E>
+impl<T, E> UINode for Result<T, E>
 where
-    T: UINode,
-    E: UINode,
+    T: UINodeDescriptor,
+    E: UINodeDescriptor,
 {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         match self {
@@ -143,10 +143,10 @@ where
     }
 }
 
-impl<T, E> UINode for Result<T, E>
+impl<T, E> UINodeDescriptor for Result<T, E>
 where
-    T: UINode,
-    E: UINode,
+    T: UINodeDescriptor,
+    E: UINodeDescriptor,
 {
     const QUAD_COUNT: usize = T::QUAD_COUNT;
 
@@ -158,9 +158,9 @@ where
     }
 }
 
-impl<T> LiveUINode for Box<T>
+impl<T> UINode for Box<T>
 where
-    T: UINode,
+    T: UINodeDescriptor,
 {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         self.as_mut().handle_ui_event(event)
@@ -181,9 +181,9 @@ where
     }
 }
 
-impl<T> UINode for Box<T>
+impl<T> UINodeDescriptor for Box<T>
 where
-    T: UINode,
+    T: UINodeDescriptor,
 {
     const QUAD_COUNT: usize = T::QUAD_COUNT;
 
@@ -192,10 +192,10 @@ where
     }
 }
 
-impl<A, B> LiveUINode for (A, B)
+impl<A, B> UINode for (A, B)
 where
-    A: UINode,
-    B: UINode,
+    A: UINodeDescriptor,
+    B: UINodeDescriptor,
 {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         let a_handled = self.0.handle_ui_event(event.clone());
@@ -232,10 +232,10 @@ where
     }
 }
 
-impl<A, B> UINode for (A, B)
+impl<A, B> UINodeDescriptor for (A, B)
 where
-    A: UINode,
-    B: UINode,
+    A: UINodeDescriptor,
+    B: UINodeDescriptor,
 {
     const QUAD_COUNT: usize = A::QUAD_COUNT + B::QUAD_COUNT;
 
@@ -258,7 +258,7 @@ impl<T, const N: usize> SizedVec<T, N> {
         Self { inner }
     }
 }
-impl<A: UINode, const N: usize> LiveUINode for SizedVec<A, N> {
+impl<A: UINodeDescriptor, const N: usize> UINode for SizedVec<A, N> {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         let mut any_handled = false;
         for item in self.inner.iter_mut() {
@@ -293,7 +293,7 @@ impl<A: UINode, const N: usize> LiveUINode for SizedVec<A, N> {
         poll_acc
     }
 }
-impl<A: UINode, const N: usize> UINode for SizedVec<A, N> {
+impl<A: UINodeDescriptor, const N: usize> UINodeDescriptor for SizedVec<A, N> {
     const QUAD_COUNT: usize = N * A::QUAD_COUNT;
 
     fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
