@@ -26,7 +26,7 @@ impl UINode for Inspect {
         false
     }
 
-    fn push_quads(&self, quad_buffer: &mut [crate::prelude::Quad]) {
+    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Quad]) {
         /* No quads to push in release mode. But maybe in debug? */
     }
 

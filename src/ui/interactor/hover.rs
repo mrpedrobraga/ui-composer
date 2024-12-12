@@ -55,7 +55,7 @@ impl UINode for Hover {
         }
     }
 
-    fn push_quads(&self, quad_buffer: &mut [crate::prelude::Quad]) {
+    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Quad]) {
         /* Maybe push something here in Debug mode? */
     }
 

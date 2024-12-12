@@ -19,7 +19,7 @@ pub trait GPURenderTarget {
         &mut self,
         gpu_resources: &GPUResources,
         content: &dyn UINode,
-        render_artifacts: &UINodeRenderBuffers,
+        render_buffers: &mut UINodeRenderBuffers,
     );
 
     /// Returns the texture format;

@@ -246,8 +246,11 @@ impl<'window> Node for WindowNode {
 
 impl WindowNode {
     fn redraw(&mut self, gpu_resources: &GPUResources) {
-        self.render_target
-            .draw(gpu_resources, self.content.as_ref(), &self.content_buffers);
+        self.render_target.draw(
+            gpu_resources,
+            self.content.as_ref(),
+            &mut self.content_buffers,
+        );
     }
 }
 
@@ -288,7 +291,7 @@ impl GPURenderTarget for WindowRenderTarget {
         &mut self,
         gpu_resources: &GPUResources,
         content: &dyn UINode,
-        render_artifacts: &UINodeRenderBuffers,
+        render_buffers: &mut UINodeRenderBuffers,
     ) {
         let texture = self
             .surface
@@ -303,7 +306,7 @@ impl GPURenderTarget for WindowRenderTarget {
             self.size.as_(),
             view,
             content,
-            render_artifacts,
+            render_buffers,
         );
 
         texture.present();

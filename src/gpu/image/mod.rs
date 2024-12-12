@@ -67,8 +67,11 @@ impl Node for ImageNode {
         let size_bytes = 4 * 8 * 128 * 128;
         let size = self.render_target.image.texture.size();
 
-        self.render_target
-            .draw(gpu_resources, self.content.as_ref(), &self.content_buffer);
+        self.render_target.draw(
+            gpu_resources,
+            self.content.as_ref(),
+            &mut self.content_buffer,
+        );
 
         let buffer = gpu_resources.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Image Temp Buffer"),

@@ -42,7 +42,7 @@ impl UINode for Quad {
         false
     }
 
-    fn push_quads(&self, quad_buffer: &mut [Quad]) {
+    fn write_quads(&self, quad_buffer: &mut [Quad]) {
         quad_buffer[0] = *self;
     }
 

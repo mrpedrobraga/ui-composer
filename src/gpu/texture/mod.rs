@@ -71,7 +71,7 @@ impl GPURenderTarget for ImageRenderTarget {
         &mut self,
         gpu_resources: &GPUResources,
         content: &dyn crate::ui::node::UINode,
-        render_artifacts: &super::world::UINodeRenderBuffers,
+        render_artifacts: &mut super::world::UINodeRenderBuffers,
     ) {
         let texture = &self.image.texture;
         let view = texture.create_view(&wgpu::TextureViewDescriptor::default());

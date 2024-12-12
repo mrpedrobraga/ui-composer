@@ -31,9 +31,9 @@ where
         }
     }
 
-    fn push_quads(&self, quad_buffer: &mut [crate::prelude::Quad]) {
+    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Quad]) {
         match &self.signal.held_item {
-            Some(item) => item.push_quads(quad_buffer),
+            Some(item) => item.write_quads(quad_buffer),
             None => panic!("Reactor was drawn without being polled first!"),
         }
     }

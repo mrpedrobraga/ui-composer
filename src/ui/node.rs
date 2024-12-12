@@ -20,7 +20,7 @@ pub trait UINode: Send {
 
     /// Pushes quads to a quad buffer slice.
     #[inline(always)]
-    fn push_quads(&self, quad_buffer: &mut [Quad]);
+    fn write_quads(&self, quad_buffer: &mut [Quad]);
 
     /// TODO: Remove this when using generics on the engine?
     fn get_quad_count(&self) -> usize;
@@ -45,8 +45,8 @@ impl UINode for () {
         false
     }
 
-    fn push_quads(&self, quad_buffer: &mut [Quad]) {
-        /* No quads to push! */
+    fn write_quads(&self, quad_buffer: &mut [Quad]) {
+        /* No quads to write */
     }
 
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
@@ -76,12 +76,12 @@ where
             .unwrap_or(false)
     }
 
-    fn push_quads(&self, quad_buffer: &mut [Quad]) {
+    fn write_quads(&self, quad_buffer: &mut [Quad]) {
         match self {
-            Some(inner) => inner.push_quads(quad_buffer),
+            Some(inner) => inner.write_quads(quad_buffer),
             None => {
                 for idx in 0..Self::QUAD_COUNT {
-                    quad_buffer[0] = Quad::default()
+                    quad_buffer[idx] = Quad::default()
                 }
             }
         }
@@ -122,10 +122,10 @@ where
         }
     }
 
-    fn push_quads(&self, quad_buffer: &mut [Quad]) {
+    fn write_quads(&self, quad_buffer: &mut [Quad]) {
         match self {
-            Ok(v) => v.push_quads(quad_buffer),
-            Err(e) => e.push_quads(quad_buffer),
+            Ok(v) => v.write_quads(quad_buffer),
+            Err(e) => e.write_quads(quad_buffer),
         }
     }
 
@@ -166,8 +166,8 @@ where
         self.as_mut().handle_ui_event(event)
     }
 
-    fn push_quads(&self, quad_buffer: &mut [Quad]) {
-        self.as_ref().push_quads(quad_buffer)
+    fn write_quads(&self, quad_buffer: &mut [Quad]) {
+        self.as_ref().write_quads(quad_buffer)
     }
 
     fn poll_processors(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
@@ -204,10 +204,10 @@ where
         a_handled || b_handled
     }
 
-    fn push_quads(&self, quad_buffer: &mut [Quad]) {
+    fn write_quads(&self, quad_buffer: &mut [Quad]) {
         let (slice_a, slice_b) = quad_buffer.split_at_mut(A::QUAD_COUNT);
-        self.0.push_quads(slice_a);
-        self.1.push_quads(slice_b);
+        self.0.write_quads(slice_a);
+        self.1.write_quads(slice_b);
     }
 
     fn poll_processors(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
@@ -267,14 +267,14 @@ impl<A: UINodeDescriptor, const N: usize> UINode for SizedVec<A, N> {
         any_handled
     }
 
-    fn push_quads(&self, quad_buffer: &mut [Quad]) {
+    fn write_quads(&self, quad_buffer: &mut [Quad]) {
         if self.inner.len() == 0 {
             return;
         }
 
         for idx in 0..N {
             self.inner[idx]
-                .push_quads(&mut quad_buffer[(idx * A::QUAD_COUNT)..((idx + 1) * A::QUAD_COUNT)])
+                .write_quads(&mut quad_buffer[(idx * A::QUAD_COUNT)..((idx + 1) * A::QUAD_COUNT)])
         }
     }
 

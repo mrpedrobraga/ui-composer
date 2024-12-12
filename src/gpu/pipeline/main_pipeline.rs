@@ -122,10 +122,10 @@ where
 
 pub fn main_render_pipeline_draw(
     gpu_resources: &GPUResources,
-    container_size: Extent2<f32>,
+    render_target_size: Extent2<f32>,
     view: wgpu::TextureView,
-    content: &dyn UINode,
-    render_artifacts: &UINodeRenderBuffers,
+    ui_tree: &dyn UINode,
+    render_buffers: &mut UINodeRenderBuffers,
 ) {
     let mut encoder =
         gpu_resources
@@ -154,38 +154,34 @@ pub fn main_render_pipeline_draw(
         occlusion_query_set: None,
     });
 
-    let quad_count = content.get_quad_count();
+    let quad_count = render_buffers.get_quad_count();
 
     if quad_count > 0 {
-        // TODO: Flush uniforms here!
+        // TODO: Ponder on whether this is the best async way for flushing the uniforms.
+        // Like, I think I might need _more_ than a single set of uniforms for peak
+        // parallel rendering if I have multiple windows or multiple worlds.
         gpu_resources.queue.write_buffer(
             &gpu_resources.main_pipeline.uniform_buffer,
             0,
             bytemuck::cast_slice(&[Uniforms {
-                world_to_wgpu_mat: container_size_to_wgpu_mat(container_size),
+                world_to_wgpu_mat: container_size_to_wgpu_mat(render_target_size),
             }]),
         );
 
-        // TODO: Update the quads using a more efficient method;
-        let mut quads = vec![crate::prelude::Quad::default(); quad_count];
-        content.push_quads(&mut quads[..]);
-        gpu_resources.queue.write_buffer(
-            &render_artifacts.instance_buffer,
-            0,
-            bytemuck::cast_slice(&quads),
-        );
+        // so that we can do partial syncs and renders;
+        render_buffers.read_quads_from_ui_tree(ui_tree);
+        render_buffers.write_to_gpu(gpu_resources);
         gpu_resources.queue.submit([]);
 
-        // TODO: Allow partial renders of the UI...
         gpu_resources
             .main_pipeline
             .install_on_render_pass(&mut render_pass);
-        render_pass.set_vertex_buffer(1, render_artifacts.instance_buffer.slice(..));
+        render_pass.set_vertex_buffer(1, render_buffers.instance_buffer.slice(..));
 
         render_pass.draw_indexed(
             0..gpu_resources.main_pipeline.mesh_index_count as u32,
             0,
-            0..quads.len() as u32,
+            0..quad_count as u32,
         );
     }
 
