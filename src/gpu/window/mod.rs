@@ -31,6 +31,7 @@ use super::{
     },
     render_target::{self, GPURenderTarget},
     view::{View, ViewNode},
+    world::UINodeRenderBuffers,
 };
 use crate::ui::{
     graphics::Quad,
@@ -135,20 +136,12 @@ where
 
         let window = std::sync::Arc::new(window);
 
-        let render_artifacts = UINodeRenderingArtifacts {
-            instance_buffer_cpu: vec![Quad::default(); T::QUAD_COUNT],
-            instance_buffer: gpu_resources.device.create_buffer(&wgpu::BufferDescriptor {
-                label: Some("Instance Buffer for a Window"),
-                size: (size_of::<Quad>() as u64 * T::QUAD_COUNT as u64),
-                usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
-                mapped_at_creation: false,
-            }),
-        };
+        let render_buffers = UINodeRenderBuffers::new(gpu_resources, T::QUAD_COUNT);
 
         WindowNode {
             content: Box::new(self.content),
             state: self.state,
-            render_artifacts,
+            content_buffers: render_buffers,
             render_target: WindowRenderTarget::new(
                 &gpu_resources,
                 window.clone(),
@@ -180,17 +173,11 @@ fn new_window_state(window_size: Extent2<f32>) -> WindowNodeState {
 #[pin_project(project = WindowNodeProj)]
 pub struct WindowNode {
     #[pin]
-    content: Box<dyn UINode>,
     state: WindowNodeState,
-    render_artifacts: UINodeRenderingArtifacts,
-    render_target: WindowRenderTarget,
     window: Arc<Window>,
-}
-
-/// TODO: Move out of here and find a better name.
-pub struct UINodeRenderingArtifacts {
-    pub instance_buffer_cpu: Vec<Quad>,
-    pub instance_buffer: wgpu::Buffer,
+    content: Box<dyn UINode>,
+    content_buffers: UINodeRenderBuffers,
+    render_target: WindowRenderTarget,
 }
 
 impl<'window> Node for WindowNode {
@@ -237,7 +224,7 @@ impl<'window> Node for WindowNode {
 
         let WindowNodeProj {
             mut content,
-            render_artifacts,
+            content_buffers,
             render_target,
             window,
             state,
@@ -260,7 +247,7 @@ impl<'window> Node for WindowNode {
 impl WindowNode {
     fn redraw(&mut self, gpu_resources: &GPUResources) {
         self.render_target
-            .draw(gpu_resources, self.content.as_ref(), &self.render_artifacts);
+            .draw(gpu_resources, self.content.as_ref(), &self.content_buffers);
     }
 }
 
@@ -301,7 +288,7 @@ impl GPURenderTarget for WindowRenderTarget {
         &mut self,
         gpu_resources: &GPUResources,
         content: &dyn UINode,
-        render_artifacts: &UINodeRenderingArtifacts,
+        render_artifacts: &UINodeRenderBuffers,
     ) {
         let texture = self
             .surface

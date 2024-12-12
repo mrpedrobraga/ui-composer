@@ -1,6 +1,6 @@
 use crate::ui::node::UINode;
 
-use super::{engine::GPUResources, window::UINodeRenderingArtifacts};
+use super::{engine::GPUResources, world::UINodeRenderBuffers};
 use std::sync::Arc;
 use vek::Extent2;
 use wgpu::{
@@ -19,7 +19,7 @@ pub trait GPURenderTarget {
         &mut self,
         gpu_resources: &GPUResources,
         content: &dyn UINode,
-        render_artifacts: &UINodeRenderingArtifacts,
+        render_artifacts: &UINodeRenderBuffers,
     );
 
     /// Returns the texture format;

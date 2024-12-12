@@ -4,7 +4,7 @@ use vek::{Extent2, Mat4, Vec2, Vec3};
 use wgpu::{util::DeviceExt as _, BufferAddress, BufferUsages, ColorTargetState};
 
 use crate::{
-    gpu::{engine::GPUResources, render_target::GPURenderTarget, window::UINodeRenderingArtifacts},
+    gpu::{engine::GPUResources, render_target::GPURenderTarget, world::UINodeRenderBuffers},
     ui::{graphics::Quad, node::UINode},
 };
 
@@ -125,7 +125,7 @@ pub fn main_render_pipeline_draw(
     container_size: Extent2<f32>,
     view: wgpu::TextureView,
     content: &dyn UINode,
-    render_artifacts: &UINodeRenderingArtifacts,
+    render_artifacts: &UINodeRenderBuffers,
 ) {
     let mut encoder =
         gpu_resources

@@ -38,7 +38,7 @@ impl<T: Vector> RealTimeStream for LerpTo<T> {
         &mut self,
         initial_value: Self::Item,
         time_elapsed: std::time::Duration,
-        delta: std::time::Duration,
+        _delta: std::time::Duration,
     ) -> ui_composer::animation::Poll<Self::Item> {
         if time_elapsed >= self.duration {
             Poll::Done(self.to)
