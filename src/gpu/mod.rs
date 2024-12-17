@@ -1,3 +1,4 @@
+pub mod dynamic;
 pub mod engine;
 pub mod image;
 pub mod pipeline;

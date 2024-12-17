@@ -26,6 +26,11 @@ struct VertexOutput {
     @location(0) color: vec3<f32>,
 };
 
+struct FragmentInput {
+    @builtin(position) fragment_position: vec4<f32>,
+    @location(0) color: vec3<f32>,
+}
+
 @vertex
 fn vs_main(
     model: VertexInput,
@@ -55,12 +60,23 @@ fn vs_main(
 
 @fragment
 fn fs_main(
-    in: VertexOutput,
+    in: FragmentInput,
 ) -> @location(0) vec4<f32> {
-    return vec4<f32>(srgb_to_linear(in.color), 1.0);
+    // TODO: Inquire the bit depth;
+    let inv_bit_depth = 1.0/255.0;
+    let debanding = inv_bit_depth * interleaved_gradient_noise(in.fragment_position.xy);
+    let d = distance(in.fragment_position.xy * 0.001, vec2<f32>(0.0, 0.0));
+    // NOTE: Debanding should *not* be applied when rendering user images.
+    // Or at the very least should be made optional.
+    return vec4<f32>(1.0 * debanding + srgb_to_linear(in.color) * d, 1.0);
 }
 
 fn srgb_to_linear(color_srgb: vec3<f32>) -> vec3<f32> {
     let color_linear = pow(color_srgb, vec3<f32>(2.2));
     return min(max(color_linear, vec3<f32>(0.0)), vec3<f32>(1.0));
+}
+
+fn interleaved_gradient_noise(frag_coord: vec2<f32>) -> f32
+{
+	return fract(52.9829189 * fract(dot(frag_coord, vec2(0.06711056, 0.00583715))));
 }

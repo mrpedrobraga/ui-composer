@@ -7,8 +7,8 @@ use crate::{prelude::Quad, ui::node::UINode};
 
 /// The buffers that hold the soon-to-be-rendered UI.
 pub struct UINodeRenderBuffers {
-    pub instance_buffer_cpu: Vec<Quad>,
-    pub instance_buffer: wgpu::Buffer,
+    instance_buffer_cpu: Vec<Quad>,
+    instance_buffer: wgpu::Buffer,
 }
 
 impl UINodeRenderBuffers {
@@ -29,11 +29,12 @@ impl UINodeRenderBuffers {
         }
     }
 
-    pub fn read_quads_from_ui_tree<T>(&mut self, ui_tree: &T)
-    where
-        T: UINode + ?Sized,
-    {
-        ui_tree.write_quads(&mut self.instance_buffer_cpu);
+    pub fn instance_buffer_cpu(&mut self) -> &mut [Quad] {
+        &mut self.instance_buffer_cpu[..]
+    }
+
+    pub fn instance_buffer(&mut self) -> wgpu::BufferSlice {
+        self.instance_buffer.slice(..)
     }
 
     pub fn write_to_gpu(&mut self, gpu_resources: &GPUResources) {

@@ -169,14 +169,14 @@ pub fn main_render_pipeline_draw(
         );
 
         // so that we can do partial syncs and renders;
-        render_buffers.read_quads_from_ui_tree(ui_tree);
+        ui_tree.write_quads(render_buffers.instance_buffer_cpu());
         render_buffers.write_to_gpu(gpu_resources);
         gpu_resources.queue.submit([]);
 
         gpu_resources
             .main_pipeline
             .install_on_render_pass(&mut render_pass);
-        render_pass.set_vertex_buffer(1, render_buffers.instance_buffer.slice(..));
+        render_pass.set_vertex_buffer(1, render_buffers.instance_buffer());
 
         render_pass.draw_indexed(
             0..gpu_resources.main_pipeline.mesh_index_count as u32,
