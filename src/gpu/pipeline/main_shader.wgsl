@@ -65,10 +65,9 @@ fn fs_main(
     // TODO: Inquire the bit depth;
     let inv_bit_depth = 1.0/255.0;
     let debanding = inv_bit_depth * interleaved_gradient_noise(in.fragment_position.xy);
-    let d = distance(in.fragment_position.xy * 0.001, vec2<f32>(0.0, 0.0));
     // NOTE: Debanding should *not* be applied when rendering user images.
     // Or at the very least should be made optional.
-    return vec4<f32>(1.0 * debanding + srgb_to_linear(in.color) * d, 1.0);
+    return vec4<f32>(1.0 * debanding + srgb_to_linear(in.color), 1.0);
 }
 
 fn srgb_to_linear(color_srgb: vec3<f32>) -> vec3<f32> {
