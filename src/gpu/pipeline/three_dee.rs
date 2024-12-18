@@ -19,7 +19,7 @@ impl GPURenderPipeline for ThreeDeeRenderPipeline {
 
 /// The GPU resources of a single model.
 /// With this you should be able to draw a single model once or many times.
-pub struct ModelArtifacts {
+pub struct ModelRenderBuffers {
     pub mesh_vertex_buffer: wgpu::Buffer,
     pub mesh_index_buffer: wgpu::Buffer,
     pub mesh_index_count: usize,

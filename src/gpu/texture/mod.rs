@@ -4,7 +4,7 @@ use vek::Extent2;
 
 use super::{
     engine::GPUResources,
-    pipeline::{main_pipeline::main_render_pipeline_draw, GPURenderPipeline},
+    pipeline::{orchestra_render_pipeline::OrchestraRenderPipeline, GPURenderPipeline},
     render_target::GPURenderTarget,
 };
 
@@ -76,7 +76,7 @@ impl GPURenderTarget for ImageRenderTarget {
         let texture = &self.image.texture;
         let size = self.image.texture.size();
 
-        main_render_pipeline_draw(
+        OrchestraRenderPipeline::draw(
             gpu_resources,
             Extent2::new(size.width as f32, size.height as f32),
             &texture,

@@ -2,7 +2,7 @@ use wgpu::RenderPass;
 
 use super::engine::{Node, UIEngine};
 
-pub mod main_pipeline;
+pub mod orchestra_render_pipeline;
 pub mod three_dee;
 
 #[cfg(feature = "text")]

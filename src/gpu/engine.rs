@@ -22,10 +22,7 @@ use winit::{
 use crate::ui::node::{UIEvent, UINode, UINodeDescriptor};
 
 use super::{
-    pipeline::{
-        main_pipeline::{main_render_pipeline, MainRenderPipeline},
-        GPURenderPipeline,
-    },
+    pipeline::{orchestra_render_pipeline::OrchestraRenderPipeline, GPURenderPipeline},
     render_target::{self, GPURenderTarget},
     window::{WindowNode, WindowNodeDescriptor, WindowRenderTarget},
 };
@@ -36,7 +33,7 @@ pub struct GPUResources {
     pub queue: wgpu::Queue,
     pub adapter: wgpu::Adapter,
 
-    pub main_pipeline: MainRenderPipeline,
+    pub main_pipeline: OrchestraRenderPipeline,
 }
 
 /// An engine that can render our application to the GPU as well as forward interactive events to the app.
@@ -90,7 +87,7 @@ impl<'engine: 'static, E: Node + Send + 'engine> UIEngine<'engine, E> {
 
         // TODO: Get the texture format from a render target and not guess it.
         let dummy_format = TextureFormat::Bgra8UnormSrgb; //;get_dummy_texture_format(event_loop, &instance, &device, &adapter);
-        let main_pipeline = main_render_pipeline::<WindowRenderTarget>(
+        let main_pipeline = OrchestraRenderPipeline::singleton::<WindowRenderTarget>(
             &adapter,
             &device,
             &queue,

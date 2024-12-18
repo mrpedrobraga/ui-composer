@@ -26,7 +26,9 @@ use winit::{
 use super::{
     engine::{GPUResources, Node, NodeDescriptor},
     pipeline::{
-        main_pipeline::{container_size_to_wgpu_mat, main_render_pipeline_draw, Uniforms},
+        orchestra_render_pipeline::{
+            container_size_to_wgpu_mat, OrchestraRenderPipeline, Uniforms,
+        },
         GPURenderPipeline,
     },
     render_target::{self, GPURenderTarget},
@@ -298,7 +300,7 @@ impl GPURenderTarget for WindowRenderTarget {
             .get_current_texture()
             .expect("Error retrieving the current texture.");
 
-        main_render_pipeline_draw(
+        OrchestraRenderPipeline::draw(
             gpu_resources,
             self.size.as_(),
             &texture.texture,
