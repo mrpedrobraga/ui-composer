@@ -7,6 +7,7 @@ pub use crate::signal_ext::*;
 pub use crate::ui::graphics::Quad;
 pub use crate::ui::interactor::*;
 pub use crate::ui::layout::*;
+pub use crate::ui::react::UISignalExt;
 pub use futures_signals::signal;
 pub use futures_signals::signal_vec;
 pub use vek::*;

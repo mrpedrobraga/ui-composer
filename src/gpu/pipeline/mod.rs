@@ -2,8 +2,8 @@ use wgpu::RenderPass;
 
 use super::engine::{Node, UIEngine};
 
+pub mod iris_render_pipeline;
 pub mod orchestra_render_pipeline;
-pub mod three_dee;
 
 #[cfg(feature = "text")]
 pub mod text_pipeline;

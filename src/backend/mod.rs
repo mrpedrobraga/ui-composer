@@ -7,3 +7,10 @@ pub trait Backend {
     /// The type used for UI Events.
     type Event;
 }
+
+/// Backend that renders to  a window or a texture using WGPU.
+pub struct WGPUBackend {}
+
+impl Backend for WGPUBackend {
+    type Event = winit::event::WindowEvent;
+}

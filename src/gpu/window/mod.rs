@@ -101,7 +101,7 @@ where
                 rect: Rect::new(0.0, 0.0, window_size.w, window_size.h),
             })
         })
-        .into_ui();
+        .collect_ui();
 
     WindowNodeDescriptor {
         state,

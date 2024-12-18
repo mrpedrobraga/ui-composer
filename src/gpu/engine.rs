@@ -12,7 +12,7 @@ use std::{
     task::{Context, Poll},
 };
 use vek::Extent2;
-use wgpu::TextureFormat;
+use wgpu::{MemoryHints, TextureFormat};
 use winit::{
     dpi::PhysicalSize,
     event_loop::ActiveEventLoop,
@@ -43,7 +43,6 @@ pub struct UIEngine<'engine, E: Node> {
     #[pin]
     pub engine_tree: Arc<Mutex<E>>,
     pub gpu_resources: GPUResources,
-
     _marker: PhantomData<&'engine ()>,
 }
 
@@ -79,6 +78,7 @@ impl<'engine: 'static, E: Node + Send + 'engine> UIEngine<'engine, E> {
                     required_features: wgpu::Features::empty(),
                     required_limits: wgpu::Limits::downlevel_webgl2_defaults()
                         .using_resolution(adapter.limits()),
+                    memory_hints: MemoryHints::default(),
                 },
                 None,
             )

@@ -44,7 +44,7 @@ pub trait LayoutItem: Send {
                     rect: Rect::new(0.0, 0.0, new_size.w, new_size.h),
                 })
             })
-            .into_ui()
+            .collect_ui()
     }
 }
 

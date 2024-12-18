@@ -83,13 +83,13 @@ impl OrchestraRenderPipeline {
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
-                entry_point: "vs_main",
+                entry_point: Some("vs_main"),
                 buffers: &[Vertex::buffer_layout(), Quad::buffer_layout()],
                 compilation_options: Default::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 compilation_options: Default::default(),
                 targets: render_target_formats,
             }),
@@ -97,6 +97,7 @@ impl OrchestraRenderPipeline {
             depth_stencil: None, // yet
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None, // TODO: Perhaps have some cache?
         });
 
         let (vertices, indices) = quad_mesh();

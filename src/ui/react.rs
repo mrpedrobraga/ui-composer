@@ -78,7 +78,7 @@ where
 }
 
 pub trait UISignalExt: Signal + Send {
-    fn into_ui(self) -> React<Self, Self::Item>
+    fn collect_ui(self) -> React<Self, Self::Item>
     where
         Self: Sized,
         Self::Item: UINode,

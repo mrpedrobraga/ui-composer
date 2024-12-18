@@ -1,10 +1,16 @@
+use futures_signals::signal::Signal;
+use pin_project::pin_project;
 use std::{
     pin::Pin,
     task::{Context, Poll},
 };
 
-use futures_signals::signal::Signal;
-use pin_project::pin_project;
+pub use futures_signals::signal::Mutable as Editable;
+pub use futures_signals::signal::SignalExt;
+pub use futures_signals::signal_map::MutableBTreeMap as EditableMap;
+pub use futures_signals::signal_map::SignalMapExt;
+pub use futures_signals::signal_vec::MutableVec as EditableVec;
+pub use futures_signals::signal_vec::SignalVecExt;
 
 /// An attribute is a value that might be unset, directly set or reactive.
 #[pin_project(project = AttributeProj)]
