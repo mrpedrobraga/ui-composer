@@ -29,6 +29,10 @@ where
         self.min_size
     }
 
+    fn get_minimum_size(&self) -> Extent2<f32> {
+        self.min_size
+    }
+
     fn bake(&self, layout_hints: LayoutHints) -> Self::UINodeType {
         Quad::new(layout_hints.rect, Rgb::green())
     }

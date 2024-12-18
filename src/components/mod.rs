@@ -24,9 +24,12 @@ where
 {
     type UINodeType = A::UINodeType;
 
-    /// Minimum size is same as the inner item.
     fn get_natural_size(&self) -> Extent2<f32> {
         self.item.get_natural_size()
+    }
+
+    fn get_minimum_size(&self) -> Extent2<f32> {
+        self.item.get_minimum_size()
     }
 
     fn bake(&self, layout_hints: LayoutHints) -> Self::UINodeType {
@@ -80,6 +83,10 @@ where
         )
     }
 
+    fn get_minimum_size(&self) -> Extent2<f32> {
+        self.item.get_minimum_size()
+    }
+
     fn bake(&self, layout_hints: LayoutHints) -> Self::UINodeType {
         self.item.bake(layout_hints)
     }
@@ -107,13 +114,13 @@ pub enum FlowPosition {
 /// The width of the container is the max width between the items.
 pub fn Column() {}
 
-/// A vertical, writing order stack of items.
+/// A horizontal, writing order stack of items.
 ///
 /// ### Sizing
-/// The height of the container is the sum of the heights
+/// The width of the container is the sum of the widths
 /// of the items inside (accounting for gap).
 ///
-/// The width of the container is the max width between the items.
+/// The height of the container is the max height between the items.
 pub fn Row() {}
 
 #[derive(Debug, Clone, Copy)]
@@ -121,7 +128,7 @@ pub enum FlexItem<T> {
     /// This item has a defined size (its own natural, usually minimum, size).
     Sized(T),
     /// This item has a minimum size but will grow to fit empty space (with a weight).
-    Stretchy(T, f32),
+    Stretchy(f32, T),
 }
 
 /// An main-axis heap of ordered items, where some of the items might stretch with an assigned weight.

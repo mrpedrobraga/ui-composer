@@ -18,7 +18,7 @@ pub trait GPURenderTarget {
     fn draw(
         &mut self,
         gpu_resources: &GPUResources,
-        content: &dyn UINode,
+        content: &mut dyn UINode,
         render_buffers: &mut UINodeRenderBuffers,
     );
 

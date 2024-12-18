@@ -1,6 +1,9 @@
 use futures_signals::signal::{Map, Signal, SignalExt};
 use pin_project::pin_project;
 use std::{mem::MaybeUninit, pin::Pin, task::Poll};
+use wgpu::{RenderPass, Texture};
+
+use crate::gpu::engine::GPUResources;
 
 use super::{
     layout::LayoutItem,
@@ -35,6 +38,18 @@ where
         match &self.signal.held_item {
             Some(item) => item.write_quads(quad_buffer),
             None => panic!("Reactor was drawn without being polled first!"),
+        }
+    }
+
+    fn nested_predraw<'pass>(
+        &'pass mut self,
+        gpu_resources: &'pass GPUResources,
+        render_pass: &mut RenderPass<'pass>,
+        texture: &Texture,
+    ) {
+        match &mut self.signal.held_item {
+            Some(item) => item.nested_predraw(gpu_resources, render_pass, texture),
+            None => panic!("Reactor was predrawn without being polled first!"),
         }
     }
 

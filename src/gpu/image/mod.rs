@@ -69,7 +69,7 @@ impl Node for ImageNode {
 
         self.render_target.draw(
             gpu_resources,
-            self.content.as_ref(),
+            self.content.as_mut(),
             &mut self.content_buffer,
         );
 

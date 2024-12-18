@@ -22,6 +22,10 @@ pub trait LayoutItem: Send {
     #[inline(always)]
     fn get_natural_size(&self) -> Extent2<f32>;
 
+    /// The size this component prefers to be at. It's usually its minimum size.
+    #[inline(always)]
+    fn get_minimum_size(&self) -> Extent2<f32>;
+
     /// Renders the content of this layout item with a specific rect.
     fn bake(&self, layout_hints: LayoutHints) -> Self::UINodeType;
 
@@ -82,6 +86,10 @@ where
     type UINodeType = T;
 
     fn get_natural_size(&self) -> Extent2<f32> {
+        self.get_minimum_size()
+    }
+
+    fn get_minimum_size(&self) -> Extent2<f32> {
         self.min_size
     }
 
@@ -90,22 +98,18 @@ where
     }
 }
 
-pub struct EmptyItem {}
-
-impl LayoutItem for EmptyItem {
+impl LayoutItem for () {
     type UINodeType = ();
 
     fn get_natural_size(&self) -> Extent2<f32> {
+        self.get_minimum_size()
+    }
+
+    fn get_minimum_size(&self) -> Extent2<f32> {
         Extent2::new(0.0, 0.0)
     }
 
     fn bake(&self, layout_hints: LayoutHints) -> Self::UINodeType {
         ()
     }
-}
-
-#[allow(non_snake_case)]
-/// Creates an empty layout item.
-pub fn Empty() -> EmptyItem {
-    EmptyItem {}
 }

@@ -8,7 +8,9 @@ pub fn main() {
 
 #[allow(non_snake_case)]
 pub fn Squares() -> impl LayoutItem {
-    let squares: MutableVec<Quad> = MutableVec::new();
+    let mvec = MutableVec::new();
+    mvec.lock_mut()
+        .push(Quad::new(Rect::new(0.0, 0.0, 64.0, 32.0), Rgb::yellow()));
 
-    Resizable::new(|hx| Quad::new(hx.rect.expand_radius(-10.0), Rgb::new(0.5, 0.5, 0.5)))
+    Resizable::new(move |hx| VecItem::new(hx.rect, mvec.clone()))
 }

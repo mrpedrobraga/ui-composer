@@ -11,10 +11,10 @@ pub use futures_signals::signal_vec;
 pub use vek::*;
 
 #[macro_export]
-macro_rules! tuple {
+macro_rules! items {
     ($a:expr $(,)?) => { $a };
     ($a:expr, $b:expr) => {($a, $b)};
     ($a:expr, $($rest:tt)*) => {
-        ($a, tuple!($($rest)*))
+        ($a, item!($($rest)*))
     };
 }

@@ -1,7 +1,7 @@
 use bytemuck::{Pod, Zeroable};
 use std::mem::size_of;
 use vek::{Extent2, Mat4, Vec2, Vec3};
-use wgpu::{util::DeviceExt as _, BufferAddress, BufferUsages, ColorTargetState};
+use wgpu::{util::DeviceExt as _, BufferAddress, BufferUsages, ColorTargetState, Texture};
 
 use crate::{
     gpu::{engine::GPUResources, render_target::GPURenderTarget, world::UINodeRenderBuffers},
@@ -123,10 +123,11 @@ where
 pub fn main_render_pipeline_draw(
     gpu_resources: &GPUResources,
     render_target_size: Extent2<f32>,
-    view: wgpu::TextureView,
-    ui_tree: &dyn UINode,
+    texture: &Texture,
+    ui_tree: &mut dyn UINode,
     render_buffers: &mut UINodeRenderBuffers,
 ) {
+    let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
     let mut encoder =
         gpu_resources
             .device
@@ -156,20 +157,21 @@ pub fn main_render_pipeline_draw(
 
     let quad_count = render_buffers.get_quad_count();
 
-    if quad_count > 0 {
-        // TODO: Ponder on whether this is the best async way for flushing the uniforms.
-        // Like, I think I might need _more_ than a single set of uniforms for peak
-        // parallel rendering if I have multiple windows or multiple worlds.
-        gpu_resources.queue.write_buffer(
-            &gpu_resources.main_pipeline.uniform_buffer,
-            0,
-            bytemuck::cast_slice(&[Uniforms {
-                world_to_wgpu_mat: container_size_to_wgpu_mat(render_target_size),
-            }]),
-        );
+    // TODO: Ponder on whether this is the best async way for flushing the uniforms.
+    // Like, I think I might need _more_ than a single set of uniforms for peak
+    // parallel rendering if I have multiple windows or multiple worlds.
+    gpu_resources.queue.write_buffer(
+        &gpu_resources.main_pipeline.uniform_buffer,
+        0,
+        bytemuck::cast_slice(&[Uniforms {
+            world_to_wgpu_mat: container_size_to_wgpu_mat(render_target_size),
+        }]),
+    );
 
-        // so that we can do partial syncs and renders;
-        ui_tree.write_quads(render_buffers.instance_buffer_cpu());
+    ui_tree.write_quads(render_buffers.instance_buffer_cpu());
+    ui_tree.nested_predraw(gpu_resources, &mut render_pass, &texture);
+
+    if quad_count > 0 {
         render_buffers.write_to_gpu(gpu_resources);
         gpu_resources.queue.submit([]);
 

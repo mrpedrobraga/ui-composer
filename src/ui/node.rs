@@ -1,10 +1,11 @@
-use crate::ui::graphics::Quad;
+use crate::{gpu::engine::GPUResources, ui::graphics::Quad};
 use std::{
     ops::{Deref, DerefMut},
     pin::{pin, Pin},
     task::{Context, Poll},
 };
 use vek::Rect;
+use wgpu::{RenderPass, Texture, TextureView};
 
 pub type UIEvent = winit::event::WindowEvent;
 
@@ -21,6 +22,15 @@ pub trait UINode: Send {
     /// Pushes quads to a quad buffer slice.
     #[inline(always)]
     fn write_quads(&self, quad_buffer: &mut [Quad]);
+
+    #[inline(always)]
+    fn nested_predraw<'pass>(
+        &'pass mut self,
+        gpu_resources: &'pass GPUResources,
+        render_pass: &mut RenderPass<'pass>,
+        texture: &Texture,
+    ) {
+    }
 
     /// TODO: Remove this when using generics on the engine?
     fn get_quad_count(&self) -> usize;
@@ -87,6 +97,18 @@ where
         }
     }
 
+    fn nested_predraw<'pass>(
+        &'pass mut self,
+        gpu_resources: &'pass GPUResources,
+        render_pass: &mut RenderPass<'pass>,
+        texture: &Texture,
+    ) {
+        match self {
+            Some(inner) => inner.nested_predraw(gpu_resources, render_pass, texture),
+            None => {}
+        }
+    }
+
     fn poll_processors(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         // TODO: Maybe I shouldn't return Some(()) in the option by default?
         self.as_pin_mut()
@@ -126,6 +148,18 @@ where
         match self {
             Ok(v) => v.write_quads(quad_buffer),
             Err(e) => e.write_quads(quad_buffer),
+        }
+    }
+
+    fn nested_predraw<'pass>(
+        &'pass mut self,
+        gpu_resources: &'pass GPUResources,
+        render_pass: &mut RenderPass<'pass>,
+        texture: &Texture,
+    ) {
+        match self {
+            Ok(v) => v.nested_predraw(gpu_resources, render_pass, texture),
+            Err(e) => e.nested_predraw(gpu_resources, render_pass, texture),
         }
     }
 
@@ -170,6 +204,16 @@ where
         self.as_ref().write_quads(quad_buffer)
     }
 
+    fn nested_predraw<'pass>(
+        &'pass mut self,
+        gpu_resources: &'pass GPUResources,
+        render_pass: &mut RenderPass<'pass>,
+        texture: &Texture,
+    ) {
+        self.as_mut()
+            .nested_predraw(gpu_resources, render_pass, texture)
+    }
+
     fn poll_processors(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         // TODO: Why is this unsafe?
         let inner = unsafe { self.as_mut().map_unchecked_mut(|v| &mut **v) };
@@ -208,6 +252,16 @@ where
         let (slice_a, slice_b) = quad_buffer.split_at_mut(A::QUAD_COUNT);
         self.0.write_quads(slice_a);
         self.1.write_quads(slice_b);
+    }
+
+    fn nested_predraw<'pass>(
+        &'pass mut self,
+        gpu_resources: &'pass GPUResources,
+        render_pass: &mut RenderPass<'pass>,
+        texture: &Texture,
+    ) {
+        self.0.nested_predraw(gpu_resources, render_pass, texture);
+        self.1.nested_predraw(gpu_resources, render_pass, texture);
     }
 
     fn poll_processors(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
@@ -276,6 +330,17 @@ impl<A: UINodeDescriptor, const N: usize> UINode for SizedVec<A, N> {
             self.inner[idx]
                 .write_quads(&mut quad_buffer[(idx * A::QUAD_COUNT)..((idx + 1) * A::QUAD_COUNT)])
         }
+    }
+
+    fn nested_predraw<'pass>(
+        &'pass mut self,
+        gpu_resources: &'pass GPUResources,
+        render_pass: &mut RenderPass<'pass>,
+        texture: &Texture,
+    ) {
+        self.inner
+            .iter_mut()
+            .for_each(|item| item.nested_predraw(gpu_resources, render_pass, texture));
     }
 
     fn get_quad_count(&self) -> usize {

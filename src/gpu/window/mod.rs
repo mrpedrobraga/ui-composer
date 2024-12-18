@@ -248,7 +248,7 @@ impl WindowNode {
     fn redraw(&mut self, gpu_resources: &GPUResources) {
         self.render_target.draw(
             gpu_resources,
-            self.content.as_ref(),
+            self.content.as_mut(),
             &mut self.content_buffers,
         );
     }
@@ -290,21 +290,18 @@ impl GPURenderTarget for WindowRenderTarget {
     fn draw(
         &mut self,
         gpu_resources: &GPUResources,
-        content: &dyn UINode,
+        content: &mut dyn UINode,
         render_buffers: &mut UINodeRenderBuffers,
     ) {
         let texture = self
             .surface
             .get_current_texture()
             .expect("Error retrieving the current texture.");
-        let view = texture
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
 
         main_render_pipeline_draw(
             gpu_resources,
             self.size.as_(),
-            view,
+            &texture.texture,
             content,
             render_buffers,
         );

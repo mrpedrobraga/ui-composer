@@ -70,17 +70,16 @@ impl GPURenderTarget for ImageRenderTarget {
     fn draw(
         &mut self,
         gpu_resources: &GPUResources,
-        content: &dyn crate::ui::node::UINode,
+        content: &mut dyn crate::ui::node::UINode,
         render_artifacts: &mut super::world::UINodeRenderBuffers,
     ) {
         let texture = &self.image.texture;
-        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
         let size = self.image.texture.size();
 
         main_render_pipeline_draw(
             gpu_resources,
             Extent2::new(size.width as f32, size.height as f32),
-            view,
+            &texture,
             content,
             render_artifacts,
         );
