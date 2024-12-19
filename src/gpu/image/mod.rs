@@ -39,13 +39,13 @@ impl<T> NodeDescriptor for ImageNodeDescriptor<T>
 where
     T: UINodeDescriptor + 'static,
 {
-    type RuntimeType = ImageNode;
+    type ReifiedType = ImageNode;
 
     fn reify(
         self,
         event_loop: &winit::event_loop::ActiveEventLoop,
         gpu_resources: &gpu::backend::GPUResources,
-    ) -> Self::RuntimeType {
+    ) -> Self::ReifiedType {
         ImageNode {
             rect: self.rect,
             content: Box::new(self.content),

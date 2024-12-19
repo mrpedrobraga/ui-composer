@@ -113,14 +113,14 @@ impl<T> NodeDescriptor for WindowNodeDescriptor<T>
 where
     T: UINodeDescriptor + 'static,
 {
-    type RuntimeType = WindowNode;
+    type ReifiedType = WindowNode;
 
     /// Transforms a WindowNode, which merely describes a window, into an active node in an engine tree.
     fn reify(
         self,
         event_loop: &ActiveEventLoop,
         gpu_resources: &GPUResources,
-    ) -> Self::RuntimeType {
+    ) -> Self::ReifiedType {
         let window_default_size = self.state.size.get();
 
         let mut window = event_loop

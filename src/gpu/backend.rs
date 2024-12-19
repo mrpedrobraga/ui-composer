@@ -30,7 +30,7 @@ use super::{
 /// The layer of the application that stands between the app and the outside world.
 pub trait Backend {
     /// The type used for UI Events.
-    type Event;
+    type EventType;
 
     /// Polls the `Futures` and `Signals` from the node tree.
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>>;
@@ -47,22 +47,20 @@ pub struct GPUResources {
 
 /// An engine that can render our application to the GPU as well as forward interactive events to the app.
 #[pin_project(project=UIEngineProj)]
-pub struct WinitWGPUBackend<'engine, E: Node> {
+pub struct WinitWGPUBackend<N: Node> {
     /// The node of the UI tree containing the entirety of the app, UI and behaviour.
     #[pin]
-    pub node_tree: Arc<Mutex<E>>,
+    pub node_tree: Arc<Mutex<N>>,
     pub gpu_resources: GPUResources,
-    _marker: PhantomData<&'engine ()>,
 }
 
-impl<'engine, E: Node> Backend for WinitWGPUBackend<'engine, E> {
-    type Event = winit::event::WindowEvent;
+impl<E: Node> Backend for WinitWGPUBackend<E> {
+    type EventType = winit::event::WindowEvent;
 
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         let UIEngineProj {
             node_tree,
             gpu_resources,
-            _marker,
         } = self.project();
 
         let mut engine_tree = node_tree.lock().expect("Failed to lock tree for polling");
@@ -73,19 +71,50 @@ impl<'engine, E: Node> Backend for WinitWGPUBackend<'engine, E> {
     }
 }
 
-pub trait WinitBackend: Send {
-    type RootNodeType: Node;
+pub trait WinitBackend: Backend + Send {
+    type NodeTreeType: Node;
+    fn create<Nd>(event_loop: &ActiveEventLoop, tree_descriptor: Nd) -> Arc<Mutex<Self>>
+    where
+        Nd: NodeDescriptor<ReifiedType = Self::NodeTreeType>;
     fn handle_resumed(&mut self);
     fn handle_window_event(&mut self, window_id: WindowId, event: UIEvent);
 }
 
-impl<'engine: 'static, E: Node + Send + 'engine> WinitWGPUBackend<'engine, E> {
-    pub fn new<W>(
+impl<'engine: 'static, E: Node + Send + 'engine> WinitWGPUBackend<E> {
+    // Little hack to get a "dummy" texture format.
+    // This should go unused hopefully!
+    fn get_dummy_texture_format(
         event_loop: &ActiveEventLoop,
-        root_engine_node: W,
-    ) -> Arc<Mutex<Box<dyn WinitBackend<RootNodeType = E> + 'engine>>>
+        instance: &wgpu::Instance,
+        device: &wgpu::Device,
+        adapter: &wgpu::Adapter,
+    ) -> wgpu::TextureFormat {
+        let dummy_window = event_loop
+            .create_window(WindowAttributes::default())
+            .expect("Failure to create dummy window");
+        let dummy_surface = instance
+            .create_surface(dummy_window)
+            .expect("Failure to get dummy window surface.");
+        dummy_surface.configure(
+            device,
+            &dummy_surface
+                .get_default_config(adapter, 20, 20)
+                .expect("No valid config between this surface and the adapter."),
+        );
+        let dummy_texture = dummy_surface
+            .get_current_texture()
+            .expect("Failure to get dummy texture.");
+        let dummy_format = dummy_texture.texture.format();
+        dummy_format
+    }
+}
+
+impl<N: Node + Send + 'static> WinitBackend for WinitWGPUBackend<N> {
+    type NodeTreeType = N;
+
+    fn create<Nd>(event_loop: &ActiveEventLoop, tree_descriptor: Nd) -> Arc<Mutex<Self>>
     where
-        W: NodeDescriptor<RuntimeType = E>,
+        Nd: NodeDescriptor<ReifiedType = Self::NodeTreeType>,
     {
         let instance = wgpu::Instance::default();
         let adapter = instance
@@ -128,61 +157,30 @@ impl<'engine: 'static, E: Node + Send + 'engine> WinitWGPUBackend<'engine, E> {
             main_pipeline,
         };
 
-        let engine_node = root_engine_node.reify(event_loop, &gpu_resources);
+        let node_tree = tree_descriptor.reify(event_loop, &gpu_resources);
 
-        let mut render_engine = Self {
-            node_tree: Arc::new(Mutex::new(engine_node)),
-            _marker: PhantomData,
+        let mut backend = Self {
+            node_tree: Arc::new(Mutex::new(node_tree)),
             gpu_resources,
         };
 
         // This render engine will be shared between your application (so that it can receive OS events)
         // and a reactor processor in another thread (so that it can process its own `Future`s and `Signal`s)
-        let render_engine: Box<dyn WinitBackend<RootNodeType = E>> = Box::new(render_engine);
-        let render_engine = Arc::new(Mutex::new(render_engine));
+        let backend = Arc::new(Mutex::new(backend));
 
         // TODO: Process the render engine's processors and reactors on another thread.
         // It needs not be an other thread, just a different execution context.
-        let render_engine_clone = render_engine.clone();
+        let backend_clone = backend.clone();
+
         std::thread::spawn(|| {
-            pollster::block_on(EngineProcessesSignal::new(render_engine_clone).to_future())
+            pollster::block_on(SignalProcessor::new(backend_clone).to_future());
+            println!("Finished blocking.")
         });
 
         // I should perhaps return a (RenderEngine, impl Future) here!
         // The problem of course is that winit does not play well with async Rust yet :-(
-        return render_engine;
+        return backend;
     }
-
-    // Little hack to get a "dummy" texture format.
-    // This should go unused hopefully!
-    fn get_dummy_texture_format(
-        event_loop: &ActiveEventLoop,
-        instance: &wgpu::Instance,
-        device: &wgpu::Device,
-        adapter: &wgpu::Adapter,
-    ) -> wgpu::TextureFormat {
-        let dummy_window = event_loop
-            .create_window(WindowAttributes::default())
-            .expect("Failure to create dummy window");
-        let dummy_surface = instance
-            .create_surface(dummy_window)
-            .expect("Failure to get dummy window surface.");
-        dummy_surface.configure(
-            device,
-            &dummy_surface
-                .get_default_config(adapter, 20, 20)
-                .expect("No valid config between this surface and the adapter."),
-        );
-        let dummy_texture = dummy_surface
-            .get_current_texture()
-            .expect("Failure to get dummy texture.");
-        let dummy_format = dummy_texture.texture.format();
-        dummy_format
-    }
-}
-
-impl<'engine, E: Node + Send> WinitBackend for WinitWGPUBackend<'engine, E> {
-    type RootNodeType = E;
 
     fn handle_resumed(&mut self) {
         match self.node_tree.lock() {
@@ -208,9 +206,9 @@ impl<'engine, E: Node + Send> WinitBackend for WinitWGPUBackend<'engine, E> {
 /// These nodes are used for creating windows and processes and rendering contexts.
 pub trait NodeDescriptor: Send {
     /// The type this node descriptor generates when reified.
-    type RuntimeType: Node;
+    type ReifiedType: Node;
     fn reify(self, event_loop: &ActiveEventLoop, gpu_resources: &GPUResources)
-        -> Self::RuntimeType;
+        -> Self::ReifiedType;
 }
 
 /// A main node in the engine tree.
@@ -238,13 +236,13 @@ where
     A: NodeDescriptor,
     B: NodeDescriptor,
 {
-    type RuntimeType = (A::RuntimeType, B::RuntimeType);
+    type ReifiedType = (A::ReifiedType, B::ReifiedType);
 
     fn reify(
         self,
         event_loop: &ActiveEventLoop,
         gpu_resources: &GPUResources,
-    ) -> Self::RuntimeType {
+    ) -> Self::ReifiedType {
         (
             self.0.reify(event_loop, gpu_resources),
             self.1.reify(event_loop, gpu_resources),
@@ -297,27 +295,26 @@ where
 
 /// A futures-based construct that polls the engine's processes.
 #[pin_project(project=EngineProcessesSignalProj)]
-pub struct EngineProcessesSignal<E> {
+pub struct SignalProcessor<E: Backend> {
     #[pin]
-    engine: Arc<Mutex<Box<dyn Backend<Event = E>>>>,
+    engine: Arc<Mutex<E>>,
 }
 
-impl<E> EngineProcessesSignal<E> {
-    pub fn new(engine: Arc<Mutex<Box<dyn Backend<Event = E>>>>) -> Self {
-        EngineProcessesSignal { engine }
+impl<E: Backend> SignalProcessor<E> {
+    pub fn new(engine: Arc<Mutex<E>>) -> Self {
+        SignalProcessor { engine }
     }
 }
 
-impl<E> Signal for EngineProcessesSignal<E> {
+impl<E: Backend> Signal for SignalProcessor<E> {
     type Item = ();
 
     fn poll_change(self: std::pin::Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let EngineProcessesSignalProj { engine } = self.project();
 
         let mut engine = engine.lock().expect("Failed to lock ui for polling");
-        let engine: &mut dyn Backend<Event = E> = engine.as_mut();
+        let engine = engine.deref_mut();
         let engine = unsafe { Pin::new_unchecked(engine) };
-
         let poll = engine.poll_processors(cx);
 
         poll
