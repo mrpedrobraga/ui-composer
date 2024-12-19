@@ -12,19 +12,18 @@ use std::io::Read;
 use wgpu::BufferUsages;
 
 use super::{
-    engine::Node, render_target::GPURenderTarget, texture::ImageRenderTarget,
+    backend::Node, render_target::GPURenderTarget, texture::ImageRenderTarget,
     world::UINodeRenderBuffers,
 };
 
 #[allow(non_snake_case)]
-pub fn Image<T>(item: T) -> ImageNodeDescriptor<impl UINodeDescriptor>
+pub fn Image<T>(rect: Rect<f32, f32>, item: T) -> ImageNodeDescriptor<impl UINodeDescriptor>
 where
     T: LayoutItem + 'static,
 {
     ImageNodeDescriptor {
-        content: item.bake(LayoutHints {
-            rect: Rect::new(0.0, 0.0, 128.0, 128.0),
-        }),
+        rect,
+        content: item.bake(LayoutHints { rect }),
     }
 }
 
@@ -32,6 +31,7 @@ pub struct ImageNodeDescriptor<T>
 where
     T: UINodeDescriptor + 'static,
 {
+    rect: Rect<f32, f32>,
     content: T,
 }
 
@@ -44,11 +44,12 @@ where
     fn reify(
         self,
         event_loop: &winit::event_loop::ActiveEventLoop,
-        gpu_resources: &gpu::engine::GPUResources,
+        gpu_resources: &gpu::backend::GPUResources,
     ) -> Self::RuntimeType {
         ImageNode {
+            rect: self.rect,
             content: Box::new(self.content),
-            render_target: ImageRenderTarget::new(gpu_resources),
+            render_target: ImageRenderTarget::new(gpu_resources, self.rect.extent()),
             content_buffer: UINodeRenderBuffers::new(gpu_resources, T::QUAD_COUNT),
         }
     }
@@ -58,13 +59,14 @@ where
 pub struct ImageNode {
     #[pin]
     content: Box<dyn UINode>,
+    rect: Rect<f32, f32>,
     content_buffer: UINodeRenderBuffers,
     render_target: ImageRenderTarget,
 }
 
 impl Node for ImageNode {
-    fn setup(&mut self, gpu_resources: &gpu::engine::GPUResources) {
-        let size_bytes = 4 * 8 * 128 * 128;
+    fn setup(&mut self, gpu_resources: &gpu::backend::GPUResources) {
+        let size_bytes = 4 * 8 * self.rect.w as u64 * self.rect.h as u64;
         let size = self.render_target.image.texture.size();
 
         self.render_target.draw(
@@ -99,8 +101,8 @@ impl Node for ImageNode {
                 buffer: buffer.as_ref(),
                 layout: wgpu::ImageDataLayout {
                     offset: 0,
-                    bytes_per_row: Some(4 * 128),
-                    rows_per_image: Some(128),
+                    bytes_per_row: Some(4 * size.width),
+                    rows_per_image: Some(size.height),
                 },
             },
             size,
@@ -127,7 +129,8 @@ impl Node for ImageNode {
                 .flat_map(|chunk| [chunk[2], chunk[1], chunk[0], chunk[3]])
                 .collect();
             use image::{ImageBuffer, Rgba};
-            let img_buffer = ImageBuffer::<Rgba<u8>, _>::from_raw(128, 128, v).unwrap();
+            let img_buffer =
+                ImageBuffer::<Rgba<u8>, _>::from_raw(size.width, size.height, v).unwrap();
             img_buffer.save("image.png").unwrap();
         }
         buffer.unmap();
@@ -135,7 +138,7 @@ impl Node for ImageNode {
 
     fn handle_window_event(
         &mut self,
-        gpu_resources: &gpu::engine::GPUResources,
+        gpu_resources: &gpu::backend::GPUResources,
         window_id: winit::window::WindowId,
         event: ui::node::UIEvent,
     ) {

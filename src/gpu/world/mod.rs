@@ -2,7 +2,7 @@ use std::ops::Deref;
 
 use wgpu::BufferUsages;
 
-use super::engine::GPUResources;
+use super::backend::GPUResources;
 use crate::{prelude::Quad, ui::node::UINode};
 
 /// The buffers that hold the soon-to-be-rendered UI.

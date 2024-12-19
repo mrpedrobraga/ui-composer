@@ -3,7 +3,7 @@ use pin_project::pin_project;
 use std::{mem::MaybeUninit, pin::Pin, task::Poll};
 use wgpu::{RenderPass, Texture};
 
-use crate::gpu::engine::GPUResources;
+use crate::gpu::backend::GPUResources;
 
 use super::{
     layout::LayoutItem,

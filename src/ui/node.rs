@@ -1,4 +1,4 @@
-use crate::{gpu::engine::GPUResources, ui::graphics::Quad};
+use crate::{gpu::backend::GPUResources, ui::graphics::Quad};
 use std::{
     ops::{Deref, DerefMut},
     pin::{pin, Pin},

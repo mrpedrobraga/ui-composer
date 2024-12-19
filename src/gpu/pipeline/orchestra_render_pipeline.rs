@@ -4,7 +4,7 @@ use vek::{Extent2, Mat4, Vec2, Vec3};
 use wgpu::{util::DeviceExt as _, BufferAddress, BufferUsages, ColorTargetState, Texture};
 
 use crate::{
-    gpu::{engine::GPUResources, render_target::GPURenderTarget, world::UINodeRenderBuffers},
+    gpu::{backend::GPUResources, render_target::GPURenderTarget, world::UINodeRenderBuffers},
     ui::{graphics::Quad, node::UINode},
 };
 

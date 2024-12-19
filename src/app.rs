@@ -1,6 +1,6 @@
 use crate::{
     gpu::{
-        engine::{Node, NodeDescriptor, UIEngine, UIEngineExt},
+        backend::{Node, NodeDescriptor, WinitBackend, WinitWGPUBackend},
         window::WindowNodeDescriptor,
     },
     ui::{layout::LayoutItem, node::UINodeDescriptor, react::UISignalExt as _},
@@ -24,7 +24,7 @@ pub struct App<N: Node, W: NodeDescriptor<RuntimeType = N>> {
 
 /// An app in execution (the ui fragment has been transformed into a [`RenderModule`]).
 pub struct RunningApp<N: Node> {
-    engine: Arc<Mutex<Box<dyn UIEngineExt<RootNodeType = N>>>>,
+    backend: Arc<Mutex<Box<dyn WinitBackend<RootNodeType = N>>>>,
 }
 
 /// TODO: PRovide methods to bind to an existing Event Loop or window.
@@ -51,7 +51,7 @@ impl<N: Node + Send + 'static, W: NodeDescriptor<RuntimeType = N> + 'static> App
         // If there's no running app, create a new one using a new UIEngine.
         if (self.running_app.is_none()) {
             self.running_app = self.root_item.take().map(move |root_item| RunningApp {
-                engine: UIEngine::new(event_loop, root_item),
+                backend: WinitWGPUBackend::new(event_loop, root_item),
             });
 
             if let Some(running_app) = &mut self.running_app {
@@ -76,7 +76,7 @@ impl<N: Node> ApplicationHandler for RunningApp<N> {
     fn resumed(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
         // Nothing happens yet, but in the future the app should be able to respond to this!
         let mut engine = self
-            .engine
+            .backend
             .lock()
             .expect("Could not lock Render Engine to pump resumed event.");
         engine.handle_resumed();
@@ -89,7 +89,7 @@ impl<N: Node> ApplicationHandler for RunningApp<N> {
         event: WindowEvent,
     ) {
         let mut engine = self
-            .engine
+            .backend
             .lock()
             .expect("Could not lock Render Engine to pump window event");
         engine.handle_window_event(window_id, event);

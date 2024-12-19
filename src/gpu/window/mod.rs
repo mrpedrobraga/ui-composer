@@ -24,7 +24,7 @@ use winit::{
 };
 
 use super::{
-    engine::{GPUResources, Node, NodeDescriptor},
+    backend::{GPUResources, Node, NodeDescriptor},
     pipeline::{
         orchestra_render_pipeline::{
             container_size_to_wgpu_mat, OrchestraRenderPipeline, Uniforms,

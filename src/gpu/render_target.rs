@@ -1,6 +1,6 @@
 use crate::ui::node::UINode;
 
-use super::{engine::GPUResources, world::UINodeRenderBuffers};
+use super::{backend::GPUResources, world::UINodeRenderBuffers};
 use std::sync::Arc;
 use vek::Extent2;
 use wgpu::{

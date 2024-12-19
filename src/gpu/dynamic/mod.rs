@@ -7,7 +7,7 @@ use crate::{
     ui::node::{UINode, UINodeDescriptor},
 };
 
-use super::{engine::GPUResources, pipeline::GPURenderPipeline as _, world::UINodeRenderBuffers};
+use super::{backend::GPUResources, pipeline::GPURenderPipeline as _, world::UINodeRenderBuffers};
 
 pub struct VecItem<A: UINode> {
     rect: Rect<f32, f32>,

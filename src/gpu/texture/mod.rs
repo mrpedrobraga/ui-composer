@@ -3,7 +3,7 @@
 use vek::Extent2;
 
 use super::{
-    engine::GPUResources,
+    backend::GPUResources,
     pipeline::{orchestra_render_pipeline::OrchestraRenderPipeline, GPURenderPipeline},
     render_target::GPURenderTarget,
 };
@@ -17,13 +17,11 @@ pub struct ImageTexture {
     pub texture: wgpu::Texture,
 }
 impl ImageTexture {
-    fn new(gpu_resources: &GPUResources) -> Self {
-        let texture_size = 128u32;
-
+    fn new(gpu_resources: &GPUResources, size: Extent2<f32>) -> Self {
         let texture_desc = wgpu::TextureDescriptor {
             size: wgpu::Extent3d {
-                width: texture_size,
-                height: texture_size,
+                width: size.w as u32,
+                height: size.h as u32,
                 depth_or_array_layers: 1,
             },
             mip_level_count: 1,
@@ -55,9 +53,9 @@ pub struct ImageRenderTarget {
 }
 
 impl ImageRenderTarget {
-    pub fn new(gpu_resources: &GPUResources) -> Self {
+    pub fn new(gpu_resources: &GPUResources, size: Extent2<f32>) -> Self {
         Self {
-            image: ImageTexture::new(gpu_resources),
+            image: ImageTexture::new(gpu_resources, size),
         }
     }
 }
