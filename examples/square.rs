@@ -1,9 +1,9 @@
 #![allow(non_snake_case)]
 use itertools::Itertools as _;
-use ui_composer::{app::App, prelude::*, ui::node::SizedVec};
+use ui_composer::{app::App, gpu::backend::WinitWGPUBackend, prelude::*, ui::node::SizedVec};
 
 pub fn main() {
-    App::run(Window(Squares()));
+    App::run_custom::<WinitWGPUBackend<_>>(Window(Squares()));
 }
 
 pub fn Squares() -> impl LayoutItem {

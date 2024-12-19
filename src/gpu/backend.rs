@@ -33,10 +33,10 @@ pub trait Backend {
     /// The type used for UI Events.
     type EventType;
 
+    type NodeTreeType: NodeDescriptor + 'static;
+
     /// Blocking function that runs the application.
-    fn run<Nd: NodeDescriptor>(node_tree: Nd)
-    where
-        Nd::ReifiedType: 'static;
+    fn run(node_tree: Self::NodeTreeType);
 
     /// Polls the `Futures` and `Signals` from the node tree.
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>>;
@@ -53,35 +53,35 @@ pub struct GPUResources {
 
 pub struct RunningApp<A: NodeDescriptor> {
     node_tree_descriptor_opt: Option<A>,
-    backend: Option<Arc<Mutex<WinitWGPUBackend<A::ReifiedType>>>>,
+    backend: Option<Arc<Mutex<WinitWGPUBackend<A>>>>,
 }
 
 pub trait WinitBackend: Backend + Send {
-    type NodeTreeType: Node;
-    fn create<Nd>(event_loop: &ActiveEventLoop, tree_descriptor: Nd) -> Arc<Mutex<Self>>
-    where
-        Nd: NodeDescriptor<ReifiedType = Self::NodeTreeType>;
+    type NodeTreeDescriptorType: NodeDescriptor;
+    fn create(
+        event_loop: &ActiveEventLoop,
+        tree_descriptor: Self::NodeTreeDescriptorType,
+    ) -> Arc<Mutex<Self>>;
     fn handle_resumed(&mut self);
     fn handle_window_event(&mut self, window_id: WindowId, event: UIEvent);
 }
 
 /// An engine that can render our application to the GPU as well as forward interactive events to the app.
 #[pin_project(project=UIEngineProj)]
-pub struct WinitWGPUBackend<N: Node> {
+pub struct WinitWGPUBackend<Nd: NodeDescriptor> {
     /// The node of the UI tree containing the entirety of the app, UI and behaviour.
     #[pin]
-    pub node_tree: Arc<Mutex<N>>,
+    pub node_tree: Arc<Mutex<Nd::ReifiedType>>,
     pub gpu_resources: GPUResources,
 }
 
-impl<E: Node> Backend for WinitWGPUBackend<E> {
+impl<Nd: NodeDescriptor + 'static> Backend for WinitWGPUBackend<Nd> {
     type EventType = winit::event::WindowEvent;
 
+    type NodeTreeType = Nd;
+
     /// This function *must* be called on the main thread, because of winit.
-    fn run<Nd: NodeDescriptor>(node_tree: Nd)
-    where
-        Nd::ReifiedType: 'static,
-    {
+    fn run(node_tree: Self::NodeTreeType) {
         let event_loop = winit::event_loop::EventLoop::builder().build().unwrap();
         event_loop.set_control_flow(winit::event_loop::ControlFlow::Wait);
         event_loop
@@ -106,10 +106,7 @@ impl<E: Node> Backend for WinitWGPUBackend<E> {
     }
 }
 
-impl<A: NodeDescriptor> ApplicationHandler for RunningApp<A>
-where
-    A::ReifiedType: 'static,
-{
+impl<A: NodeDescriptor + 'static> ApplicationHandler for RunningApp<A> {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         if let None = self.backend {
             self.backend = Some(WinitWGPUBackend::create(
@@ -143,7 +140,7 @@ where
     }
 }
 
-impl<'engine: 'static, E: Node + Send + 'engine> WinitWGPUBackend<E> {
+impl<'engine: 'static, E: NodeDescriptor + Send + 'engine> WinitWGPUBackend<E> {
     // Little hack to get a "dummy" texture format.
     // This should go unused hopefully!
     fn get_dummy_texture_format(
@@ -172,13 +169,10 @@ impl<'engine: 'static, E: Node + Send + 'engine> WinitWGPUBackend<E> {
     }
 }
 
-impl<N: Node + Send + 'static> WinitBackend for WinitWGPUBackend<N> {
-    type NodeTreeType = N;
+impl<Nd: NodeDescriptor + Send + 'static> WinitBackend for WinitWGPUBackend<Nd> {
+    type NodeTreeDescriptorType = Nd;
 
-    fn create<Nd>(event_loop: &ActiveEventLoop, tree_descriptor: Nd) -> Arc<Mutex<Self>>
-    where
-        Nd: NodeDescriptor<ReifiedType = Self::NodeTreeType>,
-    {
+    fn create(event_loop: &ActiveEventLoop, tree_descriptor: Nd) -> Arc<Mutex<Self>> {
         let instance = wgpu::Instance::default();
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
