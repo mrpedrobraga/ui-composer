@@ -1,19 +1,9 @@
 use crate::{
-    gpu::{
-        backend::{Backend, Node, NodeDescriptor, WinitBackend, WinitWGPUBackend},
-        window::WindowNodeDescriptor,
-    },
-    ui::{layout::LayoutItem, node::UINodeDescriptor, react::UISignalExt as _},
+    gpu::backend::{Node, WinitBackend as _, WinitWGPUBackend},
+    prelude::*,
 };
-use std::{
-    marker::PhantomData,
-    sync::{Arc, Mutex, RwLock},
-};
-use vek::Extent2;
-use winit::{
-    application::ApplicationHandler, dpi::PhysicalSize, event::WindowEvent,
-    platform::wayland::WindowAttributesExtWayland, window::WindowAttributes,
-};
+use std::sync::{Arc, Mutex};
+use winit::application::ApplicationHandler;
 
 /// App builder, receives a layout item with the entirety of your app.
 pub struct App<NodeDescriptorType: NodeDescriptor> {
@@ -52,7 +42,11 @@ impl<NodeDescriptorType: NodeDescriptor + 'static> ApplicationHandler for App<No
             });
         }
         if let Some(running_app) = &mut self.running_app {
-            running_app.resumed(event_loop)
+            let mut backend = running_app
+                .backend
+                .lock()
+                .expect("Could not lock Render Engine to pump resumed event.");
+            backend.handle_resumed();
         }
     }
 
@@ -63,31 +57,11 @@ impl<NodeDescriptorType: NodeDescriptor + 'static> ApplicationHandler for App<No
         event: winit::event::WindowEvent,
     ) {
         if let Some(running_app) = &mut self.running_app {
-            running_app.window_event(event_loop, window_id, event)
+            let mut backend = running_app
+                .backend
+                .lock()
+                .expect("Could not lock Render Engine to pump window event");
+            backend.handle_window_event(window_id, event);
         }
-    }
-}
-
-impl<N: Node + 'static> ApplicationHandler for RunningApp<N> {
-    fn resumed(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
-        // Nothing happens yet, but in the future the app should be able to respond to this!
-        let mut backend = self
-            .backend
-            .lock()
-            .expect("Could not lock Render Engine to pump resumed event.");
-        backend.handle_resumed();
-    }
-
-    fn window_event(
-        &mut self,
-        event_loop: &winit::event_loop::ActiveEventLoop,
-        window_id: winit::window::WindowId,
-        event: WindowEvent,
-    ) {
-        let mut backend = self
-            .backend
-            .lock()
-            .expect("Could not lock Render Engine to pump window event");
-        backend.handle_window_event(window_id, event);
     }
 }
