@@ -14,6 +14,7 @@ use std::{
 use vek::Extent2;
 use wgpu::{MemoryHints, TextureFormat};
 use winit::{
+    application::ApplicationHandler,
     dpi::PhysicalSize,
     event_loop::ActiveEventLoop,
     window::{Window, WindowAttributes, WindowId},
@@ -32,6 +33,11 @@ pub trait Backend {
     /// The type used for UI Events.
     type EventType;
 
+    /// Blocking function that runs the application.
+    fn run<Nd: NodeDescriptor>(node_tree: Nd)
+    where
+        Nd::ReifiedType: 'static;
+
     /// Polls the `Futures` and `Signals` from the node tree.
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>>;
 }
@@ -45,6 +51,20 @@ pub struct GPUResources {
     pub main_pipeline: OrchestraRenderPipeline,
 }
 
+pub struct RunningApp<A: NodeDescriptor> {
+    node_tree_descriptor_opt: Option<A>,
+    backend: Option<Arc<Mutex<WinitWGPUBackend<A::ReifiedType>>>>,
+}
+
+pub trait WinitBackend: Backend + Send {
+    type NodeTreeType: Node;
+    fn create<Nd>(event_loop: &ActiveEventLoop, tree_descriptor: Nd) -> Arc<Mutex<Self>>
+    where
+        Nd: NodeDescriptor<ReifiedType = Self::NodeTreeType>;
+    fn handle_resumed(&mut self);
+    fn handle_window_event(&mut self, window_id: WindowId, event: UIEvent);
+}
+
 /// An engine that can render our application to the GPU as well as forward interactive events to the app.
 #[pin_project(project=UIEngineProj)]
 pub struct WinitWGPUBackend<N: Node> {
@@ -56,6 +76,21 @@ pub struct WinitWGPUBackend<N: Node> {
 
 impl<E: Node> Backend for WinitWGPUBackend<E> {
     type EventType = winit::event::WindowEvent;
+
+    /// This function *must* be called on the main thread, because of winit.
+    fn run<Nd: NodeDescriptor>(node_tree: Nd)
+    where
+        Nd::ReifiedType: 'static,
+    {
+        let event_loop = winit::event_loop::EventLoop::builder().build().unwrap();
+        event_loop.set_control_flow(winit::event_loop::ControlFlow::Wait);
+        event_loop
+            .run_app(&mut RunningApp::<Nd> {
+                node_tree_descriptor_opt: Some(node_tree),
+                backend: None,
+            })
+            .unwrap();
+    }
 
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         let UIEngineProj {
@@ -71,13 +106,41 @@ impl<E: Node> Backend for WinitWGPUBackend<E> {
     }
 }
 
-pub trait WinitBackend: Backend + Send {
-    type NodeTreeType: Node;
-    fn create<Nd>(event_loop: &ActiveEventLoop, tree_descriptor: Nd) -> Arc<Mutex<Self>>
-    where
-        Nd: NodeDescriptor<ReifiedType = Self::NodeTreeType>;
-    fn handle_resumed(&mut self);
-    fn handle_window_event(&mut self, window_id: WindowId, event: UIEvent);
+impl<A: NodeDescriptor> ApplicationHandler for RunningApp<A>
+where
+    A::ReifiedType: 'static,
+{
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        if let None = self.backend {
+            self.backend = Some(WinitWGPUBackend::create(
+                event_loop,
+                self.node_tree_descriptor_opt
+                    .take()
+                    .expect("Failed to create WinitWgpu app."),
+            ))
+        }
+
+        if let Some(backend) = &mut self.backend {
+            let mut backend = backend
+                .lock()
+                .expect("Could not lock Render Engine to pump resumed event.");
+            backend.handle_resumed();
+        }
+    }
+
+    fn window_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        window_id: WindowId,
+        event: winit::event::WindowEvent,
+    ) {
+        if let Some(backend) = &mut self.backend {
+            let mut backend = backend
+                .lock()
+                .expect("Could not lock Render Engine to pump window event");
+            backend.handle_window_event(window_id, event);
+        }
+    }
 }
 
 impl<'engine: 'static, E: Node + Send + 'engine> WinitWGPUBackend<E> {
