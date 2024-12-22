@@ -24,7 +24,7 @@ use winit::{
 };
 
 use super::{
-    backend::{GPUResources, Node, NodeDescriptor},
+    backend::{GPUResources, RNode, Node},
     pipeline::{
         orchestra_render_pipeline::{
             container_size_to_wgpu_mat, OrchestraRenderPipeline, Uniforms,
@@ -109,7 +109,7 @@ where
     }
 }
 
-impl<T> NodeDescriptor for WindowNodeDescriptor<T>
+impl<T> Node for WindowNodeDescriptor<T>
 where
     T: ItemDescriptor + 'static,
 {
@@ -182,7 +182,7 @@ pub struct WindowNode {
     render_target: WindowRenderTarget,
 }
 
-impl<'window> Node for WindowNode {
+impl<'window> RNode for WindowNode {
     fn setup(&mut self, gpu_resources: &GPUResources) {}
 
     fn handle_window_event(

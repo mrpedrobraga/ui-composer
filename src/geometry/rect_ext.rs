@@ -1,7 +1,6 @@
+use super::BaseNum;
+use super::{Rect, Vec2, Vec3, Extent2, Extent3, Mat4};
 use crate::prelude::Graphic;
-use cgmath::BaseNum;
-use std::ops::{Add, Sub};
-use vek::{Extent2, Extent3, Mat4, Rect, Vec2};
 
 pub trait RectExt {
     type Num: BaseNum;
@@ -38,7 +37,7 @@ pub trait RectExt {
 impl<T: BaseNum> RectExt for Rect<T, T>
 where
     Vec2<f32>: From<Vec2<T>>,
-    vek::Vec3<f32>: From<Extent3<T>>,
+    Vec3<f32>: From<Extent3<T>>,
 {
     type Num = T;
 

@@ -1,6 +1,6 @@
 use wgpu::RenderPass;
 
-use super::backend::{Node, WinitWGPUBackend};
+use super::backend::{RNode, WinitWGPUBackend};
 
 pub mod iris_render_pipeline;
 pub mod orchestra_render_pipeline;

@@ -6,6 +6,7 @@ use std::{
 };
 use vek::Rect;
 use wgpu::{RenderPass, Texture, TextureView};
+use crate::state::signal_ext::coalesce_polls;
 
 pub type UIEvent = winit::event::WindowEvent;
 
@@ -278,7 +279,7 @@ where
         let poll_a = pinned_a.poll_processors(cx);
         let poll_b = pinned_b.poll_processors(cx);
 
-        crate::prelude::coalesce_polls(poll_a, poll_b)
+        coalesce_polls(poll_a, poll_b)
     }
 
     fn get_quad_count(&self) -> usize {
@@ -353,7 +354,7 @@ impl<A: ItemDescriptor, const N: usize> UIItem for SizedVec<A, N> {
         for idx in 0..N {
             let item = unsafe { Pin::new_unchecked(&mut this.inner[idx]) };
             let item_poll = item.poll_processors(cx);
-            poll_acc = crate::prelude::coalesce_polls(poll_acc, item_poll)
+            poll_acc = coalesce_polls(poll_acc, item_poll)
         }
         poll_acc
     }

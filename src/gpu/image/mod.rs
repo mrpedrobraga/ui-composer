@@ -12,7 +12,7 @@ use std::io::Read;
 use wgpu::BufferUsages;
 
 use super::{
-    backend::Node, render_target::GPURenderTarget, texture::ImageRenderTarget,
+    backend::RNode, render_target::GPURenderTarget, texture::ImageRenderTarget,
     world::UINodeRenderBuffers,
 };
 
@@ -35,7 +35,7 @@ where
     content: T,
 }
 
-impl<T> NodeDescriptor for ImageNodeDescriptor<T>
+impl<T> Node for ImageNodeDescriptor<T>
 where
     T: ItemDescriptor + 'static,
 {
@@ -64,7 +64,7 @@ pub struct ImageNode {
     render_target: ImageRenderTarget,
 }
 
-impl Node for ImageNode {
+impl RNode for ImageNode {
     fn setup(&mut self, gpu_resources: &gpu::backend::GPUResources) {
         let size_bytes = 4 * 8 * self.rect.w as u64 * self.rect.h as u64;
         let size = self.render_target.image.texture.size();
