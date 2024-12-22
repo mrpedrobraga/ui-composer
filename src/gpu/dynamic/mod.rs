@@ -3,19 +3,19 @@ use vek::{Rect, Rgb};
 use wgpu::{RenderPass, Texture, TextureView};
 
 use crate::{
-    prelude::{LayoutItem, Quad, RectExt as _},
-    ui::node::{UINode, UINodeDescriptor},
+    prelude::{Graphic, LayoutItem, RectExt as _},
+    ui::node::{ItemDescriptor, UIItem},
 };
 
 use super::{backend::GPUResources, pipeline::GPURenderPipeline as _, world::UINodeRenderBuffers};
 
-pub struct VecItem<A: UINode> {
+pub struct VecItem<A: UIItem> {
     rect: Rect<f32, f32>,
     items: MutableVec<A>,
     render_buffers: Option<UINodeRenderBuffers>,
 }
 
-impl<A: UINode + UINodeDescriptor> VecItem<A> {
+impl<A: UIItem + ItemDescriptor> VecItem<A> {
     pub fn new(rect: Rect<f32, f32>, items: MutableVec<A>) -> Self {
         Self {
             rect,
@@ -34,7 +34,7 @@ impl<A: UINode + UINodeDescriptor> VecItem<A> {
     }
 }
 
-impl<A: UINodeDescriptor + Sync> UINodeDescriptor for VecItem<A> {
+impl<A: ItemDescriptor + Sync> ItemDescriptor for VecItem<A> {
     const QUAD_COUNT: usize = 0;
 
     fn get_render_rect(&self) -> Option<vek::Rect<f32, f32>> {
@@ -42,13 +42,13 @@ impl<A: UINodeDescriptor + Sync> UINodeDescriptor for VecItem<A> {
     }
 }
 
-impl<A: UINode + UINodeDescriptor + Sync> UINode for VecItem<A> {
+impl<A: UIItem + ItemDescriptor + Sync> UIItem for VecItem<A> {
     fn handle_ui_event(&mut self, event: crate::ui::node::UIEvent) -> bool {
         // Handle UI events for each item!
         false
     }
 
-    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Quad]) {
+    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
         // TODO: Write no quads.
     }
 

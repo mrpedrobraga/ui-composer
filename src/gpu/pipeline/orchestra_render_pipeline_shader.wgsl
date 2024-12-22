@@ -1,4 +1,7 @@
+// Each view can populate a different set of values for the uniforms...
 struct StandardUniform {
+    // The transformation matrix can be used for
+    // panning, zooming, rotating, skewing UI.
     world_to_wgpu_mat_x: vec4<f32>,
     world_to_wgpu_mat_y: vec4<f32>,
     world_to_wgpu_mat_z: vec4<f32>,

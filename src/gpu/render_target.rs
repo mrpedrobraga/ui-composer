@@ -1,4 +1,4 @@
-use crate::ui::node::UINode;
+use crate::ui::node::UIItem;
 
 use super::{backend::GPUResources, world::UINodeRenderBuffers};
 use std::sync::Arc;
@@ -18,7 +18,7 @@ pub trait GPURenderTarget {
     fn draw(
         &mut self,
         gpu_resources: &GPUResources,
-        content: &mut dyn UINode,
+        content: &mut dyn UIItem,
         render_buffers: &mut UINodeRenderBuffers,
     );
 

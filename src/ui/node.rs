@@ -1,4 +1,4 @@
-use crate::{gpu::backend::GPUResources, ui::graphics::Quad};
+use crate::{gpu::backend::GPUResources, ui::graphics::Graphic};
 use std::{
     ops::{Deref, DerefMut},
     pin::{pin, Pin},
@@ -14,14 +14,14 @@ pub type UIEvent = winit::event::WindowEvent;
 /// A UINode receives an order to render, to update child nodes or to handle an interaction.
 /// In practice, any single UI node should handle as little as possible.
 /// The entire user interface is made of UI Nodes arranged in a graph.
-pub trait UINode: Send {
+pub trait UIItem: Send {
     /// Handles an UI Event (or not). Returns whether the event was handled.
     #[inline(always)]
     fn handle_ui_event(&mut self, event: UIEvent) -> bool;
 
     /// Pushes quads to a quad buffer slice.
     #[inline(always)]
-    fn write_quads(&self, quad_buffer: &mut [Quad]);
+    fn write_quads(&self, quad_buffer: &mut [Graphic]);
 
     #[inline(always)]
     fn nested_predraw<'pass>(
@@ -41,7 +41,7 @@ pub trait UINode: Send {
 }
 
 /// Trait to get compile-time information about an UI Node.
-pub trait UINodeDescriptor: UINode {
+pub trait ItemDescriptor: UIItem {
     /// The amount of primitives this UI Node will have when drawing.
     const QUAD_COUNT: usize;
 
@@ -50,12 +50,12 @@ pub trait UINodeDescriptor: UINode {
     fn get_render_rect(&self) -> Option<Rect<f32, f32>>;
 }
 
-impl UINode for () {
+impl UIItem for () {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         false
     }
 
-    fn write_quads(&self, quad_buffer: &mut [Quad]) {
+    fn write_quads(&self, quad_buffer: &mut [Graphic]) {
         /* No quads to write */
     }
 
@@ -68,7 +68,7 @@ impl UINode for () {
     }
 }
 
-impl UINodeDescriptor for () {
+impl ItemDescriptor for () {
     const QUAD_COUNT: usize = 0;
 
     fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
@@ -76,9 +76,9 @@ impl UINodeDescriptor for () {
     }
 }
 
-impl<T> UINode for Option<T>
+impl<T> UIItem for Option<T>
 where
-    T: UINodeDescriptor,
+    T: ItemDescriptor,
 {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         self.as_mut()
@@ -86,12 +86,12 @@ where
             .unwrap_or(false)
     }
 
-    fn write_quads(&self, quad_buffer: &mut [Quad]) {
+    fn write_quads(&self, quad_buffer: &mut [Graphic]) {
         match self {
             Some(inner) => inner.write_quads(quad_buffer),
             None => {
                 for idx in 0..Self::QUAD_COUNT {
-                    quad_buffer[idx] = Quad::default()
+                    quad_buffer[idx] = Graphic::default()
                 }
             }
         }
@@ -121,21 +121,21 @@ where
     }
 }
 
-impl<T> UINodeDescriptor for Option<T>
+impl<T> ItemDescriptor for Option<T>
 where
-    T: UINodeDescriptor,
+    T: ItemDescriptor,
 {
     const QUAD_COUNT: usize = T::QUAD_COUNT;
 
     fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
-        self.as_ref().and_then(UINodeDescriptor::get_render_rect)
+        self.as_ref().and_then(ItemDescriptor::get_render_rect)
     }
 }
 
-impl<T, E> UINode for Result<T, E>
+impl<T, E> UIItem for Result<T, E>
 where
-    T: UINodeDescriptor,
-    E: UINodeDescriptor,
+    T: ItemDescriptor,
+    E: ItemDescriptor,
 {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         match self {
@@ -144,7 +144,7 @@ where
         }
     }
 
-    fn write_quads(&self, quad_buffer: &mut [Quad]) {
+    fn write_quads(&self, quad_buffer: &mut [Graphic]) {
         match self {
             Ok(v) => v.write_quads(quad_buffer),
             Err(e) => e.write_quads(quad_buffer),
@@ -177,10 +177,10 @@ where
     }
 }
 
-impl<T, E> UINodeDescriptor for Result<T, E>
+impl<T, E> ItemDescriptor for Result<T, E>
 where
-    T: UINodeDescriptor,
-    E: UINodeDescriptor,
+    T: ItemDescriptor,
+    E: ItemDescriptor,
 {
     const QUAD_COUNT: usize = T::QUAD_COUNT;
 
@@ -192,15 +192,15 @@ where
     }
 }
 
-impl<T> UINode for Box<T>
+impl<T> UIItem for Box<T>
 where
-    T: UINodeDescriptor,
+    T: ItemDescriptor,
 {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         self.as_mut().handle_ui_event(event)
     }
 
-    fn write_quads(&self, quad_buffer: &mut [Quad]) {
+    fn write_quads(&self, quad_buffer: &mut [Graphic]) {
         self.as_ref().write_quads(quad_buffer)
     }
 
@@ -225,9 +225,9 @@ where
     }
 }
 
-impl<T> UINodeDescriptor for Box<T>
+impl<T> ItemDescriptor for Box<T>
 where
-    T: UINodeDescriptor,
+    T: ItemDescriptor,
 {
     const QUAD_COUNT: usize = T::QUAD_COUNT;
 
@@ -236,10 +236,10 @@ where
     }
 }
 
-impl<A, B> UINode for (A, B)
+impl<A, B> UIItem for (A, B)
 where
-    A: UINodeDescriptor,
-    B: UINodeDescriptor,
+    A: ItemDescriptor,
+    B: ItemDescriptor,
 {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         let a_handled = self.0.handle_ui_event(event.clone());
@@ -248,7 +248,7 @@ where
         a_handled || b_handled
     }
 
-    fn write_quads(&self, quad_buffer: &mut [Quad]) {
+    fn write_quads(&self, quad_buffer: &mut [Graphic]) {
         let (slice_a, slice_b) = quad_buffer.split_at_mut(A::QUAD_COUNT);
         self.0.write_quads(slice_a);
         self.1.write_quads(slice_b);
@@ -286,10 +286,10 @@ where
     }
 }
 
-impl<A, B> UINodeDescriptor for (A, B)
+impl<A, B> ItemDescriptor for (A, B)
 where
-    A: UINodeDescriptor,
-    B: UINodeDescriptor,
+    A: ItemDescriptor,
+    B: ItemDescriptor,
 {
     const QUAD_COUNT: usize = A::QUAD_COUNT + B::QUAD_COUNT;
 
@@ -312,7 +312,7 @@ impl<T, const N: usize> SizedVec<T, N> {
         Self { inner }
     }
 }
-impl<A: UINodeDescriptor, const N: usize> UINode for SizedVec<A, N> {
+impl<A: ItemDescriptor, const N: usize> UIItem for SizedVec<A, N> {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         let mut any_handled = false;
         for item in self.inner.iter_mut() {
@@ -321,7 +321,7 @@ impl<A: UINodeDescriptor, const N: usize> UINode for SizedVec<A, N> {
         any_handled
     }
 
-    fn write_quads(&self, quad_buffer: &mut [Quad]) {
+    fn write_quads(&self, quad_buffer: &mut [Graphic]) {
         if self.inner.len() == 0 {
             return;
         }
@@ -358,7 +358,7 @@ impl<A: UINodeDescriptor, const N: usize> UINode for SizedVec<A, N> {
         poll_acc
     }
 }
-impl<A: UINodeDescriptor, const N: usize> UINodeDescriptor for SizedVec<A, N> {
+impl<A: ItemDescriptor, const N: usize> ItemDescriptor for SizedVec<A, N> {
     const QUAD_COUNT: usize = N * A::QUAD_COUNT;
 
     fn get_render_rect(&self) -> Option<Rect<f32, f32>> {

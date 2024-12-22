@@ -7,7 +7,7 @@ use crate::gpu::backend::GPUResources;
 
 use super::{
     layout::LayoutItem,
-    node::{UINode, UINodeDescriptor},
+    node::{ItemDescriptor, UIItem},
 };
 
 /// UI Node that reacts to a signal and updates part of the UI tree.
@@ -16,16 +16,16 @@ use super::{
 pub struct React<S: Send, T>
 where
     S: Signal<Item = T>,
-    T: UINode,
+    T: UIItem,
 {
     #[pin]
     signal: Hold<S, T>,
 }
 
-impl<S: Send, T> UINode for React<S, T>
+impl<S: Send, T> UIItem for React<S, T>
 where
     S: Signal<Item = T>,
-    T: UINodeDescriptor,
+    T: ItemDescriptor,
 {
     fn handle_ui_event(&mut self, event: super::node::UIEvent) -> bool {
         match &mut self.signal.held_item {
@@ -34,7 +34,7 @@ where
         }
     }
 
-    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Quad]) {
+    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
         match &self.signal.held_item {
             Some(item) => item.write_quads(quad_buffer),
             None => panic!("Reactor was drawn without being polled first!"),
@@ -62,10 +62,10 @@ where
     }
 }
 
-impl<S: Send, T> UINodeDescriptor for React<S, T>
+impl<S: Send, T> ItemDescriptor for React<S, T>
 where
     S: Signal<Item = T>,
-    T: UINodeDescriptor,
+    T: ItemDescriptor,
 {
     const QUAD_COUNT: usize = T::QUAD_COUNT;
 
@@ -81,7 +81,7 @@ pub trait UISignalExt: Signal + Send {
     fn collect_ui(self) -> React<Self, Self::Item>
     where
         Self: Sized,
-        Self::Item: UINode,
+        Self::Item: UIItem,
     {
         React {
             signal: Hold {
@@ -108,7 +108,7 @@ where
 impl<A, B> Signal for Hold<A, B>
 where
     A: Signal<Item = B>,
-    B: UINode,
+    B: UIItem,
 {
     type Item = ();
 
@@ -137,7 +137,7 @@ where
     }
 }
 
-impl<S: Signal<Item = T> + Send, T: UINode> Signal for React<S, T> {
+impl<S: Signal<Item = T> + Send, T: UIItem> Signal for React<S, T> {
     type Item = ();
 
     fn poll_change(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<Self::Item>> {

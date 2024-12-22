@@ -1,5 +1,5 @@
 use super::Interactor;
-use crate::ui::node::{UIEvent, UINode, UINodeDescriptor};
+use crate::ui::node::{ItemDescriptor, UIEvent, UIItem};
 use futures_signals::signal::{Mutable, Signal, SignalExt};
 use std::{
     pin::Pin,
@@ -28,14 +28,14 @@ impl Hover {
 }
 
 impl Interactor for Hover {}
-impl UINodeDescriptor for Hover {
+impl ItemDescriptor for Hover {
     const QUAD_COUNT: usize = 0;
 
     fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
         None // Some(self.area))
     }
 }
-impl UINode for Hover {
+impl UIItem for Hover {
     fn handle_ui_event(&mut self, event: crate::ui::node::UIEvent) -> bool {
         match event {
             UIEvent::CursorMoved {
@@ -55,7 +55,7 @@ impl UINode for Hover {
         }
     }
 
-    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Quad]) {
+    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
         /* Maybe push something here in Debug mode? */
     }
 

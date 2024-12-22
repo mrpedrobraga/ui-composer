@@ -1,9 +1,9 @@
 #![allow(non_snake_case)]
 use itertools::Itertools as _;
-use ui_composer::{app::App, gpu::backend::WinitWGPUBackend, prelude::*, ui::node::SizedVec};
+use ui_composer::{app::App, prelude::*, ui::node::SizedVec};
 
 pub fn main() {
-    App::run_custom::<WinitWGPUBackend<_>>(Window(Squares()));
+    App::run(Window(Squares()));
 }
 
 pub fn Squares() -> impl LayoutItem {
@@ -17,17 +17,15 @@ pub fn Squares() -> impl LayoutItem {
                     .clone()
                     .cartesian_product(range.clone())
                     .map(|(x, y)| {
-                        Quad::new(
-                            hx.rect
-                                .with_size(Extent2::new(32.0, 32.0))
-                                .translated(Vec2::new(x as f32 * 32.0, y as f32 * 32.0))
-                                .expand_radius(-4.0),
-                            Rgb::new(
+                        hx.rect
+                            .with_size(Extent2::new(32.0, 32.0))
+                            .translated(Vec2::new(x as f32 * 32.0, y as f32 * 32.0))
+                            .expand_radius(-4.0)
+                            .with_color(Rgb::new(
                                 x as f32 / range_length as f32,
                                 y as f32 / range_length as f32,
                                 0.0,
-                            ),
-                        )
+                            ))
                     })
                     .collect_vec(),
             );

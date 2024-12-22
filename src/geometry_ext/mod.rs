@@ -1,8 +1,10 @@
+use crate::prelude::Graphic;
+use cgmath::BaseNum;
 use std::ops::{Add, Sub};
-use vek::{Extent2, Rect, Vec2};
+use vek::{Extent2, Extent3, Mat4, Rect, Vec2};
 
 pub trait RectExt {
-    type Num: Copy + Add<Self::Num, Output = Self::Num> + Sub<Self::Num, Output = Self::Num>;
+    type Num: BaseNum;
 
     /// Expands this rectangle keeping its center in the same place, some amount from each face.
     /// This is useful for adding paddings to items inside containers.
@@ -28,9 +30,16 @@ pub trait RectExt {
 
     /// Translates this rectangle in space.
     fn translated(self, vector: Vec2<Self::Num>) -> Self;
+
+    /// Transforms this rectangle into a renderable graphic.
+    fn with_color(self, color: vek::Rgb<f32>) -> Graphic;
 }
 
-impl<T: Copy + Add<T, Output = T> + Sub<T, Output = T>> RectExt for Rect<T, T> {
+impl<T: BaseNum> RectExt for Rect<T, T>
+where
+    Vec2<f32>: From<Vec2<T>>,
+    vek::Vec3<f32>: From<Extent3<T>>,
+{
     type Num = T;
 
     fn expand_from_center(
@@ -62,6 +71,15 @@ impl<T: Copy + Add<T, Output = T> + Sub<T, Output = T>> RectExt for Rect<T, T> {
             x: self.x + vector.x,
             y: self.y + vector.y,
             ..self
+        }
+    }
+
+    fn with_color(self, color: vek::Rgb<f32>) -> Graphic {
+        Graphic {
+            transform: Mat4::identity()
+                .scaled_3d(Extent3::new(self.extent().w, self.extent().h, T::one()))
+                .translated_2d(self.position()),
+            color,
         }
     }
 }

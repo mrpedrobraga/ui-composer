@@ -5,7 +5,7 @@ use wgpu::{util::DeviceExt as _, BufferAddress, BufferUsages, ColorTargetState, 
 
 use crate::{
     gpu::{backend::GPUResources, render_target::GPURenderTarget, world::UINodeRenderBuffers},
-    ui::{graphics::Quad, node::UINode},
+    ui::{graphics::Graphic, node::UIItem},
 };
 
 use super::GPURenderPipeline;
@@ -84,7 +84,7 @@ impl OrchestraRenderPipeline {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: Some("vs_main"),
-                buffers: &[Vertex::buffer_layout(), Quad::buffer_layout()],
+                buffers: &[Vertex::buffer_layout(), Graphic::buffer_layout()],
                 compilation_options: Default::default(),
             },
             fragment: Some(wgpu::FragmentState {
@@ -128,7 +128,7 @@ impl OrchestraRenderPipeline {
         gpu_resources: &GPUResources,
         render_target_size: Extent2<f32>,
         texture: &Texture,
-        ui_tree: &mut dyn UINode,
+        ui_tree: &mut dyn UIItem,
         render_buffers: &mut UINodeRenderBuffers,
     ) {
         let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
@@ -199,7 +199,7 @@ impl OrchestraRenderPipeline {
     }
 }
 
-impl Quad {
+impl Graphic {
     fn buffer_layout() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Self>() as BufferAddress,

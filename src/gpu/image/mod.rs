@@ -3,7 +3,7 @@ use crate::{
     prelude::*,
     ui::{
         self,
-        node::{UINode, UINodeDescriptor},
+        node::{ItemDescriptor, UIItem},
     },
 };
 use image::{DynamicImage, ExtendedColorType};
@@ -17,19 +17,19 @@ use super::{
 };
 
 #[allow(non_snake_case)]
-pub fn Image<T>(rect: Rect<f32, f32>, item: T) -> ImageNodeDescriptor<impl UINodeDescriptor>
+pub fn Image<T>(rect: Rect<f32, f32>, item: T) -> ImageNodeDescriptor<impl ItemDescriptor>
 where
     T: LayoutItem + 'static,
 {
     ImageNodeDescriptor {
         rect,
-        content: item.bake(LayoutHints { rect }),
+        content: item.lay(ParentHints { rect }),
     }
 }
 
 pub struct ImageNodeDescriptor<T>
 where
-    T: UINodeDescriptor + 'static,
+    T: ItemDescriptor + 'static,
 {
     rect: Rect<f32, f32>,
     content: T,
@@ -37,7 +37,7 @@ where
 
 impl<T> NodeDescriptor for ImageNodeDescriptor<T>
 where
-    T: UINodeDescriptor + 'static,
+    T: ItemDescriptor + 'static,
 {
     type ReifiedType = ImageNode;
 
@@ -58,7 +58,7 @@ where
 #[pin_project(project = ImageNodeProj)]
 pub struct ImageNode {
     #[pin]
-    content: Box<dyn UINode>,
+    content: Box<dyn UIItem>,
     rect: Rect<f32, f32>,
     content_buffer: UINodeRenderBuffers,
     render_target: ImageRenderTarget,

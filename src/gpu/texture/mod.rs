@@ -68,7 +68,7 @@ impl GPURenderTarget for ImageRenderTarget {
     fn draw(
         &mut self,
         gpu_resources: &GPUResources,
-        content: &mut dyn crate::ui::node::UINode,
+        content: &mut dyn crate::ui::node::UIItem,
         render_artifacts: &mut super::world::UINodeRenderBuffers,
     ) {
         let texture = &self.image.texture;

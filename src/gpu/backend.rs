@@ -20,7 +20,7 @@ use winit::{
     window::{Window, WindowAttributes, WindowId},
 };
 
-use crate::ui::node::{UIEvent, UINode, UINodeDescriptor};
+use crate::ui::node::{ItemDescriptor, UIEvent, UIItem};
 
 use super::{
     pipeline::{orchestra_render_pipeline::OrchestraRenderPipeline, GPURenderPipeline},

@@ -1,5 +1,5 @@
 use super::Interactor;
-use crate::ui::node::{UIEvent, UINode, UINodeDescriptor};
+use crate::ui::node::{ItemDescriptor, UIEvent, UIItem};
 use futures::SinkExt;
 use futures_channel::mpsc::{self, Receiver, Sender};
 use futures_signals::signal::{Mutable, Signal, SignalExt};
@@ -32,14 +32,14 @@ impl Tap {
 }
 
 impl Interactor for Tap {}
-impl UINodeDescriptor for Tap {
+impl ItemDescriptor for Tap {
     const QUAD_COUNT: usize = 0;
 
     fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
         None // Some(self.area))
     }
 }
-impl UINode for Tap {
+impl UIItem for Tap {
     fn handle_ui_event(&mut self, event: crate::ui::node::UIEvent) -> bool {
         match event {
             UIEvent::CursorMoved {
@@ -68,7 +68,7 @@ impl UINode for Tap {
         }
     }
 
-    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Quad]) {
+    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
         /* Maybe push something here in Debug mode? */
     }
 

@@ -5,18 +5,19 @@ pub mod flow;
 pub mod functions;
 
 use super::{
-    node::{UINode, UINodeDescriptor},
+    node::{ItemDescriptor, UIItem},
     react::{React, UISignalExt},
 };
 
 #[derive(Debug, Clone, Copy)]
-pub struct LayoutHints {
+#[non_exhaustive]
+pub struct ParentHints {
     pub rect: Rect<f32, f32>,
 }
 
 /// An item that can be included in a layouting context.
 pub trait LayoutItem: Send {
-    type UINodeType: UINodeDescriptor;
+    type UINodeType: ItemDescriptor;
 
     /// The size this component prefers to be at. It's usually its minimum size.
     #[inline(always)]
@@ -27,10 +28,10 @@ pub trait LayoutItem: Send {
     fn get_minimum_size(&self) -> Extent2<f32>;
 
     /// Renders the content of this layout item with a specific rect.
-    fn bake(&self, layout_hints: LayoutHints) -> Self::UINodeType;
+    fn lay(&self, parent_hints: ParentHints) -> Self::UINodeType;
 
     /// Creates a reactive node that re-bakes the layout item to fit a container that can change shape.
-    fn bake_react<S>(
+    fn lay_reactive<S>(
         self,
         size_signal: S,
     ) -> React<impl Signal<Item = Self::UINodeType>, Self::UINodeType>
@@ -40,7 +41,7 @@ pub trait LayoutItem: Send {
     {
         size_signal
             .map(move |new_size| {
-                self.bake(LayoutHints {
+                self.lay(ParentHints {
                     rect: Rect::new(0.0, 0.0, new_size.w, new_size.h),
                 })
             })
@@ -50,29 +51,40 @@ pub trait LayoutItem: Send {
 
 pub struct Resizable<F: Send, T>
 where
-    F: Fn(LayoutHints) -> T,
+    F: Fn(ParentHints) -> T,
 {
-    min_size: Extent2<f32>,
+    hints: ChildHints,
     factory: F,
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+#[non_exhaustive]
+pub struct ChildHints {
+    min_size: Extent2<f32>,
 }
 
 impl<F, T> Resizable<F, T>
 where
-    F: Fn(LayoutHints) -> T + Send,
-    T: UINode,
+    F: Fn(ParentHints) -> T + Send,
+    T: UIItem,
 {
     /// Creates a new resizable [`LayoutItem`] that redraws using this factory function.
     pub fn new(factory: F) -> Self {
         Self {
-            min_size: Extent2::default(),
+            hints: ChildHints::default(),
             factory,
         }
     }
 
     /// Consumes this [`Resizable`] and returns a similar one with the minimum size set.
-    pub fn with_minimum_size(self, size: Extent2<f32>) -> Self {
+    pub fn with_minimum_size(self, min_size: Extent2<f32>) -> Self {
+        let child_hints = self.hints;
+
         Self {
-            min_size: size,
+            hints: ChildHints {
+                min_size,
+                ..child_hints
+            },
             ..self
         }
     }
@@ -80,8 +92,8 @@ where
 
 impl<F: Send, T> LayoutItem for Resizable<F, T>
 where
-    F: Fn(LayoutHints) -> T,
-    T: UINodeDescriptor,
+    F: Fn(ParentHints) -> T,
+    T: ItemDescriptor,
 {
     type UINodeType = T;
 
@@ -90,10 +102,10 @@ where
     }
 
     fn get_minimum_size(&self) -> Extent2<f32> {
-        self.min_size
+        self.hints.min_size
     }
 
-    fn bake(&self, layout_hints: LayoutHints) -> Self::UINodeType {
+    fn lay(&self, layout_hints: ParentHints) -> Self::UINodeType {
         (self.factory)(layout_hints)
     }
 }
@@ -109,7 +121,7 @@ impl LayoutItem for () {
         Extent2::new(0.0, 0.0)
     }
 
-    fn bake(&self, layout_hints: LayoutHints) -> Self::UINodeType {
+    fn lay(&self, layout_hints: ParentHints) -> Self::UINodeType {
         ()
     }
 }

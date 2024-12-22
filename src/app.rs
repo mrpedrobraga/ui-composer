@@ -21,7 +21,7 @@ impl App {
     // Creates and runs a new app in a given backend.
     // For cross-platform compatibility, this should be called in the main thread,
     // and only once in your program.
-    pub fn run_custom<B: Backend>(node_tree_descriptor: B::NodeTreeType) {
-        B::run(node_tree_descriptor);
+    pub fn run_custom<CustomBackend: Backend>(node_tree_descriptor: CustomBackend::NodeTreeType) {
+        CustomBackend::run(node_tree_descriptor);
     }
 }

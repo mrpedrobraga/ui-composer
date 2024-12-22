@@ -36,19 +36,19 @@ use super::{
     world::UINodeRenderBuffers,
 };
 use crate::ui::{
-    graphics::Quad,
-    layout::{LayoutHints, LayoutItem},
-    node::{UINode, UINodeDescriptor},
+    graphics::Graphic,
+    layout::{LayoutItem, ParentHints},
+    node::{ItemDescriptor, UIItem},
     react::{React, UISignalExt},
 };
 
 /// A node that describes the existence of a new window in the UI tree.
-pub struct WindowNodeDescriptor<T: UINodeDescriptor> {
+pub struct WindowNodeDescriptor<T: ItemDescriptor> {
     state: WindowNodeState,
     content: T,
 }
 
-impl<T: UINodeDescriptor> WindowNodeDescriptor<T> {
+impl<T: ItemDescriptor> WindowNodeDescriptor<T> {
     /// Consumes this window node and returns a new one with the set title.
     pub fn with_title<Str: Into<String>>(self, title: Str) -> WindowNodeDescriptor<T> {
         let WindowNodeState { title: _, size } = self.state;
@@ -82,7 +82,7 @@ impl<T: UINodeDescriptor> WindowNodeDescriptor<T> {
 
 /// Describes a new window with its contents and its own state.
 #[allow(non_snake_case)]
-pub fn Window<T>(item: T) -> WindowNodeDescriptor<impl UINodeDescriptor>
+pub fn Window<T>(item: T) -> WindowNodeDescriptor<impl ItemDescriptor>
 where
     T: LayoutItem + 'static,
 {
@@ -97,7 +97,7 @@ where
         .size
         .signal()
         .map(move |window_size| {
-            item.bake(LayoutHints {
+            item.lay(ParentHints {
                 rect: Rect::new(0.0, 0.0, window_size.w, window_size.h),
             })
         })
@@ -111,7 +111,7 @@ where
 
 impl<T> NodeDescriptor for WindowNodeDescriptor<T>
 where
-    T: UINodeDescriptor + 'static,
+    T: ItemDescriptor + 'static,
 {
     type ReifiedType = WindowNode;
 
@@ -177,7 +177,7 @@ pub struct WindowNode {
     #[pin]
     state: WindowNodeState,
     window: Arc<Window>,
-    content: Box<dyn UINode>,
+    content: Box<dyn UIItem>,
     content_buffers: UINodeRenderBuffers,
     render_target: WindowRenderTarget,
 }
@@ -266,9 +266,10 @@ pub struct WindowRenderTarget {
 impl WindowRenderTarget {
     pub fn new(gpu_resources: &GPUResources, target: Arc<Window>, size: Extent2<u32>) -> Self {
         let surface = gpu_resources.instance.create_surface(target).unwrap();
+        dbg!(surface.get_capabilities(&gpu_resources.adapter));
         let surface_config = surface
             .get_default_config(&gpu_resources.adapter, size.w, size.h)
-            .unwrap();
+            .expect("No default configuration found?");
 
         Self {
             size,
@@ -292,7 +293,7 @@ impl GPURenderTarget for WindowRenderTarget {
     fn draw(
         &mut self,
         gpu_resources: &GPUResources,
-        content: &mut dyn UINode,
+        content: &mut dyn UIItem,
         render_buffers: &mut UINodeRenderBuffers,
     ) {
         let texture = self

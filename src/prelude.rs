@@ -4,7 +4,7 @@ pub use crate::geometry_ext::*;
 pub use crate::gpu::backend::NodeDescriptor;
 pub use crate::gpu::window::{Window, WindowAttributes};
 pub use crate::signal_ext::*;
-pub use crate::ui::graphics::Quad;
+pub use crate::ui::graphics::Graphic;
 pub use crate::ui::interactor::*;
 pub use crate::ui::layout::*;
 pub use crate::ui::react::UISignalExt;

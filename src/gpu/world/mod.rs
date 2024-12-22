@@ -3,11 +3,11 @@ use std::ops::Deref;
 use wgpu::BufferUsages;
 
 use super::backend::GPUResources;
-use crate::{prelude::Quad, ui::node::UINode};
+use crate::{prelude::Graphic, ui::node::UIItem};
 
 /// The buffers that hold the soon-to-be-rendered UI.
 pub struct UINodeRenderBuffers {
-    instance_buffer_cpu: Vec<Quad>,
+    instance_buffer_cpu: Vec<Graphic>,
     instance_buffer: wgpu::Buffer,
 }
 
@@ -19,17 +19,17 @@ impl UINodeRenderBuffers {
     /// Creates new buffers for the UI primitives to be drawn.
     pub fn new(gpu_resources: &GPUResources, primitive_count: usize) -> Self {
         Self {
-            instance_buffer_cpu: vec![Quad::default(); primitive_count],
+            instance_buffer_cpu: vec![Graphic::default(); primitive_count],
             instance_buffer: gpu_resources.device.create_buffer(&wgpu::BufferDescriptor {
                 label: None,
-                size: size_of::<Quad>() as u64 * primitive_count as u64,
+                size: size_of::<Graphic>() as u64 * primitive_count as u64,
                 usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
                 mapped_at_creation: false,
             }),
         }
     }
 
-    pub fn instance_buffer_cpu(&mut self) -> &mut [Quad] {
+    pub fn instance_buffer_cpu(&mut self) -> &mut [Graphic] {
         &mut self.instance_buffer_cpu[..]
     }
 
@@ -47,7 +47,7 @@ impl UINodeRenderBuffers {
 
     pub fn extend<I>(&mut self, gpu_resources: &GPUResources, new_elements: I)
     where
-        I: Iterator<Item = Quad>,
+        I: Iterator<Item = Graphic>,
     {
     }
 }

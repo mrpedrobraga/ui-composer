@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use crate::{prelude::LayoutItem, ui::layout::LayoutHints};
+use crate::{prelude::LayoutItem, ui::layout::ParentHints};
 use vek::{Extent2, Rect};
 
 /// A container that, as it is reshaped, keeps its item at its natural size, centered within itself.
@@ -32,7 +32,7 @@ where
         self.item.get_minimum_size()
     }
 
-    fn bake(&self, layout_hints: LayoutHints) -> Self::UINodeType {
+    fn lay(&self, layout_hints: ParentHints) -> Self::UINodeType {
         let my_rect = layout_hints.rect;
 
         let item_size = self.item.get_natural_size();
@@ -40,12 +40,12 @@ where
 
         let item_rect = Rect::new(item_position.x, item_position.y, item_size.w, item_size.h);
 
-        let inner_hints = LayoutHints {
+        let inner_hints = ParentHints {
             rect: item_rect,
             ..layout_hints
         };
 
-        self.item.bake(inner_hints)
+        self.item.lay(inner_hints)
     }
 }
 
@@ -87,8 +87,8 @@ where
         self.item.get_minimum_size()
     }
 
-    fn bake(&self, layout_hints: LayoutHints) -> Self::UINodeType {
-        self.item.bake(layout_hints)
+    fn lay(&self, layout_hints: ParentHints) -> Self::UINodeType {
+        self.item.lay(layout_hints)
     }
 }
 
