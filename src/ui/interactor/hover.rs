@@ -25,6 +25,14 @@ impl Hover {
     pub fn signal(&self) -> impl Signal<Item = bool> {
         self.is_hovered_state.signal().dedupe()
     }
+
+    /// Derives from this hover, some related value.
+    pub fn derive<F, T>(&self, predicate: F) -> impl Signal<Item = T>
+    where
+        F: Fn(bool) -> T,
+    {
+        self.signal().map(predicate)
+    }
 }
 
 impl Interactor for Hover {}

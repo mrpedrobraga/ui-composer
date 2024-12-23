@@ -8,6 +8,24 @@ use std::{
     time::Instant,
 };
 
+use super::{
+    backend::{GPUResources, Node, RNode},
+    pipeline::{
+        orchestra_render_pipeline::{
+            container_size_to_wgpu_mat, OrchestraRenderPipeline, Uniforms,
+        },
+        GPURenderPipeline,
+    },
+    render_target::{self, GPURenderTarget},
+    view::{View, ViewNode},
+    world::UINodeRenderBuffers,
+};
+use crate::state::process::{SignalProcessor, UISignalExt};
+use crate::ui::{
+    graphics::Graphic,
+    layout::{LayoutItem, ParentHints},
+    node::{ItemDescriptor, UIItem},
+};
 use futures_signals::signal::{Mutable, Signal, SignalExt};
 use pin_project::pin_project;
 use vek::{Extent2, Rect, Rgb};
@@ -21,25 +39,6 @@ use winit::{
     event_loop::{self, ActiveEventLoop},
     platform::x11::WindowAttributesExtX11,
     window::{Window, WindowButtons, WindowId},
-};
-
-use super::{
-    backend::{GPUResources, Node, RNode},
-    pipeline::{
-        orchestra_render_pipeline::{
-            container_size_to_wgpu_mat, OrchestraRenderPipeline, Uniforms,
-        },
-        GPURenderPipeline,
-    },
-    render_target::{self, GPURenderTarget},
-    view::{View, ViewNode},
-    world::UINodeRenderBuffers,
-};
-use crate::ui::{
-    graphics::Graphic,
-    layout::{LayoutItem, ParentHints},
-    node::{ItemDescriptor, UIItem},
-    react::{React, UISignalExt},
 };
 
 /// A node that describes the existence of a new window in the UI tree.
@@ -101,7 +100,7 @@ where
                 rect: Rect::new(0.0, 0.0, window_size.w, window_size.h),
             })
         })
-        .collect_ui();
+        .process();
 
     WindowNodeDescriptor {
         state,

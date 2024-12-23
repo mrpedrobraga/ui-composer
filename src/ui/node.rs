@@ -309,7 +309,7 @@ pub struct SizedVec<T, const N: usize> {
     inner: Vec<T>,
 }
 impl<A, const N: usize> FromIterator<A> for SizedVec<A, N> {
-    fn from_iter<T: IntoIterator<Item=A>>(iter: T) -> Self {
+    fn from_iter<T: IntoIterator<Item = A>>(iter: T) -> Self {
         SizedVec {
             inner: iter.into_iter().take(N).collect(),
         }

@@ -1,4 +1,5 @@
 pub mod animation;
+pub mod process;
 pub mod signal_ext;
 
 pub use futures_signals::signal::Mutable as Editable;

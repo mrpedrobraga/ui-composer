@@ -17,7 +17,7 @@ pub trait RectExt {
 
     /// Expands this rectangle keeping its center in the same place, the same amount for every face.
     /// This is useful for adding paddings to items inside containers.
-    fn expand_radius(self, offset: Self::Num) -> Self
+    fn expand(self, offset: Self::Num) -> Self
     where
         Self: Sized,
     {
@@ -73,6 +73,7 @@ where
         }
     }
 
+    /// Consumes the [`Rect`] by returning a coloured rectangular [`Graphic`].
     fn with_color(self, color: vek::Rgb<f32>) -> Graphic {
         Graphic {
             transform: Mat4::identity()

@@ -1,6 +1,5 @@
 use crate::geometry::Vector;
-use std::time::{Duration, Instant};
-use vek::num_traits::real::Real;
+use futures_time::time::{Duration, Instant};
 
 /// An alternative of [`Stream`] which is lossy
 /// for trying to keep up with an implicit flow of time.
@@ -41,40 +40,6 @@ pub struct AnimationFrameParams {
 pub enum Poll<TItem> {
     Ongoing(TItem),
     Finished(TItem),
-}
-
-/// Stream that interpolates the initial value towards a target.
-pub struct LinearInterpolateStream<TItem: Vector> {
-    to: TItem,
-    duration: Duration,
-}
-
-impl<TItem: Vector> LinearInterpolateStream<TItem> {
-    pub fn new(to: TItem, duration: Duration) -> Self {
-        Self { to, duration }
-    }
-}
-
-impl<TItem: Vector + Copy> RealTimeStream for LinearInterpolateStream<TItem> {
-    type Item = TItem;
-
-    fn process_tick(
-        &mut self,
-        initial_value: Self::Item,
-        frame_params: AnimationFrameParams,
-    ) -> Poll<Self::Item> {
-        if frame_params.start.elapsed() >= self.duration {
-            // TODO: Figure out how to pass the excess down - and if it makes a difference.
-            let end = frame_params.start + self.duration;
-
-            Poll::Finished(self.to)
-        } else {
-            Poll::Ongoing(initial_value.linear_interpolate(
-                self.to,
-                frame_params.start.elapsed().as_secs_f32() / self.duration.as_secs_f32(),
-            ))
-        }
-    }
 }
 
 pub struct Chain<A: RealTimeStream, B: RealTimeStream> {
@@ -121,6 +86,73 @@ where
                     ..frame_params
                 },
             ),
+        }
+    }
+}
+
+/// Stream that interpolates the initial value towards a target.
+pub struct LinearInterpolateStream<TItem: Vector> {
+    to: TItem,
+    duration: Duration,
+}
+
+impl<TItem: Vector> LinearInterpolateStream<TItem> {
+    pub fn new(to: TItem, duration: Duration) -> Self {
+        Self { to, duration }
+    }
+}
+
+impl<TItem: Vector + Copy> RealTimeStream for LinearInterpolateStream<TItem> {
+    type Item = TItem;
+
+    fn process_tick(
+        &mut self,
+        initial_value: Self::Item,
+        frame_params: AnimationFrameParams,
+    ) -> Poll<Self::Item> {
+        if frame_params.start.elapsed() >= self.duration.into() {
+            // TODO: Figure out how to pass the excess down - and if it makes a difference.
+            let end = frame_params.start + self.duration;
+
+            Poll::Finished(self.to)
+        } else {
+            Poll::Ongoing(initial_value.linear_interpolate(
+                self.to,
+                frame_params.start.elapsed().as_secs_f32() / self.duration.as_secs_f32(),
+            ))
+        }
+    }
+}
+
+pub struct MoveToward<TItem: Vector> {
+    current_value: Option<TItem>,
+    target: TItem,
+    speed: f32,
+}
+impl<TItem: Vector + Copy> MoveToward<TItem> {
+    pub fn new(target: TItem, speed: f32) -> Self {
+        MoveToward {
+            current_value: None,
+            target,
+            speed,
+        }
+    }
+}
+impl<TItem: Vector + Copy> RealTimeStream for MoveToward<TItem> {
+    type Item = TItem;
+
+    fn process_tick(
+        &mut self,
+        initial_value: Self::Item,
+        frame_params: AnimationFrameParams,
+    ) -> Poll<Self::Item> {
+        if let Some(current_value) = self.current_value {
+            let next_value = current_value + TItem::one() * frame_params.delta.as_secs_f32();
+            self.current_value = Some(next_value);
+            Poll::Ongoing(next_value)
+        } else {
+            self.current_value = Some(initial_value);
+            Poll::Ongoing(initial_value)
         }
     }
 }

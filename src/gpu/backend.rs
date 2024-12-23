@@ -221,7 +221,7 @@ impl<Nd: Node + Send + 'static> WinitBackend for WinitWGPUBackend<Nd> {
         let backend_clone = backend.clone();
 
         std::thread::spawn(|| {
-            pollster::block_on(SignalProcessor::new(backend_clone).to_future());
+            pollster::block_on(BackendProcessExecutor::new(backend_clone).to_future());
             println!("Finished blocking.")
         });
 
@@ -342,28 +342,28 @@ where
 }
 
 /// A futures-based construct that polls the engine's processes.
-#[pin_project(project=EngineProcessesSignalProj)]
-pub struct SignalProcessor<E: Backend> {
+#[pin_project(project=BackendProcessExecutorProj)]
+pub struct BackendProcessExecutor<E: Backend> {
     #[pin]
-    engine: Arc<Mutex<E>>,
+    backend: Arc<Mutex<E>>,
 }
 
-impl<E: Backend> SignalProcessor<E> {
-    pub fn new(engine: Arc<Mutex<E>>) -> Self {
-        SignalProcessor { engine }
+impl<E: Backend> BackendProcessExecutor<E> {
+    pub fn new(backend: Arc<Mutex<E>>) -> Self {
+        BackendProcessExecutor { backend }
     }
 }
 
-impl<E: Backend> Signal for SignalProcessor<E> {
+impl<E: Backend> Signal for BackendProcessExecutor<E> {
     type Item = ();
 
     fn poll_change(self: std::pin::Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
-        let EngineProcessesSignalProj { engine } = self.project();
+        let BackendProcessExecutorProj { backend } = self.project();
 
-        let mut engine = engine.lock().expect("Failed to lock ui for polling");
-        let engine = engine.deref_mut();
-        let engine = unsafe { Pin::new_unchecked(engine) };
-        let poll = engine.poll_processors(cx);
+        let mut backend = backend.lock().expect("Failed to lock ui for polling");
+        let backend = backend.deref_mut();
+        let backend = unsafe { Pin::new_unchecked(backend) };
+        let poll = backend.poll_processors(cx);
 
         poll
     }

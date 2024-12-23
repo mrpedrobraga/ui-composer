@@ -1,18 +1,23 @@
+use std::marker::PhantomData;
+use crate::state::process::{SignalProcessor, UISignalExt};
 use futures_signals::signal::{Signal, SignalExt};
 use vek::{Extent2, Rect};
 
 pub mod flow;
 pub mod functions;
 
-use super::{
-    node::{ItemDescriptor, UIItem},
-    react::{React, UISignalExt},
-};
+use super::node::{ItemDescriptor, UIItem};
 
 #[derive(Debug, Clone, Copy)]
 #[non_exhaustive]
 pub struct ParentHints {
     pub rect: Rect<f32, f32>,
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+#[non_exhaustive]
+pub struct ChildHints {
+    min_size: Extent2<f32>,
 }
 
 /// An item that can be included in a layouting context.
@@ -34,7 +39,7 @@ pub trait LayoutItem: Send {
     fn lay_reactive<S>(
         self,
         size_signal: S,
-    ) -> React<impl Signal<Item = Self::UINodeType>, Self::UINodeType>
+    ) -> SignalProcessor<impl Signal<Item = Self::UINodeType>, Self::UINodeType>
     where
         S: Signal<Item = Extent2<f32>> + Send,
         Self: Sized + Send,
@@ -45,7 +50,7 @@ pub trait LayoutItem: Send {
                     rect: Rect::new(0.0, 0.0, new_size.w, new_size.h),
                 })
             })
-            .collect_ui()
+            .process()
     }
 }
 
@@ -55,12 +60,6 @@ where
 {
     hints: ChildHints,
     factory: F,
-}
-
-#[derive(Debug, Clone, Copy, Default)]
-#[non_exhaustive]
-pub struct ChildHints {
-    min_size: Extent2<f32>,
 }
 
 impl<F, T> Resizable<F, T>

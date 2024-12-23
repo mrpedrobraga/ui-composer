@@ -48,3 +48,6 @@ opt-level = 's'
 [dev-dependencies]
 toml = "0.8.15"
 itertools = "0.13.0"
+serde_json = "1.0.134"
+async-std = "1.13.0"
+vek = { version = "0.17.0", features = ["serde"] }
