@@ -1,8 +1,5 @@
-use crate::{
-    gpu::backend::{WinitWGPUBackend},
-    prelude::Node,
-};
 use crate::backend::Backend;
+use crate::{gpu::backend::WinitWGPUBackend, prelude::Node};
 
 /// The default backend this crate runs.
 /// I might change it depending on the target.

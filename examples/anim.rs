@@ -1,22 +1,36 @@
+use pollster::block_on;
 use std::fmt::Debug;
+use std::thread::{scope, spawn};
 use std::time::{Duration, Instant};
-use vek::num_traits::real::Real;
+use ui_composer::prelude::animation::{LinearInterpolateStream, Poll, RealTimeStream};
 use ui_composer::prelude::*;
-use ui_composer::prelude::animation::{RealTimeStream, LinearInterpolateStream, Poll};
 use ui_composer::state::animation::AnimationFrameParams;
+use vek::num_traits::real::Real;
 
 fn main() {
+    let state = Editable::new(0.0);
+
     let a = 0.0;
     let b = 1.0;
 
-    let mut lerp_stream =
-        LinearInterpolateStream::new(b, Duration::from_secs(2))
-            .chain(LinearInterpolateStream::new(a, Duration::from_secs(2)));
+    let mut lerp_stream = LinearInterpolateStream::new(b, Duration::from_secs(2))
+        .chain(LinearInterpolateStream::new(a, Duration::from_secs(2)));
 
-    print_values(a, &mut lerp_stream);
+    {
+        let state2 = state.clone();
+        spawn(move || {
+            block_on(state2.signal().for_each(|frame| {
+                println!("{:?}", frame);
+                async {}
+            }))
+        });
+    }
+
+    animate(state, &mut lerp_stream);
 }
 
-fn print_values<T: Copy + Debug, S: RealTimeStream<Item = T>>(initial_value: T, stream: &mut S) {
+fn animate<T: Copy + Debug, S: RealTimeStream<Item = T>>(state: Editable<T>, stream: &mut S) {
+    let initial_value = state.get();
     let start = Instant::now();
     let mut last_frame = Instant::now();
 
@@ -27,10 +41,10 @@ fn print_values<T: Copy + Debug, S: RealTimeStream<Item = T>>(initial_value: T, 
         match poll {
             Poll::Ongoing(frame) => {
                 last_frame = Instant::now();
-                println!("Ongoing... {:?}", frame);
+                state.set(frame);
             }
             Poll::Finished(frame) => {
-                println!("All done! {:?}", frame);
+                state.set(frame);
                 break;
             }
         }

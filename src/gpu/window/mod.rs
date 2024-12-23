@@ -24,7 +24,7 @@ use winit::{
 };
 
 use super::{
-    backend::{GPUResources, RNode, Node},
+    backend::{GPUResources, Node, RNode},
     pipeline::{
         orchestra_render_pipeline::{
             container_size_to_wgpu_mat, OrchestraRenderPipeline, Uniforms,
@@ -266,7 +266,6 @@ pub struct WindowRenderTarget {
 impl WindowRenderTarget {
     pub fn new(gpu_resources: &GPUResources, target: Arc<Window>, size: Extent2<u32>) -> Self {
         let surface = gpu_resources.instance.create_surface(target).unwrap();
-        dbg!(surface.get_capabilities(&gpu_resources.adapter));
         let surface_config = surface
             .get_default_config(&gpu_resources.adapter, size.w, size.h)
             .expect("No default configuration found?");

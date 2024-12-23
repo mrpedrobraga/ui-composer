@@ -1,3 +1,4 @@
+use crate::state::signal_ext::coalesce_polls;
 use crate::{gpu::backend::GPUResources, ui::graphics::Graphic};
 use std::{
     ops::{Deref, DerefMut},
@@ -6,7 +7,6 @@ use std::{
 };
 use vek::Rect;
 use wgpu::{RenderPass, Texture, TextureView};
-use crate::state::signal_ext::coalesce_polls;
 
 pub type UIEvent = winit::event::WindowEvent;
 
@@ -308,9 +308,11 @@ where
 pub struct SizedVec<T, const N: usize> {
     inner: Vec<T>,
 }
-impl<T, const N: usize> SizedVec<T, N> {
-    pub fn new(inner: Vec<T>) -> Self {
-        Self { inner }
+impl<A, const N: usize> FromIterator<A> for SizedVec<A, N> {
+    fn from_iter<T: IntoIterator<Item=A>>(iter: T) -> Self {
+        SizedVec {
+            inner: iter.into_iter().take(N).collect(),
+        }
     }
 }
 impl<A: ItemDescriptor, const N: usize> UIItem for SizedVec<A, N> {

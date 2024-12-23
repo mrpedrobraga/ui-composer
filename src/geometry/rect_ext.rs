@@ -1,5 +1,5 @@
 use super::BaseNum;
-use super::{Rect, Vec2, Vec3, Extent2, Extent3, Mat4};
+use super::{Extent2, Extent3, Mat4, Rect, Vec2, Vec3};
 use crate::prelude::Graphic;
 
 pub trait RectExt {

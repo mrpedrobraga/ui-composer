@@ -1,6 +1,6 @@
+use crate::prelude::Node;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use crate::prelude::Node;
 
 /// The layer of the application that stands between the app and the outside world.
 pub trait Backend {
