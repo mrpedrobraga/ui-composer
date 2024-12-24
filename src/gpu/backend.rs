@@ -187,7 +187,18 @@ impl<Nd: Node + Send + 'static> WinitBackend for WinitWGPUBackend<Nd> {
             &adapter,
             &device,
             &queue,
-            &[Some(dummy_format.into())],
+            &[Some(wgpu::ColorTargetState {
+                format: dummy_format,
+                blend: Some(wgpu::BlendState {
+                    color: wgpu::BlendComponent {
+                        src_factor: wgpu::BlendFactor::SrcAlpha,
+                        dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                        operation: wgpu::BlendOperation::Add,
+                    },
+                    alpha: wgpu::BlendComponent::OVER,
+                }),
+                write_mask: wgpu::ColorWrites::ALL,
+            })],
         );
 
         let gpu_resources = GPUResources {

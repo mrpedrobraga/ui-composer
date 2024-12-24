@@ -1,5 +1,6 @@
 #![allow(non_snake_case)]
 
+use futures_signals::signal::Signal;
 use futures_time::task;
 use futures_time::time::{Duration, Instant};
 use ui_composer::items;
@@ -10,45 +11,83 @@ use ui_composer::state::animation::RealTimeStream;
 fn main() {
     App::run(
         Window(Center(Row(
-            Row(SmoothSquare("A"), SmoothSquare("B")),
-            Row(SmoothSquare("C"), SmoothSquare("D")),
+            Row(
+                SmoothSquare(Rgb::new(214.0 / 255.0, 93.0 / 255.0, 177.0 / 255.0)),
+                SmoothSquare(Rgb::new(255.0 / 255.0, 111.0 / 255.0, 145.0 / 255.0)),
+            ),
+            Row(
+                SmoothSquare(Rgb::new(255.0 / 255.0, 150.0 / 255.0, 113.0 / 255.0)),
+                SmoothSquare(Rgb::new(255.0 / 255.0, 199.0 / 255.0, 95.0 / 255.0)),
+            ),
         )))
         .with_title("Interactive Animation"),
     )
 }
 
-fn SmoothSquare(name: &'static str) -> impl LayoutItem {
+fn SmoothSquare(color: Rgb<f32>) -> impl LayoutItem {
     let is_hovered_state = Editable::new(false);
     let anim_state = Editable::new(0.0);
 
     Resizable::new(move |hx| {
-        let animation = {
-            let anim_state = anim_state.clone();
-            is_hovered_state.signal().map(move |is_hovering| {
-                let spring = Spring::new(if is_hovering { 50.0 } else { 0.0 }, 100.0, 10.0, 1.0);
-
-                spring.animate_state(anim_state.clone()).process()
-            })
-        };
-
         let is_hovered_state = is_hovered_state.clone();
         items!(
-            animation.process(),
+            if_then_else(is_hovered_state.signal(), anim_state.clone(), 50.0, 0.0).process(),
             anim_state
                 .signal()
-                .map(move |factor| {
-                    let rect = hx.rect.translated(-factor * Vec2::unit_y());
-                    let hover = Hover::new(rect, is_hovered_state.clone());
-
-                    items!(
-                        hover,
-                        rect.with_color(Lerp::lerp(Rgb::red(), Rgb::cyan(), factor / 50.0))
-                    )
+                .map(move |animation_factor| {
+                    hover_square(hx.rect, color, animation_factor, is_hovered_state.clone())
                 })
                 .process()
         )
     })
     .with_minimum_size(Extent2::new(100.0, 100.0))
+}
+
+fn hover_square(
+    original_rect: Rect<f32, f32>,
+    original_color: Rgb<f32>,
+    animation_factor: f32,
+    is_hovered_state: Editable<bool>,
+) -> impl ItemDescriptor {
+    let hover = Hover::new(
+        original_rect.expanded_to_contain_point(Vec2::new(
+            original_rect.x,
+            original_rect.y - animation_factor,
+        )),
+        is_hovered_state,
+    );
+    let rect = original_rect
+        .translated(-animation_factor * Vec2::unit_y())
+        .expand(8.0 * animation_factor / 50.0);
+
+    items!(
+        hover,
+        rect.with_color(Lerp::lerp(
+            0.75 * original_color,
+            original_color,
+            animation_factor / 50.0
+        ))
+    )
+}
+
+fn if_then_else<S>(
+    condition: S,
+    state: Editable<f32>,
+    value_if: f32,
+    value_else: f32,
+) -> impl Signal<Item = impl ItemDescriptor>
+where
+    S: Signal<Item = bool>,
+{
+    condition.map(move |is_hovering| {
+        let spring = Spring::new(
+            if is_hovering { value_if } else { value_else },
+            200.0,
+            10.0,
+            1.0,
+        );
+        spring.animate_state(state.clone()).process()
+    })
 }
 
 #[derive(Default)]

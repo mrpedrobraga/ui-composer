@@ -146,9 +146,9 @@ impl OrchestraRenderPipeline {
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: 0.95,
-                        g: 0.95,
-                        b: 0.95,
+                        r: 0.025,
+                        g: 0.025,
+                        b: 0.025,
                         a: 1.0,
                     }),
                     store: wgpu::StoreOp::Store,
@@ -283,15 +283,15 @@ impl Vertex {
 }
 
 /// Returns the mesh for the quad used in the standard pipeline.
-/// ```
-/// 0             1
+/// ```txt
+/// (0,0)          (1,0)
 /// *-------------*
 /// |             |
 /// |             |
 /// |             |
 /// |             |
 /// *-------------*
-/// 1
+/// (0, 0)         (1, 1)
 /// ```
 const fn quad_mesh() -> ([Vertex; 4], [u32; 6]) {
     (

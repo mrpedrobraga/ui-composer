@@ -3,12 +3,11 @@
 use futures::future::FutureExt as _;
 use futures_time::future::FutureExt as _;
 use futures_time::time::Duration;
-use pollster::block_on;
 use serde::Deserialize;
 use ui_composer::prelude::*;
 
 fn main() {
-    App::run(Window(Center(Main())).with_title("Futures"));
+    App::run(Window(Center(Row(Main(), Main()))).with_title("Futures"));
 }
 
 fn Main() -> impl LayoutItem {
@@ -21,12 +20,10 @@ fn Main() -> impl LayoutItem {
         .map(move |person: Person| person_state_.set(Some(person)))
         .delay(Duration::from_secs(1));
 
-    std::thread::spawn(move || {
-        block_on(person_fut);
-    });
+    std::thread::spawn(move || pollster::block_on(person_fut));
 
     Resizable::new(move |hx| {
-        person_state
+        let person_square = person_state
             .signal_cloned()
             .map(move |person_opt| {
                 person_opt
@@ -35,9 +32,11 @@ fn Main() -> impl LayoutItem {
                             .translated(Vec2::unit_y() * -person.y)
                             .with_color(person.color)
                     })
-                    .or(Some(hx.rect.with_color(Rgb::new(0.0, 0.0, 0.0))))
+                    .or(Some(hx.rect.with_color(Rgb::new(0.7, 0.7, 0.7))))
             })
-            .process()
+            .process();
+
+        (person_square)
     })
     .with_minimum_size(Extent2::new(100.0, 100.0))
 }

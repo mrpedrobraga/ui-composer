@@ -2,6 +2,7 @@
 //! is a little different. 'x' and 'w' mean 'in-axis' metrics. 'y' and 'h' mean 'cross-axis' metrics.
 //! So a container that disposes its items vertically is increasing the 'x' coordinate.
 
+use cgmath::BaseFloat;
 use vek::{Extent2, Rect, Vec2};
 
 struct StackContext {
@@ -40,11 +41,11 @@ where
 
 /// Divides a total number of shares for n elements, where the elements can be biased with a weight, or have a minimum share.
 /// It does three dynamic allocations, and runs in O(n * log(n)).
-pub fn weighted_division_with_minima(
-    total: f64,
-    item_weights: &[f64],
-    item_minima: &[f64],
-) -> Vec<f64> {
+pub fn weighted_division_with_minima<T: BaseFloat + std::iter::Sum>(
+    total: T,
+    item_weights: &[T],
+    item_minima: &[T],
+) -> Vec<T> {
     let item_count = item_weights.len();
     // Imagine a container with size x on the lim x -> Infinity.
     // In such a container, minimum size doesn't matter.
@@ -56,7 +57,7 @@ pub fn weighted_division_with_minima(
         let ratio_b = item_minima[i_b] * item_weights[i_b];
         ratio_b.partial_cmp(&ratio_a).unwrap()
     });
-    let total_weight_count = item_weights.iter().sum::<f64>();
+    let total_weight_count = item_weights.iter().copied().sum();
     // After that, we know the characteristics of which elements
     // will be taken off the total, so we can pre-calculate the sums of the weights
     // of the remaining objects.
@@ -78,7 +79,7 @@ pub fn weighted_division_with_minima(
         },
     );
     // Finally, you need to return the sizes in the original order.
-    let mut result = vec![0.0; item_count];
+    let mut result = vec![T::zero(); item_count];
     for (index, size) in indices.iter().zip(sizes) {
         result[*index] = size;
     }

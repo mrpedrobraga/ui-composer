@@ -27,11 +27,13 @@ struct InstanceInput {
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) color: vec3<f32>,
+    @location(1) uv: vec2<f32>
 };
 
 struct FragmentInput {
     @builtin(position) fragment_position: vec4<f32>,
     @location(0) color: vec3<f32>,
+    @location(1) uv: vec2<f32>,
 }
 
 @vertex
@@ -41,6 +43,7 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     out.color = instance.color;
+    out.uv = model.position.xy;
 
     let transform_mat = mat4x4<f32>(
         instance.transform_mat_x,
@@ -68,13 +71,26 @@ fn fs_main(
     // TODO: Inquire the bit depth;
     let inv_bit_depth = 1.0/255.0;
     let debanding = inv_bit_depth * interleaved_gradient_noise(in.fragment_position.xy);
+    //let p = 4.0;
+    //let a = smoothstep(pow(0.5, p), pow(0.49, p), distance_p(in.uv, vec2(0.5, 0.5), p));
+    let a = 1.0;
+
     // NOTE: Debanding should *not* be applied when rendering user images.
     // Or at the very least should be made optional.
-    return vec4<f32>(1.0 * debanding + srgb_to_linear(in.color), 1.0);
+    //return vec4<f32>(srgb_to_linear(vec3(in.uv, 0.0)), 1.0);
+    return vec4<f32>(1.0 * debanding + srgb_to_linear(in.color), a);
+}
+
+fn distance_p(a: vec2<f32>,  b: vec2<f32>, p: f32) -> f32 {
+    let x = abs(a.x - b.x);
+    let y = abs(a.y - b.x);
+
+    return pow(x, p) + pow(y, p);
 }
 
 fn srgb_to_linear(color_srgb: vec3<f32>) -> vec3<f32> {
-    let color_linear = pow(color_srgb, vec3<f32>(2.2));
+    let gamma = 2.2;
+    let color_linear = pow(color_srgb, vec3<f32>(gamma));
     return min(max(color_linear, vec3<f32>(0.0)), vec3<f32>(1.0));
 }
 

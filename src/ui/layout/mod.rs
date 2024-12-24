@@ -8,13 +8,11 @@ pub mod functions;
 use super::node::{ItemDescriptor, UIItem};
 
 #[derive(Debug, Clone, Copy)]
-#[non_exhaustive]
 pub struct ParentHints {
     pub rect: Rect<f32, f32>,
 }
 
 #[derive(Debug, Clone, Copy, Default)]
-#[non_exhaustive]
 pub struct ChildHints {
     min_size: Extent2<f32>,
 }
