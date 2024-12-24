@@ -1,5 +1,7 @@
 #![allow(unused)]
 
+//! A library for creating fast cross-platform user interfaces.
+
 pub mod app;
 pub mod backend;
 pub mod components;

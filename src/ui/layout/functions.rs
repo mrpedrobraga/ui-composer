@@ -2,34 +2,37 @@
 //! is a little different. 'x' and 'w' mean 'in-axis' metrics. 'y' and 'h' mean 'cross-axis' metrics.
 //! So a container that disposes its items vertically is increasing the 'x' coordinate.
 
-use vek::{Extent2, Rect};
+use vek::{Extent2, Rect, Vec2};
 
 struct StackContext {
-    stack_axis_offset: f32,
+    offset: Vec2<f32>,
 }
 
 impl Default for StackContext {
     fn default() -> Self {
         Self {
-            stack_axis_offset: 0.0,
+            offset: Vec2::default(),
         }
     }
 }
 
-/// Stacks several unpositioned rectangles [`Extent2`]s one after another.
+/// Stacks several sizes ([`Extent2`]s) one after another.
 /// The resulting [`Rect`]s will not be stretched at all.
-fn stack_rects<I>(sizes: I, gap: f32) -> impl Iterator<Item = Rect<f32, f32>>
+#[inline(always)]
+pub fn stack_rects<I>(sizes: I, gap: f32, vertical: bool) -> impl Iterator<Item = Rect<f32, f32>>
 where
     I: Iterator<Item = Extent2<f32>>,
 {
     sizes.scan(StackContext::default(), move |cx, item| {
-        // Align to start of cross axis.
-        // TODO: Change this to a property.
-        let cross_axis_offset = 0.0;
-        let rect = Rect::new(cx.stack_axis_offset, cross_axis_offset, item.w, item.h);
+        let rect = Rect::new(cx.offset.x, cx.offset.y, item.w, item.h);
 
-        cx.stack_axis_offset += item.w;
-        cx.stack_axis_offset += gap;
+        if (vertical) {
+            cx.offset.y += item.h;
+            cx.offset.y += gap;
+        } else {
+            cx.offset.x += item.w;
+            cx.offset.x += gap;
+        }
 
         Some(rect)
     })

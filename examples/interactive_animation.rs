@@ -9,49 +9,41 @@ use ui_composer::state::animation::RealTimeStream;
 
 fn main() {
     App::run(
-        Window(
-            //-
-            Center(
-                //-
-                Row(
-                    Row(
-                        //-
-                        SmoothSquare("A"),
-                        SmoothSquare("B"),
-                    ),
-                    SmoothSquare("C"),
-                ),
-            ),
-        )
+        Window(Center(Row(
+            Row(SmoothSquare("A"), SmoothSquare("B")),
+            Row(SmoothSquare("C"), SmoothSquare("D")),
+        )))
         .with_title("Interactive Animation"),
     )
 }
 
 fn SmoothSquare(name: &'static str) -> impl LayoutItem {
-    Resizable::new(move |hx| {
-        let anim_state = Editable::new(0.0);
-        let hover = Hover::new(hx.rect);
+    let is_hovered_state = Editable::new(false);
+    let anim_state = Editable::new(0.0);
 
+    Resizable::new(move |hx| {
         let animation = {
             let anim_state = anim_state.clone();
-
-            hover.derive(move |is_hovering| {
-                if is_hovering { println!("Booped {}", name) }
+            is_hovered_state.signal().map(move |is_hovering| {
                 let spring = Spring::new(if is_hovering { 50.0 } else { 0.0 }, 100.0, 10.0, 1.0);
 
                 spring.animate_state(anim_state.clone()).process()
             })
         };
 
+        let is_hovered_state = is_hovered_state.clone();
         items!(
-            hover,
             animation.process(),
             anim_state
                 .signal()
                 .map(move |factor| {
-                    hx.rect
-                        .translated(-factor * Vec2::unit_y())
-                        .with_color(Lerp::lerp(Rgb::red(), Rgb::cyan(), factor / 100.0))
+                    let rect = hx.rect.translated(-factor * Vec2::unit_y());
+                    let hover = Hover::new(rect, is_hovered_state.clone());
+
+                    items!(
+                        hover,
+                        rect.with_color(Lerp::lerp(Rgb::red(), Rgb::cyan(), factor / 50.0))
+                    )
                 })
                 .process()
         )

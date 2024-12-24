@@ -1,12 +1,10 @@
 use futures_signals::signal::Signal;
 use pin_project::pin_project;
 use std::future::Future;
-use std::task::Context;
 use std::{pin::Pin, task::Poll};
 use wgpu::{RenderPass, Texture};
 
 use crate::gpu::backend::GPUResources;
-use crate::prelude::Graphic;
 use crate::ui::node::UIEvent;
 use crate::ui::node::{ItemDescriptor, UIItem};
 

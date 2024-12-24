@@ -3,7 +3,7 @@ use std::ops::Deref;
 use wgpu::BufferUsages;
 
 use super::backend::GPUResources;
-use crate::{prelude::Graphic, ui::node::UIItem};
+use crate::prelude::Graphic;
 
 /// The buffers that hold the soon-to-be-rendered UI.
 pub struct UINodeRenderBuffers {

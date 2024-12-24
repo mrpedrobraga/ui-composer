@@ -1,13 +1,10 @@
 use futures_time::time::{Duration, Instant};
 use pollster::block_on;
 use std::fmt::Debug;
-use std::thread::{scope, spawn};
-use ui_composer::items;
+use std::thread::spawn;
 use ui_composer::prelude::animation::{LinearInterpolateStream, Poll, RealTimeStream};
 use ui_composer::prelude::*;
 use ui_composer::state::animation::{AnimationFrameParams, MoveToward};
-use ui_composer::ui::node::UIItem;
-use vek::num_traits::real::Real;
 
 fn main() {
     let state = Editable::new(0.0);

@@ -17,13 +17,15 @@ pub fn Squares() -> impl LayoutItem {
         Resizable::new(move |hx| {
             grid_range(10, 10)
                 .map(|(x, y)| {
+                    let is_hovered_state = Editable::new(false);
                     let rect = Rect::new(hx.rect.x + 32.0 * x, hx.rect.y + 32.0 * y, 32.0, 32.0);
                     let color = Rgb::new(x / 10.0, y / 10.0, 0.0);
-                    let hover_area = Hover::new(rect);
+                    let hover_area = Hover::new(rect, is_hovered_state.clone());
 
                     return items![
-                        hover_area
-                            .derive(move |is_hovering| {
+                        is_hovered_state
+                            .signal()
+                            .map(move |is_hovering| {
                                 if is_hovering {
                                     rect.expand(-4.0).with_color(color)
                                 } else {

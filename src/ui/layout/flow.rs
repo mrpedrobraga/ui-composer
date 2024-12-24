@@ -1,13 +1,13 @@
 pub enum FlowDirection {
     /// Geometrically, absolutely defined flow.
     Cartesian(CartesianFlowDirection),
-    /// Flow aligned with the parent flow.
+    /// Flow aligned relative to the parent flow.
     Aligned(AlignedFlowDirection),
     /// Flow aligned with the writing flow (usually based on locale).
     Writing(WritingFlowDirection),
 }
 
-/// Specifies the flow direction in an geometric/absolute fashion.
+/// Specifies the flow direction in a geometric/absolute fashion.
 /// Use it for things like graphics or symbols.
 pub enum CartesianFlowDirection {
     ///→
@@ -22,22 +22,22 @@ pub enum CartesianFlowDirection {
 
 pub enum AlignedFlowDirection {
     /// Aligned with parent flow. Default: →.
-    MainAxis,
+    MainAxisForward,
     /// Opposite of parent flow. Default: ←.
-    MainAxisReverse,
+    MainAxisBackwards,
     /// Aligned with parent cross flow. Default: ↓.
-    CrossAxis,
+    CrossAxisForward,
     /// Opposite of parent cross flow. Default: ↑.
-    CrossAxisReverse,
+    CrossAxisBackwards,
 }
 
 pub enum WritingFlowDirection {
     /// Aligned with writing flow. en-us: →.
-    WritingAxis,
+    WritingAxisForward,
     /// Opposite of writing flow. en-us: ←.
-    WritingAxisReverse,
+    WritingAxisBackwards,
     /// Aligned with writing cross flow. en-us: ↓.
-    WritingCrossAxis,
+    WritingCrossAxisForward,
     /// Opposite of writing cross flow. en-us: ↑.
-    WritingCrossAxisReverse,
+    WritingCrossAxisBackwards,
 }

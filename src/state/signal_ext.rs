@@ -1,8 +1,4 @@
-use pin_project::pin_project;
-use std::{
-    pin::Pin,
-    task::{Context, Poll},
-};
+use std::task::Poll;
 
 /// Combines two Polls into a single poll describing a task with two parts.
 /// The result is decided based on a precedence order.

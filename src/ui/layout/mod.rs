@@ -1,4 +1,3 @@
-use std::marker::PhantomData;
 use crate::state::process::{SignalProcessor, UISignalExt};
 use futures_signals::signal::{Signal, SignalExt};
 use vek::{Extent2, Rect};
@@ -20,7 +19,7 @@ pub struct ChildHints {
     min_size: Extent2<f32>,
 }
 
-/// An item that can be included in a layouting context.
+/// An item that can be included in a laying out context.
 pub trait LayoutItem: Send {
     type UINodeType: ItemDescriptor;
 
@@ -33,11 +32,11 @@ pub trait LayoutItem: Send {
     fn get_minimum_size(&self) -> Extent2<f32>;
 
     /// Renders the content of this layout item with a specific rect.
-    fn lay(&self, parent_hints: ParentHints) -> Self::UINodeType;
+    fn lay(&mut self, parent_hints: ParentHints) -> Self::UINodeType;
 
     /// Creates a reactive node that re-bakes the layout item to fit a container that can change shape.
     fn lay_reactive<S>(
-        self,
+        mut self,
         size_signal: S,
     ) -> SignalProcessor<impl Signal<Item = Self::UINodeType>, Self::UINodeType>
     where
@@ -56,7 +55,7 @@ pub trait LayoutItem: Send {
 
 pub struct Resizable<F: Send, T>
 where
-    F: Fn(ParentHints) -> T,
+    F: FnMut(ParentHints) -> T,
 {
     hints: ChildHints,
     factory: F,
@@ -64,7 +63,7 @@ where
 
 impl<F, T> Resizable<F, T>
 where
-    F: Fn(ParentHints) -> T + Send,
+    F: FnMut(ParentHints) -> T + Send,
     T: UIItem,
 {
     /// Creates a new resizable [`LayoutItem`] that redraws using this factory function.
@@ -91,7 +90,7 @@ where
 
 impl<F: Send, T> LayoutItem for Resizable<F, T>
 where
-    F: Fn(ParentHints) -> T,
+    F: FnMut(ParentHints) -> T,
     T: ItemDescriptor,
 {
     type UINodeType = T;
@@ -104,7 +103,7 @@ where
         self.hints.min_size
     }
 
-    fn lay(&self, layout_hints: ParentHints) -> Self::UINodeType {
+    fn lay(&mut self, layout_hints: ParentHints) -> Self::UINodeType {
         (self.factory)(layout_hints)
     }
 }
@@ -120,7 +119,7 @@ impl LayoutItem for () {
         Extent2::new(0.0, 0.0)
     }
 
-    fn lay(&self, layout_hints: ParentHints) -> Self::UINodeType {
+    fn lay(&mut self, layout_hints: ParentHints) -> Self::UINodeType {
         ()
     }
 }

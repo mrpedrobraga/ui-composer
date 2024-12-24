@@ -1,11 +1,8 @@
 use futures_signals::signal_vec::MutableVec;
-use vek::{Rect, Rgb};
-use wgpu::{RenderPass, Texture, TextureView};
+use vek::Rect;
+use wgpu::{RenderPass, Texture};
 
-use crate::{
-    prelude::{Graphic, LayoutItem, RectExt as _},
-    ui::node::{ItemDescriptor, UIItem},
-};
+use crate::ui::node::{ItemDescriptor, UIItem};
 
 use super::{backend::GPUResources, pipeline::GPURenderPipeline as _, world::UINodeRenderBuffers};
 

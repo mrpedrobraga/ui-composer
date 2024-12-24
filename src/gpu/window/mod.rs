@@ -81,7 +81,7 @@ impl<T: ItemDescriptor> WindowNodeDescriptor<T> {
 
 /// Describes a new window with its contents and its own state.
 #[allow(non_snake_case)]
-pub fn Window<T>(item: T) -> WindowNodeDescriptor<impl ItemDescriptor>
+pub fn Window<T>(mut item: T) -> WindowNodeDescriptor<impl ItemDescriptor>
 where
     T: LayoutItem + 'static,
 {

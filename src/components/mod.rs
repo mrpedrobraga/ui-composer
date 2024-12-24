@@ -32,7 +32,7 @@ where
         self.item.get_minimum_size()
     }
 
-    fn lay(&self, layout_hints: ParentHints) -> Self::UINodeType {
+    fn lay(&mut self, layout_hints: ParentHints) -> Self::UINodeType {
         let my_rect = layout_hints.rect;
 
         let item_size = self.item.get_natural_size();
@@ -87,7 +87,7 @@ where
         self.item.get_minimum_size()
     }
 
-    fn lay(&self, layout_hints: ParentHints) -> Self::UINodeType {
+    fn lay(&mut self, layout_hints: ParentHints) -> Self::UINodeType {
         self.item.lay(layout_hints)
     }
 }
@@ -122,12 +122,17 @@ pub fn Column() {}
 ///
 /// The height of the container is the max height between the items.
 pub fn Row<A, B>(item_a: A, item_b: B) -> RowContainer<A, B> {
-    RowContainer { item_a, item_b }
+    RowContainer {
+        item_a,
+        item_b,
+        gap: 8.0,
+    }
 }
 
 pub struct RowContainer<A, B> {
     item_a: A,
     item_b: B,
+    gap: f32,
 }
 
 impl<A, B> LayoutItem for RowContainer<A, B>
@@ -141,17 +146,17 @@ where
         let a_size = self.item_a.get_natural_size();
         let b_size = self.item_b.get_natural_size();
 
-        Extent2::new(a_size.w + b_size.w, a_size.h.max(b_size.h))
+        Extent2::new(a_size.w + self.gap + b_size.w, a_size.h.max(b_size.h))
     }
 
     fn get_minimum_size(&self) -> Extent2<f32> {
         let a_size = self.item_a.get_minimum_size();
         let b_size = self.item_b.get_minimum_size();
 
-        Extent2::new(a_size.w + b_size.w, a_size.h.max(b_size.h))
+        Extent2::new(a_size.w + self.gap + b_size.w, a_size.h.max(b_size.h))
     }
 
-    fn lay(&self, parent_hints: ParentHints) -> Self::UINodeType {
+    fn lay(&mut self, parent_hints: ParentHints) -> Self::UINodeType {
         let a_size = self.item_a.get_natural_size();
         let b_size = self.item_b.get_natural_size();
 
@@ -167,7 +172,7 @@ where
 
         let b = self.item_b.lay(ParentHints {
             rect: Rect::new(
-                parent_hints.rect.x + a_size.w,
+                parent_hints.rect.x + a_size.w + self.gap,
                 parent_hints.rect.y,
                 b_size.w,
                 parent_hints.rect.h,

@@ -3,8 +3,7 @@
 use vek::Extent2;
 
 use super::{
-    backend::GPUResources,
-    pipeline::{orchestra_render_pipeline::OrchestraRenderPipeline, GPURenderPipeline},
+    backend::GPUResources, pipeline::orchestra_render_pipeline::OrchestraRenderPipeline,
     render_target::GPURenderTarget,
 };
 

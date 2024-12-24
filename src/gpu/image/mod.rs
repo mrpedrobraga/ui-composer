@@ -6,10 +6,7 @@ use crate::{
         node::{ItemDescriptor, UIItem},
     },
 };
-use image::{DynamicImage, ExtendedColorType};
 use pin_project::pin_project;
-use std::io::Read;
-use wgpu::BufferUsages;
 
 use super::{
     backend::RNode, render_target::GPURenderTarget, texture::ImageRenderTarget,
@@ -17,7 +14,7 @@ use super::{
 };
 
 #[allow(non_snake_case)]
-pub fn Image<T>(rect: Rect<f32, f32>, item: T) -> ImageNodeDescriptor<impl ItemDescriptor>
+pub fn Image<T>(rect: Rect<f32, f32>, mut item: T) -> ImageNodeDescriptor<impl ItemDescriptor>
 where
     T: LayoutItem + 'static,
 {

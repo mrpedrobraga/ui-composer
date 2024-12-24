@@ -1,31 +1,24 @@
 use crate::backend::Backend;
-use crate::ui::node::{ItemDescriptor, UIEvent, UIItem};
-use futures::{FutureExt, StreamExt};
-use futures_signals::signal::{Mutable, Signal, SignalExt};
+use crate::ui::node::UIEvent;
+use futures::StreamExt;
+use futures_signals::signal::{Signal, SignalExt};
 use pin_project::pin_project;
 use pollster::FutureExt as _;
 use std::{
-    borrow::BorrowMut,
-    collections::HashSet,
-    marker::PhantomData,
     ops::DerefMut,
     pin::Pin,
-    sync::{Arc, Mutex, RwLock},
+    sync::{Arc, Mutex},
     task::{Context, Poll},
 };
-use vek::Extent2;
 use wgpu::{MemoryHints, TextureFormat};
 use winit::{
     application::ApplicationHandler,
-    dpi::PhysicalSize,
     event_loop::ActiveEventLoop,
-    window::{Window, WindowAttributes, WindowId},
+    window::{WindowAttributes, WindowId},
 };
 
 use super::{
-    pipeline::{orchestra_render_pipeline::OrchestraRenderPipeline, GPURenderPipeline},
-    render_target::{self, GPURenderTarget},
-    window::{WindowNode, WindowNodeDescriptor, WindowRenderTarget},
+    pipeline::orchestra_render_pipeline::OrchestraRenderPipeline, window::WindowRenderTarget,
 };
 
 /// The collection of resources the GPU backends use to

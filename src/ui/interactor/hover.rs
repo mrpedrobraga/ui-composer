@@ -1,6 +1,6 @@
 use super::Interactor;
 use crate::ui::node::{ItemDescriptor, UIEvent, UIItem};
-use futures_signals::signal::{Mutable, Signal, SignalExt};
+use futures_signals::signal::Mutable;
 use std::{
     pin::Pin,
     task::{Context, Poll},
@@ -14,24 +14,11 @@ pub struct Hover {
 }
 
 impl Hover {
-    pub fn new(rect: Rect<f32, f32>) -> Self {
+    pub fn new(rect: Rect<f32, f32>, is_hovered_state: Mutable<bool>) -> Self {
         Self {
             rect,
-            is_hovered_state: Mutable::new(false),
+            is_hovered_state,
         }
-    }
-
-    /// Gets a signal to the hover interactor, so that you can react to it being hovered.
-    pub fn signal(&self) -> impl Signal<Item = bool> {
-        self.is_hovered_state.signal().dedupe()
-    }
-
-    /// Derives from this hover, some related value.
-    pub fn derive<F, T>(&self, predicate: F) -> impl Signal<Item = T>
-    where
-        F: Fn(bool) -> T,
-    {
-        self.signal().map(predicate)
     }
 }
 
@@ -51,8 +38,9 @@ impl UIItem for Hover {
                 position,
             } => {
                 let position = Vec2::new(position.x as f32, position.y as f32);
+                let rect_contains_point = self.rect.contains_point(position);
                 self.is_hovered_state
-                    .set(self.rect.contains_point(position));
+                    .set_if(rect_contains_point, |a, b| a != b);
                 true
             }
             UIEvent::CursorLeft { device_id: _ } => {

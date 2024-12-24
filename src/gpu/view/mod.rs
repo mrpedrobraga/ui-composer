@@ -1,4 +1,4 @@
-use vek::{Extent2, Rect, Rgb};
+use vek::{Extent2, Rgb};
 
 use crate::ui::{
     graphics::Graphic,
@@ -33,7 +33,7 @@ where
         self.min_size
     }
 
-    fn lay(&self, layout_hints: ParentHints) -> Self::UINodeType {
+    fn lay(&mut self, layout_hints: ParentHints) -> Self::UINodeType {
         Graphic::new(layout_hints.rect, Rgb::green())
     }
 }

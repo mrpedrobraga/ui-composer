@@ -1,13 +1,8 @@
 use crate::ui::node::UIItem;
 
 use super::{backend::GPUResources, world::UINodeRenderBuffers};
-use std::sync::Arc;
 use vek::Extent2;
-use wgpu::{
-    rwh::{HasDisplayHandle, HasWindowHandle},
-    RenderPass, Surface, SurfaceConfiguration, SurfaceTarget, Texture, TextureFormat, TextureView,
-};
-use winit::{dpi::PhysicalSize, window::Window};
+use wgpu::TextureFormat;
 
 /// Describes a RenderTarget that something can render to.
 pub trait GPURenderTarget {

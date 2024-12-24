@@ -1,10 +1,9 @@
 use bytemuck::{Pod, Zeroable};
 use std::{
-    mem::size_of,
     pin::Pin,
     task::{Context, Poll},
 };
-use vek::{Aabr, Extent3, Mat4, Rect, Rgb, Vec2, Vec4};
+use vek::{Extent3, Mat4, Rect, Rgb, Vec4};
 
 use super::node::{ItemDescriptor, UIItem};
 

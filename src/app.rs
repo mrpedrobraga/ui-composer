@@ -9,16 +9,16 @@ type DefaultBackend<Nd> = WinitWGPUBackend<Nd>;
 pub struct App;
 
 impl App {
-    // Creates and runs a new app in the default backend for the selected target.
-    // For cross-platform compatibility, this should be called in the main thread,
-    // and only once in your program.
+    /// Creates and runs a new app in the default backend for the selected target.
+    /// For cross-platform compatibility, this should be called in the main thread,
+    /// and only once in your program.
     pub fn run<Nd: Node + 'static>(node_tree_descriptor: Nd) {
         DefaultBackend::run(node_tree_descriptor);
     }
 
-    // Creates and runs a new app in a given backend.
-    // For cross-platform compatibility, this should be called in the main thread,
-    // and only once in your program.
+    /// Creates and runs a new app in a given backend.
+    /// For cross-platform compatibility, this should be called in the main thread,
+    /// and only once in your program.
     pub fn run_custom<CustomBackend: Backend>(node_tree_descriptor: CustomBackend::NodeTreeType) {
         CustomBackend::run(node_tree_descriptor);
     }

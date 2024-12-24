@@ -1,12 +1,11 @@
 use crate::state::signal_ext::coalesce_polls;
 use crate::{gpu::backend::GPUResources, ui::graphics::Graphic};
 use std::{
-    ops::{Deref, DerefMut},
-    pin::{pin, Pin},
+    pin::Pin,
     task::{Context, Poll},
 };
 use vek::Rect;
-use wgpu::{RenderPass, Texture, TextureView};
+use wgpu::{RenderPass, Texture};
 
 pub type UIEvent = winit::event::WindowEvent;
 

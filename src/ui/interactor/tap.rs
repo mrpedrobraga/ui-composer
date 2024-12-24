@@ -1,8 +1,7 @@
 use super::Interactor;
 use crate::ui::node::{ItemDescriptor, UIEvent, UIItem};
 use futures::SinkExt;
-use futures_channel::mpsc::{self, Receiver, Sender};
-use futures_signals::signal::{Mutable, Signal, SignalExt};
+use futures_channel::mpsc::{Receiver, Sender};
 use std::{
     pin::Pin,
     task::{Context, Poll},
