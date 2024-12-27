@@ -11,6 +11,7 @@ name = "ui_composer"
 default = ["text", "serde"]
 text = ["dep:glyphon"]
 serde = ["dep:serde"]
+debug = []
 
 [dependencies]
 bytemuck = { version = "1.16.1", features = ["derive"] }

@@ -3,7 +3,7 @@ use std::{
     pin::Pin,
     task::{Context, Poll},
 };
-use vek::{Extent3, Mat4, Rect, Rgb, Vec4};
+use vek::{Extent3, Mat4, Rect, Rgb, Vec3, Vec4};
 
 use super::node::{ItemDescriptor, UIItem};
 
@@ -23,6 +23,18 @@ impl Graphic {
                 .scaled_3d(Extent3::new(rect.extent().w, rect.extent().h, 1.0))
                 .translated_2d(rect.position()),
             color,
+        }
+    }
+
+    /// Returns this graphic rotated by some angle.
+    pub fn rotated(self, angle_radians: f32) -> Self {
+        Self {
+            transform: self.transform
+                * Mat4::identity()
+                    .translated_3d(-Vec3::one() * 0.5)
+                    .rotated_z(angle_radians)
+                    .translated_3d(Vec3::one() * 0.5),
+            ..self
         }
     }
 }

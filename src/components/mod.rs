@@ -3,6 +3,9 @@
 use crate::{prelude::LayoutItem, ui::layout::ParentHints};
 use vek::{Extent2, Rect};
 
+pub mod flex;
+pub use flex::*;
+
 /// A container that, as it is reshaped, keeps its item at its natural size, centered within itself.
 pub fn Center<A>(item: A) -> CenterContainer<A>
 where
@@ -183,22 +186,3 @@ where
         (a, b)
     }
 }
-
-#[derive(Debug, Clone, Copy)]
-pub enum FlexItem<T> {
-    /// This item has a defined size (its own natural, usually minimum, size).
-    Sized(T),
-    /// This item has a minimum size but will grow to fit empty space (with a weight).
-    Stretchy(f32, T),
-}
-
-/// An main-axis heap of ordered items, where some of the items might stretch with an assigned weight.
-///
-/// ### Overflow
-/// [`Flex`] asks you for a "suggested_size" that it'll use for its minimum size...
-/// This size is only a suggestion, and items can force the minimum size to be bigger than it
-/// both on the main and on the cross axis.
-pub fn Flex() {}
-
-/// A cross-axis stack of [`Flex`]s, where their items are organized so that they fit.
-pub fn FlexWrap() {}

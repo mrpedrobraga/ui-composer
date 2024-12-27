@@ -1,11 +1,11 @@
 //! Empty for now but this will house different kinds of Textures that can be rendered onto quads!
 
-use vek::Extent2;
-
 use super::{
     backend::GPUResources, pipeline::orchestra_render_pipeline::OrchestraRenderPipeline,
     render_target::GPURenderTarget,
 };
+use crate::gpu::pipeline::GPURenderPipeline;
+use vek::Extent2;
 
 /// Color data that can be used by quads or materials to create advanced graphics.
 /// Each implementer of Texture can generate data by its own method.

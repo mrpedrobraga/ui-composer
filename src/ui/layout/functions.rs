@@ -47,12 +47,22 @@ pub fn weighted_division_with_minima<T: BaseFloat + std::iter::Sum>(
     m: &[T],
     tolerance: T,
 ) -> Vec<T> {
+    let total_m: T = m.iter().copied().sum();
     let total_w: T = w.iter().copied().sum();
+
+    if total_m >= total || total_w <= T::zero() {
+        return m.to_vec();
+    }
+
+    // Precompute normalized weights
+    let normalized_w: Vec<T> = w.iter().map(|&w| w / total_w).collect();
+
     let equation = |x| {
         total
-            - w.iter()
+            - normalized_w
+                .iter()
                 .zip(m.iter())
-                .map(|(w, m)| m.max(total * (*w / total_w) * x))
+                .map(|(nw, m)| m.max(total * *nw * x))
                 .sum::<T>()
     };
 
@@ -60,15 +70,14 @@ pub fn weighted_division_with_minima<T: BaseFloat + std::iter::Sum>(
     let mut upper_bound = total;
 
     loop {
-        let sample_point = (lower_bound + upper_bound) / (T::one() + T::one());
+        let sample_point = (lower_bound + upper_bound) / T::from(2).unwrap();
         let error = equation(sample_point);
 
         if error.abs() < tolerance {
-            return w
+            return normalized_w
                 .iter()
-                .copied()
                 .zip(m.iter())
-                .map(|(w, m)| m.max(total * (w / total_w) * sample_point))
+                .map(|(nw, m)| m.max(total * *nw * sample_point))
                 .collect();
         }
 

@@ -33,6 +33,7 @@ use wgpu::{
     core::device::queue, BufferUsages, RenderPass, Surface, SurfaceConfiguration, TextureFormat,
     TextureView,
 };
+use winit::dpi::LogicalSize;
 use winit::{
     dpi::{LogicalPosition, PhysicalPosition, PhysicalSize},
     event::WindowEvent,
@@ -126,6 +127,7 @@ where
             .create_window(
                 winit::window::WindowAttributes::default()
                     .with_title(self.state.title.get_cloned())
+                    .with_inner_size(LogicalSize::new(400.0, 400.0))
                     .with_name("UI Composer App", "UI Composer App"),
             )
             .expect("Couldn't reify window node!");

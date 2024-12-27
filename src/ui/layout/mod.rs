@@ -1,11 +1,10 @@
+use super::node::{ItemDescriptor, UIItem};
 use crate::state::process::{SignalProcessor, UISignalExt};
 use futures_signals::signal::{Signal, SignalExt};
 use vek::{Extent2, Rect};
 
 pub mod flow;
 pub mod functions;
-
-use super::node::{ItemDescriptor, UIItem};
 
 #[derive(Debug, Clone, Copy)]
 pub struct ParentHints {

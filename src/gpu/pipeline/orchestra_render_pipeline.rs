@@ -3,12 +3,11 @@ use std::mem::size_of;
 use vek::{Extent2, Mat4, Vec2, Vec3};
 use wgpu::{util::DeviceExt as _, BufferAddress, BufferUsages, ColorTargetState, Texture};
 
-use crate::{
-    gpu::{backend::GPUResources, render_target::GPURenderTarget, world::UINodeRenderBuffers},
-    ui::{graphics::Graphic, node::UIItem},
-};
-
 use super::GPURenderPipeline;
+use crate::gpu::backend::GPUResources;
+use crate::gpu::world::UINodeRenderBuffers;
+use crate::prelude::UIItem;
+use crate::{gpu::render_target::GPURenderTarget, ui::graphics::Graphic};
 
 pub struct OrchestraRenderPipeline {
     pipeline: wgpu::RenderPipeline,
@@ -25,6 +24,80 @@ impl GPURenderPipeline for OrchestraRenderPipeline {
         render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.mesh_vertex_buffer.slice(..));
         render_pass.set_index_buffer(self.mesh_index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+    }
+
+    fn draw(
+        gpu_resources: &GPUResources,
+        render_target_size: Extent2<f32>,
+        texture: &Texture,
+        ui_tree: &mut dyn UIItem,
+        render_buffers: &mut UINodeRenderBuffers,
+    ) {
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let mut encoder =
+            gpu_resources
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("Command Encoder"),
+                });
+
+        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: None,
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color {
+                        r: 0.025,
+                        g: 0.025,
+                        b: 0.025,
+                        a: 1.0,
+                    }),
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        });
+
+        let quad_count = render_buffers.get_quad_count();
+
+        // TODO: Ponder on whether this is the best async way for flushing the uniforms.
+        // Like, I think I might need _more_ than a single set of uniforms for peak
+        // parallel rendering if I have multiple windows or multiple worlds.
+        gpu_resources.queue.write_buffer(
+            &gpu_resources.main_pipeline.uniform_buffer,
+            0,
+            bytemuck::cast_slice(&[Uniforms {
+                world_to_wgpu_mat: container_size_to_wgpu_mat(render_target_size),
+            }]),
+        );
+
+        ui_tree.write_quads(render_buffers.instance_buffer_cpu());
+        ui_tree.nested_predraw(gpu_resources, &mut render_pass, &texture);
+
+        if quad_count > 0 {
+            render_buffers.write_to_gpu(gpu_resources);
+            gpu_resources.queue.submit([]);
+
+            gpu_resources
+                .main_pipeline
+                .install_on_render_pass(&mut render_pass);
+            render_pass.set_vertex_buffer(1, render_buffers.instance_buffer());
+
+            render_pass.draw_indexed(
+                0..gpu_resources.main_pipeline.mesh_index_count as u32,
+                0,
+                0..quad_count as u32,
+            );
+        }
+
+        drop(render_pass);
+
+        gpu_resources
+            .queue
+            .submit(std::iter::once(encoder.finish()));
     }
 }
 
@@ -122,80 +195,6 @@ impl OrchestraRenderPipeline {
             uniform_buffer,
             uniform_bind_group,
         }
-    }
-
-    pub fn draw(
-        gpu_resources: &GPUResources,
-        render_target_size: Extent2<f32>,
-        texture: &Texture,
-        ui_tree: &mut dyn UIItem,
-        render_buffers: &mut UINodeRenderBuffers,
-    ) {
-        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let mut encoder =
-            gpu_resources
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: Some("Command Encoder"),
-                });
-
-        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: None,
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &view,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: 0.025,
-                        g: 0.025,
-                        b: 0.025,
-                        a: 1.0,
-                    }),
-                    store: wgpu::StoreOp::Store,
-                },
-            })],
-            depth_stencil_attachment: None,
-            timestamp_writes: None,
-            occlusion_query_set: None,
-        });
-
-        let quad_count = render_buffers.get_quad_count();
-
-        // TODO: Ponder on whether this is the best async way for flushing the uniforms.
-        // Like, I think I might need _more_ than a single set of uniforms for peak
-        // parallel rendering if I have multiple windows or multiple worlds.
-        gpu_resources.queue.write_buffer(
-            &gpu_resources.main_pipeline.uniform_buffer,
-            0,
-            bytemuck::cast_slice(&[Uniforms {
-                world_to_wgpu_mat: container_size_to_wgpu_mat(render_target_size),
-            }]),
-        );
-
-        ui_tree.write_quads(render_buffers.instance_buffer_cpu());
-        ui_tree.nested_predraw(gpu_resources, &mut render_pass, &texture);
-
-        if quad_count > 0 {
-            render_buffers.write_to_gpu(gpu_resources);
-            gpu_resources.queue.submit([]);
-
-            gpu_resources
-                .main_pipeline
-                .install_on_render_pass(&mut render_pass);
-            render_pass.set_vertex_buffer(1, render_buffers.instance_buffer());
-
-            render_pass.draw_indexed(
-                0..gpu_resources.main_pipeline.mesh_index_count as u32,
-                0,
-                0..quad_count as u32,
-            );
-        }
-
-        drop(render_pass);
-
-        gpu_resources
-            .queue
-            .submit(std::iter::once(encoder.finish()));
     }
 }
 

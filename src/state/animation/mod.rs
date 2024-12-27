@@ -1,5 +1,10 @@
 use crate::geometry::Vector;
+use crate::prelude::Editable;
+use futures_time::task;
 use futures_time::time::{Duration, Instant};
+use std::future::Future;
+
+pub mod spring;
 
 /// An alternative of [`Stream`] which is lossy
 /// for trying to keep up with an implicit flow of time.
@@ -24,6 +29,36 @@ pub trait RealTimeStream {
             stream_a: self,
             stream_b: other,
             stream_a_finished: None,
+        }
+    }
+
+    fn animate_state(mut self, state: Editable<Self::Item>) -> impl Future<Output = ()>
+    where
+        Self::Item: Copy,
+        Self: Sized,
+    {
+        let initial_value = state.get();
+        let start = Instant::now();
+        let mut last_frame = Instant::now();
+
+        async move {
+            loop {
+                let delta = last_frame.elapsed().into();
+                let poll = self.process_tick(initial_value, AnimationFrameParams { start, delta });
+
+                match poll {
+                    Poll::Ongoing(frame) => {
+                        last_frame = Instant::now();
+                        state.set(frame);
+                    }
+                    Poll::Finished(frame) => {
+                        state.set(frame);
+                        break;
+                    }
+                }
+
+                task::sleep(Duration::from_millis(16) - last_frame.elapsed().into()).await;
+            }
         }
     }
 }
