@@ -6,18 +6,15 @@ use ui_composer::prelude::*;
 
 fn main() {
     let flex = Flex(items!(
+        FlexItem(Square(Rgb::new(126.0, 46.0, 132.0) / 255.0), 0.0,),
         FlexItem(
-            Square(Rgb::new(255.0 / 255.0, 199.0 / 255.0, 95.0 / 255.0)),
-            0.0,
-        ),
-        FlexItem(
-            Square(Rgb::new(255.0 / 255.0, 111.0 / 255.0, 145.0 / 255.0)),
+            Column(
+                Square(Rgb::new(209.0, 64.0, 129.0) / 255.0),
+                Square(Rgb::new(249.0, 245.0, 227.0) / 255.0)
+            ),
             2.0,
         ),
-        FlexItem(
-            Square(Rgb::new(255.0 / 255.0, 199.0 / 255.0, 95.0 / 255.0)),
-            1.0,
-        ),
+        FlexItem(Square(Rgb::new(239.0, 121.0, 138.0) / 255.0), 1.0,),
     ));
 
     App::run(Window(flex).with_title("Flex Example"))
@@ -38,5 +35,5 @@ fn Square(color: Rgb<f32>) -> impl LayoutItem {
                 .process()
         )
     })
-    .with_minimum_size(Extent2::new(100.0, 600.0))
+    .with_minimum_size(Extent2::new(100.0, 300.0))
 }

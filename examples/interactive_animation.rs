@@ -8,12 +8,12 @@ fn main() {
     App::run(
         Window(Center(Row(
             Row(
-                SmoothSquare("A", Rgb::new(255.0, 172.0, 183.0) / 255.0),
-                SmoothSquare("B", Rgb::new(251.0, 200.0, 167.0) / 255.0),
+                SmoothSquare("A", Rgb::new(126.0, 46.0, 132.0) / 255.0),
+                SmoothSquare("B", Rgb::new(209.0, 64.0, 129.0) / 255.0),
             ),
             Row(
-                SmoothSquare("C", Rgb::new(93.0, 212.0, 223.0) / 255.0),
-                SmoothSquare("D", Rgb::new(255.0, 249.0, 245.0) / 255.0),
+                SmoothSquare("C", Rgb::new(239.0, 121.0, 138.0) / 255.0),
+                SmoothSquare("D", Rgb::new(249.0, 245.0, 227.0) / 255.0),
             ),
         )))
         .with_title("Interactive Animation"),
@@ -29,9 +29,7 @@ fn SmoothSquare(name: &'static str, color: Rgb<f32>) -> impl LayoutItem {
     Resizable::new(move |hx| {
         let is_hovered_state = is_hovered_state.clone();
         let mouse_position_state_anim = mouse_position_state.clone();
-        let mouse_position_state_effect = mouse_position_state.clone();
         let tap_state_anim = tap_state.clone();
-        let anim_state_tap = anim_state.clone();
 
         items!(
             Spring::if_then_else(is_hovered_state.signal(), anim_state.clone(), 50.0, 0.0)
