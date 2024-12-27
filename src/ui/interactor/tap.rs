@@ -1,7 +1,6 @@
 use super::Interactor;
+use crate::state::Editable;
 use crate::ui::node::{ItemDescriptor, UIEvent, UIItem};
-use futures::SinkExt;
-use futures_channel::mpsc::{Receiver, Sender};
 use std::{
     pin::Pin,
     task::{Context, Poll},
@@ -11,22 +10,21 @@ use vek::{Rect, Vec2};
 /// An Interactor that handles a user hovering over it with a cursor.
 pub struct Tap {
     rect: Rect<f32, f32>,
-    mouse_position: Vec2<f32>,
-    tap_channel: Sender<Vec2<f32>>,
+    mouse_position_state: Editable<Option<Vec2<f32>>>,
+    tap_state: Editable<Option<()>>,
 }
 
 impl Tap {
-    pub fn new(rect: Rect<f32, f32>) -> (Self, Receiver<Vec2<f32>>) {
-        let (tap_channel, tap_receiver) = futures_channel::mpsc::channel(0);
-
-        (
-            Self {
-                rect,
-                mouse_position: Vec2::zero(),
-                tap_channel,
-            },
-            tap_receiver,
-        )
+    pub fn new(
+        rect: Rect<f32, f32>,
+        mouse_position_state: Editable<Option<Vec2<f32>>>,
+        tap_state: Editable<Option<()>>,
+    ) -> Self {
+        Self {
+            rect,
+            mouse_position_state,
+            tap_state,
+        }
     }
 }
 
@@ -45,7 +43,8 @@ impl UIItem for Tap {
                 device_id: _,
                 position,
             } => {
-                self.mouse_position = Vec2::new(position.x, position.y).as_();
+                self.mouse_position_state
+                    .set(Some(Vec2::new(position.x, position.y).as_()));
                 false
             }
             UIEvent::MouseInput {
@@ -54,9 +53,13 @@ impl UIItem for Tap {
                 button,
             } => match (button, state) {
                 (winit::event::MouseButton::Left, winit::event::ElementState::Pressed) => {
-                    if (self.rect.contains_point(self.mouse_position)) {
-                        pollster::block_on(self.tap_channel.send(self.mouse_position));
-                        true
+                    if let Some(mouse_position) = self.mouse_position_state.get() {
+                        if (self.rect.contains_point(mouse_position)) {
+                            self.tap_state.set(Some(()));
+                            true
+                        } else {
+                            false
+                        }
                     } else {
                         false
                     }
