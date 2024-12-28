@@ -1,3 +1,4 @@
+use crate::gpu::backend::Pipelines;
 use crate::state::signal_ext::coalesce_polls;
 use crate::{gpu::backend::GPUResources, ui::graphics::Graphic};
 use std::{
@@ -24,9 +25,10 @@ pub trait UIItem: Send {
     fn write_quads(&self, quad_buffer: &mut [Graphic]);
 
     #[inline(always)]
-    fn nested_predraw<'pass>(
+    fn prepare<'pass>(
         &'pass mut self,
         gpu_resources: &'pass GPUResources,
+        pipelines: &'pass Pipelines,
         render_pass: &mut RenderPass<'pass>,
         texture: &Texture,
     ) {
@@ -59,12 +61,12 @@ impl UIItem for () {
         /* No quads to write */
     }
 
-    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
-        Poll::Ready(Some(()))
-    }
-
     fn get_quad_count(&self) -> usize {
         Self::QUAD_COUNT
+    }
+
+    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+        Poll::Ready(Some(()))
     }
 }
 
@@ -97,16 +99,22 @@ where
         }
     }
 
-    fn nested_predraw<'pass>(
+    fn prepare<'pass>(
         &'pass mut self,
         gpu_resources: &'pass GPUResources,
+        pipelines: &'pass Pipelines,
+
         render_pass: &mut RenderPass<'pass>,
         texture: &Texture,
     ) {
         match self {
-            Some(inner) => inner.nested_predraw(gpu_resources, render_pass, texture),
+            Some(inner) => inner.prepare(gpu_resources, pipelines, render_pass, texture),
             None => {}
         }
+    }
+
+    fn get_quad_count(&self) -> usize {
+        Self::QUAD_COUNT
     }
 
     fn poll_processors(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
@@ -114,10 +122,6 @@ where
         self.as_pin_mut()
             .map(|inner| inner.poll_processors(cx))
             .unwrap_or(Poll::Ready(Some(())))
-    }
-
-    fn get_quad_count(&self) -> usize {
-        Self::QUAD_COUNT
     }
 }
 
@@ -151,16 +155,22 @@ where
         }
     }
 
-    fn nested_predraw<'pass>(
+    fn prepare<'pass>(
         &'pass mut self,
         gpu_resources: &'pass GPUResources,
+        pipelines: &'pass Pipelines,
+
         render_pass: &mut RenderPass<'pass>,
         texture: &Texture,
     ) {
         match self {
-            Ok(v) => v.nested_predraw(gpu_resources, render_pass, texture),
-            Err(e) => e.nested_predraw(gpu_resources, render_pass, texture),
+            Ok(v) => v.prepare(gpu_resources, pipelines, render_pass, texture),
+            Err(e) => e.prepare(gpu_resources, pipelines, render_pass, texture),
         }
+    }
+
+    fn get_quad_count(&self) -> usize {
+        Self::QUAD_COUNT
     }
 
     fn poll_processors(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
@@ -170,10 +180,6 @@ where
         //     Err(e) => todo!(),
         // }
         unimplemented!()
-    }
-
-    fn get_quad_count(&self) -> usize {
-        Self::QUAD_COUNT
     }
 }
 
@@ -204,24 +210,26 @@ where
         self.as_ref().write_quads(quad_buffer)
     }
 
-    fn nested_predraw<'pass>(
+    fn prepare<'pass>(
         &'pass mut self,
         gpu_resources: &'pass GPUResources,
+        pipelines: &'pass Pipelines,
+
         render_pass: &mut RenderPass<'pass>,
         texture: &Texture,
     ) {
         self.as_mut()
-            .nested_predraw(gpu_resources, render_pass, texture)
+            .prepare(gpu_resources, pipelines, render_pass, texture)
+    }
+
+    fn get_quad_count(&self) -> usize {
+        Self::QUAD_COUNT
     }
 
     fn poll_processors(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         // TODO: Why is this unsafe?
         let inner = unsafe { self.as_mut().map_unchecked_mut(|v| &mut **v) };
         inner.poll_processors(cx)
-    }
-
-    fn get_quad_count(&self) -> usize {
-        Self::QUAD_COUNT
     }
 }
 
@@ -254,14 +262,22 @@ where
         self.1.write_quads(slice_b);
     }
 
-    fn nested_predraw<'pass>(
+    fn prepare<'pass>(
         &'pass mut self,
         gpu_resources: &'pass GPUResources,
+        pipelines: &'pass Pipelines,
+
         render_pass: &mut RenderPass<'pass>,
         texture: &Texture,
     ) {
-        self.0.nested_predraw(gpu_resources, render_pass, texture);
-        self.1.nested_predraw(gpu_resources, render_pass, texture);
+        self.0
+            .prepare(gpu_resources, pipelines, render_pass, texture);
+        self.1
+            .prepare(gpu_resources, pipelines, render_pass, texture);
+    }
+
+    fn get_quad_count(&self) -> usize {
+        Self::QUAD_COUNT
     }
 
     fn poll_processors(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
@@ -279,10 +295,6 @@ where
         let poll_b = pinned_b.poll_processors(cx);
 
         coalesce_polls(poll_a, poll_b)
-    }
-
-    fn get_quad_count(&self) -> usize {
-        Self::QUAD_COUNT
     }
 }
 
@@ -334,15 +346,17 @@ impl<A: ItemDescriptor, const N: usize> UIItem for SizedVec<A, N> {
         }
     }
 
-    fn nested_predraw<'pass>(
+    fn prepare<'pass>(
         &'pass mut self,
         gpu_resources: &'pass GPUResources,
+        pipelines: &'pass Pipelines,
+
         render_pass: &mut RenderPass<'pass>,
         texture: &Texture,
     ) {
         self.inner
             .iter_mut()
-            .for_each(|item| item.nested_predraw(gpu_resources, render_pass, texture));
+            .for_each(|item| item.prepare(gpu_resources, pipelines, render_pass, texture));
     }
 
     fn get_quad_count(&self) -> usize {

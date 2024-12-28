@@ -7,11 +7,11 @@ use serde::Deserialize;
 use ui_composer::prelude::*;
 
 fn main() {
-    App::run(Window(Center(Row(Main(), Main()))).with_title("Futures"));
+    UIComposer::run(Window(Center(Row(Main(), Main()))).with_title("Futures"));
 }
 
 fn Main() -> impl LayoutItem {
-    let person_state: Editable<Option<Person>> = Editable::new(None);
+    let person_state: Mutable<Option<Person>> = Mutable::new(None);
 
     let person_state_ = person_state.clone();
     let person_fut = async_std::fs::read_to_string("./examples/futures/data.json")
@@ -22,7 +22,7 @@ fn Main() -> impl LayoutItem {
 
     std::thread::spawn(move || pollster::block_on(person_fut));
 
-    Resizable::new(move |hx| {
+    ResizableItem::new(move |hx| {
         let person_square = person_state
             .signal_cloned()
             .map(move |person_opt| {

@@ -1,6 +1,7 @@
 use super::BaseNum;
 use super::{Extent2, Extent3, Mat4, Rect, Vec2, Vec3};
 use crate::prelude::Graphic;
+use vek::Vec4;
 
 pub trait RectExt {
     type Num: BaseNum;
@@ -80,6 +81,7 @@ where
                 .scaled_3d(Extent3::new(self.extent().w, self.extent().h, T::one()))
                 .translated_2d(self.position()),
             color,
+            corner_radii: Vec4::zero(),
         }
     }
 }

@@ -1,4 +1,8 @@
+use super::{
+    pipeline::orchestra_render_pipeline::OrchestraRenderPipeline, window::WindowRenderTarget,
+};
 use crate::backend::Backend;
+use crate::gpu::pipeline::text_pipeline::TextRenderPipeline;
 use crate::ui::node::UIEvent;
 use futures::StreamExt;
 use futures_signals::signal::{Signal, SignalExt};
@@ -17,10 +21,6 @@ use winit::{
     window::{WindowAttributes, WindowId},
 };
 
-use super::{
-    pipeline::orchestra_render_pipeline::OrchestraRenderPipeline, window::WindowRenderTarget,
-};
-
 /// The collection of resources the GPU backends use to
 /// interact with the GPU.
 pub struct GPUResources {
@@ -28,8 +28,14 @@ pub struct GPUResources {
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
     pub adapter: wgpu::Adapter,
+}
 
-    pub main_pipeline: OrchestraRenderPipeline,
+/// The struct containing all the different renderers that
+/// composite the scene together.
+/// TODO: Make this variadic, generic.
+pub struct Pipelines {
+    pub graphics_pipeline: OrchestraRenderPipeline,
+    pub text_pipeline: TextRenderPipeline,
 }
 
 /// The [`ApplicationHandler`] that sits between [`winit`]
@@ -57,6 +63,7 @@ pub struct WinitWGPUBackend<Nd: Node> {
     #[pin]
     pub node_tree: Arc<Mutex<Nd::ReifiedType>>,
     pub gpu_resources: GPUResources,
+    pub pipelines: Pipelines,
 }
 
 impl<Nd: Node + 'static> Backend for WinitWGPUBackend<Nd> {
@@ -77,10 +84,7 @@ impl<Nd: Node + 'static> Backend for WinitWGPUBackend<Nd> {
     }
 
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
-        let UIEngineProj {
-            node_tree,
-            gpu_resources,
-        } = self.project();
+        let UIEngineProj { node_tree, .. } = self.project();
 
         let mut engine_tree = node_tree.lock().expect("Failed to lock tree for polling");
         let engine_tree = engine_tree.deref_mut();
@@ -183,30 +187,44 @@ impl<Nd: Node + Send + 'static> WinitBackend for WinitWGPUBackend<Nd> {
 
         // TODO: Get the texture format from a render target and not guess it.
         let dummy_format = TextureFormat::Bgra8UnormSrgb; //;get_dummy_texture_format(event_loop, &instance, &device, &adapter);
-        let main_pipeline = OrchestraRenderPipeline::singleton::<WindowRenderTarget>(
+
+        let render_target_formats = &[Some(wgpu::ColorTargetState {
+            format: dummy_format,
+            blend: Some(wgpu::BlendState {
+                color: wgpu::BlendComponent {
+                    src_factor: wgpu::BlendFactor::SrcAlpha,
+                    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                    operation: wgpu::BlendOperation::Add,
+                },
+                alpha: wgpu::BlendComponent::OVER,
+            }),
+            write_mask: wgpu::ColorWrites::ALL,
+        })];
+
+        let graphics_pipeline = OrchestraRenderPipeline::singleton::<WindowRenderTarget>(
             &adapter,
             &device,
             &queue,
-            &[Some(wgpu::ColorTargetState {
-                format: dummy_format,
-                blend: Some(wgpu::BlendState {
-                    color: wgpu::BlendComponent {
-                        src_factor: wgpu::BlendFactor::SrcAlpha,
-                        dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                        operation: wgpu::BlendOperation::Add,
-                    },
-                    alpha: wgpu::BlendComponent::OVER,
-                }),
-                write_mask: wgpu::ColorWrites::ALL,
-            })],
+            render_target_formats,
         );
+
+        let text_pipeline = TextRenderPipeline::singleton::<WindowRenderTarget>(
+            &adapter,
+            &device,
+            &queue,
+            render_target_formats,
+        );
+
+        let pipelines = Pipelines {
+            graphics_pipeline,
+            text_pipeline,
+        };
 
         let gpu_resources = GPUResources {
             instance,
             device,
             queue,
             adapter,
-            main_pipeline,
         };
 
         let node_tree = tree_descriptor.reify(event_loop, &gpu_resources);
@@ -214,6 +232,7 @@ impl<Nd: Node + Send + 'static> WinitBackend for WinitWGPUBackend<Nd> {
         let mut backend = Self {
             node_tree: Arc::new(Mutex::new(node_tree)),
             gpu_resources,
+            pipelines,
         };
 
         // This render engine will be shared between your application (so that it can receive OS events)
@@ -246,9 +265,12 @@ impl<Nd: Node + Send + 'static> WinitBackend for WinitWGPUBackend<Nd> {
     /// Forwards window events for the engine tree to process.
     fn handle_window_event(&mut self, window_id: WindowId, event: UIEvent) {
         match self.node_tree.lock() {
-            Ok(mut engine_tree) => {
-                engine_tree.handle_window_event(&self.gpu_resources, window_id, event)
-            }
+            Ok(mut engine_tree) => engine_tree.handle_window_event(
+                &mut self.gpu_resources,
+                &mut self.pipelines,
+                window_id,
+                event,
+            ),
             Err(_) => unimplemented!("Could not unlock mutex for handling event!"),
         };
     }
@@ -270,7 +292,8 @@ pub trait RNode: Send {
     /// Handles an event and cascades it down its children.
     fn handle_window_event(
         &mut self,
-        gpu_resources: &GPUResources,
+        gpu_resources: &mut GPUResources,
+        pipelines: &mut Pipelines,
         window_id: WindowId,
         event: UIEvent,
     );
@@ -314,14 +337,17 @@ where
 
     fn handle_window_event(
         &mut self,
-        gpu_resources: &GPUResources,
+        gpu_resources: &mut GPUResources,
+        pipelines: &mut Pipelines,
         window_id: WindowId,
         event: UIEvent,
     ) {
-        let a_handled = self
-            .0
-            .handle_window_event(gpu_resources, window_id, event.clone());
-        let b_handled = self.1.handle_window_event(gpu_resources, window_id, event);
+        let a_handled =
+            self.0
+                .handle_window_event(gpu_resources, pipelines, window_id, event.clone());
+        let b_handled = self
+            .1
+            .handle_window_event(gpu_resources, pipelines, window_id, event);
     }
 
     fn poll_processors(

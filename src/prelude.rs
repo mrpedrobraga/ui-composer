@@ -1,4 +1,4 @@
-pub use crate::app::App;
+pub use crate::app::UIComposer;
 pub use crate::components::*;
 pub use crate::geometry::*;
 pub use crate::gpu::backend::Node;

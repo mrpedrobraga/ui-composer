@@ -1,5 +1,5 @@
 use crate::geometry::Vector;
-use crate::prelude::Editable;
+use crate::prelude::Mutable;
 use futures_time::task;
 use futures_time::time::{Duration, Instant};
 use std::future::Future;
@@ -32,7 +32,7 @@ pub trait RealTimeStream {
         }
     }
 
-    fn animate_state(mut self, state: Editable<Self::Item>) -> impl Future<Output = ()>
+    fn animate_state(mut self, state: Mutable<Self::Item>) -> impl Future<Output = ()>
     where
         Self::Item: Copy,
         Self: Sized,

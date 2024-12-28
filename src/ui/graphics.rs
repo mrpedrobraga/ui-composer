@@ -14,6 +14,7 @@ use super::node::{ItemDescriptor, UIItem};
 pub struct Graphic {
     pub transform: Mat4<f32>,
     pub color: Rgb<f32>,
+    pub corner_radii: Vec4<f32>,
 }
 
 impl Graphic {
@@ -23,6 +24,7 @@ impl Graphic {
                 .scaled_3d(Extent3::new(rect.extent().w, rect.extent().h, 1.0))
                 .translated_2d(rect.position()),
             color,
+            corner_radii: Vec4::zero(),
         }
     }
 
@@ -37,6 +39,14 @@ impl Graphic {
             ..self
         }
     }
+
+    /// Returns this graphic rotated by some angle.
+    pub fn with_corner_radii(self, corner_radii: Vec4<f32>) -> Self {
+        Self {
+            corner_radii,
+            ..self
+        }
+    }
 }
 
 impl Default for Graphic {
@@ -44,6 +54,7 @@ impl Default for Graphic {
         Graphic {
             transform: Default::default(),
             color: Default::default(),
+            corner_radii: Default::default(),
         }
     }
 }
@@ -57,12 +68,12 @@ impl UIItem for Graphic {
         quad_buffer[0] = *self;
     }
 
-    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
-        Poll::Ready(Some(()))
-    }
-
     fn get_quad_count(&self) -> usize {
         Self::QUAD_COUNT
+    }
+
+    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+        Poll::Ready(Some(()))
     }
 }
 

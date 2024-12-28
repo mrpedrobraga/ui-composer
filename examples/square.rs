@@ -1,9 +1,9 @@
 #![allow(non_snake_case)]
 use itertools::Itertools as _;
-use ui_composer::{app::App, items, prelude::*, ui::node::SizedVec};
+use ui_composer::{app::UIComposer, items, prelude::*, ui::node::SizedVec};
 
 pub fn main() {
-    App::run(Window(Squares()));
+    UIComposer::run(Window(Squares()));
 }
 
 fn grid_range(width: i32, height: i32) -> impl Iterator<Item = (f32, f32)> {
@@ -14,10 +14,10 @@ fn grid_range(width: i32, height: i32) -> impl Iterator<Item = (f32, f32)> {
 
 pub fn Squares() -> impl LayoutItem {
     Center(
-        Resizable::new(move |hx| {
+        ResizableItem::new(move |hx| {
             grid_range(10, 10)
                 .map(|(x, y)| {
-                    let is_hovered_state = Editable::new(false);
+                    let is_hovered_state = Mutable::new(false);
                     let rect = Rect::new(hx.rect.x + 32.0 * x, hx.rect.y + 32.0 * y, 32.0, 32.0);
                     let color = Rgb::new(x / 10.0, y / 10.0, 0.0);
                     let hover_area = Hover::new(rect, is_hovered_state.clone());

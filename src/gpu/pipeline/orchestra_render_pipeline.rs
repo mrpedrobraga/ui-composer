@@ -1,73 +1,43 @@
 use bytemuck::{Pod, Zeroable};
 use std::mem::size_of;
 use vek::{Extent2, Mat4, Vec2, Vec3};
-use wgpu::{util::DeviceExt as _, BufferAddress, BufferUsages, ColorTargetState, Texture};
+use wgpu::{
+    util::DeviceExt as _, BufferAddress, BufferUsages, ColorTargetState, RenderPass, Texture,
+};
 
 use super::GPURenderPipeline;
-use crate::gpu::backend::GPUResources;
+use crate::gpu::backend::{GPUResources, Pipelines};
 use crate::gpu::world::UINodeRenderBuffers;
 use crate::prelude::UIItem;
 use crate::{gpu::render_target::GPURenderTarget, ui::graphics::Graphic};
 
 pub struct OrchestraRenderPipeline {
-    pipeline: wgpu::RenderPipeline,
+    pub(crate) pipeline: wgpu::RenderPipeline,
     pub mesh_vertex_buffer: wgpu::Buffer,
     pub mesh_index_buffer: wgpu::Buffer,
     pub mesh_index_count: usize,
     pub uniform_buffer: wgpu::Buffer,
-    uniform_bind_group: wgpu::BindGroup,
+    pub(crate) uniform_bind_group: wgpu::BindGroup,
 }
 
 impl GPURenderPipeline for OrchestraRenderPipeline {
-    fn install_on_render_pass<'pass>(&'pass self, render_pass: &mut wgpu::RenderPass<'pass>) {
-        render_pass.set_pipeline(&self.pipeline);
-        render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
-        render_pass.set_vertex_buffer(0, self.mesh_vertex_buffer.slice(..));
-        render_pass.set_index_buffer(self.mesh_index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-    }
-
     fn draw(
-        gpu_resources: &GPUResources,
+        gpu_resources: &mut GPUResources,
+        pipelines: &mut Pipelines,
         render_target_size: Extent2<f32>,
         texture: &Texture,
+        render_pass: &mut RenderPass,
         ui_tree: &mut dyn UIItem,
         render_buffers: &mut UINodeRenderBuffers,
     ) {
-        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let mut encoder =
-            gpu_resources
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: Some("Command Encoder"),
-                });
-
-        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: None,
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &view,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: 0.025,
-                        g: 0.025,
-                        b: 0.025,
-                        a: 1.0,
-                    }),
-                    store: wgpu::StoreOp::Store,
-                },
-            })],
-            depth_stencil_attachment: None,
-            timestamp_writes: None,
-            occlusion_query_set: None,
-        });
-
+        let this = &mut pipelines.graphics_pipeline;
         let quad_count = render_buffers.get_quad_count();
 
         // TODO: Ponder on whether this is the best async way for flushing the uniforms.
         // Like, I think I might need _more_ than a single set of uniforms for peak
         // parallel rendering if I have multiple windows or multiple worlds.
         gpu_resources.queue.write_buffer(
-            &gpu_resources.main_pipeline.uniform_buffer,
+            &this.uniform_buffer,
             0,
             bytemuck::cast_slice(&[Uniforms {
                 world_to_wgpu_mat: container_size_to_wgpu_mat(render_target_size),
@@ -75,29 +45,21 @@ impl GPURenderPipeline for OrchestraRenderPipeline {
         );
 
         ui_tree.write_quads(render_buffers.instance_buffer_cpu());
-        ui_tree.nested_predraw(gpu_resources, &mut render_pass, &texture);
+        //ui_tree.prepare(gpu_resources, pipelines, render_pass, &texture);
 
         if quad_count > 0 {
             render_buffers.write_to_gpu(gpu_resources);
             gpu_resources.queue.submit([]);
 
-            gpu_resources
-                .main_pipeline
-                .install_on_render_pass(&mut render_pass);
+            render_pass.set_pipeline(&this.pipeline);
+            render_pass.set_bind_group(0, &this.uniform_bind_group, &[]);
+            render_pass.set_vertex_buffer(0, this.mesh_vertex_buffer.slice(..));
+            render_pass
+                .set_index_buffer(this.mesh_index_buffer.slice(..), wgpu::IndexFormat::Uint32);
             render_pass.set_vertex_buffer(1, render_buffers.instance_buffer());
 
-            render_pass.draw_indexed(
-                0..gpu_resources.main_pipeline.mesh_index_count as u32,
-                0,
-                0..quad_count as u32,
-            );
+            render_pass.draw_indexed(0..this.mesh_index_count as u32, 0, 0..quad_count as u32);
         }
-
-        drop(render_pass);
-
-        gpu_resources
-            .queue
-            .submit(std::iter::once(encoder.finish()));
     }
 }
 
@@ -204,6 +166,7 @@ impl Graphic {
             array_stride: std::mem::size_of::<Self>() as BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
             attributes: &[
+                // transformation matrices
                 wgpu::VertexAttribute {
                     offset: 0,
                     shader_location: 5,
@@ -224,10 +187,17 @@ impl Graphic {
                     shader_location: 8,
                     format: wgpu::VertexFormat::Float32x4,
                 },
+                // color
                 wgpu::VertexAttribute {
                     offset: size_of::<[[f32; 4]; 4]>() as BufferAddress,
                     shader_location: 9,
                     format: wgpu::VertexFormat::Float32x3,
+                },
+                // corner radii
+                wgpu::VertexAttribute {
+                    offset: (size_of::<[[f32; 4]; 4]>() + size_of::<[f32; 3]>()) as BufferAddress,
+                    shader_location: 10,
+                    format: wgpu::VertexFormat::Float32x4,
                 },
             ],
         }
@@ -257,7 +227,6 @@ pub fn container_size_to_wgpu_mat(Extent2 { w, h }: Extent2<f32>) -> Mat4<f32> {
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
 struct Vertex {
     position: [f32; 3],
-    color: [f32; 3],
 }
 
 impl Vertex {
@@ -265,18 +234,11 @@ impl Vertex {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Self>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &[
-                wgpu::VertexAttribute {
-                    offset: 0,
-                    shader_location: 0,
-                    format: wgpu::VertexFormat::Float32x3,
-                },
-                wgpu::VertexAttribute {
-                    offset: std::mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
-                    shader_location: 1,
-                    format: wgpu::VertexFormat::Float32x3,
-                },
-            ],
+            attributes: &[wgpu::VertexAttribute {
+                offset: 0,
+                shader_location: 0,
+                format: wgpu::VertexFormat::Float32x3,
+            }],
         }
     }
 }
@@ -297,19 +259,15 @@ const fn quad_mesh() -> ([Vertex; 4], [u32; 6]) {
         [
             Vertex {
                 position: [0.0, 0.0, 0.0],
-                color: [1.0, 0.0, 0.0],
             },
             Vertex {
                 position: [1.0, 0.0, 0.0],
-                color: [1.0, 1.0, 0.0],
             },
             Vertex {
                 position: [1.0, 1.0, 0.0],
-                color: [0.0, 1.0, 0.0],
             },
             Vertex {
                 position: [0.0, 1.0, 0.0],
-                color: [0.5, 0.5, 0.5],
             },
         ],
         [0, 1, 2, 2, 3, 0],

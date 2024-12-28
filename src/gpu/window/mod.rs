@@ -1,13 +1,3 @@
-use std::{
-    mem::size_of,
-    ops::DerefMut,
-    pin::Pin,
-    process::ExitCode,
-    sync::Arc,
-    task::{Context, Poll},
-    time::Instant,
-};
-
 use super::{
     backend::{GPUResources, Node, RNode},
     pipeline::{
@@ -20,15 +10,28 @@ use super::{
     view::{View, ViewNode},
     world::UINodeRenderBuffers,
 };
+use crate::gpu::backend::Pipelines;
+use crate::gpu::pipeline::text_pipeline::TextRenderPipeline;
+use crate::prelude::flow::CartesianFlowDirection;
 use crate::state::process::{SignalProcessor, UISignalExt};
+use crate::state::Mutable;
 use crate::ui::{
     graphics::Graphic,
     layout::{LayoutItem, ParentHints},
     node::{ItemDescriptor, UIItem},
 };
-use futures_signals::signal::{Mutable, Signal, SignalExt};
+use futures_signals::signal::{Signal, SignalExt};
 use pin_project::pin_project;
-use vek::{Extent2, Rect, Rgb};
+use std::{
+    mem::size_of,
+    ops::DerefMut,
+    pin::Pin,
+    process::ExitCode,
+    sync::Arc,
+    task::{Context, Poll},
+    time::Instant,
+};
+use vek::{Extent2, Rect, Rgb, Vec2};
 use wgpu::{
     core::device::queue, BufferUsages, RenderPass, Surface, SurfaceConfiguration, TextureFormat,
     TextureView,
@@ -51,14 +54,12 @@ pub struct WindowNodeDescriptor<T: ItemDescriptor> {
 impl<T: ItemDescriptor> WindowNodeDescriptor<T> {
     /// Consumes this window node and returns a new one with the set title.
     pub fn with_title<Str: Into<String>>(self, title: Str) -> WindowNodeDescriptor<T> {
-        let WindowNodeState { title: _, size } = self.state;
-
         WindowNodeDescriptor {
             state: WindowNodeState {
                 title: Mutable::new(title.into()),
-                size,
+                ..self.state
             },
-            content: self.content,
+            ..self
         }
     }
 
@@ -68,14 +69,12 @@ impl<T: ItemDescriptor> WindowNodeDescriptor<T> {
         self,
         title_signal: Mutable<String>,
     ) -> WindowNodeDescriptor<T> {
-        let WindowNodeState { title, size } = self.state;
-
         WindowNodeDescriptor {
             state: WindowNodeState {
                 title: title_signal,
-                size,
+                ..self.state
             },
-            content: self.content,
+            ..self
         }
     }
 }
@@ -89,16 +88,24 @@ where
     let state = WindowNodeState {
         size: Mutable::new(item.get_natural_size()),
         title: Mutable::new(String::new()),
+        mouse_position: Mutable::new(None),
     };
 
     let window_size_signal = state.size.signal();
     let minimum_size = item.get_natural_size();
+
+    // Right now items resize exclusively through their parent hints.
     let item = state
         .size
         .signal()
         .map(move |window_size| {
             item.lay(ParentHints {
                 rect: Rect::new(0.0, 0.0, window_size.w, window_size.h),
+                // TODO: Allow configuring this from the locale/user settings.
+                current_flow_direction: CartesianFlowDirection::LeftToRight,
+                current_cross_flow_direction: CartesianFlowDirection::TopToBottom,
+                current_writing_flow_direction: CartesianFlowDirection::LeftToRight,
+                current_writing_cross_flow_direction: CartesianFlowDirection::TopToBottom,
             })
         })
         .process();
@@ -163,12 +170,14 @@ pub struct WindowAttributes<TitleSignal: Signal<Item = String>> {
 pub struct WindowNodeState {
     pub title: Mutable<String>,
     pub size: Mutable<Extent2<f32>>,
+    pub mouse_position: Mutable<Option<Vec2<f32>>>,
 }
 
 fn new_window_state(window_size: Extent2<f32>) -> WindowNodeState {
     WindowNodeState {
         size: Mutable::new(window_size),
         title: Mutable::new(String::new()),
+        mouse_position: Mutable::new(None),
     }
 }
 
@@ -188,7 +197,8 @@ impl<'window> RNode for WindowNode {
 
     fn handle_window_event(
         &mut self,
-        gpu_resources: &GPUResources,
+        gpu_resources: &mut GPUResources,
+        pipelines: &mut Pipelines,
         window_id: WindowId,
         event: crate::ui::node::UIEvent,
     ) {
@@ -208,12 +218,12 @@ impl<'window> RNode for WindowNode {
                     );
                     // Close request shouldn't be handled by the window, but by a "WindowManager" node of some sorts.
                     // The window is then closed by having all references to it dropped.
-                    // Of cours the WindowManager needs to know if the window *can* be closed - if there's any process impeding it from closing,
+                    // Of course the WindowManager needs to know if the window *can* be closed - if there's any process impeding it from closing,
                     // but that's a different story.
                     std::process::exit(0);
                 }
                 WindowEvent::RedrawRequested => {
-                    self.redraw(gpu_resources);
+                    self.redraw(gpu_resources, pipelines);
                 }
                 _ => (),
             }
@@ -248,9 +258,10 @@ impl<'window> RNode for WindowNode {
 }
 
 impl WindowNode {
-    fn redraw(&mut self, gpu_resources: &GPUResources) {
+    fn redraw(&mut self, gpu_resources: &mut GPUResources, pipelines: &mut Pipelines) {
         self.render_target.draw(
             gpu_resources,
+            pipelines,
             self.content.as_mut(),
             &mut self.content_buffers,
         );
@@ -292,7 +303,8 @@ impl GPURenderTarget for WindowRenderTarget {
 
     fn draw(
         &mut self,
-        gpu_resources: &GPUResources,
+        gpu_resources: &mut GPUResources,
+        pipelines: &mut Pipelines,
         content: &mut dyn UIItem,
         render_buffers: &mut UINodeRenderBuffers,
     ) {
@@ -301,14 +313,62 @@ impl GPURenderTarget for WindowRenderTarget {
             .get_current_texture()
             .expect("Error retrieving the current texture.");
 
+        let view = texture
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+
+        let mut encoder =
+            gpu_resources
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("Command Encoder"),
+                });
+
+        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: None,
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color {
+                        r: 0.015,
+                        g: 0.015,
+                        b: 0.015,
+                        a: 1.0,
+                    }),
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        });
+
         OrchestraRenderPipeline::draw(
             gpu_resources,
+            pipelines,
             self.size.as_(),
             &texture.texture,
+            &mut render_pass,
             content,
             render_buffers,
         );
 
+        TextRenderPipeline::draw(
+            gpu_resources,
+            pipelines,
+            self.size.as_(),
+            &texture.texture,
+            &mut render_pass,
+            content,
+            render_buffers,
+        );
+
+        drop(render_pass);
+
+        gpu_resources
+            .queue
+            .submit(std::iter::once(encoder.finish()));
         texture.present();
     }
 

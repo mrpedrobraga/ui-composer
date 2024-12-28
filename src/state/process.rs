@@ -4,7 +4,7 @@ use std::future::Future;
 use std::{pin::Pin, task::Poll};
 use wgpu::{RenderPass, Texture};
 
-use crate::gpu::backend::GPUResources;
+use crate::gpu::backend::{GPUResources, Pipelines};
 use crate::ui::node::UIEvent;
 use crate::ui::node::{ItemDescriptor, UIItem};
 
@@ -92,14 +92,15 @@ where
         }
     }
 
-    fn nested_predraw<'pass>(
+    fn prepare<'pass>(
         &'pass mut self,
         gpu_resources: &'pass GPUResources,
+        pipelines: &'pass Pipelines,
         render_pass: &mut RenderPass<'pass>,
         texture: &Texture,
     ) {
         match &mut self.signal.held_item {
-            Some(item) => item.nested_predraw(gpu_resources, render_pass, texture),
+            Some(item) => item.prepare(gpu_resources, pipelines, render_pass, texture),
             None => panic!("Reactor was drawn without being polled first!"),
         }
     }
@@ -228,14 +229,15 @@ where
         }
     }
 
-    fn nested_predraw<'pass>(
+    fn prepare<'pass>(
         &'pass mut self,
         gpu_resources: &'pass GPUResources,
+        pipelines: &'pass Pipelines,
         render_pass: &mut RenderPass<'pass>,
         texture: &Texture,
     ) {
         match &mut self.signal.held_item {
-            Some(item) => item.nested_predraw(gpu_resources, render_pass, texture),
+            Some(item) => item.prepare(gpu_resources, pipelines, render_pass, texture),
             None => (),
         }
     }

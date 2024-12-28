@@ -1,14 +1,47 @@
 use super::node::{ItemDescriptor, UIItem};
+use crate::prelude::flow::CartesianFlowDirection;
 use crate::state::process::{SignalProcessor, UISignalExt};
 use futures_signals::signal::{Signal, SignalExt};
-use vek::{Extent2, Rect};
+use vek::{Extent2, Mat3, Rect, Vec2};
 
 pub mod flow;
 pub mod functions;
 
+pub use flow::CoordinateSystemProvider;
+
 #[derive(Debug, Clone, Copy)]
 pub struct ParentHints {
     pub rect: Rect<f32, f32>,
+    pub current_flow_direction: CartesianFlowDirection,
+    pub current_cross_flow_direction: CartesianFlowDirection,
+    pub current_writing_flow_direction: CartesianFlowDirection,
+    pub current_writing_cross_flow_direction: CartesianFlowDirection,
+}
+
+impl ParentHints {
+    pub fn writing_axis(&self) -> Vec2<f32> {
+        self.current_writing_flow_direction.get_axis(self)
+    }
+
+    pub fn writing_cross_axis(&self) -> Vec2<f32> {
+        self.current_writing_cross_flow_direction.get_axis(self)
+    }
+
+    pub fn writing_origin(&self) -> Vec2<f32> {
+        self.current_writing_flow_direction.get_origin(self)
+    }
+
+    pub fn writing_cross_origin(&self) -> Vec2<f32> {
+        self.current_writing_cross_flow_direction.get_origin(self)
+    }
+
+    pub fn writing_coordinate_system(&self) -> Mat3<f32> {
+        let wo = self.writing_origin();
+        let wx = self.writing_axis();
+        let wy = self.writing_cross_axis();
+
+        Mat3::new(wx.x, wx.y, 0.0, wy.x, wy.y, 0.0, wo.x, wo.y, 1.0)
+    }
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -35,6 +68,7 @@ pub trait LayoutItem: Send {
     fn lay_reactive<S>(
         mut self,
         size_signal: S,
+        parent_hints: ParentHints,
     ) -> SignalProcessor<impl Signal<Item = Self::UINodeType>, Self::UINodeType>
     where
         S: Signal<Item = Extent2<f32>> + Send,
@@ -44,13 +78,14 @@ pub trait LayoutItem: Send {
             .map(move |new_size| {
                 self.lay(ParentHints {
                     rect: Rect::new(0.0, 0.0, new_size.w, new_size.h),
+                    ..parent_hints
                 })
             })
             .process()
     }
 }
 
-pub struct Resizable<F: Send, T>
+pub struct ResizableItem<F: Send, T>
 where
     F: FnMut(ParentHints) -> T,
 {
@@ -58,7 +93,11 @@ where
     factory: F,
 }
 
-impl<F, T> Resizable<F, T>
+pub trait Resizable: LayoutItem {
+    fn with_minimum_size(self, min_size: Extent2<f32>) -> Self;
+}
+
+impl<F, T> ResizableItem<F, T>
 where
     F: FnMut(ParentHints) -> T + Send,
     T: UIItem,
@@ -70,9 +109,15 @@ where
             factory,
         }
     }
+}
 
-    /// Consumes this [`Resizable`] and returns a similar one with the minimum size set.
-    pub fn with_minimum_size(self, min_size: Extent2<f32>) -> Self {
+impl<F, T> Resizable for ResizableItem<F, T>
+where
+    F: FnMut(ParentHints) -> T + Send,
+    T: ItemDescriptor,
+{
+    /// Consumes this [`ResizableItem`] and returns a similar one with the minimum size set.
+    fn with_minimum_size(self, min_size: Extent2<f32>) -> Self {
         let child_hints = self.hints;
 
         Self {
@@ -85,7 +130,7 @@ where
     }
 }
 
-impl<F: Send, T> LayoutItem for Resizable<F, T>
+impl<F: Send, T> LayoutItem for ResizableItem<F, T>
 where
     F: FnMut(ParentHints) -> T,
     T: ItemDescriptor,

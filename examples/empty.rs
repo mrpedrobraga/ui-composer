@@ -1,5 +1,5 @@
 use ui_composer::prelude::*;
 
 fn main() {
-    App::run(Window(()).with_title("My Window!"));
+    UIComposer::run(Window(()).with_title("My Window!"));
 }

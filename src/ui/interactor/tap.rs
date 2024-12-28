@@ -1,5 +1,6 @@
 use super::Interactor;
-use crate::state::Editable;
+use crate::prelude::Action;
+use crate::state::Mutable;
 use crate::ui::node::{ItemDescriptor, UIEvent, UIItem};
 use std::{
     pin::Pin,
@@ -8,35 +9,44 @@ use std::{
 use vek::{Rect, Vec2};
 
 /// An Interactor that handles a user hovering over it with a cursor.
-pub struct Tap {
+pub struct Tap<A: Action> {
     rect: Rect<f32, f32>,
-    mouse_position_state: Editable<Option<Vec2<f32>>>,
-    tap_state: Editable<Option<()>>,
+    mouse_position_state: Mutable<Option<Vec2<f32>>>,
+    tap_action: A,
 }
 
-impl Tap {
+impl<A> Tap<A>
+where
+    A: Action,
+{
     pub fn new(
         rect: Rect<f32, f32>,
-        mouse_position_state: Editable<Option<Vec2<f32>>>,
-        tap_state: Editable<Option<()>>,
+        mouse_position_state: Mutable<Option<Vec2<f32>>>,
+        tap_state: A,
     ) -> Self {
         Self {
             rect,
             mouse_position_state,
-            tap_state,
+            tap_action: tap_state,
         }
     }
 }
 
-impl Interactor for Tap {}
-impl ItemDescriptor for Tap {
+impl<A> Interactor for Tap<A> where A: Action + Send {}
+impl<A> ItemDescriptor for Tap<A>
+where
+    A: Action + Send,
+{
     const QUAD_COUNT: usize = 0;
 
     fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
         None // Some(self.area))
     }
 }
-impl UIItem for Tap {
+impl<A> UIItem for Tap<A>
+where
+    A: Action + Send,
+{
     fn handle_ui_event(&mut self, event: crate::ui::node::UIEvent) -> bool {
         match event {
             UIEvent::CursorMoved {
@@ -55,7 +65,7 @@ impl UIItem for Tap {
                 (winit::event::MouseButton::Left, winit::event::ElementState::Pressed) => {
                     if let Some(mouse_position) = self.mouse_position_state.get() {
                         if (self.rect.contains_point(mouse_position)) {
-                            self.tap_state.set(Some(()));
+                            self.tap_action.trigger();
                             true
                         } else {
                             false

@@ -6,9 +6,9 @@ use crate::{gpu::backend::WinitWGPUBackend, prelude::Node};
 type DefaultBackend<Nd> = WinitWGPUBackend<Nd>;
 
 /// App builder, receives a layout item with the entirety of your app.
-pub struct App;
+pub struct UIComposer;
 
-impl App {
+impl UIComposer {
     /// Creates and runs a new app in the default backend for the selected target.
     /// For cross-platform compatibility, this should be called in the main thread,
     /// and only once in your program.

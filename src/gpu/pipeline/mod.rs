@@ -1,4 +1,4 @@
-use super::backend::{GPUResources, RNode};
+use super::backend::{GPUResources, Pipelines, RNode};
 use crate::gpu::world::UINodeRenderBuffers;
 use crate::prelude::UIItem;
 use vek::Extent2;
@@ -12,12 +12,12 @@ pub mod text_pipeline;
 
 /// A render pipeline for rendering on the GPU.
 pub trait GPURenderPipeline {
-    fn install_on_render_pass<'pass>(&'pass self, render_pass: &mut RenderPass<'pass>);
-
     fn draw(
-        gpu_resources: &GPUResources,
+        gpu_resources: &mut GPUResources,
+        pipelines: &mut Pipelines,
         render_target_size: Extent2<f32>,
         texture: &Texture,
+        render_pass: &mut RenderPass,
         ui_tree: &mut dyn UIItem,
         render_buffers: &mut UINodeRenderBuffers,
     );

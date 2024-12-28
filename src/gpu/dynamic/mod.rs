@@ -1,10 +1,10 @@
+use crate::gpu::backend::Pipelines;
+use crate::ui::node::{ItemDescriptor, UIItem};
 use futures_signals::signal_vec::MutableVec;
 use vek::Rect;
 use wgpu::{RenderPass, Texture};
 
-use crate::ui::node::{ItemDescriptor, UIItem};
-
-use super::{backend::GPUResources, pipeline::GPURenderPipeline as _, world::UINodeRenderBuffers};
+use super::{backend::GPUResources, world::UINodeRenderBuffers};
 
 pub struct VecItem<A: UIItem> {
     rect: Rect<f32, f32>,
@@ -49,9 +49,10 @@ impl<A: UIItem + ItemDescriptor + Sync> UIItem for VecItem<A> {
         // TODO: Write no quads.
     }
 
-    fn nested_predraw<'pass>(
+    fn prepare<'pass>(
         &'pass mut self,
         gpu_resources: &'pass GPUResources,
+        pipelines: &'pass Pipelines,
         mut render_pass: &mut RenderPass<'pass>,
         texture: &Texture,
     ) {
@@ -71,13 +72,19 @@ impl<A: UIItem + ItemDescriptor + Sync> UIItem for VecItem<A> {
             render_buffers.write_to_gpu(gpu_resources);
             gpu_resources.queue.submit([]);
 
-            gpu_resources
-                .main_pipeline
-                .install_on_render_pass(&mut render_pass);
+            render_pass.set_pipeline(&pipelines.graphics_pipeline.pipeline);
+            render_pass.set_bind_group(0, &pipelines.graphics_pipeline.uniform_bind_group, &[]);
+            render_pass
+                .set_vertex_buffer(0, pipelines.graphics_pipeline.mesh_vertex_buffer.slice(..));
+            render_pass.set_index_buffer(
+                pipelines.graphics_pipeline.mesh_index_buffer.slice(..),
+                wgpu::IndexFormat::Uint32,
+            );
+            render_pass.set_vertex_buffer(1, render_buffers.instance_buffer());
             render_pass.set_vertex_buffer(1, render_buffers.instance_buffer());
 
             render_pass.draw_indexed(
-                0..gpu_resources.main_pipeline.mesh_index_count as u32,
+                0..pipelines.graphics_pipeline.mesh_index_count as u32,
                 0,
                 0..quad_count as u32,
             );

@@ -1,9 +1,9 @@
 //! Empty for now but this will house different kinds of Textures that can be rendered onto quads!
 
-use super::{
-    backend::GPUResources, pipeline::orchestra_render_pipeline::OrchestraRenderPipeline,
-    render_target::GPURenderTarget,
-};
+use super::{backend::GPUResources, render_target::GPURenderTarget};
+use crate::gpu::backend::Pipelines;
+use crate::gpu::pipeline::orchestra_render_pipeline::OrchestraRenderPipeline;
+use crate::gpu::pipeline::text_pipeline::TextRenderPipeline;
 use crate::gpu::pipeline::GPURenderPipeline;
 use vek::Extent2;
 
@@ -66,21 +66,66 @@ impl GPURenderTarget for ImageRenderTarget {
 
     fn draw(
         &mut self,
-        gpu_resources: &GPUResources,
+        gpu_resources: &mut GPUResources,
+        pipelines: &mut Pipelines,
         content: &mut dyn crate::ui::node::UIItem,
         render_artifacts: &mut super::world::UINodeRenderBuffers,
     ) {
         let texture = &self.image.texture;
         let size = self.image.texture.size();
+        let size = Extent2::new(size.width as f32, size.height as f32);
+
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let mut encoder =
+            gpu_resources
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("Command Encoder"),
+                });
+
+        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: None,
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color {
+                        r: 0.015,
+                        g: 0.015,
+                        b: 0.015,
+                        a: 1.0,
+                    }),
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        });
 
         OrchestraRenderPipeline::draw(
             gpu_resources,
-            Extent2::new(size.width as f32, size.height as f32),
+            pipelines,
+            size,
             &texture,
+            &mut render_pass,
             content,
             render_artifacts,
         );
 
+        TextRenderPipeline::draw(
+            gpu_resources,
+            pipelines,
+            size,
+            &texture,
+            &mut render_pass,
+            content,
+            render_artifacts,
+        );
+
+        gpu_resources
+            .queue
+            .submit(std::iter::once(encoder.finish()));
         // TODO: Here we would "present" the texture.
         // In this case the idea is to notify whoever is
         // holding this image texture that its contents changed so that it can

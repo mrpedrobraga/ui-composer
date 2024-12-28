@@ -5,7 +5,7 @@ use ui_composer::prelude::animation::spring::*;
 use ui_composer::prelude::*;
 
 fn main() {
-    App::run(
+    UIComposer::run(
         Window(Center(Row(
             Row(
                 SmoothSquare("A", Rgb::new(126.0, 46.0, 132.0) / 255.0),
@@ -21,12 +21,12 @@ fn main() {
 }
 
 fn SmoothSquare(name: &'static str, color: Rgb<f32>) -> impl LayoutItem {
-    let is_hovered_state = Editable::new(false);
-    let mouse_position_state = Editable::new(None);
-    let tap_state = Editable::new(None);
-    let anim_state = Editable::new(0.0);
+    let is_hovered_state = Mutable::new(false);
+    let mouse_position_state = Mutable::new(None);
+    let tap_state = Mutable::new(None);
+    let anim_state = Mutable::new(0.0);
 
-    Resizable::new(move |hx| {
+    ResizableItem::new(move |hx| {
         let is_hovered_state = is_hovered_state.clone();
         let mouse_position_state_anim = mouse_position_state.clone();
         let tap_state_anim = tap_state.clone();
@@ -65,9 +65,9 @@ fn hover_square(
     original_rect: Rect<f32, f32>,
     original_color: Rgb<f32>,
     animation_factor: f32,
-    is_hovered_state: Editable<bool>,
-    mouse_position_state: Editable<Option<Vec2<f32>>>,
-    tap_state: Editable<Option<()>>,
+    is_hovered_state: Mutable<bool>,
+    mouse_position_state: Mutable<Option<Vec2<f32>>>,
+    tap_state: Mutable<Option<()>>,
 ) -> impl ItemDescriptor {
     let hover_rect = original_rect.expanded_to_contain_point(Vec2::new(
         original_rect.x,
@@ -92,6 +92,11 @@ fn hover_square(
         rect.with_color(Lerp::lerp(
             original_color,
             original_color,
+            animation_factor_pct
+        ))
+        .with_corner_radii(Lerp::lerp(
+            Vec4::zero(),
+            Vec4::one() * 50.0,
             animation_factor_pct
         )),
         hover_rect_graphic

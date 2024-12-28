@@ -1,3 +1,7 @@
+use super::{backend::RNode, texture::ImageRenderTarget, world::UINodeRenderBuffers};
+use crate::gpu::backend::{GPUResources, Pipelines};
+use crate::gpu::render_target::GPURenderTarget;
+use crate::prelude::flow::CartesianFlowDirection;
 use crate::{
     gpu,
     prelude::*,
@@ -8,11 +12,6 @@ use crate::{
 };
 use pin_project::pin_project;
 
-use super::{
-    backend::RNode, render_target::GPURenderTarget, texture::ImageRenderTarget,
-    world::UINodeRenderBuffers,
-};
-
 #[allow(non_snake_case)]
 pub fn Image<T>(rect: Rect<f32, f32>, mut item: T) -> ImageNodeDescriptor<impl ItemDescriptor>
 where
@@ -20,7 +19,13 @@ where
 {
     ImageNodeDescriptor {
         rect,
-        content: item.lay(ParentHints { rect }),
+        content: item.lay(ParentHints {
+            rect,
+            current_flow_direction: CartesianFlowDirection::LeftToRight,
+            current_cross_flow_direction: CartesianFlowDirection::TopToBottom,
+            current_writing_flow_direction: CartesianFlowDirection::LeftToRight,
+            current_writing_cross_flow_direction: CartesianFlowDirection::TopToBottom,
+        }),
     }
 }
 
@@ -62,12 +67,50 @@ pub struct ImageNode {
 }
 
 impl RNode for ImageNode {
-    fn setup(&mut self, gpu_resources: &gpu::backend::GPUResources) {
+    fn setup(&mut self, gpu_resources: &GPUResources) {
+        /* Do nothing */
+    }
+
+    fn handle_window_event(
+        &mut self,
+        gpu_resources: &mut GPUResources,
+        pipelines: &mut Pipelines,
+        window_id: winit::window::WindowId,
+        event: ui::node::UIEvent,
+    ) {
+        self.render(gpu_resources, pipelines);
+
+        self.content.handle_ui_event(event);
+    }
+
+    fn poll_processors(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context,
+    ) -> std::task::Poll<Option<()>> {
+        let ImageNodeProj { mut content, .. } = self.project();
+
+        let content: &mut _ = &mut **content;
+        let content = unsafe { std::pin::Pin::new_unchecked(content) };
+
+        let poll = content.poll_processors(cx);
+
+        match &poll {
+            std::task::Poll::Ready(Some(())) => {} // Request redraw
+            _ => (),
+        }
+
+        poll
+    }
+}
+
+impl ImageNode {
+    fn render(&mut self, gpu_resources: &mut GPUResources, pipelines: &mut Pipelines) {
         let size_bytes = 4 * 8 * self.rect.w as u64 * self.rect.h as u64;
         let size = self.render_target.image.texture.size();
 
         self.render_target.draw(
             gpu_resources,
+            pipelines,
             self.content.as_mut(),
             &mut self.content_buffer,
         );
@@ -131,33 +174,5 @@ impl RNode for ImageNode {
             img_buffer.save("image.png").unwrap();
         }
         buffer.unmap();
-    }
-
-    fn handle_window_event(
-        &mut self,
-        gpu_resources: &gpu::backend::GPUResources,
-        window_id: winit::window::WindowId,
-        event: ui::node::UIEvent,
-    ) {
-        self.content.handle_ui_event(event);
-    }
-
-    fn poll_processors(
-        self: std::pin::Pin<&mut Self>,
-        cx: &mut std::task::Context,
-    ) -> std::task::Poll<Option<()>> {
-        let ImageNodeProj { mut content, .. } = self.project();
-
-        let content: &mut _ = &mut **content;
-        let content = unsafe { std::pin::Pin::new_unchecked(content) };
-
-        let poll = content.poll_processors(cx);
-
-        match &poll {
-            std::task::Poll::Ready(Some(())) => {} // Request redraw
-            _ => (),
-        }
-
-        poll
     }
 }

@@ -34,7 +34,7 @@ where
     /// Animates `state` between two values depending on whether a condition is met.
     pub fn if_then_else<S>(
         condition: S,
-        state: Editable<T>,
+        state: Mutable<T>,
         value_if: T,
         value_else: T,
     ) -> impl Signal<Item = impl ItemDescriptor>
@@ -44,9 +44,9 @@ where
         condition.map(move |is_hovering| {
             let spring = Self::new(
                 if is_hovering { value_if } else { value_else },
-                400.0,
+                800.0,
                 20.0,
-                1.0,
+                0.75,
             );
             UIFutureExt::process(spring.animate_state(state.clone()))
         })
