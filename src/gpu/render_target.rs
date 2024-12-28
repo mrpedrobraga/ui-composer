@@ -1,7 +1,7 @@
 use crate::ui::node::UIItem;
 
-use super::{backend::GPUResources, world::UINodeRenderBuffers};
-use crate::gpu::backend::Renderers;
+use super::backend::GPUResources;
+use crate::gpu::pipeline::{RendererBuffers, Renderers};
 use vek::Extent2;
 use wgpu::TextureFormat;
 
@@ -13,10 +13,10 @@ pub trait GPURenderTarget {
     /// Returns a reference to the render target's texture;
     fn draw(
         &mut self,
+        content: &mut dyn UIItem,
         gpu_resources: &mut GPUResources,
         pipelines: &mut Renderers,
-        content: &mut dyn UIItem,
-        render_buffers: &mut UINodeRenderBuffers,
+        render_buffers: &mut RendererBuffers,
     );
 
     /// Returns the texture format;

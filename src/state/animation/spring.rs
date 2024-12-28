@@ -48,7 +48,7 @@ where
                 20.0,
                 0.75,
             );
-            UIFutureExt::process(spring.animate_state(state.clone()))
+            UIFutureExt::process(spring.animate_value(state.clone()))
         })
     }
 }

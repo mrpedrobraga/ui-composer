@@ -1,4 +1,4 @@
-use crate::gpu::backend::Renderers;
+use crate::gpu::pipeline::Renderers;
 use crate::state::signal_ext::coalesce_polls;
 use crate::{gpu::backend::GPUResources, ui::graphics::Graphic};
 use std::{
@@ -214,7 +214,6 @@ where
         &'pass mut self,
         gpu_resources: &'pass GPUResources,
         pipelines: &'pass Renderers,
-
         render_pass: &mut RenderPass<'pass>,
         texture: &Texture,
     ) {

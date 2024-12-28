@@ -6,10 +6,10 @@ use super::{
     },
     render_target::{self, GPURenderTarget},
     view::{View, ViewNode},
-    world::UINodeRenderBuffers,
 };
-use crate::gpu::backend::Renderers;
+use crate::gpu::pipeline::orchestra_renderer::GraphicsPipelineBuffers;
 use crate::gpu::pipeline::text_rendering::GlyphonTextRenderer;
+use crate::gpu::pipeline::{RendererBuffers, Renderers};
 use crate::prelude::flow::CartesianFlowDirection;
 use crate::state::process::{SignalProcessor, UISignalExt};
 use crate::state::Mutable;
@@ -35,6 +35,7 @@ use wgpu::{
     TextureView,
 };
 use winit::dpi::LogicalSize;
+use winit::event::ElementState;
 use winit::{
     dpi::{LogicalPosition, PhysicalPosition, PhysicalSize},
     event::WindowEvent,
@@ -75,6 +76,17 @@ impl<T: ItemDescriptor> WindowNodeDescriptor<T> {
             ..self
         }
     }
+
+    /// Consumes this window node and returns a new one with the set decoration style.
+    pub fn with_decorations(self, with_decorations: bool) -> WindowNodeDescriptor<T> {
+        WindowNodeDescriptor {
+            state: WindowNodeState {
+                decorations_enabled: Mutable::new(with_decorations),
+                ..self.state
+            },
+            ..self
+        }
+    }
 }
 
 /// Describes a new window with its contents and its own state.
@@ -87,6 +99,7 @@ where
         size: Mutable::new(item.get_natural_size()),
         title: Mutable::new(String::new()),
         mouse_position: Mutable::new(None),
+        decorations_enabled: Mutable::new(true),
     };
 
     let window_size_signal = state.size.signal();
@@ -144,12 +157,14 @@ where
 
         let window = std::sync::Arc::new(window);
 
-        let render_buffers = UINodeRenderBuffers::new(gpu_resources, T::QUAD_COUNT);
+        let render_buffers = RendererBuffers {
+            graphics_render_buffers: GraphicsPipelineBuffers::new(gpu_resources, T::QUAD_COUNT),
+        };
 
         WindowNode {
             content: Box::new(self.content),
             state: self.state,
-            content_buffers: render_buffers,
+            render_buffers: render_buffers,
             render_target: WindowRenderTarget::new(
                 &gpu_resources,
                 window.clone(),
@@ -169,16 +184,19 @@ pub struct WindowNodeState {
     pub title: Mutable<String>,
     pub size: Mutable<Extent2<f32>>,
     pub mouse_position: Mutable<Option<Vec2<f32>>>,
+    pub decorations_enabled: Mutable<bool>,
 }
 
-fn new_window_state(window_size: Extent2<f32>) -> WindowNodeState {
-    WindowNodeState {
-        size: Mutable::new(window_size),
-        title: Mutable::new(String::new()),
-        mouse_position: Mutable::new(None),
+impl WindowNodeState {
+    pub fn new(window_size: Mutable<Extent2<f32>>) -> Self {
+        WindowNodeState {
+            size: window_size,
+            title: Mutable::new(String::new()),
+            mouse_position: Mutable::new(None),
+            decorations_enabled: Mutable::new(true),
+        }
     }
 }
-
 /// A live window which contains a UI tree inside.
 #[pin_project(project = WindowNodeProj)]
 pub struct WindowNode {
@@ -186,7 +204,7 @@ pub struct WindowNode {
     state: WindowNodeState,
     window: Arc<Window>,
     content: Box<dyn UIItem>,
-    content_buffers: UINodeRenderBuffers,
+    render_buffers: RendererBuffers,
     render_target: WindowRenderTarget,
 }
 
@@ -206,6 +224,13 @@ impl<'window> RNode for WindowNode {
                     let new_size = Extent2::new(new_size.width, new_size.height);
                     self.render_target.resize(&gpu_resources, new_size);
                     self.state.size.set(new_size.as_());
+                }
+                WindowEvent::CursorMoved { position, .. } => {
+                    let v = Vec2::new(position.x, position.y);
+                    let window_size = Vec2::new(
+                        self.window.inner_size().width as f64,
+                        self.window.inner_size().height as f64,
+                    );
                 }
                 WindowEvent::CloseRequested => {
                     // TODO: Handle closing of windows.
@@ -235,10 +260,8 @@ impl<'window> RNode for WindowNode {
 
         let WindowNodeProj {
             mut content,
-            content_buffers,
-            render_target,
             window,
-            state,
+            ..
         } = self.project();
 
         let content: &mut _ = &mut **content;
@@ -258,10 +281,10 @@ impl<'window> RNode for WindowNode {
 impl WindowNode {
     fn redraw(&mut self, gpu_resources: &mut GPUResources, pipelines: &mut Renderers) {
         self.render_target.draw(
+            self.content.as_mut(),
             gpu_resources,
             pipelines,
-            self.content.as_mut(),
-            &mut self.content_buffers,
+            &mut self.render_buffers,
         );
     }
 }
@@ -301,10 +324,10 @@ impl GPURenderTarget for WindowRenderTarget {
 
     fn draw(
         &mut self,
+        content: &mut dyn UIItem,
         gpu_resources: &mut GPUResources,
         pipelines: &mut Renderers,
-        content: &mut dyn UIItem,
-        render_buffers: &mut UINodeRenderBuffers,
+        render_buffers: &mut RendererBuffers,
     ) {
         let texture = self
             .surface

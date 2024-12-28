@@ -1,10 +1,35 @@
 use crate::geometry::Vector;
-use crate::prelude::Mutable;
 use futures_time::task;
 use futures_time::time::{Duration, Instant};
+use std::fmt::Debug;
 use std::future::Future;
 
 pub mod spring;
+
+pub trait Slot {
+    type Item;
+    fn put(&mut self, value: Self::Item);
+    fn take(&self) -> Self::Item
+    where
+        Self::Item: Copy;
+}
+
+pub struct Ref<'a, T>(pub &'a mut T);
+
+impl<T> Slot for Ref<'_, T> {
+    type Item = T;
+
+    fn put(&mut self, value: Self::Item) {
+        *self.0 = value;
+    }
+
+    fn take(&self) -> Self::Item
+    where
+        Self::Item: Copy,
+    {
+        *self.0
+    }
+}
 
 /// An alternative of [`Stream`] which is lossy
 /// for trying to keep up with an implicit flow of time.
@@ -32,12 +57,22 @@ pub trait RealTimeStream {
         }
     }
 
-    fn animate_state(mut self, state: Mutable<Self::Item>) -> impl Future<Output = ()>
+    /// Returns a new stream that applies a modification on the value.
+    fn for_each<F>(self, f: F) -> ForEach<Self, F>
+    where
+        F: FnMut(&Self::Item) -> (),
+        Self: Sized,
+    {
+        ForEach { inner: self, f }
+    }
+
+    fn animate_value<S>(mut self, mut state: S) -> impl Future<Output = ()>
     where
         Self::Item: Copy,
         Self: Sized,
+        S: Slot<Item = Self::Item>,
     {
-        let initial_value = state.get();
+        let initial_value = state.take();
         let start = Instant::now();
         let mut last_frame = Instant::now();
 
@@ -49,10 +84,10 @@ pub trait RealTimeStream {
                 match poll {
                     Poll::Ongoing(frame) => {
                         last_frame = Instant::now();
-                        state.set(frame);
+                        state.put(frame);
                     }
                     Poll::Finished(frame) => {
-                        state.set(frame);
+                        state.put(frame);
                         break;
                     }
                 }
@@ -125,6 +160,34 @@ where
     }
 }
 
+pub struct ForEach<A: RealTimeStream, F: FnMut(&A::Item) -> ()> {
+    inner: A,
+    f: F,
+}
+
+impl<A, F> RealTimeStream for ForEach<A, F>
+where
+    A: RealTimeStream,
+    F: FnMut(&A::Item) -> (),
+{
+    type Item = A::Item;
+
+    fn process_tick(
+        &mut self,
+        initial_value: Self::Item,
+        frame_params: AnimationFrameParams,
+    ) -> Poll<Self::Item> {
+        let mut poll = self.inner.process_tick(initial_value, frame_params);
+
+        match &poll {
+            Poll::Ongoing(a) => (self.f)(a),
+            Poll::Finished(a) => (self.f)(a),
+        }
+
+        poll
+    }
+}
+
 /// Stream that interpolates the initial value towards a target.
 pub struct LinearInterpolateStream<TItem: Vector> {
     to: TItem,
@@ -146,9 +209,6 @@ impl<TItem: Vector + Copy> RealTimeStream for LinearInterpolateStream<TItem> {
         frame_params: AnimationFrameParams,
     ) -> Poll<Self::Item> {
         if frame_params.start.elapsed() >= self.duration.into() {
-            // TODO: Figure out how to pass the excess down - and if it makes a difference.
-            let end = frame_params.start + self.duration;
-
             Poll::Finished(self.to)
         } else {
             Poll::Ongoing(initial_value.linear_interpolate(
@@ -182,7 +242,8 @@ impl<TItem: Vector + Copy> RealTimeStream for MoveToward<TItem> {
         frame_params: AnimationFrameParams,
     ) -> Poll<Self::Item> {
         if let Some(current_value) = self.current_value {
-            let next_value = current_value + TItem::one() * frame_params.delta.as_secs_f32();
+            let vector = self.target - current_value;
+            let next_value = current_value + vector * self.speed * frame_params.delta.as_secs_f32();
             self.current_value = Some(next_value);
             Poll::Ongoing(next_value)
         } else {

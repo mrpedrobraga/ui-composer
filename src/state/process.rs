@@ -4,7 +4,8 @@ use std::future::Future;
 use std::{pin::Pin, task::Poll};
 use wgpu::{RenderPass, Texture};
 
-use crate::gpu::backend::{GPUResources, Renderers};
+use crate::gpu::backend::GPUResources;
+use crate::gpu::pipeline::Renderers;
 use crate::ui::node::UIEvent;
 use crate::ui::node::{ItemDescriptor, UIItem};
 

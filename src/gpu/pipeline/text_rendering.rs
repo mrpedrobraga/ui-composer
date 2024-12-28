@@ -1,7 +1,6 @@
-use super::GPURenderer;
-use crate::gpu::backend::{GPUResources, Renderers};
+use super::{GPURenderer, RendererBuffers, Renderers};
+use crate::gpu::backend::GPUResources;
 use crate::gpu::render_target::GPURenderTarget;
-use crate::gpu::world::UINodeRenderBuffers;
 use crate::prelude::UIItem;
 use glyphon::{
     Cache, FontSystem, Resolution, SwashCache, TextAtlas, TextBounds, TextRenderer, Viewport,
@@ -27,7 +26,7 @@ impl GPURenderer for GlyphonTextRenderer {
         texture: &Texture,
         render_pass: &mut RenderPass,
         ui_tree: &mut dyn UIItem,
-        render_buffers: &mut UINodeRenderBuffers,
+        render_buffers: &mut RendererBuffers,
     ) {
         let this = &mut pipelines.text_renderer;
 

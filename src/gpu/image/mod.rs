@@ -1,5 +1,7 @@
-use super::{backend::RNode, texture::ImageRenderTarget, world::UINodeRenderBuffers};
-use crate::gpu::backend::{GPUResources, Renderers};
+use super::{backend::RNode, texture::ImageRenderTarget};
+use crate::gpu::backend::GPUResources;
+use crate::gpu::pipeline::orchestra_renderer::GraphicsPipelineBuffers;
+use crate::gpu::pipeline::{RendererBuffers, Renderers};
 use crate::gpu::render_target::GPURenderTarget;
 use crate::prelude::flow::CartesianFlowDirection;
 use crate::{
@@ -52,7 +54,9 @@ where
             rect: self.rect,
             content: Box::new(self.content),
             render_target: ImageRenderTarget::new(gpu_resources, self.rect.extent()),
-            content_buffer: UINodeRenderBuffers::new(gpu_resources, T::QUAD_COUNT),
+            render_buffers: RendererBuffers {
+                graphics_render_buffers: GraphicsPipelineBuffers::new(gpu_resources, T::QUAD_COUNT),
+            },
         }
     }
 }
@@ -62,7 +66,7 @@ pub struct ImageNode {
     #[pin]
     content: Box<dyn UIItem>,
     rect: Rect<f32, f32>,
-    content_buffer: UINodeRenderBuffers,
+    render_buffers: RendererBuffers,
     render_target: ImageRenderTarget,
 }
 
@@ -109,10 +113,10 @@ impl ImageNode {
         let size = self.render_target.image.texture.size();
 
         self.render_target.draw(
+            self.content.as_mut(),
             gpu_resources,
             pipelines,
-            self.content.as_mut(),
-            &mut self.content_buffer,
+            &mut self.render_buffers,
         );
 
         let buffer = gpu_resources.device.create_buffer(&wgpu::BufferDescriptor {

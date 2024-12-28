@@ -1,15 +1,62 @@
 use bytemuck::{Pod, Zeroable};
 use std::mem::size_of;
+use std::ops::Deref;
 use vek::{Extent2, Mat4, Vec2, Vec3};
 use wgpu::{
     util::DeviceExt as _, BufferAddress, BufferUsages, ColorTargetState, RenderPass, Texture,
 };
 
-use super::GPURenderer;
-use crate::gpu::backend::{GPUResources, Renderers};
-use crate::gpu::world::UINodeRenderBuffers;
+use super::{GPURenderer, RendererBuffers, Renderers};
+use crate::gpu::backend::GPUResources;
 use crate::prelude::UIItem;
 use crate::{gpu::render_target::GPURenderTarget, ui::graphics::Graphic};
+
+/// The buffers that hold the soon-to-be-rendered UI.
+pub struct GraphicsPipelineBuffers {
+    instance_buffer_cpu: Vec<Graphic>,
+    instance_buffer: wgpu::Buffer,
+}
+
+impl GraphicsPipelineBuffers {
+    pub fn get_quad_count(&self) -> usize {
+        self.instance_buffer_cpu.len()
+    }
+
+    /// Creates new buffers for the UI primitives to be drawn.
+    pub fn new(gpu_resources: &GPUResources, primitive_count: usize) -> Self {
+        Self {
+            instance_buffer_cpu: vec![Graphic::default(); primitive_count],
+            instance_buffer: gpu_resources.device.create_buffer(&wgpu::BufferDescriptor {
+                label: None,
+                size: size_of::<Graphic>() as u64 * primitive_count as u64,
+                usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            }),
+        }
+    }
+
+    pub fn instance_buffer_cpu(&mut self) -> &mut [Graphic] {
+        &mut self.instance_buffer_cpu[..]
+    }
+
+    pub fn instance_buffer(&mut self) -> wgpu::BufferSlice {
+        self.instance_buffer.slice(..)
+    }
+
+    pub fn write_to_gpu(&mut self, gpu_resources: &GPUResources) {
+        gpu_resources.queue.write_buffer(
+            &self.instance_buffer,
+            0,
+            bytemuck::cast_slice(self.instance_buffer_cpu.deref()),
+        );
+    }
+
+    pub fn extend<I>(&mut self, gpu_resources: &GPUResources, new_elements: I)
+    where
+        I: Iterator<Item = Graphic>,
+    {
+    }
+}
 
 pub struct OrchestraRenderer {
     pub(crate) pipeline: wgpu::RenderPipeline,
@@ -28,10 +75,12 @@ impl GPURenderer for OrchestraRenderer {
         texture: &Texture,
         render_pass: &mut RenderPass,
         ui_tree: &mut dyn UIItem,
-        render_buffers: &mut UINodeRenderBuffers,
+        render_buffers: &mut RendererBuffers,
     ) {
         let this = &mut pipelines.graphics_renderer;
-        let quad_count = render_buffers.get_quad_count();
+        let mut graphics_render_buffers = &mut render_buffers.graphics_render_buffers;
+
+        let quad_count = graphics_render_buffers.get_quad_count();
 
         // TODO: Ponder on whether this is the best async way for flushing the uniforms.
         // Like, I think I might need _more_ than a single set of uniforms for peak
@@ -44,11 +93,11 @@ impl GPURenderer for OrchestraRenderer {
             }]),
         );
 
-        ui_tree.write_quads(render_buffers.instance_buffer_cpu());
+        ui_tree.write_quads(graphics_render_buffers.instance_buffer_cpu());
         //ui_tree.prepare(gpu_resources, pipelines, render_pass, &texture);
 
         if quad_count > 0 {
-            render_buffers.write_to_gpu(gpu_resources);
+            graphics_render_buffers.write_to_gpu(gpu_resources);
             gpu_resources.queue.submit([]);
 
             render_pass.set_pipeline(&this.pipeline);
@@ -56,7 +105,7 @@ impl GPURenderer for OrchestraRenderer {
             render_pass.set_vertex_buffer(0, this.mesh_vertex_buffer.slice(..));
             render_pass
                 .set_index_buffer(this.mesh_index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-            render_pass.set_vertex_buffer(1, render_buffers.instance_buffer());
+            render_pass.set_vertex_buffer(1, graphics_render_buffers.instance_buffer());
 
             render_pass.draw_indexed(0..this.mesh_index_count as u32, 0, 0..quad_count as u32);
         }

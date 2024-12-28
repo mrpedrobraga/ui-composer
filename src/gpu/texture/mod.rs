@@ -1,10 +1,9 @@
 //! Empty for now but this will house different kinds of Textures that can be rendered onto quads!
 
 use super::{backend::GPUResources, render_target::GPURenderTarget};
-use crate::gpu::backend::Renderers;
 use crate::gpu::pipeline::orchestra_renderer::OrchestraRenderer;
 use crate::gpu::pipeline::text_rendering::GlyphonTextRenderer;
-use crate::gpu::pipeline::GPURenderer;
+use crate::gpu::pipeline::{GPURenderer, RendererBuffers, Renderers};
 use vek::Extent2;
 
 /// Color data that can be used by quads or materials to create advanced graphics.
@@ -66,10 +65,10 @@ impl GPURenderTarget for ImageRenderTarget {
 
     fn draw(
         &mut self,
+        content: &mut dyn crate::ui::node::UIItem,
         gpu_resources: &mut GPUResources,
         pipelines: &mut Renderers,
-        content: &mut dyn crate::ui::node::UIItem,
-        render_artifacts: &mut super::world::UINodeRenderBuffers,
+        render_artifacts: &mut RendererBuffers,
     ) {
         let texture = &self.image.texture;
         let size = self.image.texture.size();

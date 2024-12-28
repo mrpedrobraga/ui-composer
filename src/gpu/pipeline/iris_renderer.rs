@@ -1,9 +1,8 @@
 //! Pipelines and stuff to render three-dee models!
 //! Nothing is implemented yet, of course.
 
-use super::GPURenderer;
-use crate::gpu::backend::{GPUResources, Renderers};
-use crate::gpu::world::UINodeRenderBuffers;
+use super::{GPURenderer, RendererBuffers, Renderers};
+use crate::gpu::backend::GPUResources;
 use crate::prelude::UIItem;
 use vek::Extent2;
 use wgpu::{RenderPass, Texture};
@@ -23,7 +22,7 @@ impl GPURenderer for IrisRenderer {
         texture: &Texture,
         render_pass: &mut RenderPass,
         ui_tree: &mut dyn UIItem,
-        render_buffers: &mut UINodeRenderBuffers,
+        render_buffers: &mut RendererBuffers,
     ) {
     }
 }

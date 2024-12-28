@@ -1,4 +1,21 @@
+use crate::prelude::animation::Slot;
+use futures_signals::signal::Mutable;
 use std::task::Poll;
+
+impl<A> Slot for Mutable<A> {
+    type Item = A;
+
+    fn put(&mut self, value: Self::Item) {
+        self.set(value);
+    }
+
+    fn take(&self) -> Self::Item
+    where
+        Self::Item: Copy,
+    {
+        self.get()
+    }
+}
 
 /// Combines two Polls into a single poll describing a task with two parts.
 /// The result is decided based on a precedence order.

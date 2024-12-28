@@ -1,15 +1,15 @@
-use crate::gpu::backend::Renderers;
+use super::backend::GPUResources;
+use crate::gpu::pipeline::orchestra_renderer::GraphicsPipelineBuffers;
+use crate::gpu::pipeline::{RendererBuffers, Renderers};
 use crate::ui::node::{ItemDescriptor, UIItem};
 use futures_signals::signal_vec::MutableVec;
 use vek::Rect;
 use wgpu::{RenderPass, Texture};
 
-use super::{backend::GPUResources, world::UINodeRenderBuffers};
-
 pub struct VecItem<A: UIItem> {
     rect: Rect<f32, f32>,
     items: MutableVec<A>,
-    render_buffers: Option<UINodeRenderBuffers>,
+    render_buffers: Option<RendererBuffers>,
 }
 
 impl<A: UIItem + ItemDescriptor> VecItem<A> {
@@ -23,10 +23,12 @@ impl<A: UIItem + ItemDescriptor> VecItem<A> {
 
     pub fn initialize(&mut self, gpu_resources: &GPUResources) {
         if let None = self.render_buffers {
-            self.render_buffers = Some(UINodeRenderBuffers::new(
-                gpu_resources,
-                self.items.lock_ref().len() * A::QUAD_COUNT,
-            ));
+            self.render_buffers = Some(RendererBuffers {
+                graphics_render_buffers: GraphicsPipelineBuffers::new(
+                    gpu_resources,
+                    self.items.lock_ref().len() * A::QUAD_COUNT,
+                ),
+            });
         }
     }
 }
@@ -59,17 +61,18 @@ impl<A: UIItem + ItemDescriptor + Sync> UIItem for VecItem<A> {
         self.initialize(gpu_resources);
 
         if let Some(render_buffers) = &mut self.render_buffers {
+            let mut graphics_render_buffers = &mut render_buffers.graphics_render_buffers;
             let item_count = self.items.lock_ref().len();
             let quad_count = item_count * A::QUAD_COUNT;
 
             for idx in 0..item_count {
                 let ui_tree = &self.items.lock_mut()[idx];
                 ui_tree.write_quads(
-                    &mut render_buffers.instance_buffer_cpu()
+                    &mut graphics_render_buffers.instance_buffer_cpu()
                         [(idx * A::QUAD_COUNT)..((idx + 1) * A::QUAD_COUNT)],
                 );
             }
-            render_buffers.write_to_gpu(gpu_resources);
+            graphics_render_buffers.write_to_gpu(gpu_resources);
             gpu_resources.queue.submit([]);
 
             render_pass.set_pipeline(&pipelines.graphics_renderer.pipeline);
@@ -80,8 +83,8 @@ impl<A: UIItem + ItemDescriptor + Sync> UIItem for VecItem<A> {
                 pipelines.graphics_renderer.mesh_index_buffer.slice(..),
                 wgpu::IndexFormat::Uint32,
             );
-            render_pass.set_vertex_buffer(1, render_buffers.instance_buffer());
-            render_pass.set_vertex_buffer(1, render_buffers.instance_buffer());
+            render_pass.set_vertex_buffer(1, graphics_render_buffers.instance_buffer());
+            render_pass.set_vertex_buffer(1, graphics_render_buffers.instance_buffer());
 
             render_pass.draw_indexed(
                 0..pipelines.graphics_renderer.mesh_index_count as u32,

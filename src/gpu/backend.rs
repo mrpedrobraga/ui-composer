@@ -1,6 +1,7 @@
 use super::{pipeline::orchestra_renderer::OrchestraRenderer, window::WindowRenderTarget};
 use crate::backend::Backend;
 use crate::gpu::pipeline::text_rendering::GlyphonTextRenderer;
+use crate::gpu::pipeline::Renderers;
 use crate::ui::node::UIEvent;
 use futures::StreamExt;
 use futures_signals::signal::{Signal, SignalExt};
@@ -26,14 +27,6 @@ pub struct GPUResources {
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
     pub adapter: wgpu::Adapter,
-}
-
-/// The struct containing all the different renderers that
-/// composite the scene together.
-/// TODO: Make this variadic, generic.
-pub struct Renderers {
-    pub graphics_renderer: OrchestraRenderer,
-    pub text_renderer: GlyphonTextRenderer,
 }
 
 /// The [`ApplicationHandler`] that sits between [`winit`]

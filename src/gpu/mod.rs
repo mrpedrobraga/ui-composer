@@ -6,4 +6,3 @@ pub mod render_target;
 pub mod texture;
 pub mod view;
 pub mod window;
-pub mod world;
