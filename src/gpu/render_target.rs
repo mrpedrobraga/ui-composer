@@ -1,7 +1,7 @@
 use crate::ui::node::UIItem;
 
 use super::{backend::GPUResources, world::UINodeRenderBuffers};
-use crate::gpu::backend::Pipelines;
+use crate::gpu::backend::Renderers;
 use vek::Extent2;
 use wgpu::TextureFormat;
 
@@ -14,7 +14,7 @@ pub trait GPURenderTarget {
     fn draw(
         &mut self,
         gpu_resources: &mut GPUResources,
-        pipelines: &mut Pipelines,
+        pipelines: &mut Renderers,
         content: &mut dyn UIItem,
         render_buffers: &mut UINodeRenderBuffers,
     );

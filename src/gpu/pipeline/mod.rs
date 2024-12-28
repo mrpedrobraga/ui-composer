@@ -1,20 +1,20 @@
-use super::backend::{GPUResources, Pipelines, RNode};
+use super::backend::{GPUResources, RNode, Renderers};
 use crate::gpu::world::UINodeRenderBuffers;
 use crate::prelude::UIItem;
 use vek::Extent2;
 use wgpu::{RenderPass, Texture};
 
-pub mod iris_render_pipeline;
-pub mod orchestra_render_pipeline;
+pub mod iris_renderer;
+pub mod orchestra_renderer;
 
 #[cfg(feature = "text")]
-pub mod text_pipeline;
+pub mod text_rendering;
 
-/// A render pipeline for rendering on the GPU.
-pub trait GPURenderPipeline {
+/// A renderer for drawing on the GPU.
+pub trait GPURenderer {
     fn draw(
         gpu_resources: &mut GPUResources,
-        pipelines: &mut Pipelines,
+        renderers: &mut Renderers,
         render_target_size: Extent2<f32>,
         texture: &Texture,
         render_pass: &mut RenderPass,

@@ -1,5 +1,5 @@
 use super::{backend::RNode, texture::ImageRenderTarget, world::UINodeRenderBuffers};
-use crate::gpu::backend::{GPUResources, Pipelines};
+use crate::gpu::backend::{GPUResources, Renderers};
 use crate::gpu::render_target::GPURenderTarget;
 use crate::prelude::flow::CartesianFlowDirection;
 use crate::{
@@ -74,7 +74,7 @@ impl RNode for ImageNode {
     fn handle_window_event(
         &mut self,
         gpu_resources: &mut GPUResources,
-        pipelines: &mut Pipelines,
+        pipelines: &mut Renderers,
         window_id: winit::window::WindowId,
         event: ui::node::UIEvent,
     ) {
@@ -104,7 +104,7 @@ impl RNode for ImageNode {
 }
 
 impl ImageNode {
-    fn render(&mut self, gpu_resources: &mut GPUResources, pipelines: &mut Pipelines) {
+    fn render(&mut self, gpu_resources: &mut GPUResources, pipelines: &mut Renderers) {
         let size_bytes = 4 * 8 * self.rect.w as u64 * self.rect.h as u64;
         let size = self.render_target.image.texture.size();
 

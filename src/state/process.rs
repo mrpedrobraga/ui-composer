@@ -4,7 +4,7 @@ use std::future::Future;
 use std::{pin::Pin, task::Poll};
 use wgpu::{RenderPass, Texture};
 
-use crate::gpu::backend::{GPUResources, Pipelines};
+use crate::gpu::backend::{GPUResources, Renderers};
 use crate::ui::node::UIEvent;
 use crate::ui::node::{ItemDescriptor, UIItem};
 
@@ -95,7 +95,7 @@ where
     fn prepare<'pass>(
         &'pass mut self,
         gpu_resources: &'pass GPUResources,
-        pipelines: &'pass Pipelines,
+        pipelines: &'pass Renderers,
         render_pass: &mut RenderPass<'pass>,
         texture: &Texture,
     ) {
@@ -232,7 +232,7 @@ where
     fn prepare<'pass>(
         &'pass mut self,
         gpu_resources: &'pass GPUResources,
-        pipelines: &'pass Pipelines,
+        pipelines: &'pass Renderers,
         render_pass: &mut RenderPass<'pass>,
         texture: &Texture,
     ) {

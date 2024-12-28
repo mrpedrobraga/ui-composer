@@ -1,8 +1,6 @@
-use super::{
-    pipeline::orchestra_render_pipeline::OrchestraRenderPipeline, window::WindowRenderTarget,
-};
+use super::{pipeline::orchestra_renderer::OrchestraRenderer, window::WindowRenderTarget};
 use crate::backend::Backend;
-use crate::gpu::pipeline::text_pipeline::TextRenderPipeline;
+use crate::gpu::pipeline::text_rendering::GlyphonTextRenderer;
 use crate::ui::node::UIEvent;
 use futures::StreamExt;
 use futures_signals::signal::{Signal, SignalExt};
@@ -33,9 +31,9 @@ pub struct GPUResources {
 /// The struct containing all the different renderers that
 /// composite the scene together.
 /// TODO: Make this variadic, generic.
-pub struct Pipelines {
-    pub graphics_pipeline: OrchestraRenderPipeline,
-    pub text_pipeline: TextRenderPipeline,
+pub struct Renderers {
+    pub graphics_renderer: OrchestraRenderer,
+    pub text_renderer: GlyphonTextRenderer,
 }
 
 /// The [`ApplicationHandler`] that sits between [`winit`]
@@ -63,7 +61,7 @@ pub struct WinitWGPUBackend<Nd: Node> {
     #[pin]
     pub node_tree: Arc<Mutex<Nd::ReifiedType>>,
     pub gpu_resources: GPUResources,
-    pub pipelines: Pipelines,
+    pub pipelines: Renderers,
 }
 
 impl<Nd: Node + 'static> Backend for WinitWGPUBackend<Nd> {
@@ -201,23 +199,23 @@ impl<Nd: Node + Send + 'static> WinitBackend for WinitWGPUBackend<Nd> {
             write_mask: wgpu::ColorWrites::ALL,
         })];
 
-        let graphics_pipeline = OrchestraRenderPipeline::singleton::<WindowRenderTarget>(
+        let graphics_pipeline = OrchestraRenderer::singleton::<WindowRenderTarget>(
             &adapter,
             &device,
             &queue,
             render_target_formats,
         );
 
-        let text_pipeline = TextRenderPipeline::singleton::<WindowRenderTarget>(
+        let text_pipeline = GlyphonTextRenderer::singleton::<WindowRenderTarget>(
             &adapter,
             &device,
             &queue,
             render_target_formats,
         );
 
-        let pipelines = Pipelines {
-            graphics_pipeline,
-            text_pipeline,
+        let pipelines = Renderers {
+            graphics_renderer: graphics_pipeline,
+            text_renderer: text_pipeline,
         };
 
         let gpu_resources = GPUResources {
@@ -293,7 +291,7 @@ pub trait RNode: Send {
     fn handle_window_event(
         &mut self,
         gpu_resources: &mut GPUResources,
-        pipelines: &mut Pipelines,
+        pipelines: &mut Renderers,
         window_id: WindowId,
         event: UIEvent,
     );
@@ -338,7 +336,7 @@ where
     fn handle_window_event(
         &mut self,
         gpu_resources: &mut GPUResources,
-        pipelines: &mut Pipelines,
+        pipelines: &mut Renderers,
         window_id: WindowId,
         event: UIEvent,
     ) {

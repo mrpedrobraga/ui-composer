@@ -5,13 +5,13 @@ use wgpu::{
     util::DeviceExt as _, BufferAddress, BufferUsages, ColorTargetState, RenderPass, Texture,
 };
 
-use super::GPURenderPipeline;
-use crate::gpu::backend::{GPUResources, Pipelines};
+use super::GPURenderer;
+use crate::gpu::backend::{GPUResources, Renderers};
 use crate::gpu::world::UINodeRenderBuffers;
 use crate::prelude::UIItem;
 use crate::{gpu::render_target::GPURenderTarget, ui::graphics::Graphic};
 
-pub struct OrchestraRenderPipeline {
+pub struct OrchestraRenderer {
     pub(crate) pipeline: wgpu::RenderPipeline,
     pub mesh_vertex_buffer: wgpu::Buffer,
     pub mesh_index_buffer: wgpu::Buffer,
@@ -20,17 +20,17 @@ pub struct OrchestraRenderPipeline {
     pub(crate) uniform_bind_group: wgpu::BindGroup,
 }
 
-impl GPURenderPipeline for OrchestraRenderPipeline {
+impl GPURenderer for OrchestraRenderer {
     fn draw(
         gpu_resources: &mut GPUResources,
-        pipelines: &mut Pipelines,
+        pipelines: &mut Renderers,
         render_target_size: Extent2<f32>,
         texture: &Texture,
         render_pass: &mut RenderPass,
         ui_tree: &mut dyn UIItem,
         render_buffers: &mut UINodeRenderBuffers,
     ) {
-        let this = &mut pipelines.graphics_pipeline;
+        let this = &mut pipelines.graphics_renderer;
         let quad_count = render_buffers.get_quad_count();
 
         // TODO: Ponder on whether this is the best async way for flushing the uniforms.
@@ -63,14 +63,14 @@ impl GPURenderPipeline for OrchestraRenderPipeline {
     }
 }
 
-impl OrchestraRenderPipeline {
+impl OrchestraRenderer {
     /// TODO: Make this a singleton.
     pub fn singleton<'a, Target>(
         adapter: &'a wgpu::Adapter,
         device: &'a wgpu::Device,
         queue: &'a wgpu::Queue,
         render_target_formats: &'a [Option<ColorTargetState>],
-    ) -> OrchestraRenderPipeline
+    ) -> OrchestraRenderer
     where
         Target: GPURenderTarget,
     {
@@ -149,7 +149,7 @@ impl OrchestraRenderPipeline {
             usage: BufferUsages::INDEX | BufferUsages::COPY_DST,
         });
 
-        OrchestraRenderPipeline {
+        OrchestraRenderer {
             pipeline,
             mesh_vertex_buffer,
             mesh_index_buffer,

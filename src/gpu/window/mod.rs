@@ -1,17 +1,15 @@
 use super::{
     backend::{GPUResources, Node, RNode},
     pipeline::{
-        orchestra_render_pipeline::{
-            container_size_to_wgpu_mat, OrchestraRenderPipeline, Uniforms,
-        },
-        GPURenderPipeline,
+        orchestra_renderer::{container_size_to_wgpu_mat, OrchestraRenderer, Uniforms},
+        GPURenderer,
     },
     render_target::{self, GPURenderTarget},
     view::{View, ViewNode},
     world::UINodeRenderBuffers,
 };
-use crate::gpu::backend::Pipelines;
-use crate::gpu::pipeline::text_pipeline::TextRenderPipeline;
+use crate::gpu::backend::Renderers;
+use crate::gpu::pipeline::text_rendering::GlyphonTextRenderer;
 use crate::prelude::flow::CartesianFlowDirection;
 use crate::state::process::{SignalProcessor, UISignalExt};
 use crate::state::Mutable;
@@ -198,7 +196,7 @@ impl<'window> RNode for WindowNode {
     fn handle_window_event(
         &mut self,
         gpu_resources: &mut GPUResources,
-        pipelines: &mut Pipelines,
+        pipelines: &mut Renderers,
         window_id: WindowId,
         event: crate::ui::node::UIEvent,
     ) {
@@ -258,7 +256,7 @@ impl<'window> RNode for WindowNode {
 }
 
 impl WindowNode {
-    fn redraw(&mut self, gpu_resources: &mut GPUResources, pipelines: &mut Pipelines) {
+    fn redraw(&mut self, gpu_resources: &mut GPUResources, pipelines: &mut Renderers) {
         self.render_target.draw(
             gpu_resources,
             pipelines,
@@ -304,7 +302,7 @@ impl GPURenderTarget for WindowRenderTarget {
     fn draw(
         &mut self,
         gpu_resources: &mut GPUResources,
-        pipelines: &mut Pipelines,
+        pipelines: &mut Renderers,
         content: &mut dyn UIItem,
         render_buffers: &mut UINodeRenderBuffers,
     ) {
@@ -344,7 +342,7 @@ impl GPURenderTarget for WindowRenderTarget {
             occlusion_query_set: None,
         });
 
-        OrchestraRenderPipeline::draw(
+        OrchestraRenderer::draw(
             gpu_resources,
             pipelines,
             self.size.as_(),
@@ -354,7 +352,7 @@ impl GPURenderTarget for WindowRenderTarget {
             render_buffers,
         );
 
-        TextRenderPipeline::draw(
+        GlyphonTextRenderer::draw(
             gpu_resources,
             pipelines,
             self.size.as_(),

@@ -1,10 +1,10 @@
 //! Empty for now but this will house different kinds of Textures that can be rendered onto quads!
 
 use super::{backend::GPUResources, render_target::GPURenderTarget};
-use crate::gpu::backend::Pipelines;
-use crate::gpu::pipeline::orchestra_render_pipeline::OrchestraRenderPipeline;
-use crate::gpu::pipeline::text_pipeline::TextRenderPipeline;
-use crate::gpu::pipeline::GPURenderPipeline;
+use crate::gpu::backend::Renderers;
+use crate::gpu::pipeline::orchestra_renderer::OrchestraRenderer;
+use crate::gpu::pipeline::text_rendering::GlyphonTextRenderer;
+use crate::gpu::pipeline::GPURenderer;
 use vek::Extent2;
 
 /// Color data that can be used by quads or materials to create advanced graphics.
@@ -67,7 +67,7 @@ impl GPURenderTarget for ImageRenderTarget {
     fn draw(
         &mut self,
         gpu_resources: &mut GPUResources,
-        pipelines: &mut Pipelines,
+        pipelines: &mut Renderers,
         content: &mut dyn crate::ui::node::UIItem,
         render_artifacts: &mut super::world::UINodeRenderBuffers,
     ) {
@@ -103,7 +103,7 @@ impl GPURenderTarget for ImageRenderTarget {
             occlusion_query_set: None,
         });
 
-        OrchestraRenderPipeline::draw(
+        OrchestraRenderer::draw(
             gpu_resources,
             pipelines,
             size,
@@ -113,7 +113,7 @@ impl GPURenderTarget for ImageRenderTarget {
             render_artifacts,
         );
 
-        TextRenderPipeline::draw(
+        GlyphonTextRenderer::draw(
             gpu_resources,
             pipelines,
             size,

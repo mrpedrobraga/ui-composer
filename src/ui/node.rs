@@ -1,4 +1,4 @@
-use crate::gpu::backend::Pipelines;
+use crate::gpu::backend::Renderers;
 use crate::state::signal_ext::coalesce_polls;
 use crate::{gpu::backend::GPUResources, ui::graphics::Graphic};
 use std::{
@@ -28,7 +28,7 @@ pub trait UIItem: Send {
     fn prepare<'pass>(
         &'pass mut self,
         gpu_resources: &'pass GPUResources,
-        pipelines: &'pass Pipelines,
+        pipelines: &'pass Renderers,
         render_pass: &mut RenderPass<'pass>,
         texture: &Texture,
     ) {
@@ -102,7 +102,7 @@ where
     fn prepare<'pass>(
         &'pass mut self,
         gpu_resources: &'pass GPUResources,
-        pipelines: &'pass Pipelines,
+        pipelines: &'pass Renderers,
 
         render_pass: &mut RenderPass<'pass>,
         texture: &Texture,
@@ -158,7 +158,7 @@ where
     fn prepare<'pass>(
         &'pass mut self,
         gpu_resources: &'pass GPUResources,
-        pipelines: &'pass Pipelines,
+        pipelines: &'pass Renderers,
 
         render_pass: &mut RenderPass<'pass>,
         texture: &Texture,
@@ -213,7 +213,7 @@ where
     fn prepare<'pass>(
         &'pass mut self,
         gpu_resources: &'pass GPUResources,
-        pipelines: &'pass Pipelines,
+        pipelines: &'pass Renderers,
 
         render_pass: &mut RenderPass<'pass>,
         texture: &Texture,
@@ -265,7 +265,7 @@ where
     fn prepare<'pass>(
         &'pass mut self,
         gpu_resources: &'pass GPUResources,
-        pipelines: &'pass Pipelines,
+        pipelines: &'pass Renderers,
 
         render_pass: &mut RenderPass<'pass>,
         texture: &Texture,
@@ -349,7 +349,7 @@ impl<A: ItemDescriptor, const N: usize> UIItem for SizedVec<A, N> {
     fn prepare<'pass>(
         &'pass mut self,
         gpu_resources: &'pass GPUResources,
-        pipelines: &'pass Pipelines,
+        pipelines: &'pass Renderers,
 
         render_pass: &mut RenderPass<'pass>,
         texture: &Texture,

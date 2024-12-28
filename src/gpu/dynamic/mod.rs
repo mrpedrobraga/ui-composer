@@ -1,4 +1,4 @@
-use crate::gpu::backend::Pipelines;
+use crate::gpu::backend::Renderers;
 use crate::ui::node::{ItemDescriptor, UIItem};
 use futures_signals::signal_vec::MutableVec;
 use vek::Rect;
@@ -52,7 +52,7 @@ impl<A: UIItem + ItemDescriptor + Sync> UIItem for VecItem<A> {
     fn prepare<'pass>(
         &'pass mut self,
         gpu_resources: &'pass GPUResources,
-        pipelines: &'pass Pipelines,
+        pipelines: &'pass Renderers,
         mut render_pass: &mut RenderPass<'pass>,
         texture: &Texture,
     ) {
@@ -72,19 +72,19 @@ impl<A: UIItem + ItemDescriptor + Sync> UIItem for VecItem<A> {
             render_buffers.write_to_gpu(gpu_resources);
             gpu_resources.queue.submit([]);
 
-            render_pass.set_pipeline(&pipelines.graphics_pipeline.pipeline);
-            render_pass.set_bind_group(0, &pipelines.graphics_pipeline.uniform_bind_group, &[]);
+            render_pass.set_pipeline(&pipelines.graphics_renderer.pipeline);
+            render_pass.set_bind_group(0, &pipelines.graphics_renderer.uniform_bind_group, &[]);
             render_pass
-                .set_vertex_buffer(0, pipelines.graphics_pipeline.mesh_vertex_buffer.slice(..));
+                .set_vertex_buffer(0, pipelines.graphics_renderer.mesh_vertex_buffer.slice(..));
             render_pass.set_index_buffer(
-                pipelines.graphics_pipeline.mesh_index_buffer.slice(..),
+                pipelines.graphics_renderer.mesh_index_buffer.slice(..),
                 wgpu::IndexFormat::Uint32,
             );
             render_pass.set_vertex_buffer(1, render_buffers.instance_buffer());
             render_pass.set_vertex_buffer(1, render_buffers.instance_buffer());
 
             render_pass.draw_indexed(
-                0..pipelines.graphics_pipeline.mesh_index_count as u32,
+                0..pipelines.graphics_renderer.mesh_index_count as u32,
                 0,
                 0..quad_count as u32,
             );

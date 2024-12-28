@@ -1,5 +1,5 @@
-use super::GPURenderPipeline;
-use crate::gpu::backend::{GPUResources, Pipelines};
+use super::GPURenderer;
+use crate::gpu::backend::{GPUResources, Renderers};
 use crate::gpu::render_target::GPURenderTarget;
 use crate::gpu::world::UINodeRenderBuffers;
 use crate::prelude::UIItem;
@@ -10,7 +10,7 @@ use vek::{Extent2, Rect};
 use wgpu::{ColorTargetState, MultisampleState, RenderPass, Texture, TextureFormat};
 
 /// The pipeline for rendering text.
-pub struct TextRenderPipeline {
+pub struct GlyphonTextRenderer {
     text_renderer: TextRenderer,
     font_system: FontSystem,
     viewport: Viewport,
@@ -19,17 +19,17 @@ pub struct TextRenderPipeline {
     swash_cache: SwashCache,
 }
 
-impl GPURenderPipeline for TextRenderPipeline {
+impl GPURenderer for GlyphonTextRenderer {
     fn draw(
         gpu_resources: &mut GPUResources,
-        pipelines: &mut Pipelines,
+        pipelines: &mut Renderers,
         render_target_size: Extent2<f32>,
         texture: &Texture,
         render_pass: &mut RenderPass,
         ui_tree: &mut dyn UIItem,
         render_buffers: &mut UINodeRenderBuffers,
     ) {
-        let this = &mut pipelines.text_pipeline;
+        let this = &mut pipelines.text_renderer;
 
         this.viewport.update(
             &gpu_resources.queue,
@@ -89,7 +89,7 @@ impl GPURenderPipeline for TextRenderPipeline {
     }
 }
 
-impl TextRenderPipeline {
+impl GlyphonTextRenderer {
     pub fn singleton<'a, Target>(
         adapter: &'a wgpu::Adapter,
         device: &'a wgpu::Device,
