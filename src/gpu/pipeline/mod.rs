@@ -1,15 +1,13 @@
 use super::backend::{GPUResources, RNode};
-use crate::gpu::pipeline::orchestra_renderer::{GraphicsPipelineBuffers, OrchestraRenderer};
-use crate::gpu::pipeline::text_rendering::GlyphonTextRenderer;
+use crate::gpu::pipeline::graphics::{GraphicsPipelineBuffers, OrchestraRenderer};
+use crate::gpu::pipeline::text::GlyphonTextRenderer;
 use crate::prelude::UIItem;
 use vek::Extent2;
 use wgpu::{RenderPass, Texture};
 
-pub mod iris_renderer;
-pub mod orchestra_renderer;
-
-#[cfg(feature = "text")]
-pub mod text_rendering;
+pub mod graphics;
+pub mod text;
+pub mod three_dee;
 
 /// A renderer for drawing on the GPU.
 pub trait GPURenderer {

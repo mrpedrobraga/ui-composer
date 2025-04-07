@@ -150,7 +150,7 @@ impl<T: Send> UISignalExt for T where T: Signal {}
 /// UI Item that processes a signal and updates part of the UI tree whenever it changes.
 #[pin_project(project = FutureProcessorProj)]
 #[must_use = "Processes are Signals, and therefore do nothing unless polled"]
-pub struct FutureProcessor<F: Send, T>
+pub struct FutureProcessor<F, T>
 where
     F: Future<Output = T>,
     T: UIItem,
@@ -159,7 +159,7 @@ where
     signal: HoldFuture<F, T>,
 }
 
-impl<F: Future<Output = T> + Send, T: UIItem> Signal for FutureProcessor<F, T> {
+impl<F: Future<Output = T>, T: UIItem> Signal for FutureProcessor<F, T> {
     type Item = ();
 
     fn poll_change(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<Self::Item>> {
@@ -193,20 +193,18 @@ where
     ) -> std::task::Poll<Option<Self::Item>> {
         let HoldFutureProj { future, held_item } = self.project();
 
-        let poll = match future.poll(cx) {
-            Poll::Ready(mut v) => {
-                held_item.replace(v);
-                Poll::Ready(Some(()))
-            }
-            Poll::Pending => Poll::Pending,
-        };
-
         match held_item {
             Some(held_item) => {
                 let held_item = unsafe { Pin::new_unchecked(held_item) };
                 held_item.poll_processors(cx)
             }
-            None => poll,
+            None => match future.poll(cx) {
+                Poll::Ready(mut v) => {
+                    held_item.replace(v);
+                    Poll::Ready(Some(()))
+                }
+                Poll::Pending => Poll::Pending,
+            },
         }
     }
 }
@@ -282,4 +280,4 @@ pub trait UIFutureExt: Future + Send {
         }
     }
 }
-impl<T: Send> UIFutureExt for T where T: Future {}
+impl<T> UIFutureExt for T where T: Future + Send {}

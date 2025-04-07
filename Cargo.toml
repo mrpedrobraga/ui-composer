@@ -8,8 +8,7 @@ name = "ui_composer"
 # crate-type = ["dylib"]
 
 [features]
-default = ["text", "serde"]
-text = ["dep:glyphon"]
+default = ["serde"]
 serde = ["dep:serde"]
 debug = []
 
@@ -21,7 +20,7 @@ futures = "0.3.30"
 futures-channel = "0.3.30"
 futures-signals = "0.3.33"
 futures-time = "3.0.0"
-glyphon = { git = "https://github.com/grovesNL/glyphon.git", optional = true }
+glyphon = { git = "https://github.com/grovesNL/glyphon.git" }
 image = "0.25.5"
 pin-project = "1.1.5"
 pollster = "0.3.0"
@@ -52,3 +51,4 @@ itertools = "0.13.0"
 serde_json = "1.0.134"
 async-std = "1.13.0"
 vek = { version = "0.17.0", features = ["serde"] }
+pollster = { version = "0.3.0", features = ["macro"] }

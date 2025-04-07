@@ -1,35 +1,11 @@
 use crate::geometry::Vector;
+use crate::prelude::Slot;
 use futures_time::task;
 use futures_time::time::{Duration, Instant};
 use std::fmt::Debug;
 use std::future::Future;
 
 pub mod spring;
-
-pub trait Slot {
-    type Item;
-    fn put(&mut self, value: Self::Item);
-    fn take(&self) -> Self::Item
-    where
-        Self::Item: Copy;
-}
-
-pub struct Ref<'a, T>(pub &'a mut T);
-
-impl<T> Slot for Ref<'_, T> {
-    type Item = T;
-
-    fn put(&mut self, value: Self::Item) {
-        *self.0 = value;
-    }
-
-    fn take(&self) -> Self::Item
-    where
-        Self::Item: Copy,
-    {
-        *self.0
-    }
-}
 
 /// An alternative of [`Stream`] which is lossy
 /// for trying to keep up with an implicit flow of time.
@@ -42,7 +18,9 @@ pub trait RealTimeStream {
         &mut self,
         initial_value: Self::Item,
         frame_params: AnimationFrameParams,
-    ) -> Poll<Self::Item>;
+    ) -> Poll<Self::Item>
+    where
+        Self::Item: Copy;
 
     /// Returns a new stream composed of _this_ stream and [`other`] chained together.
     fn chain<B>(self, other: B) -> Chain<Self, B>
@@ -66,16 +44,14 @@ pub trait RealTimeStream {
         ForEach { inner: self, f }
     }
 
-    fn animate_value<S>(mut self, mut state: S) -> impl Future<Output = ()>
+    fn animate_from<F>(mut self, mut f: F, initial_value: Self::Item) -> impl Future<Output = ()>
     where
         Self::Item: Copy,
         Self: Sized,
-        S: Slot<Item = Self::Item>,
+        F: FnMut(Self::Item) -> (),
     {
-        let initial_value = state.take();
         let start = Instant::now();
         let mut last_frame = Instant::now();
-
         async move {
             loop {
                 let delta = last_frame.elapsed().into();
@@ -84,10 +60,10 @@ pub trait RealTimeStream {
                 match poll {
                     Poll::Ongoing(frame) => {
                         last_frame = Instant::now();
-                        state.put(frame);
+                        f(frame);
                     }
                     Poll::Finished(frame) => {
-                        state.put(frame);
+                        f(frame);
                         break;
                     }
                 }
@@ -95,6 +71,26 @@ pub trait RealTimeStream {
                 task::sleep(Duration::from_millis(16) - last_frame.elapsed().into()).await;
             }
         }
+    }
+
+    fn animate_value<S>(self, state: S) -> impl Future<Output = ()>
+    where
+        Self::Item: Copy,
+        Self: Sized,
+        S: Slot<Item = Self::Item> + 'static,
+    {
+        let initial_value = state.take();
+        self.animate_from(move |frame| state.put(frame), initial_value)
+    }
+
+    fn animate_ref<S>(self, state: &S) -> impl Future<Output = ()>
+    where
+        Self::Item: Copy,
+        Self: Sized,
+        S: Slot<Item = Self::Item> + 'static,
+    {
+        let initial_value = state.take();
+        self.animate_from(move |frame| state.put(frame), initial_value)
     }
 }
 
@@ -176,7 +172,10 @@ where
         &mut self,
         initial_value: Self::Item,
         frame_params: AnimationFrameParams,
-    ) -> Poll<Self::Item> {
+    ) -> Poll<Self::Item>
+    where
+        Self::Item: Copy,
+    {
         let mut poll = self.inner.process_tick(initial_value, frame_params);
 
         match &poll {
@@ -200,14 +199,17 @@ impl<TItem: Vector> LinearInterpolateStream<TItem> {
     }
 }
 
-impl<TItem: Vector + Copy> RealTimeStream for LinearInterpolateStream<TItem> {
+impl<TItem: Vector> RealTimeStream for LinearInterpolateStream<TItem> {
     type Item = TItem;
 
     fn process_tick(
         &mut self,
         initial_value: Self::Item,
         frame_params: AnimationFrameParams,
-    ) -> Poll<Self::Item> {
+    ) -> Poll<Self::Item>
+    where
+        Self::Item: Copy,
+    {
         if frame_params.start.elapsed() >= self.duration.into() {
             Poll::Finished(self.to)
         } else {

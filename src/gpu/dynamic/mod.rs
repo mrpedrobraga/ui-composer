@@ -1,5 +1,5 @@
 use super::backend::GPUResources;
-use crate::gpu::pipeline::orchestra_renderer::GraphicsPipelineBuffers;
+use crate::gpu::pipeline::graphics::GraphicsPipelineBuffers;
 use crate::gpu::pipeline::{RendererBuffers, Renderers};
 use crate::ui::node::{ItemDescriptor, UIItem};
 use futures_signals::signal_vec::MutableVec;

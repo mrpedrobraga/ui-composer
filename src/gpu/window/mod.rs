@@ -1,14 +1,14 @@
 use super::{
     backend::{GPUResources, Node, RNode},
     pipeline::{
-        orchestra_renderer::{container_size_to_wgpu_mat, OrchestraRenderer, Uniforms},
+        graphics::{container_size_to_wgpu_mat, OrchestraRenderer, Uniforms},
         GPURenderer,
     },
     render_target::{self, GPURenderTarget},
     view::{View, ViewNode},
 };
-use crate::gpu::pipeline::orchestra_renderer::GraphicsPipelineBuffers;
-use crate::gpu::pipeline::text_rendering::GlyphonTextRenderer;
+use crate::gpu::pipeline::graphics::GraphicsPipelineBuffers;
+use crate::gpu::pipeline::text::GlyphonTextRenderer;
 use crate::gpu::pipeline::{RendererBuffers, Renderers};
 use crate::prelude::flow::CartesianFlowDirection;
 use crate::state::process::{SignalProcessor, UISignalExt};

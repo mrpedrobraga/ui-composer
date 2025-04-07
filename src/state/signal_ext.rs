@@ -1,11 +1,11 @@
-use crate::prelude::animation::Slot;
+use crate::prelude::Slot;
 use futures_signals::signal::Mutable;
 use std::task::Poll;
 
 impl<A> Slot for Mutable<A> {
     type Item = A;
 
-    fn put(&mut self, value: Self::Item) {
+    fn put(&self, value: Self::Item) {
         self.set(value);
     }
 

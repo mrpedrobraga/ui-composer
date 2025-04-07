@@ -16,7 +16,7 @@ pub type UIEvent = winit::event::WindowEvent;
 /// In practice, any single UI node should handle as little as possible.
 /// The entire user interface is made of UI Nodes arranged in a graph.
 pub trait UIItem: Send {
-    /// Handles an UI Event (or not). Returns whether the event was handled.
+    /// Handles a UI Event (or not). Returns whether the event was handled.
     #[inline(always)]
     fn handle_ui_event(&mut self, event: UIEvent) -> bool;
 
@@ -42,9 +42,9 @@ pub trait UIItem: Send {
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>>;
 }
 
-/// Trait to get compile-time information about an UI Node.
+/// Trait to get compile-time information about a UI Item.
 pub trait ItemDescriptor: UIItem {
-    /// The amount of primitives this UI Node will have when drawing.
+    /// The amount of primitives this UI Item will have when drawing.
     const QUAD_COUNT: usize;
 
     /// Gets the rectangle this primitive occupies, for rendering purposes.

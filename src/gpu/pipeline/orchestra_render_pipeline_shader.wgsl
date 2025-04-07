@@ -88,8 +88,8 @@ fn fs_main(
     var a = 1.0;
 
     // Outline Stencil
-    let border_width = 20.0;
-    a = smoothstep(-border_width - 1.0, -border_width, sdf) - smoothstep(-1.0, 0.0, sdf);
+    //let border_width = 20.0;
+    //a = smoothstep(-border_width - 1.0, -border_width, sdf) - smoothstep(-1.0, 0.0, sdf);
 
     // NOTE: Debanding should *not* be applied when rendering user images.
     // Or at the very least should be made optional.

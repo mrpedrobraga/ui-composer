@@ -1,6 +1,6 @@
-use super::{pipeline::orchestra_renderer::OrchestraRenderer, window::WindowRenderTarget};
+use super::{pipeline::graphics::OrchestraRenderer, window::WindowRenderTarget};
 use crate::backend::Backend;
-use crate::gpu::pipeline::text_rendering::GlyphonTextRenderer;
+use crate::gpu::pipeline::text::GlyphonTextRenderer;
 use crate::gpu::pipeline::Renderers;
 use crate::ui::node::UIEvent;
 use futures::StreamExt;

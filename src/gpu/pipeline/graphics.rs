@@ -125,7 +125,7 @@ impl OrchestraRenderer {
     {
         let uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Render Stack Uniform Buffer"),
-            size: std::mem::size_of::<Uniforms>() as u64,
+            size: size_of::<Uniforms>() as u64,
             mapped_at_creation: false,
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
@@ -212,7 +212,7 @@ impl OrchestraRenderer {
 impl Graphic {
     fn buffer_layout() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Self>() as BufferAddress,
+            array_stride: size_of::<Self>() as BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
             attributes: &[
                 // transformation matrices
@@ -281,7 +281,7 @@ struct Vertex {
 impl Vertex {
     const fn buffer_layout() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Self>() as wgpu::BufferAddress,
+            array_stride: size_of::<Self>() as BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
             attributes: &[wgpu::VertexAttribute {
                 offset: 0,

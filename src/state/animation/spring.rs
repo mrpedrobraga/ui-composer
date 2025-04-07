@@ -18,7 +18,7 @@ pub struct Spring<T> {
 
 impl<T> Spring<T>
 where
-    T: Default + Vector + Send + Sync,
+    T: Default + Vector + Send + Sync + 'static,
     f32: std::ops::Mul<T, Output = T>,
 {
     pub fn new(equilibrium: T, stiffness: f32, damping: f32, mass: f32) -> Self {

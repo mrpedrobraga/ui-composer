@@ -1,8 +1,8 @@
 //! Empty for now but this will house different kinds of Textures that can be rendered onto quads!
 
 use super::{backend::GPUResources, render_target::GPURenderTarget};
-use crate::gpu::pipeline::orchestra_renderer::OrchestraRenderer;
-use crate::gpu::pipeline::text_rendering::GlyphonTextRenderer;
+use crate::gpu::pipeline::graphics::OrchestraRenderer;
+use crate::gpu::pipeline::text::GlyphonTextRenderer;
 use crate::gpu::pipeline::{GPURenderer, RendererBuffers, Renderers};
 use vek::Extent2;
 

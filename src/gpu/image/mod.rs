@@ -1,6 +1,6 @@
 use super::{backend::RNode, texture::ImageRenderTarget};
 use crate::gpu::backend::GPUResources;
-use crate::gpu::pipeline::orchestra_renderer::GraphicsPipelineBuffers;
+use crate::gpu::pipeline::graphics::GraphicsPipelineBuffers;
 use crate::gpu::pipeline::{RendererBuffers, Renderers};
 use crate::gpu::render_target::GPURenderTarget;
 use crate::prelude::flow::CartesianFlowDirection;
