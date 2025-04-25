@@ -1,4 +1,5 @@
 use super::backend::GPUResources;
+use super::pipeline::text::TextPipelineBuffers;
 use crate::gpu::pipeline::graphics::GraphicsPipelineBuffers;
 use crate::gpu::pipeline::{RendererBuffers, Renderers};
 use crate::ui::node::{ItemDescriptor, UIItem};
@@ -21,13 +22,14 @@ impl<A: UIItem + ItemDescriptor> VecItem<A> {
         }
     }
 
-    pub fn initialize(&mut self, gpu_resources: &GPUResources) {
+    pub fn initialize(&mut self, gpu_resources: &GPUResources, renderers: &mut Renderers) {
         if let None = self.render_buffers {
             self.render_buffers = Some(RendererBuffers {
                 graphics_render_buffers: GraphicsPipelineBuffers::new(
                     gpu_resources,
                     self.items.lock_ref().len() * A::QUAD_COUNT,
                 ),
+                text_render_buffers: TextPipelineBuffers::new(gpu_resources, 10, &mut renderers.text_renderer)
             });
         }
     }
@@ -58,8 +60,6 @@ impl<A: UIItem + ItemDescriptor + Sync> UIItem for VecItem<A> {
         mut render_pass: &mut RenderPass<'pass>,
         texture: &Texture,
     ) {
-        self.initialize(gpu_resources);
-
         if let Some(render_buffers) = &mut self.render_buffers {
             let mut graphics_render_buffers = &mut render_buffers.graphics_render_buffers;
             let item_count = self.items.lock_ref().len();

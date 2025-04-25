@@ -1,3 +1,4 @@
+use super::pipeline::text::TextPipelineBuffers;
 use super::{backend::RNode, texture::ImageRenderTarget};
 use crate::gpu::backend::GPUResources;
 use crate::gpu::pipeline::graphics::GraphicsPipelineBuffers;
@@ -49,6 +50,7 @@ where
         self,
         event_loop: &winit::event_loop::ActiveEventLoop,
         gpu_resources: &gpu::backend::GPUResources,
+        renderers: &mut Renderers,
     ) -> Self::ReifiedType {
         ImageNode {
             rect: self.rect,
@@ -56,6 +58,7 @@ where
             render_target: ImageRenderTarget::new(gpu_resources, self.rect.extent()),
             render_buffers: RendererBuffers {
                 graphics_render_buffers: GraphicsPipelineBuffers::new(gpu_resources, T::QUAD_COUNT),
+                text_render_buffers: TextPipelineBuffers::new(gpu_resources, 10, &mut renderers.text_renderer),
             },
         }
     }

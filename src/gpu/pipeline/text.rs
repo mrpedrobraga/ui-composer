@@ -1,3 +1,5 @@
+use std::iter::repeat_with;
+
 use super::{GPURenderer, RendererBuffers, Renderers};
 use crate::gpu::backend::GPUResources;
 use crate::gpu::render_target::GPURenderTarget;
@@ -6,7 +8,42 @@ use glyphon::{
     Cache, FontSystem, Resolution, SwashCache, TextAtlas, TextBounds, TextRenderer, Viewport,
 };
 use vek::{Extent2, Rect};
-use wgpu::{ColorTargetState, MultisampleState, RenderPass, Texture, TextureFormat};
+use wgpu::{hal::auxil::db, ColorTargetState, MultisampleState, RenderPass, Texture, TextureFormat};
+
+pub struct TextPipelineBuffers {
+    buffers: Vec<cosmic_text::Buffer>,
+}
+
+impl TextPipelineBuffers {
+    pub fn new(gpu_resources: &GPUResources, text_buffer_count: usize, renderer: &mut GlyphonTextRenderer) -> Self {
+        let new_buffer = || {
+            let mut buffer =
+            cosmic_text::Buffer::new(&mut renderer.font_system, cosmic_text::Metrics::new(16.0, 20.0));
+
+            buffer.set_text(
+                &mut renderer.font_system,
+                "Hello there!",
+                cosmic_text::Attrs::new().family(cosmic_text::Family::Name("Work Sans")),
+                cosmic_text::Shaping::Advanced,
+            );
+            buffer.set_size(
+                &mut renderer.font_system,
+                Some(100.0),
+                Some(100.0),
+            );
+            buffer.set_wrap(&mut renderer.font_system, cosmic_text::Wrap::Word);
+            buffer.shape_until_scroll(&mut renderer.font_system, false);
+            buffer
+        };
+
+        let mut buffers = Vec::with_capacity(text_buffer_count);
+        buffers.extend(repeat_with(new_buffer).take(text_buffer_count));
+
+        Self {
+            buffers
+        }
+    }
+}
 
 /// The pipeline for rendering text.
 pub struct GlyphonTextRenderer {
@@ -38,37 +75,22 @@ impl GPURenderer for GlyphonTextRenderer {
             },
         );
 
-        let mut buffer =
-            cosmic_text::Buffer::new(&mut this.font_system, cosmic_text::Metrics::new(16.0, 20.0));
-
-        buffer.set_text(
-            &mut this.font_system,
-            "عيد ميلاد مجيد!",
-            cosmic_text::Attrs::new().family(cosmic_text::Family::Name("Work Sans")),
-            cosmic_text::Shaping::Advanced,
-        );
-        buffer.set_size(
-            &mut this.font_system,
-            Some(texture.width() as f32),
-            Some(texture.height() as f32),
-        );
-        buffer.set_wrap(&mut this.font_system, cosmic_text::Wrap::Word);
-        buffer.shape_until_scroll(&mut this.font_system, false);
-
-        let text_areas = [glyphon::TextArea {
-            buffer: &buffer,
-            left: 0.0,
-            top: 0.0,
-            scale: 1.0,
-            bounds: TextBounds {
-                left: 0,
-                top: 0,
-                right: texture.width() as i32,
-                bottom: texture.height() as i32,
-            },
-            default_color: glyphon::Color::rgb(255, 255, 255),
-            custom_glyphs: &[],
-        }];
+        let text_areas = render_buffers.text_render_buffers.buffers.iter().map(|buffer| {
+            glyphon::TextArea {
+                buffer: &buffer,
+                left: 0.0,
+                top: 0.0,
+                scale: 1.0,
+                bounds: TextBounds {
+                    left: 0,
+                    top: 0,
+                    right: texture.width() as i32,
+                    bottom: texture.height() as i32,
+                },
+                default_color: glyphon::Color::rgb(255, 255, 255),
+                custom_glyphs: &[],
+            }
+        });
 
         this.text_renderer
             .prepare(

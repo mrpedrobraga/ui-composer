@@ -2,6 +2,7 @@ use super::backend::{GPUResources, RNode};
 use crate::gpu::pipeline::graphics::{GraphicsPipelineBuffers, OrchestraRenderer};
 use crate::gpu::pipeline::text::GlyphonTextRenderer;
 use crate::prelude::UIItem;
+use text::TextPipelineBuffers;
 use vek::Extent2;
 use wgpu::{RenderPass, Texture};
 
@@ -32,4 +33,5 @@ pub struct Renderers {
 
 pub struct RendererBuffers {
     pub(crate) graphics_render_buffers: GraphicsPipelineBuffers,
+    pub(crate) text_render_buffers: TextPipelineBuffers,
 }

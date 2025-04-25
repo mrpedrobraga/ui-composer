@@ -54,7 +54,7 @@ pub struct WinitWGPUBackend<Nd: Node> {
     #[pin]
     pub node_tree: Arc<Mutex<Nd::ReifiedType>>,
     pub gpu_resources: GPUResources,
-    pub pipelines: Renderers,
+    pub renderers: Renderers,
 }
 
 impl<Nd: Node + 'static> Backend for WinitWGPUBackend<Nd> {
@@ -206,7 +206,7 @@ impl<Nd: Node + Send + 'static> WinitBackend for WinitWGPUBackend<Nd> {
             render_target_formats,
         );
 
-        let pipelines = Renderers {
+        let mut renderers = Renderers {
             graphics_renderer: graphics_pipeline,
             text_renderer: text_pipeline,
         };
@@ -217,13 +217,13 @@ impl<Nd: Node + Send + 'static> WinitBackend for WinitWGPUBackend<Nd> {
             queue,
             adapter,
         };
-
-        let node_tree = tree_descriptor.reify(event_loop, &gpu_resources);
+        
+        let node_tree = tree_descriptor.reify(event_loop, &gpu_resources, &mut renderers);
 
         let mut backend = Self {
             node_tree: Arc::new(Mutex::new(node_tree)),
             gpu_resources,
-            pipelines,
+            renderers,
         };
 
         // This render engine will be shared between your application (so that it can receive OS events)
@@ -258,7 +258,7 @@ impl<Nd: Node + Send + 'static> WinitBackend for WinitWGPUBackend<Nd> {
         match self.node_tree.lock() {
             Ok(mut engine_tree) => engine_tree.handle_window_event(
                 &mut self.gpu_resources,
-                &mut self.pipelines,
+                &mut self.renderers,
                 window_id,
                 event,
             ),
@@ -272,7 +272,7 @@ impl<Nd: Node + Send + 'static> WinitBackend for WinitWGPUBackend<Nd> {
 pub trait Node: Send {
     /// The type this node descriptor generates when reified.
     type ReifiedType: RNode;
-    fn reify(self, event_loop: &ActiveEventLoop, gpu_resources: &GPUResources)
+    fn reify(self, event_loop: &ActiveEventLoop, gpu_resources: &GPUResources, renderers: &mut Renderers)
         -> Self::ReifiedType;
 }
 
@@ -308,10 +308,11 @@ where
         self,
         event_loop: &ActiveEventLoop,
         gpu_resources: &GPUResources,
+        renderers: &mut Renderers,
     ) -> Self::ReifiedType {
         (
-            self.0.reify(event_loop, gpu_resources),
-            self.1.reify(event_loop, gpu_resources),
+            self.0.reify(event_loop, gpu_resources, renderers),
+            self.1.reify(event_loop, gpu_resources, renderers),
         )
     }
 }

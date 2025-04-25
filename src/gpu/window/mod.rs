@@ -1,8 +1,7 @@
 use super::{
     backend::{GPUResources, Node, RNode},
     pipeline::{
-        graphics::{container_size_to_wgpu_mat, OrchestraRenderer, Uniforms},
-        GPURenderer,
+        graphics::{container_size_to_wgpu_mat, OrchestraRenderer, Uniforms}, text::TextPipelineBuffers, GPURenderer
     },
     render_target::{self, GPURenderTarget},
     view::{View, ViewNode},
@@ -138,6 +137,7 @@ where
         self,
         event_loop: &ActiveEventLoop,
         gpu_resources: &GPUResources,
+        renderers: &mut Renderers,
     ) -> Self::ReifiedType {
         let window_default_size = self.state.size.get();
 
@@ -159,6 +159,7 @@ where
 
         let render_buffers = RendererBuffers {
             graphics_render_buffers: GraphicsPipelineBuffers::new(gpu_resources, T::QUAD_COUNT),
+            text_render_buffers: TextPipelineBuffers::new(gpu_resources, 1, &mut renderers.text_renderer)
         };
 
         WindowNode {
