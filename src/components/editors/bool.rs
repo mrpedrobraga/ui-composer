@@ -26,6 +26,7 @@ fn SwitchBase(state: Mutable<bool>) -> impl Resizable + LayoutItem {
         let tap = Tap::new(rect, Mutable::new(None), move || state_.set(!state_.get()));
 
         items!(
+            tap,
             Spring::if_then_else(state.signal(), anim_state.clone(), 1.0, 0.0).process(),
             anim_state
                 .signal()
