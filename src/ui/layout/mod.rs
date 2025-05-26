@@ -5,7 +5,6 @@ use futures_signals::signal::{Signal, SignalExt};
 use vek::{Extent2, Mat3, Rect, Vec2};
 
 pub mod flow;
-pub mod functions;
 
 pub use flow::CoordinateSystemProvider;
 
@@ -20,11 +19,11 @@ pub struct ParentHints {
 
 impl ParentHints {
     pub fn writing_axis(&self) -> Vec2<f32> {
-        self.current_writing_flow_direction.get_axis(self)
+        self.current_writing_flow_direction.get_axes(self)
     }
 
     pub fn writing_cross_axis(&self) -> Vec2<f32> {
-        self.current_writing_cross_flow_direction.get_axis(self)
+        self.current_writing_cross_flow_direction.get_axes(self)
     }
 
     pub fn writing_origin(&self) -> Vec2<f32> {

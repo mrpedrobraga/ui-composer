@@ -40,7 +40,6 @@ where
 }
 
 /// Divides a total number of shares for n elements, where the elements can be biased with a weight, or have a minimum share.
-/// It does three dynamic allocations, and runs in O(n * log(n)).
 pub fn weighted_division_with_minima<T: BaseFloat + std::iter::Sum>(
     total: T,
     w: &[T],

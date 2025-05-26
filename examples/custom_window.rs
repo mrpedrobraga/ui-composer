@@ -12,7 +12,14 @@ fn main() {
 }
 
 fn App() -> impl LayoutItem {
-    Center(Drag())
+    let mut drag_bar = Drag();
+
+    ResizableItem::new(move |parent| {
+        drag_bar.lay(ParentHints {
+            rect: Rect::new(0.0, 0.0, parent.rect.w, drag_bar.get_minimum_size().h),
+            ..parent
+        })
+    })
 }
 
 fn Drag() -> impl LayoutItem {
@@ -27,5 +34,5 @@ fn Drag() -> impl LayoutItem {
             parent.rect.with_color(Rgb::new(1.0, 1.0, 1.0))
         }
     })
-    .with_minimum_size(Extent2::new(100.0, 100.0))
+    .with_minimum_size(Extent2::new(0.0, 32.0))
 }

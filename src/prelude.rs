@@ -18,6 +18,17 @@ macro_rules! items {
     ($a:expr $(,)?) => { $a };
     ($a:expr, $b:expr) => {($a, $b)};
     ($a:expr, $($rest:tt)*) => {
-        ($a, items!($($rest)*))
+        ($a, ::ui_composer::items!($($rest)*))
+    };
+}
+
+#[macro_export]
+macro_rules! Flex {
+    ($( $weight:expr => $item:expr ),* $(,)?) => {
+        ::ui_composer::prelude::Flex(
+            ::ui_composer::items![
+                $(::ui_composer::prelude::FlexItem($item, $weight),)*
+            ]
+        )
     };
 }

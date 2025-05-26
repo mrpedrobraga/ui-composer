@@ -6,7 +6,7 @@ use ui_composer::prelude::*;
 
 fn main() {
     UIComposer::run(
-        Window(Center(Row(
+        Window(Center(Column(
             Row(
                 SmoothSquare("A", Rgb::new(126.0, 46.0, 132.0) / 255.0),
                 SmoothSquare("B", Rgb::new(209.0, 64.0, 129.0) / 255.0),
@@ -86,7 +86,7 @@ fn hover_square(
 
     let animation_factor_pct = animation_factor / 50.0;
 
-    items!(
+    items! {
         hover,
         tap,
         rect.with_color(Lerp::lerp(
@@ -100,5 +100,5 @@ fn hover_square(
             animation_factor_pct
         )),
         hover_rect_graphic
-    )
+    }
 }
