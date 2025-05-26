@@ -1,6 +1,6 @@
 use super::{GPURenderer, RendererBuffers, Renderers};
 use crate::gpu::backend::GPUResources;
-use crate::gpu::render_target::RenderTargetContent;
+use crate::gpu::render_target::Render;
 use crate::prelude::UIItem;
 use crate::{gpu::render_target::GPURenderTarget, ui::graphics::Graphic};
 use bytemuck::{Pod, Zeroable};
@@ -14,7 +14,7 @@ use wgpu::{
 
 pub mod implementations;
 
-pub trait GraphicItemDescriptor: GraphicItem {
+pub trait RenderGraphicDescriptor: RenderGraphic {
     /// The amount of primitives this UI Item will have when drawing.
     const QUAD_COUNT: usize;
 
@@ -23,7 +23,7 @@ pub trait GraphicItemDescriptor: GraphicItem {
     fn get_render_rect(&self) -> Option<Rect<f32, f32>>;
 }
 
-pub trait GraphicItem {
+pub trait RenderGraphic {
     /// Pushes quads to a quad buffer slice.
     #[inline(always)]
     fn write_quads(&self, quad_buffer: &mut [Graphic]);
@@ -95,7 +95,7 @@ impl GPURenderer for OrchestraRenderer {
         render_target_size: Extent2<f32>,
         texture: &Texture,
         render_pass: &mut RenderPass,
-        ui_tree: &mut dyn RenderTargetContent,
+        ui_tree: &mut dyn Render,
         render_buffers: &mut RendererBuffers,
     ) {
         let this = &mut pipelines.graphics_renderer;

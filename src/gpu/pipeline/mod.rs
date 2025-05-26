@@ -1,5 +1,5 @@
 use super::backend::{GPUResources, ReifiedNode};
-use super::render_target::RenderTargetContent;
+use super::render_target::Render;
 use crate::gpu::pipeline::graphics::{GraphicsPipelineBuffers, OrchestraRenderer};
 use crate::gpu::pipeline::text::GlyphonTextRenderer;
 use crate::prelude::UIItem;
@@ -19,7 +19,7 @@ pub trait GPURenderer {
         render_target_size: Extent2<f32>,
         texture: &Texture,
         render_pass: &mut RenderPass,
-        ui_tree: &mut dyn RenderTargetContent,
+        ui_tree: &mut dyn Render,
         render_buffers: &mut RendererBuffers,
     );
 }

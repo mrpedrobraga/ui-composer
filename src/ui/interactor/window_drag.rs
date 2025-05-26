@@ -1,5 +1,5 @@
 use super::Interactor;
-use crate::{gpu::pipeline::graphics::{GraphicItem, GraphicItemDescriptor}, ui::node::{UIEvent, UIItem}};
+use crate::{gpu::pipeline::{graphics::{RenderGraphic, RenderGraphicDescriptor}, text::RenderText}, ui::node::{UIEvent, UIItem}};
 use futures_signals::signal::Mutable;
 use std::{
     pin::Pin,
@@ -29,20 +29,30 @@ impl Drag {
 }
 
 impl Interactor for Drag {}
-impl GraphicItemDescriptor for Drag {
+impl RenderGraphicDescriptor for Drag {
     const QUAD_COUNT: usize = 0;
 
     fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
         None // Some(self.area))
     }
 }
-impl GraphicItem for Drag {
+impl RenderGraphic for Drag {
     fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
         /* Maybe push something here in Debug mode? */
     }
 
     fn get_quad_count(&self) -> usize {
         Self::QUAD_COUNT
+    }
+}
+impl RenderText for Drag {
+    fn push_text<'a>(
+        &self,
+        buffer: &'a glyphon::Buffer,
+        bounds: glyphon::TextBounds,
+        container: &mut Vec<glyphon::TextArea<'a>>,
+    ) {
+        // Nothing here!
     }
 }
 impl UIItem for Drag {

@@ -1,14 +1,13 @@
-use super::{pipeline::graphics::OrchestraRenderer, render_target::RenderTargetContent, window::WindowRenderTarget};
+use super::{pipeline::graphics::OrchestraRenderer, render_target::Render, window::WindowRenderTarget};
 use crate::backend::Backend;
 use crate::gpu::pipeline::text::GlyphonTextRenderer;
 use crate::gpu::pipeline::Renderers;
 use crate::ui::node::UIEvent;
 use futures::StreamExt;
-use futures_signals::signal::{Signal, SignalExt};
+use futures_signals::signal::{Signal, SignalExt, SignalFuture};
 use pin_project::pin_project;
-use pollster::FutureExt as _;
 use std::{
-    marker::PhantomData, ops::DerefMut, pin::Pin, sync::{Arc, Mutex}, task::{Context, Poll}
+    future::Future, marker::PhantomData, ops::DerefMut, pin::Pin, sync::{Arc, Mutex}, task::{Context, Poll}
 };
 use wgpu::{MemoryHints, TextureFormat};
 use winit::{
@@ -35,11 +34,11 @@ pub struct WinitApplicationHandler<A: Node> {
 
 /// A Backend that interacts with [`winit`]
 pub trait WinitBackend: Backend + Send {
-    type NodeTreeDescriptorType: Node;
-    fn create(
+    type NodeTreeDescriptorType: Node + 'static;
+    async fn create(
         event_loop: &ActiveEventLoop,
         tree_descriptor: Self::NodeTreeDescriptorType,
-    ) -> Arc<Mutex<Self>>;
+    ) -> (Arc<Mutex<Self>>, SignalFuture<BackendProcessExecutor<WinitWGPUBackend<Self::NodeTreeDescriptorType>>>);
     fn handle_resumed(&mut self);
     fn handle_window_event(&mut self, window_id: WindowId, event: UIEvent);
 }
@@ -85,12 +84,18 @@ impl<Nd: Node + 'static> Backend for WinitWGPUBackend<Nd> {
 impl<A: Node + 'static> ApplicationHandler for WinitApplicationHandler<A> {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         if let None = self.backend {
-            self.backend = Some(WinitWGPUBackend::create(
+            let (backend, processor) = futures::executor::block_on(WinitWGPUBackend::create(
                 event_loop,
                 self.node_tree_descriptor_opt
                     .take()
                     .expect("Failed to create WinitWgpu app."),
-            ))
+            ));
+
+            std::thread::spawn(|| {
+                futures::executor::block_on(processor);
+            });
+
+            self.backend = Some(backend)
         }
 
         if let Some(backend) = &mut self.backend {
@@ -148,7 +153,7 @@ impl<'engine: 'static, E: Node + Send + 'engine> WinitWGPUBackend<E> {
 impl<Nd: Node + Send + 'static> WinitBackend for WinitWGPUBackend<Nd> {
     type NodeTreeDescriptorType = Nd;
 
-    fn create(event_loop: &ActiveEventLoop, tree_descriptor: Nd) -> Arc<Mutex<Self>> {
+    async fn create(event_loop: &ActiveEventLoop, tree_descriptor: Nd) -> (Arc<Mutex<Self>>, SignalFuture<BackendProcessExecutor<WinitWGPUBackend<Nd>>>) {
         let instance = wgpu::Instance::default();
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -156,7 +161,7 @@ impl<Nd: Node + Send + 'static> WinitBackend for WinitWGPUBackend<Nd> {
                 force_fallback_adapter: false,
                 compatible_surface: None,
             })
-            .block_on()
+            .await
             .unwrap();
 
         let (device, queue) = adapter
@@ -170,7 +175,7 @@ impl<Nd: Node + Send + 'static> WinitBackend for WinitWGPUBackend<Nd> {
                 },
                 None,
             )
-            .block_on()
+            .await
             .unwrap();
 
         // TODO: Get the texture format from a render target and not guess it.
@@ -231,14 +236,11 @@ impl<Nd: Node + Send + 'static> WinitBackend for WinitWGPUBackend<Nd> {
         // It needs not be an other thread, just a different execution context.
         let backend_clone = backend.clone();
 
-        std::thread::spawn(|| {
-            pollster::block_on(BackendProcessExecutor::new(backend_clone).to_future());
-            println!("Finished blocking.")
-        });
+        let backend_processor = BackendProcessExecutor::new(backend_clone).to_future();
 
         // I should perhaps return a (RenderEngine, impl Future) here!
         // The problem of course is that winit does not play well with async Rust yet :-(
-        return backend;
+        return (backend, backend_processor);
     }
 
     fn handle_resumed(&mut self) {

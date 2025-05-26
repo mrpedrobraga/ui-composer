@@ -1,7 +1,7 @@
 use super::{
     backend::{GPUResources, Node, ReifiedNode},
-    pipeline::{graphics::OrchestraRenderer, text::TextPipelineBuffers, GPURenderer},
-    render_target::{GPURenderTarget, RenderTargetContent},
+    pipeline::{graphics::OrchestraRenderer, text::{GlyphonTextRenderer, TextPipelineBuffers}, GPURenderer},
+    render_target::{GPURenderTarget, Render, RenderDescriptor},
 };
 use crate::state::Mutable;
 use crate::ui::{
@@ -84,7 +84,7 @@ impl<A> WindowNodeDescriptor<A> {
 
 /// Describes a new window with its contents and its own state.
 #[allow(non_snake_case)]
-pub fn Window<T>(mut item: T) -> WindowNodeDescriptor<impl UIItemDescriptor>
+pub fn Window<T>(mut item: T) -> WindowNodeDescriptor<impl RenderDescriptor>
 where
     T: LayoutItem + Send + Sync,
 {
@@ -121,9 +121,9 @@ where
     }
 }
 
-impl<T> Node for WindowNodeDescriptor<T>
+impl<A> Node for WindowNodeDescriptor<A>
 where
-    T: UIItemDescriptor + 'static,
+    A: UIItemDescriptor + Render + 'static,
 {
     type ReifiedType = WindowNode;
 
@@ -153,7 +153,7 @@ where
         let window = std::sync::Arc::new(window);
 
         let render_buffers = RendererBuffers {
-            graphics_render_buffers: GraphicsPipelineBuffers::new(gpu_resources, T::QUAD_COUNT),
+            graphics_render_buffers: GraphicsPipelineBuffers::new(gpu_resources, A::QUAD_COUNT),
             text_render_buffers: TextPipelineBuffers::new(
                 gpu_resources,
                 &mut renderers.text_renderer,
@@ -202,7 +202,7 @@ pub struct WindowNode {
     #[pin]
     state: WindowNodeState,
     window: Arc<Window>,
-    content: Box<dyn RenderTargetContent>,
+    content: Box<dyn Render>,
     render_buffers: RendererBuffers,
     render_target: WindowRenderTarget,
 }
@@ -323,7 +323,7 @@ impl GPURenderTarget for WindowRenderTarget {
 
     fn draw(
         &mut self,
-        content: &mut dyn RenderTargetContent,
+        content: &mut dyn Render,
         gpu_resources: &mut GPUResources,
         pipelines: &mut Renderers,
         render_buffers: &mut RendererBuffers,
@@ -374,15 +374,15 @@ impl GPURenderTarget for WindowRenderTarget {
             render_buffers,
         );
 
-        // GlyphonTextRenderer::draw(
-        //     gpu_resources,
-        //     pipelines,
-        //     self.size.as_(),
-        //     &texture.texture,
-        //     &mut render_pass,
-        //     content,
-        //     render_buffers,
-        // );
+        GlyphonTextRenderer::draw(
+            gpu_resources,
+            pipelines,
+            self.size.as_(),
+            &texture.texture,
+            &mut render_pass,
+            content,
+            render_buffers,
+        );
 
         drop(render_pass);
 

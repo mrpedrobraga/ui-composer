@@ -1,5 +1,6 @@
-use crate::gpu::pipeline::graphics::{GraphicItem, GraphicItemDescriptor};
+use crate::gpu::pipeline::graphics::{RenderGraphic, RenderGraphicDescriptor};
 use crate::gpu::pipeline::Renderers;
+use crate::gpu::render_target::Render;
 use crate::state::signal_ext::coalesce_polls;
 use crate::{gpu::backend::GPUResources, ui::graphics::Graphic};
 use std::{
@@ -26,8 +27,8 @@ pub trait UIItem: Send {
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>>;
 }
 
-pub trait UIItemDescriptor: UIItem + GraphicItemDescriptor {}
-impl<A> UIItemDescriptor for A where A: UIItem + GraphicItemDescriptor {}
+pub trait UIItemDescriptor: UIItem + RenderGraphicDescriptor {}
+impl<A> UIItemDescriptor for A where A: UIItem + RenderGraphicDescriptor {}
 
 impl UIItem for () {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {

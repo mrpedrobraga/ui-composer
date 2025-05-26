@@ -1,5 +1,5 @@
 use super::backend::GPUResources;
-use super::pipeline::graphics::{GraphicItem, GraphicItemDescriptor};
+use super::pipeline::graphics::{RenderGraphic, RenderGraphicDescriptor};
 use super::pipeline::text::TextPipelineBuffers;
 use crate::gpu::pipeline::graphics::GraphicsPipelineBuffers;
 use crate::gpu::pipeline::{RendererBuffers, Renderers};
@@ -14,7 +14,7 @@ pub struct VecItem<A: UIItem> {
     render_buffers: Option<RendererBuffers>,
 }
 
-impl<A: UIItem + GraphicItemDescriptor> VecItem<A> {
+impl<A: UIItem + RenderGraphicDescriptor> VecItem<A> {
     pub fn new(rect: Rect<f32, f32>, items: MutableVec<A>) -> Self {
         Self {
             rect,
@@ -36,14 +36,14 @@ impl<A: UIItem + GraphicItemDescriptor> VecItem<A> {
     }
 }
 
-impl<A: GraphicItemDescriptor + UIItem + Sync> GraphicItemDescriptor for VecItem<A> {
+impl<A: RenderGraphicDescriptor + UIItem + Sync> RenderGraphicDescriptor for VecItem<A> {
     const QUAD_COUNT: usize = 0;
 
     fn get_render_rect(&self) -> Option<vek::Rect<f32, f32>> {
         Some(self.rect)
     }
 }
-impl<A: GraphicItemDescriptor + UIItem + Sync> GraphicItem for VecItem<A> {
+impl<A: RenderGraphicDescriptor + UIItem + Sync> RenderGraphic for VecItem<A> {
     fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
         // TODO: Write no quads.
     }
@@ -52,7 +52,7 @@ impl<A: GraphicItemDescriptor + UIItem + Sync> GraphicItem for VecItem<A> {
         Self::QUAD_COUNT
     }
 }
-impl<A: GraphicItemDescriptor + UIItem + Sync> UIItem for VecItem<A> {
+impl<A: RenderGraphicDescriptor + UIItem + Sync> UIItem for VecItem<A> {
     fn handle_ui_event(&mut self, event: crate::ui::node::UIEvent) -> bool {
         // Handle UI events for each item!
         false
@@ -68,7 +68,7 @@ impl<A: GraphicItemDescriptor + UIItem + Sync> UIItem for VecItem<A> {
 }
 
 #[allow(unused)]
-fn prepare<'pass, A: UIItem + GraphicItemDescriptor + Sync>(
+fn prepare<'pass, A: UIItem + RenderGraphicDescriptor + Sync>(
     me: &mut VecItem<A>,
     gpu_resources: &'pass GPUResources,
     pipelines: &'pass Renderers,

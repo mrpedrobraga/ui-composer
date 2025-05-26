@@ -1,38 +1,27 @@
 #![allow(non_snake_case)]
 
-use async_std::path::Path;
-use futures::future::FutureExt as _;
-use futures_time::future::FutureExt as _;
-use futures_time::time::Duration;
+use futures_time::{future::FutureExt, time::Duration};
 use serde::Deserialize;
-use std::future::Future;
 use ui_composer::prelude::*;
 
 fn main() {
     UIComposer::run(
-        Window(Center(Row(
-            PersonView("./examples/futures/martha.json"),
-            PersonView("./examples/futures/pedro.json"),
-        )))
-        .with_title("Futures"),
+        Window(Center(PersonView("https://mrpedrobraga.com/api"))).with_title("Futures"),
     );
 }
 
 #[derive(Debug, Clone, Deserialize)]
 struct Person {
+    #[allow(unused)]
     name: String,
-    y: f32,
-    color: Rgb<f32>,
+    age: i32,
 }
 
-fn PersonView<P>(path: P) -> impl LayoutItem
-where
-    P: AsRef<Path> + Send + 'static,
-{
+fn PersonView(uri: &'static str) -> impl LayoutItem {
     let person_state = Mutable::new(None);
 
-    let person_fut = fetch_person_and_put_in(path, person_state.clone());
-    std::thread::spawn(move || pollster::block_on(person_fut));
+    let person_fetch_process = fetch_person_and_put_in(uri, person_state.clone()).delay(Duration::from_secs(1));
+    std::thread::spawn(move || futures::executor::block_on(person_fetch_process));
 
     ResizableItem::new(move |hx| {
         let person_square = person_state
@@ -40,8 +29,8 @@ where
             .map(move |person_opt| {
                 if let Some(person) = person_opt {
                     hx.rect
-                        .translated(Vec2::unit_y() * -person.y)
-                        .with_color(person.color)
+                        .translated(-Vec2::unit_y() * (person.age as f32))
+                        .with_color(Rgb::new(0.5, 0.6, 0.9))
                 } else {
                     hx.rect.with_color(Rgb::gray(0.5))
                 }
@@ -53,15 +42,10 @@ where
     .with_minimum_size(Extent2::new(100.0, 100.0))
 }
 
-fn fetch_person_and_put_in<P>(path: P, state: Mutable<Option<Person>>) -> impl Future<Output = ()>
-where
-    P: AsRef<Path>,
-{
-    let person_fut = async_std::fs::read_to_string(path)
-        .map(|text| serde_json::from_str::<Person>(&text.unwrap()).unwrap())
-        .map(move |person| {
-            state.set(Some(person.clone()));
-        })
-        .delay(Duration::from_secs(1));
-    person_fut
+async fn fetch_person_and_put_in(uri: &'static str, state: Mutable<Option<Person>>) {
+    use chttp::prelude::*;
+
+    let person_raw = chttp::get_async(uri).await.unwrap().text().unwrap();
+    let person: Person = serde_json::from_str(&person_raw).unwrap();
+    state.set(Some(person));
 }

@@ -1,6 +1,6 @@
 //! Empty for now but this will house different kinds of Textures that can be rendered onto quads!
 
-use super::pipeline::graphics::{GraphicItem, GraphicItemDescriptor};
+use super::pipeline::graphics::{RenderGraphic, RenderGraphicDescriptor};
 use super::{backend::GPUResources, render_target::GPURenderTarget};
 use crate::gpu::pipeline::{GPURenderer, RendererBuffers, Renderers};
 use crate::prelude::UIItem;
@@ -65,7 +65,7 @@ impl GPURenderTarget for ImageRenderTarget {
 
     fn draw(
         &mut self,
-        content: &mut (dyn super::render_target::RenderTargetContent),
+        content: &mut (dyn super::render_target::Render),
         gpu_resources: &mut GPUResources,
         pipelines: &mut Renderers,
         render_artifacts: &mut RendererBuffers,

@@ -1,4 +1,5 @@
-use crate::gpu::pipeline::graphics::GraphicItemDescriptor;
+use crate::gpu::pipeline::graphics::RenderGraphicDescriptor;
+use crate::gpu::render_target::{Render, RenderDescriptor};
 use crate::items_internal as items;
 use crate::prelude::{
     LayoutItem, ParentHints, RectExt, Resizable, ResizableItem, Tap, UIItem, UIItemDescriptor, UISignalExt
@@ -40,7 +41,7 @@ fn SwitchGraphics(
     rect: Rect<f32, f32>,
     anim_factor: f32,
     parent_hints: &ParentHints,
-) -> impl UIItemDescriptor {
+) -> impl RenderDescriptor {
     let bg_color = Rgb::new(58.0, 58.0, 58.0) / 255.0;
     let switch_color = Rgb::new(182.0, 182.0, 182.0) / 255.0;
     let bg_color_active = Rgb::new(183.0, 71.0, 71.0) / 255.0;

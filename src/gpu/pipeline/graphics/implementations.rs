@@ -1,10 +1,10 @@
-use super::{GraphicItem, GraphicItemDescriptor};
+use super::{RenderGraphic, RenderGraphicDescriptor};
 use crate::prelude::Graphic;
 use vek::Rect;
 
 // --- Empty Graphics ---
 
-impl GraphicItemDescriptor for () {
+impl RenderGraphicDescriptor for () {
     const QUAD_COUNT: usize = 0;
 
     fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
@@ -12,7 +12,7 @@ impl GraphicItemDescriptor for () {
     }
 }
 
-impl GraphicItem for () {
+impl RenderGraphic for () {
     fn write_quads(&self, quad_buffer: &mut [Graphic]) {
         /* No quads to write */
     }
@@ -24,10 +24,10 @@ impl GraphicItem for () {
 
 // --- (A, B) ---
 
-impl<A, B> GraphicItemDescriptor for (A, B)
+impl<A, B> RenderGraphicDescriptor for (A, B)
 where
-    A: GraphicItemDescriptor,
-    B: GraphicItemDescriptor,
+    A: RenderGraphicDescriptor,
+    B: RenderGraphicDescriptor,
 {
     const QUAD_COUNT: usize = A::QUAD_COUNT + B::QUAD_COUNT;
 
@@ -41,10 +41,10 @@ where
     }
 }
 
-impl<A, B> GraphicItem for (A, B)
+impl<A, B> RenderGraphic for (A, B)
 where
-    A: GraphicItemDescriptor,
-    B: GraphicItemDescriptor,
+    A: RenderGraphicDescriptor,
+    B: RenderGraphicDescriptor,
 {
     fn write_quads(&self, quad_buffer: &mut [Graphic]) {
         let (slice_a, slice_b) = quad_buffer.split_at_mut(A::QUAD_COUNT);
@@ -59,9 +59,9 @@ where
 
 // --- [A; N] ---
 
-impl<A, const N: usize> GraphicItemDescriptor for [A; N]
+impl<A, const N: usize> RenderGraphicDescriptor for [A; N]
 where
-    A: GraphicItemDescriptor,
+    A: RenderGraphicDescriptor,
 {
     const QUAD_COUNT: usize = N * A::QUAD_COUNT;
 
@@ -72,9 +72,9 @@ where
     }
 }
 
-impl<A, const N: usize> GraphicItem for [A; N]
+impl<A, const N: usize> RenderGraphic for [A; N]
 where
-    A: GraphicItemDescriptor,
+    A: RenderGraphicDescriptor,
 {
     fn write_quads(&self, quad_buffer: &mut [Graphic]) {
         for (idx, item) in self.iter().enumerate() {
@@ -89,9 +89,9 @@ where
 
 // --- Box<A> ---
 
-impl<A> GraphicItemDescriptor for Box<A>
+impl<A> RenderGraphicDescriptor for Box<A>
 where
-    A: GraphicItemDescriptor,
+    A: RenderGraphicDescriptor,
 {
     const QUAD_COUNT: usize = A::QUAD_COUNT;
 
@@ -100,9 +100,9 @@ where
     }
 }
 
-impl<A> GraphicItem for Box<A>
+impl<A> RenderGraphic for Box<A>
 where
-    A: GraphicItemDescriptor,
+    A: RenderGraphicDescriptor,
 {
     fn write_quads(&self, quad_buffer: &mut [Graphic]) {
         self.as_ref().write_quads(quad_buffer)
@@ -115,21 +115,21 @@ where
 
 // --- Option<A> ---
 
-impl<A> GraphicItemDescriptor for Option<A>
+impl<A> RenderGraphicDescriptor for Option<A>
 where
-    A: GraphicItemDescriptor,
+    A: RenderGraphicDescriptor,
 {
     const QUAD_COUNT: usize = A::QUAD_COUNT;
 
     fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
         self.as_ref()
-            .and_then(GraphicItemDescriptor::get_render_rect)
+            .and_then(RenderGraphicDescriptor::get_render_rect)
     }
 }
 
-impl<A> GraphicItem for Option<A>
+impl<A> RenderGraphic for Option<A>
 where
-    A: GraphicItemDescriptor,
+    A: RenderGraphicDescriptor,
 {
     fn write_quads(&self, quad_buffer: &mut [Graphic]) {
         match self {
@@ -149,10 +149,10 @@ where
 
 // --- Result<A> ---
 
-impl<T, E> GraphicItemDescriptor for Result<T, E>
+impl<T, E> RenderGraphicDescriptor for Result<T, E>
 where
-    T: GraphicItemDescriptor,
-    E: GraphicItemDescriptor,
+    T: RenderGraphicDescriptor,
+    E: RenderGraphicDescriptor,
 {
     const QUAD_COUNT: usize = max(T::QUAD_COUNT, E::QUAD_COUNT);
 
@@ -164,10 +164,10 @@ where
     }
 }
 
-impl<T, E> GraphicItem for Result<T, E>
+impl<T, E> RenderGraphic for Result<T, E>
 where
-    T: GraphicItemDescriptor,
-    E: GraphicItemDescriptor,
+    T: RenderGraphicDescriptor,
+    E: RenderGraphicDescriptor,
 {
     fn write_quads(&self, quad_buffer: &mut [Graphic]) {
         match self {

@@ -1,5 +1,7 @@
 #![allow(non_snake_case)]
 
+use ui_composer::gpu::pipeline::text::Text;
+use ui_composer::gpu::render_target::RenderDescriptor;
 use ui_composer::items;
 use ui_composer::prelude::animation::spring::*;
 use ui_composer::prelude::*;
@@ -55,7 +57,7 @@ fn SmoothSquare(name: &'static str, color: Rgb<f32>) -> impl LayoutItem {
                     }
                     async {}
                 })
-                .process()
+                .process(),
         )
     })
     .with_minimum_size(Extent2::new(100.0, 100.0))
@@ -68,7 +70,7 @@ fn hover_square(
     is_hovered_state: Mutable<bool>,
     mouse_position_state: Mutable<Option<Vec2<f32>>>,
     tap_state: Mutable<Option<()>>,
-) -> impl UIItemDescriptor {
+) -> impl RenderDescriptor {
     let hover_rect = original_rect.expanded_to_contain_point(Vec2::new(
         original_rect.x,
         original_rect.y - animation_factor,
@@ -99,6 +101,7 @@ fn hover_square(
             Vec4::one() * 50.0,
             animation_factor_pct
         )),
-        hover_rect_graphic
+        hover_rect_graphic,
+        Text(rect, "Dummy text!".to_owned(), Rgb::new(1.0, 1.0, 1.0) - original_color)
     }
 }

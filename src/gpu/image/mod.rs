@@ -1,6 +1,6 @@
-use super::pipeline::graphics::GraphicItemDescriptor;
+use super::pipeline::graphics::RenderGraphicDescriptor;
 use super::pipeline::text::TextPipelineBuffers;
-use super::render_target::RenderTargetContent;
+use super::render_target::Render;
 use super::{backend::ReifiedNode, texture::ImageRenderTarget};
 use crate::gpu::backend::GPUResources;
 use crate::gpu::pipeline::graphics::GraphicsPipelineBuffers;
@@ -44,7 +44,7 @@ where
 
 impl<T> Node for ImageNodeDescriptor<T>
 where
-    T: Send + UIItem + GraphicItemDescriptor + 'static,
+    T: Send + Render + RenderGraphicDescriptor + 'static,
 {
     type ReifiedType = ImageNode;
 
@@ -69,7 +69,7 @@ where
 #[pin_project(project = ImageNodeProj)]
 pub struct ImageNode {
     #[pin]
-    content: Box<dyn RenderTargetContent>,
+    content: Box<dyn Render>,
     rect: Rect<f32, f32>,
     render_buffers: RendererBuffers,
     render_target: ImageRenderTarget,

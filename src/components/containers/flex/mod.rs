@@ -1,3 +1,4 @@
+use crate::gpu::render_target::{Render, RenderDescriptor};
 use crate::prelude::flow::{CartesianFlowDirection, FlowDirection, WritingFlowDirection};
 use crate::prelude::functions::weighted_division_with_minima;
 use crate::prelude::{CoordinateSystemProvider, LayoutItem, ParentHints, UIItem, UIItemDescriptor};
@@ -118,7 +119,7 @@ where
 pub struct FlexItem<T>(pub T, pub f32);
 
 pub trait FlexItems {
-    type UINodeType;
+    type UINodeType : RenderDescriptor;
     type WeightsType: Iterator<Item = f32>;
     type MinimaType: Iterator<Item = f32>;
 

@@ -23,7 +23,6 @@ futures-time = "3.0.0"
 glyphon = { git = "https://github.com/grovesNL/glyphon.git" }
 image = "0.25.5"
 pin-project = "1.1.5"
-pollster = "0.3.0"
 seq-macro = "0.3.5"
 serde = { version = "1.0.204", features = ["derive"], optional = true }
 slotmap = "1.0.7"
@@ -44,11 +43,11 @@ strip = true      # Automatically strip symbols from the binary.
 lto = true
 codegen-units = 1
 opt-level = 's'
-
+ 
 [dev-dependencies]
 toml = "0.8.15"
 itertools = "0.13.0"
 serde_json = "1.0.134"
 async-std = "1.13.0"
 vek = { version = "0.17.0", features = ["serde"] }
-pollster = { version = "0.3.0", features = ["macro"] }
+chttp = "0.5.5"

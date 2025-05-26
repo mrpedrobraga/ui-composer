@@ -1,4 +1,5 @@
 use super::node::{UIItem, UIItemDescriptor};
+use crate::gpu::render_target::Render;
 use crate::prelude::flow::CartesianFlowDirection;
 use crate::state::process::{SignalProcessor, UISignalExt};
 use futures_signals::signal::{Signal, SignalExt};
@@ -50,7 +51,7 @@ pub struct ChildHints {
 
 /// An item that can be included in a laying out context.
 pub trait LayoutItem: Send {
-    type UIItemType: UIItemDescriptor;
+    type UIItemType: Render + UIItemDescriptor;
 
     /// The size this component prefers to be at. It's usually its minimum size.
     #[inline(always)]
@@ -113,7 +114,7 @@ where
 impl<F, T> Resizable for ResizableItem<F, T>
 where
     F: FnMut(ParentHints) -> T + Send,
-    T: UIItemDescriptor
+    T: Render + UIItemDescriptor
 {
     /// Consumes this [`ResizableItem`] and returns a similar one with the minimum size set.
     fn with_minimum_size(self, min_size: Extent2<f32>) -> Self {
@@ -132,7 +133,7 @@ where
 impl<F: Send, T> LayoutItem for ResizableItem<F, T>
 where
     F: FnMut(ParentHints) -> T,
-    T: UIItemDescriptor
+    T: Render + UIItemDescriptor
 {
     type UIItemType = T;
 

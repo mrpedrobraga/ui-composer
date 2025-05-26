@@ -4,7 +4,7 @@
 use std::marker::PhantomData;
 
 use super::{GPURenderer, RendererBuffers, Renderers};
-use crate::gpu::{backend::GPUResources, render_target::RenderTargetContent};
+use crate::gpu::{backend::GPUResources, render_target::Render};
 use crate::prelude::UIItem;
 use vek::Extent2;
 use wgpu::{RenderPass, Texture};
@@ -25,7 +25,7 @@ impl<Item> GPURenderer for IrisRenderer<Item> {
         render_target_size: Extent2<f32>,
         texture: &Texture,
         render_pass: &mut RenderPass,
-        ui_tree: &mut dyn RenderTargetContent,
+        ui_tree: &mut dyn Render,
         render_buffers: &mut RendererBuffers,
     ) {
     }

@@ -1,3 +1,4 @@
+use crate::gpu::render_target::{Render, RenderDescriptor};
 use crate::prelude::animation::{AnimationFrameParams, Poll, RealTimeStream};
 use crate::prelude::*;
 use cgmath::BaseFloat;
@@ -37,7 +38,7 @@ where
         state: Mutable<T>,
         value_if: T,
         value_else: T,
-    ) -> impl Signal<Item = impl UIItemDescriptor>
+    ) -> impl Signal<Item = impl RenderDescriptor>
     where
         S: Signal<Item = bool>,
     {

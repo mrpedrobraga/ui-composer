@@ -1,6 +1,6 @@
-use crate::ui::node::UIItem;
+use crate::{prelude::UIItemDescriptor, ui::node::UIItem};
 
-use super::{backend::GPUResources, pipeline::graphics::GraphicItem};
+use super::{backend::GPUResources, pipeline::{graphics::RenderGraphic, text::RenderText}};
 use crate::gpu::pipeline::{RendererBuffers, Renderers};
 use vek::Extent2;
 use wgpu::TextureFormat;
@@ -13,7 +13,7 @@ pub trait GPURenderTarget {
     /// Returns a reference to the render target's texture;
     fn draw(
         &mut self,
-        content: &mut dyn RenderTargetContent,
+        content: &mut dyn Render,
         gpu_resources: &mut GPUResources,
         pipelines: &mut Renderers,
         render_buffers: &mut RendererBuffers,
@@ -23,5 +23,8 @@ pub trait GPURenderTarget {
     fn get_texture_format(&self) -> TextureFormat;
 }
 
-pub trait RenderTargetContent: UIItem + GraphicItem {}
-impl<A> RenderTargetContent for A where A: UIItem + GraphicItem {}
+pub trait Render: UIItem + RenderGraphic + RenderText {}
+impl<A> Render for A where A: UIItem + RenderGraphic + RenderText {}
+
+pub trait RenderDescriptor: Render + UIItemDescriptor {}
+impl<A> RenderDescriptor for A where A: Render + UIItemDescriptor {}

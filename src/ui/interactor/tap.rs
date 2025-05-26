@@ -1,5 +1,6 @@
 use super::Interactor;
-use crate::gpu::pipeline::graphics::{GraphicItem, GraphicItemDescriptor};
+use crate::gpu::pipeline::graphics::{RenderGraphic, RenderGraphicDescriptor};
+use crate::gpu::pipeline::text::RenderText;
 use crate::prelude::Action;
 use crate::state::Mutable;
 use crate::ui::node::{UIEvent, UIItem};
@@ -34,7 +35,7 @@ where
 }
 
 impl<A> Interactor for Tap<A> where A: Action + Send {}
-impl<A> GraphicItemDescriptor for Tap<A>
+impl<A> RenderGraphicDescriptor for Tap<A>
 where
     A: Action + Send + Sync,
 {
@@ -44,13 +45,23 @@ where
         None // Some(self.area))
     }
 }
-impl<A: Action + Send + Sync> GraphicItem for Tap<A> {
+impl<A: Action + Send + Sync> RenderGraphic for Tap<A> {
     fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
         /* Maybe push something here in Debug mode? */
     }
 
     fn get_quad_count(&self) -> usize {
         Self::QUAD_COUNT
+    }
+}
+impl<A: Action + Send + Sync> RenderText for Tap<A> {
+    fn push_text<'a>(
+        &self,
+        buffer: &'a glyphon::Buffer,
+        bounds: glyphon::TextBounds,
+        container: &mut Vec<glyphon::TextArea<'a>>,
+    ) {
+        // Nothing here!
     }
 }
 impl<A> UIItem for Tap<A>

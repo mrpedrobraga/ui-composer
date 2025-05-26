@@ -1,12 +1,14 @@
-use futures_signals::signal::Signal;
+use futures_signals::signal::{Mutable, Signal, SignalFuture};
 use pin_project::pin_project;
 use std::future::Future;
 use std::{pin::Pin, task::Poll};
 use wgpu::{RenderPass, Texture};
 
 use crate::gpu::backend::GPUResources;
-use crate::gpu::pipeline::graphics::{GraphicItem, GraphicItemDescriptor};
+use crate::gpu::pipeline::graphics::{RenderGraphic, RenderGraphicDescriptor};
+use crate::gpu::pipeline::text::RenderText;
 use crate::gpu::pipeline::Renderers;
+use crate::gpu::render_target::Render;
 use crate::prelude::UIItemDescriptor;
 use crate::ui::node::UIEvent;
 use crate::ui::node::UIItem;
@@ -76,10 +78,10 @@ where
     }
 }
 
-impl<S, T> GraphicItemDescriptor for SignalProcessor<S, T>
+impl<S, T> RenderGraphicDescriptor for SignalProcessor<S, T>
 where
     S: Signal<Item = T>,
-    T: UIItem + GraphicItemDescriptor + Send,
+    T: Render + RenderGraphicDescriptor + Send,
 {
     const QUAD_COUNT: usize = T::QUAD_COUNT;
 
@@ -90,15 +92,15 @@ where
         }
     }
 }
-impl<S, T> GraphicItem for SignalProcessor<S, T>
+impl<S, T> RenderGraphic for SignalProcessor<S, T>
 where
     S: Signal<Item = T>,
-    T: UIItem + GraphicItemDescriptor + Send,
+    T: Render + RenderGraphicDescriptor + Send,
 {
     fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
         match &self.signal.held_item {
             Some(item) => item.write_quads(quad_buffer),
-            None => panic!("Reactor was drawn without being polled first!"),
+            None => panic!("Reactor was drawn (graphics) without being polled first!"),
         }
     }
 
@@ -106,10 +108,27 @@ where
         Self::QUAD_COUNT
     }
 }
+impl<S, T> RenderText for SignalProcessor<S, T>
+where
+    S: Signal<Item = T>,
+    T: Render + Send,
+{
+    fn push_text<'a>(
+        &self,
+        buffer: &'a glyphon::Buffer,
+        bounds: glyphon::TextBounds,
+        container: &mut Vec<glyphon::TextArea<'a>>,
+    ) {
+        match &self.signal.held_item {
+            Some(item) => item.push_text(buffer, bounds, container),
+            None => panic!("Reactor was drawn (text) without being polled first!"),
+        }
+    }
+}
 impl<S: Send + Sync, T> UIItem for SignalProcessor<S, T>
 where
     S: Signal<Item = T>,
-    T: UIItem + GraphicItemDescriptor + Send,
+    T: UIItem + RenderGraphicDescriptor + Send,
 {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         match &mut self.signal.held_item {
@@ -202,10 +221,10 @@ where
     }
 }
 
-impl<F, T> GraphicItemDescriptor for FutureProcessor<F, T>
+impl<F, T> RenderGraphicDescriptor for FutureProcessor<F, T>
 where
     F: Future<Output = T>,
-    T: UIItem + GraphicItemDescriptor,
+    T: Render + RenderGraphicDescriptor,
 {
     const QUAD_COUNT: usize = T::QUAD_COUNT;
 
@@ -216,10 +235,10 @@ where
         }
     }
 }
-impl<F, T> GraphicItem for FutureProcessor<F, T>
+impl<F, T> RenderGraphic for FutureProcessor<F, T>
 where
     F: Future<Output = T>,
-    T: UIItem + GraphicItemDescriptor,
+    T: Render + UIItemDescriptor,
 {
     fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
         match &self.signal.held_item {
@@ -232,10 +251,27 @@ where
         Self::QUAD_COUNT
     }
 }
+impl<F, T> RenderText for FutureProcessor<F, T>
+where
+    F: Future<Output = T>,
+    T: Render,
+{
+    fn push_text<'a>(
+        &self,
+        buffer: &'a glyphon::Buffer,
+        bounds: glyphon::TextBounds,
+        container: &mut Vec<glyphon::TextArea<'a>>,
+    ) {
+        match &self.signal.held_item {
+            Some(item) => item.push_text(buffer, bounds, container),
+            None => (),
+        }
+    }
+}
 impl<F, T> UIItem for FutureProcessor<F, T>
 where
     F: Future<Output = T> + Send,
-    T: UIItem + GraphicItemDescriptor,
+    T: UIItem + RenderGraphicDescriptor,
 {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         match &mut self.signal.held_item {

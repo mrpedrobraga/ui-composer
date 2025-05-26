@@ -1,15 +1,33 @@
+use super::graphics::{RenderGraphic, RenderGraphicDescriptor};
 use super::{GPURenderer, RendererBuffers, Renderers};
 use crate::gpu::render_target::GPURenderTarget;
-use crate::gpu::{backend::GPUResources, render_target::RenderTargetContent};
-use crate::prelude::UIItem;
+use crate::gpu::{backend::GPUResources, render_target::Render};
+use crate::prelude::{Graphic, UIItem};
+use crate::ui;
 use glyphon::{
-    Cache, FontSystem, Resolution, SwashCache, TextAtlas, TextBounds, TextRenderer, Viewport,
+    Cache, Color, FontSystem, Resolution, SwashCache, TextArea, TextAtlas, TextBounds,
+    TextRenderer, Viewport, Weight,
 };
 use std::{iter::repeat_with, marker::PhantomData};
-use vek::{Extent2, Rect};
+use vek::num_traits::bounds;
+use vek::{Extent2, Rect, Rgb, Vec2, Vec4};
 use wgpu::{
     hal::auxil::db, ColorTargetState, MultisampleState, RenderPass, Texture, TextureFormat,
 };
+
+pub mod implementations;
+pub trait RenderText {
+    /// Yields a text area to draw.
+    #[inline(always)]
+    fn push_text<'a>(
+        &self,
+        buffer: &'a glyphon::Buffer,
+        bounds: TextBounds,
+        container: &mut Vec<glyphon::TextArea<'a>>,
+    );
+}
+
+pub struct Text(pub Rect<f32, f32>, pub String, pub Rgb<f32>);
 
 pub struct TextPipelineBuffers {
     buffers: Vec<cosmic_text::Buffer>,
@@ -18,13 +36,13 @@ pub struct TextPipelineBuffers {
 impl TextPipelineBuffers {
     pub fn new(gpu_resources: &GPUResources, renderer: &mut GlyphonTextRenderer) -> Self {
         Self {
-            buffers: Vec::new(),
+            buffers: vec![default_buffer(renderer)],
         }
     }
 }
 
 #[allow(unused)]
-fn new_buffer<Tree>(renderer: &mut GlyphonTextRenderer) -> cosmic_text::Buffer {
+fn default_buffer(renderer: &mut GlyphonTextRenderer) -> cosmic_text::Buffer {
     let mut buffer = cosmic_text::Buffer::new(
         &mut renderer.font_system,
         cosmic_text::Metrics::new(16.0, 20.0),
@@ -32,8 +50,10 @@ fn new_buffer<Tree>(renderer: &mut GlyphonTextRenderer) -> cosmic_text::Buffer {
 
     buffer.set_text(
         &mut renderer.font_system,
-        "How cool!",
-        cosmic_text::Attrs::new().family(cosmic_text::Family::Name("Anima Sans")),
+        "Boo 👻!",
+        cosmic_text::Attrs::new()
+            .family(cosmic_text::Family::Name("Work Sans"))
+            .weight(Weight::EXTRA_BOLD),
         cosmic_text::Shaping::Advanced,
     );
     buffer.set_size(&mut renderer.font_system, Some(100.0), Some(100.0));
@@ -59,7 +79,7 @@ impl GPURenderer for GlyphonTextRenderer {
         render_target_size: Extent2<f32>,
         texture: &Texture,
         render_pass: &mut RenderPass,
-        ui_tree: &mut dyn RenderTargetContent,
+        ui_tree: &mut dyn Render,
         render_buffers: &mut RendererBuffers,
     ) {
         let this = &mut pipelines.text_renderer;
@@ -72,29 +92,18 @@ impl GPURenderer for GlyphonTextRenderer {
             },
         );
 
-        let text_areas = render_buffers
-            .text_render_buffers
-            .buffers
-            .iter()
-            .enumerate()
-            .map(|(i, buffer)| {
-                println!("Drawing text area #{i}!");
-                glyphon::TextArea {
-                    buffer: &buffer,
-                    left: 0.0,
-                    top: 0.0,
-                    scale: 1.0,
-                    bounds: TextBounds {
-                        left: 0,
-                        top: 0,
-                        right: texture.width() as i32,
-                        bottom: texture.height() as i32,
-                    },
-                    default_color: glyphon::Color::rgb(255, 255, 255),
-                    custom_glyphs: &[],
-                }
-            });
-
+        let buffer = &render_buffers.text_render_buffers.buffers[0];
+        let mut container = vec![];
+        let text_areas = ui_tree.push_text(
+            buffer,
+            TextBounds {
+                left: 0,
+                top: 0,
+                right: texture.width() as i32,
+                bottom: texture.height() as i32,
+            },
+            &mut container,
+        );
         this.text_renderer
             .prepare(
                 &gpu_resources.device,
@@ -102,7 +111,7 @@ impl GPURenderer for GlyphonTextRenderer {
                 &mut this.font_system,
                 &mut this.atlas,
                 &this.viewport,
-                text_areas,
+                container.iter().cloned(),
                 &mut this.swash_cache,
             )
             .unwrap();
@@ -150,11 +159,4 @@ impl GlyphonTextRenderer {
             viewport,
         }
     }
-}
-
-/// A single rectangle of text that can be rendered to the screen.
-/// TODO: Use this from the outside world and convert to the glyphon format.
-pub struct TextArea {
-    buffer: glyphon::Buffer,
-    rect: Rect<f32, f32>,
 }

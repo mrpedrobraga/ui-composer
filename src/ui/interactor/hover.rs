@@ -1,6 +1,6 @@
 use super::Interactor;
 use crate::{
-    gpu::pipeline::graphics::{GraphicItem, GraphicItemDescriptor},
+    gpu::pipeline::{graphics::{RenderGraphic, RenderGraphicDescriptor}, text::{Text, RenderText}},
     ui::node::{UIEvent, UIItem},
 };
 use futures_signals::signal::Mutable;
@@ -26,20 +26,30 @@ impl Hover {
 }
 
 impl Interactor for Hover {}
-impl GraphicItemDescriptor for Hover {
+impl RenderGraphicDescriptor for Hover {
     const QUAD_COUNT: usize = 0;
 
     fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
         None // Some(self.area))
     }
 }
-impl GraphicItem for Hover {
+impl RenderGraphic for Hover {
     fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
         /* Maybe push something here in Debug mode? */
     }
 
     fn get_quad_count(&self) -> usize {
         Self::QUAD_COUNT
+    }
+}
+impl RenderText for Hover {
+    fn push_text<'a>(
+        &self,
+        buffer: &'a glyphon::Buffer,
+        bounds: glyphon::TextBounds,
+        container: &mut Vec<glyphon::TextArea<'a>>,
+    ) {
+        // Nothing here!
     }
 }
 impl UIItem for Hover {

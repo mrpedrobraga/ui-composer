@@ -1,4 +1,4 @@
-use crate::gpu::pipeline::graphics::{GraphicItem, GraphicItemDescriptor};
+use crate::gpu::pipeline::{graphics::{RenderGraphic, RenderGraphicDescriptor}, text::RenderText};
 use bytemuck::{Pod, Zeroable};
 use std::{
     pin::Pin,
@@ -69,7 +69,7 @@ impl UIItem for Graphic {
         Poll::Ready(Some(()))
     }
 }
-impl GraphicItem for Graphic {
+impl RenderGraphic for Graphic {
     fn write_quads(&self, quad_buffer: &mut [Graphic]) {
         quad_buffer[0] = *self;
     }
@@ -78,15 +78,23 @@ impl GraphicItem for Graphic {
         Self::QUAD_COUNT
     }
 }
-
-impl GraphicItemDescriptor for Graphic {
+impl RenderGraphicDescriptor for Graphic {
     const QUAD_COUNT: usize = 1;
 
     fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
         // Beautifully calculating the bounds of this Primitive
         // as a Rect!
-        let zero = self.transform * Vec4::zero();
-        let one = self.transform * Vec4::one();
-        Some(Rect::new(zero.x, zero.y, one.x - zero.x, one.y - zero.y))
+        let matrix = self.transform.as_col_slice();
+        Some(Rect::new(matrix[12], matrix[13], matrix[0], matrix[4]))
+    }
+}
+impl RenderText for Graphic {
+    fn push_text<'a>(
+        &self,
+        buffer: &'a glyphon::Buffer,
+        bounds: glyphon::TextBounds,
+        container: &mut Vec<glyphon::TextArea<'a>>,
+    ) {
+        // Nothing here!
     }
 }
