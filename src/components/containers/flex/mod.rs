@@ -51,7 +51,13 @@ where
         let minima = self.items.minima(flow_direction).collect::<Vec<f32>>();
         let weights = self.items.weights().collect::<Vec<f32>>();
 
-        let sizes = weighted_division_with_minima(parent_hints.rect.w, &weights, &minima, 1.0);
+        use CartesianFlowDirection::*;
+        let parent_size = match flow_direction {
+            LeftToRight | RightToLeft => parent_hints.rect.w,
+            TopToBottom | BottomToTop => parent_hints.rect.h,
+        };
+
+        let sizes = weighted_division_with_minima(parent_size, &weights, &minima, 1.0);
         let parent_hints =
             lay_sizes(parent_hints, flow_direction, sizes.into_iter()).collect::<Vec<_>>();
 
