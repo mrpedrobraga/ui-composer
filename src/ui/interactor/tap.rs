@@ -1,7 +1,8 @@
 use super::Interactor;
+use crate::gpu::pipeline::graphics::{GraphicItem, GraphicItemDescriptor};
 use crate::prelude::Action;
 use crate::state::Mutable;
-use crate::ui::node::{ItemDescriptor, UIEvent, UIItem};
+use crate::ui::node::{UIEvent, UIItem};
 use std::{
     pin::Pin,
     task::{Context, Poll},
@@ -33,9 +34,9 @@ where
 }
 
 impl<A> Interactor for Tap<A> where A: Action + Send {}
-impl<A> ItemDescriptor for Tap<A>
+impl<A> GraphicItemDescriptor for Tap<A>
 where
-    A: Action + Send,
+    A: Action + Send + Sync,
 {
     const QUAD_COUNT: usize = 0;
 
@@ -43,9 +44,18 @@ where
         None // Some(self.area))
     }
 }
+impl<A: Action + Send + Sync> GraphicItem for Tap<A> {
+    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
+        /* Maybe push something here in Debug mode? */
+    }
+
+    fn get_quad_count(&self) -> usize {
+        Self::QUAD_COUNT
+    }
+}
 impl<A> UIItem for Tap<A>
 where
-    A: Action + Send,
+    A: Action + Send + Sync,
 {
     fn handle_ui_event(&mut self, event: crate::ui::node::UIEvent) -> bool {
         match event {
@@ -78,14 +88,6 @@ where
             },
             _ => false,
         }
-    }
-
-    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
-        /* Maybe push something here in Debug mode? */
-    }
-
-    fn get_quad_count(&self) -> usize {
-        Self::QUAD_COUNT
     }
 
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {

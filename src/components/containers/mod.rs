@@ -25,7 +25,7 @@ impl<A> LayoutItem for CenterContainer<A>
 where
     A: LayoutItem,
 {
-    type UINodeType = A::UINodeType;
+    type UIItemType = A::UIItemType;
 
     fn get_natural_size(&self) -> Extent2<f32> {
         self.item.get_natural_size()
@@ -35,7 +35,7 @@ where
         self.item.get_minimum_size()
     }
 
-    fn lay(&mut self, layout_hints: ParentHints) -> Self::UINodeType {
+    fn lay(&mut self, layout_hints: ParentHints) -> Self::UIItemType {
         let my_rect = layout_hints.rect;
 
         let item_size = self.item.get_natural_size();
@@ -76,7 +76,7 @@ impl<A> LayoutItem for WithSizeContainer<A>
 where
     A: LayoutItem,
 {
-    type UINodeType = A::UINodeType;
+    type UIItemType = A::UIItemType;
 
     fn get_natural_size(&self) -> Extent2<f32> {
         let inner_size = self.item.get_natural_size();
@@ -90,7 +90,7 @@ where
         self.item.get_minimum_size()
     }
 
-    fn lay(&mut self, layout_hints: ParentHints) -> Self::UINodeType {
+    fn lay(&mut self, layout_hints: ParentHints) -> Self::UIItemType {
         self.item.lay(layout_hints)
     }
 }
@@ -135,7 +135,7 @@ where
     A: LayoutItem,
     B: LayoutItem,
 {
-    type UINodeType = (A::UINodeType, B::UINodeType);
+    type UIItemType = (A::UIItemType, B::UIItemType);
 
     fn get_natural_size(&self) -> Extent2<f32> {
         let a_size = self.item_a.get_natural_size();
@@ -151,7 +151,7 @@ where
         Extent2::new(a_size.w + self.gap + b_size.w, a_size.h.max(b_size.h))
     }
 
-    fn lay(&mut self, parent_hints: ParentHints) -> Self::UINodeType {
+    fn lay(&mut self, parent_hints: ParentHints) -> Self::UIItemType {
         let a_size = self.item_a.get_natural_size();
         let b_size = self.item_b.get_natural_size();
 
@@ -206,7 +206,7 @@ where
     A: LayoutItem,
     B: LayoutItem,
 {
-    type UINodeType = (A::UINodeType, B::UINodeType);
+    type UIItemType = (A::UIItemType, B::UIItemType);
 
     fn get_natural_size(&self) -> Extent2<f32> {
         let a_size = self.item_a.get_natural_size();
@@ -230,7 +230,7 @@ where
         )
     }
 
-    fn lay(&mut self, parent_hints: ParentHints) -> Self::UINodeType {
+    fn lay(&mut self, parent_hints: ParentHints) -> Self::UIItemType {
         let a_size = self.item_a.get_natural_size();
         let b_size = self.item_b.get_natural_size();
 

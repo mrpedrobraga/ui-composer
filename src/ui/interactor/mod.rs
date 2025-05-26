@@ -1,4 +1,4 @@
-use super::node::{ItemDescriptor, UIItem};
+use super::node::{UIItem};
 pub mod hover;
 pub mod tap;
 pub mod window_drag;
@@ -7,7 +7,7 @@ pub use hover::*;
 pub use tap::*;
 pub use window_drag::*;
 
-pub trait Interactor: ItemDescriptor {}
+pub trait Interactor {}
 
 pub trait Action {
     // Triggers the action.

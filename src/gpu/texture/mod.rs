@@ -1,9 +1,9 @@
 //! Empty for now but this will house different kinds of Textures that can be rendered onto quads!
 
+use super::pipeline::graphics::{GraphicItem, GraphicItemDescriptor};
 use super::{backend::GPUResources, render_target::GPURenderTarget};
-use crate::gpu::pipeline::graphics::OrchestraRenderer;
-use crate::gpu::pipeline::text::GlyphonTextRenderer;
 use crate::gpu::pipeline::{GPURenderer, RendererBuffers, Renderers};
+use crate::prelude::UIItem;
 use vek::Extent2;
 
 /// Color data that can be used by quads or materials to create advanced graphics.
@@ -65,7 +65,7 @@ impl GPURenderTarget for ImageRenderTarget {
 
     fn draw(
         &mut self,
-        content: &mut dyn crate::ui::node::UIItem,
+        content: &mut (dyn super::render_target::RenderTargetContent),
         gpu_resources: &mut GPUResources,
         pipelines: &mut Renderers,
         render_artifacts: &mut RendererBuffers,
@@ -102,25 +102,25 @@ impl GPURenderTarget for ImageRenderTarget {
             occlusion_query_set: None,
         });
 
-        OrchestraRenderer::draw(
-            gpu_resources,
-            pipelines,
-            size,
-            &texture,
-            &mut render_pass,
-            content,
-            render_artifacts,
-        );
+        // OrchestraRenderer::draw(
+        //     gpu_resources,
+        //     pipelines,
+        //     size,
+        //     &texture,
+        //     &mut render_pass,
+        //     content,
+        //     render_artifacts,
+        // );
 
-        GlyphonTextRenderer::draw(
-            gpu_resources,
-            pipelines,
-            size,
-            &texture,
-            &mut render_pass,
-            content,
-            render_artifacts,
-        );
+        // GlyphonTextRenderer::draw(
+        //     gpu_resources,
+        //     pipelines,
+        //     size,
+        //     &texture,
+        //     &mut render_pass,
+        //     content,
+        //     render_artifacts,
+        // );
 
         gpu_resources
             .queue

@@ -1,5 +1,7 @@
+use super::pipeline::graphics::GraphicItemDescriptor;
 use super::pipeline::text::TextPipelineBuffers;
-use super::{backend::RNode, texture::ImageRenderTarget};
+use super::render_target::RenderTargetContent;
+use super::{backend::ReifiedNode, texture::ImageRenderTarget};
 use crate::gpu::backend::GPUResources;
 use crate::gpu::pipeline::graphics::GraphicsPipelineBuffers;
 use crate::gpu::pipeline::{RendererBuffers, Renderers};
@@ -10,15 +12,15 @@ use crate::{
     prelude::*,
     ui::{
         self,
-        node::{ItemDescriptor, UIItem},
+        node::{UIItem},
     },
 };
 use pin_project::pin_project;
 
 #[allow(non_snake_case)]
-pub fn Image<T>(rect: Rect<f32, f32>, mut item: T) -> ImageNodeDescriptor<impl ItemDescriptor>
+pub fn Image<A>(rect: Rect<f32, f32>, mut item: A) -> ImageNodeDescriptor<A::UIItemType>
 where
-    T: LayoutItem + 'static,
+    A: LayoutItem + 'static,
 {
     ImageNodeDescriptor {
         rect,
@@ -32,17 +34,17 @@ where
     }
 }
 
-pub struct ImageNodeDescriptor<T>
+pub struct ImageNodeDescriptor<A>
 where
-    T: ItemDescriptor + 'static,
+    A: 'static,
 {
     rect: Rect<f32, f32>,
-    content: T,
+    content: A,
 }
 
 impl<T> Node for ImageNodeDescriptor<T>
 where
-    T: ItemDescriptor + 'static,
+    T: Send + UIItem + GraphicItemDescriptor + 'static,
 {
     type ReifiedType = ImageNode;
 
@@ -58,7 +60,7 @@ where
             render_target: ImageRenderTarget::new(gpu_resources, self.rect.extent()),
             render_buffers: RendererBuffers {
                 graphics_render_buffers: GraphicsPipelineBuffers::new(gpu_resources, T::QUAD_COUNT),
-                text_render_buffers: TextPipelineBuffers::new(gpu_resources, 10, &mut renderers.text_renderer),
+                text_render_buffers: TextPipelineBuffers::new(gpu_resources, &mut renderers.text_renderer),
             },
         }
     }
@@ -67,18 +69,18 @@ where
 #[pin_project(project = ImageNodeProj)]
 pub struct ImageNode {
     #[pin]
-    content: Box<dyn UIItem>,
+    content: Box<dyn RenderTargetContent>,
     rect: Rect<f32, f32>,
     render_buffers: RendererBuffers,
     render_target: ImageRenderTarget,
 }
 
-impl RNode for ImageNode {
+impl ReifiedNode for ImageNode {
     fn setup(&mut self, gpu_resources: &GPUResources) {
         /* Do nothing */
     }
 
-    fn handle_window_event(
+    fn handle_window_event (
         &mut self,
         gpu_resources: &mut GPUResources,
         pipelines: &mut Renderers,

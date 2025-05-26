@@ -1,4 +1,4 @@
-use super::node::{ItemDescriptor, UIItem};
+use super::node::{UIItem, UIItemDescriptor};
 use crate::prelude::flow::CartesianFlowDirection;
 use crate::state::process::{SignalProcessor, UISignalExt};
 use futures_signals::signal::{Signal, SignalExt};
@@ -50,7 +50,7 @@ pub struct ChildHints {
 
 /// An item that can be included in a laying out context.
 pub trait LayoutItem: Send {
-    type UINodeType: ItemDescriptor;
+    type UIItemType: UIItemDescriptor;
 
     /// The size this component prefers to be at. It's usually its minimum size.
     #[inline(always)]
@@ -61,17 +61,17 @@ pub trait LayoutItem: Send {
     fn get_minimum_size(&self) -> Extent2<f32>;
 
     /// Renders the content of this layout item with a specific rect.
-    fn lay(&mut self, parent_hints: ParentHints) -> Self::UINodeType;
+    fn lay(&mut self, parent_hints: ParentHints) -> Self::UIItemType;
 
     /// Creates a reactive node that re-bakes the layout item to fit a container that can change shape.
     fn lay_reactive<S>(
         mut self,
         size_signal: S,
         parent_hints: ParentHints,
-    ) -> SignalProcessor<impl Signal<Item = Self::UINodeType>, Self::UINodeType>
+    ) -> SignalProcessor<impl Signal<Item = Self::UIItemType>, Self::UIItemType>
     where
         S: Signal<Item = Extent2<f32>> + Send,
-        Self: Sized + Send,
+        Self: Sized + Send, <Self as LayoutItem>::UIItemType: UIItem
     {
         size_signal
             .map(move |new_size| {
@@ -113,7 +113,7 @@ where
 impl<F, T> Resizable for ResizableItem<F, T>
 where
     F: FnMut(ParentHints) -> T + Send,
-    T: ItemDescriptor,
+    T: UIItemDescriptor
 {
     /// Consumes this [`ResizableItem`] and returns a similar one with the minimum size set.
     fn with_minimum_size(self, min_size: Extent2<f32>) -> Self {
@@ -132,9 +132,9 @@ where
 impl<F: Send, T> LayoutItem for ResizableItem<F, T>
 where
     F: FnMut(ParentHints) -> T,
-    T: ItemDescriptor,
+    T: UIItemDescriptor
 {
-    type UINodeType = T;
+    type UIItemType = T;
 
     fn get_natural_size(&self) -> Extent2<f32> {
         self.get_minimum_size()
@@ -144,13 +144,13 @@ where
         self.hints.min_size
     }
 
-    fn lay(&mut self, layout_hints: ParentHints) -> Self::UINodeType {
+    fn lay(&mut self, layout_hints: ParentHints) -> Self::UIItemType {
         (self.factory)(layout_hints)
     }
 }
 
 impl LayoutItem for () {
-    type UINodeType = ();
+    type UIItemType = ();
 
     fn get_natural_size(&self) -> Extent2<f32> {
         self.get_minimum_size()
@@ -160,7 +160,7 @@ impl LayoutItem for () {
         Extent2::new(0.0, 0.0)
     }
 
-    fn lay(&mut self, layout_hints: ParentHints) -> Self::UINodeType {
+    fn lay(&mut self, layout_hints: ParentHints) -> Self::UIItemType {
         ()
     }
 }

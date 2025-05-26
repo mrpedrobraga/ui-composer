@@ -37,7 +37,7 @@ where
         state: Mutable<T>,
         value_if: T,
         value_else: T,
-    ) -> impl Signal<Item = impl ItemDescriptor>
+    ) -> impl Signal<Item = impl UIItemDescriptor>
     where
         S: Signal<Item = bool>,
     {

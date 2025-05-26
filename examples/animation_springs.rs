@@ -68,7 +68,7 @@ fn hover_square(
     is_hovered_state: Mutable<bool>,
     mouse_position_state: Mutable<Option<Vec2<f32>>>,
     tap_state: Mutable<Option<()>>,
-) -> impl ItemDescriptor {
+) -> impl UIItemDescriptor {
     let hover_rect = original_rect.expanded_to_contain_point(Vec2::new(
         original_rect.x,
         original_rect.y - animation_factor,

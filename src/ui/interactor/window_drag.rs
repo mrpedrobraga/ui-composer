@@ -1,5 +1,5 @@
 use super::Interactor;
-use crate::ui::node::{ItemDescriptor, UIEvent, UIItem};
+use crate::{gpu::pipeline::graphics::{GraphicItem, GraphicItemDescriptor}, ui::node::{UIEvent, UIItem}};
 use futures_signals::signal::Mutable;
 use std::{
     pin::Pin,
@@ -8,13 +8,13 @@ use std::{
 use vek::{Rect, Vec2};
 
 /// An Interactor that handles a user dragging the window.
-pub struct WindowDrag {
+pub struct Drag {
     rect: Rect<f32, f32>,
     is_hovered_state: Mutable<bool>,
     is_dragging_state: Mutable<bool>,
 }
 
-impl WindowDrag {
+impl Drag {
     pub fn new(
         rect: Rect<f32, f32>,
         is_hovered_state: Mutable<bool>,
@@ -28,15 +28,24 @@ impl WindowDrag {
     }
 }
 
-impl Interactor for WindowDrag {}
-impl ItemDescriptor for WindowDrag {
+impl Interactor for Drag {}
+impl GraphicItemDescriptor for Drag {
     const QUAD_COUNT: usize = 0;
 
     fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
         None // Some(self.area))
     }
 }
-impl UIItem for WindowDrag {
+impl GraphicItem for Drag {
+    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
+        /* Maybe push something here in Debug mode? */
+    }
+
+    fn get_quad_count(&self) -> usize {
+        Self::QUAD_COUNT
+    }
+}
+impl UIItem for Drag {
     fn handle_ui_event(&mut self, event: crate::ui::node::UIEvent) -> bool {
         match event {
             UIEvent::CursorMoved {
@@ -74,14 +83,6 @@ impl UIItem for WindowDrag {
             },
             _ => false,
         }
-    }
-
-    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
-        /* Maybe push something here in Debug mode? */
-    }
-
-    fn get_quad_count(&self) -> usize {
-        Self::QUAD_COUNT
     }
 
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {

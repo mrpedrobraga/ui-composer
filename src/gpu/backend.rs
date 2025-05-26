@@ -1,4 +1,4 @@
-use super::{pipeline::graphics::OrchestraRenderer, window::WindowRenderTarget};
+use super::{pipeline::graphics::OrchestraRenderer, render_target::RenderTargetContent, window::WindowRenderTarget};
 use crate::backend::Backend;
 use crate::gpu::pipeline::text::GlyphonTextRenderer;
 use crate::gpu::pipeline::Renderers;
@@ -8,10 +8,7 @@ use futures_signals::signal::{Signal, SignalExt};
 use pin_project::pin_project;
 use pollster::FutureExt as _;
 use std::{
-    ops::DerefMut,
-    pin::Pin,
-    sync::{Arc, Mutex},
-    task::{Context, Poll},
+    marker::PhantomData, ops::DerefMut, pin::Pin, sync::{Arc, Mutex}, task::{Context, Poll}
 };
 use wgpu::{MemoryHints, TextureFormat};
 use winit::{
@@ -271,13 +268,13 @@ impl<Nd: Node + Send + 'static> WinitBackend for WinitWGPUBackend<Nd> {
 /// These nodes are used for creating windows and processes and rendering contexts.
 pub trait Node: Send {
     /// The type this node descriptor generates when reified.
-    type ReifiedType: RNode;
+    type ReifiedType: ReifiedNode;
     fn reify(self, event_loop: &ActiveEventLoop, gpu_resources: &GPUResources, renderers: &mut Renderers)
         -> Self::ReifiedType;
 }
 
 /// A main node in the app tree.
-pub trait RNode: Send {
+pub trait ReifiedNode: Send {
     fn setup(&mut self, gpu_resources: &GPUResources);
 
     /// Handles an event and cascades it down its children.
@@ -317,10 +314,10 @@ where
     }
 }
 
-impl<A, B> RNode for (A, B)
+impl<A, B> ReifiedNode for (A, B)
 where
-    A: RNode,
-    B: RNode,
+    A: ReifiedNode,
+    B: ReifiedNode,
 {
     fn setup(&mut self, gpu_resources: &GPUResources) {
         self.0.setup(gpu_resources);

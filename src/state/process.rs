@@ -5,17 +5,19 @@ use std::{pin::Pin, task::Poll};
 use wgpu::{RenderPass, Texture};
 
 use crate::gpu::backend::GPUResources;
+use crate::gpu::pipeline::graphics::{GraphicItem, GraphicItemDescriptor};
 use crate::gpu::pipeline::Renderers;
+use crate::prelude::UIItemDescriptor;
 use crate::ui::node::UIEvent;
-use crate::ui::node::{ItemDescriptor, UIItem};
+use crate::ui::node::UIItem;
 
 /// UI Item that processes a signal and updates part of the UI tree whenever it changes.
 #[pin_project(project = SignalProcessorProj)]
 #[must_use = "Processes are Signals, and therefore do nothing unless polled"]
-pub struct SignalProcessor<S: Send, T>
+pub struct SignalProcessor<S, T>
 where
     S: Signal<Item = T>,
-    T: UIItem,
+    T: UIItem + Send,
 {
     #[pin]
     signal: HoldSignal<S, T>,
@@ -74,51 +76,10 @@ where
     }
 }
 
-impl<S: Send, T> UIItem for SignalProcessor<S, T>
+impl<S, T> GraphicItemDescriptor for SignalProcessor<S, T>
 where
     S: Signal<Item = T>,
-    T: ItemDescriptor,
-{
-    fn handle_ui_event(&mut self, event: UIEvent) -> bool {
-        match &mut self.signal.held_item {
-            Some(item) => item.handle_ui_event(event),
-            None => false, //panic!("Reactor was asked to handle event without being polled first."),
-        }
-    }
-
-    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
-        match &self.signal.held_item {
-            Some(item) => item.write_quads(quad_buffer),
-            None => panic!("Reactor was drawn without being polled first!"),
-        }
-    }
-
-    fn prepare<'pass>(
-        &'pass mut self,
-        gpu_resources: &'pass GPUResources,
-        pipelines: &'pass Renderers,
-        render_pass: &mut RenderPass<'pass>,
-        texture: &Texture,
-    ) {
-        match &mut self.signal.held_item {
-            Some(item) => item.prepare(gpu_resources, pipelines, render_pass, texture),
-            None => panic!("Reactor was drawn without being polled first!"),
-        }
-    }
-
-    fn get_quad_count(&self) -> usize {
-        Self::QUAD_COUNT
-    }
-
-    fn poll_processors(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<()>> {
-        self.poll_change(cx)
-    }
-}
-
-impl<S: Send, T> ItemDescriptor for SignalProcessor<S, T>
-where
-    S: Signal<Item = T>,
-    T: ItemDescriptor,
+    T: UIItem + GraphicItemDescriptor + Send,
 {
     const QUAD_COUNT: usize = T::QUAD_COUNT;
 
@@ -129,13 +90,45 @@ where
         }
     }
 }
+impl<S, T> GraphicItem for SignalProcessor<S, T>
+where
+    S: Signal<Item = T>,
+    T: UIItem + GraphicItemDescriptor + Send,
+{
+    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
+        match &self.signal.held_item {
+            Some(item) => item.write_quads(quad_buffer),
+            None => panic!("Reactor was drawn without being polled first!"),
+        }
+    }
 
-pub trait UISignalExt: Signal + Send {
+    fn get_quad_count(&self) -> usize {
+        Self::QUAD_COUNT
+    }
+}
+impl<S: Send + Sync, T> UIItem for SignalProcessor<S, T>
+where
+    S: Signal<Item = T>,
+    T: UIItem + GraphicItemDescriptor + Send,
+{
+    fn handle_ui_event(&mut self, event: UIEvent) -> bool {
+        match &mut self.signal.held_item {
+            Some(item) => item.handle_ui_event(event),
+            None => false, //panic!("Reactor was asked to handle event without being polled first."),
+        }
+    }
+
+    fn poll_processors(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<()>> {
+        self.poll_change(cx)
+    }
+}
+
+pub trait UISignalExt: Signal {
     /// Transforms this signal into a processable part of the UI tree.
     fn process(self) -> SignalProcessor<Self, Self::Item>
     where
         Self: Sized,
-        Self::Item: UIItem,
+        Self::Item: UIItemDescriptor + Send,
     {
         SignalProcessor {
             signal: HoldSignal {
@@ -145,7 +138,7 @@ pub trait UISignalExt: Signal + Send {
         }
     }
 }
-impl<T: Send> UISignalExt for T where T: Signal {}
+impl<T> UISignalExt for T where T: Signal {}
 
 /// UI Item that processes a signal and updates part of the UI tree whenever it changes.
 #[pin_project(project = FutureProcessorProj)]
@@ -209,51 +202,10 @@ where
     }
 }
 
-impl<F: Send, T> UIItem for FutureProcessor<F, T>
+impl<F, T> GraphicItemDescriptor for FutureProcessor<F, T>
 where
     F: Future<Output = T>,
-    T: ItemDescriptor,
-{
-    fn handle_ui_event(&mut self, event: UIEvent) -> bool {
-        match &mut self.signal.held_item {
-            Some(item) => item.handle_ui_event(event),
-            None => false, //panic!("Reactor was asked to handle event without being polled first."),
-        }
-    }
-
-    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
-        match &self.signal.held_item {
-            Some(item) => item.write_quads(quad_buffer),
-            None => (),
-        }
-    }
-
-    fn prepare<'pass>(
-        &'pass mut self,
-        gpu_resources: &'pass GPUResources,
-        pipelines: &'pass Renderers,
-        render_pass: &mut RenderPass<'pass>,
-        texture: &Texture,
-    ) {
-        match &mut self.signal.held_item {
-            Some(item) => item.prepare(gpu_resources, pipelines, render_pass, texture),
-            None => (),
-        }
-    }
-
-    fn get_quad_count(&self) -> usize {
-        Self::QUAD_COUNT
-    }
-
-    fn poll_processors(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<()>> {
-        self.poll_change(cx)
-    }
-}
-
-impl<F: Send, T> ItemDescriptor for FutureProcessor<F, T>
-where
-    F: Future<Output = T>,
-    T: ItemDescriptor,
+    T: UIItem + GraphicItemDescriptor,
 {
     const QUAD_COUNT: usize = T::QUAD_COUNT;
 
@@ -264,8 +216,40 @@ where
         }
     }
 }
+impl<F, T> GraphicItem for FutureProcessor<F, T>
+where
+    F: Future<Output = T>,
+    T: UIItem + GraphicItemDescriptor,
+{
+    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
+        match &self.signal.held_item {
+            Some(item) => item.write_quads(quad_buffer),
+            None => (),
+        }
+    }
 
-pub trait UIFutureExt: Future + Send {
+    fn get_quad_count(&self) -> usize {
+        Self::QUAD_COUNT
+    }
+}
+impl<F, T> UIItem for FutureProcessor<F, T>
+where
+    F: Future<Output = T> + Send,
+    T: UIItem + GraphicItemDescriptor,
+{
+    fn handle_ui_event(&mut self, event: UIEvent) -> bool {
+        match &mut self.signal.held_item {
+            Some(item) => item.handle_ui_event(event),
+            None => false, //panic!("Reactor was asked to handle event without being polled first."),
+        }
+    }
+
+    fn poll_processors(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<()>> {
+        self.poll_change(cx)
+    }
+}
+
+pub trait UIFutureExt: Future {
     /// Transforms this future into a processable part of the UI tree.
     fn process(self) -> FutureProcessor<Self, Self::Output>
     where

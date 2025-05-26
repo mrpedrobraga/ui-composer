@@ -1,5 +1,8 @@
 use super::Interactor;
-use crate::ui::node::{ItemDescriptor, UIEvent, UIItem};
+use crate::{
+    gpu::pipeline::graphics::{GraphicItem, GraphicItemDescriptor},
+    ui::node::{UIEvent, UIItem},
+};
 use futures_signals::signal::Mutable;
 use std::{
     pin::Pin,
@@ -23,11 +26,20 @@ impl Hover {
 }
 
 impl Interactor for Hover {}
-impl ItemDescriptor for Hover {
+impl GraphicItemDescriptor for Hover {
     const QUAD_COUNT: usize = 0;
 
     fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
         None // Some(self.area))
+    }
+}
+impl GraphicItem for Hover {
+    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
+        /* Maybe push something here in Debug mode? */
+    }
+
+    fn get_quad_count(&self) -> usize {
+        Self::QUAD_COUNT
     }
 }
 impl UIItem for Hover {
@@ -49,14 +61,6 @@ impl UIItem for Hover {
             }
             _ => false,
         }
-    }
-
-    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
-        /* Maybe push something here in Debug mode? */
-    }
-
-    fn get_quad_count(&self) -> usize {
-        Self::QUAD_COUNT
     }
 
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {

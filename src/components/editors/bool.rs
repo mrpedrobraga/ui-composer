@@ -1,8 +1,11 @@
+use crate::gpu::pipeline::graphics::GraphicItemDescriptor;
+use crate::items_internal as items;
+use crate::prelude::{
+    LayoutItem, ParentHints, RectExt, Resizable, ResizableItem, Tap, UIItem, UIItemDescriptor, UISignalExt
+};
+use crate::state::animation::spring::Spring;
 use futures_signals::signal::{Mutable, SignalExt};
 use vek::{Extent2, Lerp, Rect, Rgb, Vec4};
-use crate::items_internal as items;
-use crate::prelude::{ItemDescriptor, LayoutItem, ParentHints, RectExt, Resizable, ResizableItem, Tap, UISignalExt};
-use crate::state::animation::spring::Spring;
 
 /// A simple switch that edits a `bool` state.
 pub fn Switch(state: Mutable<bool>) -> impl LayoutItem {
@@ -22,13 +25,13 @@ fn SwitchBase(state: Mutable<bool>) -> impl Resizable + LayoutItem {
         let state_ = state.clone();
         let tap = Tap::new(rect, Mutable::new(None), move || state_.set(!state_.get()));
 
-        items! {
-            tap,
+        items!(
             Spring::if_then_else(state.signal(), anim_state.clone(), 1.0, 0.0).process(),
-            anim_state.signal().map(move |anim_factor| {
-                SwitchGraphics(rect, anim_factor, &parent_hints)
-            }).process()
-        }
+            anim_state
+                .signal()
+                .map(move |anim_factor| SwitchGraphics(rect, anim_factor, &parent_hints))
+                .process()
+        )
     })
 }
 
@@ -36,7 +39,7 @@ fn SwitchGraphics(
     rect: Rect<f32, f32>,
     anim_factor: f32,
     parent_hints: &ParentHints,
-) -> impl ItemDescriptor {
+) -> impl UIItemDescriptor {
     let bg_color = Rgb::new(58.0, 58.0, 58.0) / 255.0;
     let switch_color = Rgb::new(182.0, 182.0, 182.0) / 255.0;
     let bg_color_active = Rgb::new(183.0, 71.0, 71.0) / 255.0;

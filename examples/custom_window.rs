@@ -27,7 +27,7 @@ fn Drag() -> impl LayoutItem {
     let s2 = Mutable::new(false);
 
     ResizableItem::new(move |parent| {
-        let window_drag = WindowDrag::new(parent.rect, s1.clone(), s2.clone());
+        let window_drag = Drag::new(parent.rect, s1.clone(), s2.clone());
 
         items! {
             window_drag,

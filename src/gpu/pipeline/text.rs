@@ -1,48 +1,45 @@
-use std::iter::repeat_with;
-
 use super::{GPURenderer, RendererBuffers, Renderers};
-use crate::gpu::backend::GPUResources;
 use crate::gpu::render_target::GPURenderTarget;
+use crate::gpu::{backend::GPUResources, render_target::RenderTargetContent};
 use crate::prelude::UIItem;
 use glyphon::{
     Cache, FontSystem, Resolution, SwashCache, TextAtlas, TextBounds, TextRenderer, Viewport,
 };
+use std::{iter::repeat_with, marker::PhantomData};
 use vek::{Extent2, Rect};
-use wgpu::{hal::auxil::db, ColorTargetState, MultisampleState, RenderPass, Texture, TextureFormat};
+use wgpu::{
+    hal::auxil::db, ColorTargetState, MultisampleState, RenderPass, Texture, TextureFormat,
+};
 
 pub struct TextPipelineBuffers {
     buffers: Vec<cosmic_text::Buffer>,
 }
 
 impl TextPipelineBuffers {
-    pub fn new(gpu_resources: &GPUResources, text_buffer_count: usize, renderer: &mut GlyphonTextRenderer) -> Self {
-        let new_buffer = || {
-            let mut buffer =
-            cosmic_text::Buffer::new(&mut renderer.font_system, cosmic_text::Metrics::new(16.0, 20.0));
-
-            buffer.set_text(
-                &mut renderer.font_system,
-                "Hello there!",
-                cosmic_text::Attrs::new().family(cosmic_text::Family::Name("Work Sans")),
-                cosmic_text::Shaping::Advanced,
-            );
-            buffer.set_size(
-                &mut renderer.font_system,
-                Some(100.0),
-                Some(100.0),
-            );
-            buffer.set_wrap(&mut renderer.font_system, cosmic_text::Wrap::Word);
-            buffer.shape_until_scroll(&mut renderer.font_system, false);
-            buffer
-        };
-
-        let mut buffers = Vec::with_capacity(text_buffer_count);
-        buffers.extend(repeat_with(new_buffer).take(text_buffer_count));
-
+    pub fn new(gpu_resources: &GPUResources, renderer: &mut GlyphonTextRenderer) -> Self {
         Self {
-            buffers
+            buffers: Vec::new(),
         }
     }
+}
+
+#[allow(unused)]
+fn new_buffer<Tree>(renderer: &mut GlyphonTextRenderer) -> cosmic_text::Buffer {
+    let mut buffer = cosmic_text::Buffer::new(
+        &mut renderer.font_system,
+        cosmic_text::Metrics::new(16.0, 20.0),
+    );
+
+    buffer.set_text(
+        &mut renderer.font_system,
+        "How cool!",
+        cosmic_text::Attrs::new().family(cosmic_text::Family::Name("Anima Sans")),
+        cosmic_text::Shaping::Advanced,
+    );
+    buffer.set_size(&mut renderer.font_system, Some(100.0), Some(100.0));
+    buffer.set_wrap(&mut renderer.font_system, cosmic_text::Wrap::Word);
+    buffer.shape_until_scroll(&mut renderer.font_system, false);
+    buffer
 }
 
 /// The pipeline for rendering text.
@@ -62,7 +59,7 @@ impl GPURenderer for GlyphonTextRenderer {
         render_target_size: Extent2<f32>,
         texture: &Texture,
         render_pass: &mut RenderPass,
-        ui_tree: &mut dyn UIItem,
+        ui_tree: &mut dyn RenderTargetContent,
         render_buffers: &mut RendererBuffers,
     ) {
         let this = &mut pipelines.text_renderer;
@@ -75,22 +72,28 @@ impl GPURenderer for GlyphonTextRenderer {
             },
         );
 
-        let text_areas = render_buffers.text_render_buffers.buffers.iter().map(|buffer| {
-            glyphon::TextArea {
-                buffer: &buffer,
-                left: 0.0,
-                top: 0.0,
-                scale: 1.0,
-                bounds: TextBounds {
-                    left: 0,
-                    top: 0,
-                    right: texture.width() as i32,
-                    bottom: texture.height() as i32,
-                },
-                default_color: glyphon::Color::rgb(255, 255, 255),
-                custom_glyphs: &[],
-            }
-        });
+        let text_areas = render_buffers
+            .text_render_buffers
+            .buffers
+            .iter()
+            .enumerate()
+            .map(|(i, buffer)| {
+                println!("Drawing text area #{i}!");
+                glyphon::TextArea {
+                    buffer: &buffer,
+                    left: 0.0,
+                    top: 0.0,
+                    scale: 1.0,
+                    bounds: TextBounds {
+                        left: 0,
+                        top: 0,
+                        right: texture.width() as i32,
+                        bottom: texture.height() as i32,
+                    },
+                    default_color: glyphon::Color::rgb(255, 255, 255),
+                    custom_glyphs: &[],
+                }
+            });
 
         this.text_renderer
             .prepare(

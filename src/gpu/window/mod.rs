@@ -1,21 +1,18 @@
 use super::{
-    backend::{GPUResources, Node, RNode},
-    pipeline::{
-        graphics::{container_size_to_wgpu_mat, OrchestraRenderer, Uniforms}, text::TextPipelineBuffers, GPURenderer
-    },
-    render_target::{self, GPURenderTarget},
-    view::{View, ViewNode},
+    backend::{GPUResources, Node, ReifiedNode},
+    pipeline::{graphics::OrchestraRenderer, text::TextPipelineBuffers, GPURenderer},
+    render_target::{GPURenderTarget, RenderTargetContent},
 };
-use crate::gpu::pipeline::graphics::GraphicsPipelineBuffers;
-use crate::gpu::pipeline::text::GlyphonTextRenderer;
-use crate::gpu::pipeline::{RendererBuffers, Renderers};
-use crate::prelude::flow::CartesianFlowDirection;
-use crate::state::process::{SignalProcessor, UISignalExt};
 use crate::state::Mutable;
 use crate::ui::{
     graphics::Graphic,
     layout::{LayoutItem, ParentHints},
-    node::{ItemDescriptor, UIItem},
+    node::UIItem,
+};
+use crate::{
+    gpu::pipeline::{graphics::GraphicsPipelineBuffers, RendererBuffers, Renderers},
+    prelude::{flow::CartesianFlowDirection, UIItemDescriptor},
+    state::process::{SignalProcessor, UISignalExt},
 };
 use futures_signals::signal::{Signal, SignalExt};
 use pin_project::pin_project;
@@ -44,15 +41,15 @@ use winit::{
 };
 
 /// A node that describes the existence of a new window in the UI tree.
-pub struct WindowNodeDescriptor<T: ItemDescriptor> {
+pub struct WindowNodeDescriptor<A> {
     state: WindowNodeState,
-    content: T,
+    content: A,
 }
 
-impl<T: ItemDescriptor> WindowNodeDescriptor<T> {
+impl<A> WindowNodeDescriptor<A> {
     /// Consumes this window node and returns a new one with the set title.
-    pub fn with_title<Str: Into<String>>(self, title: Str) -> WindowNodeDescriptor<T> {
-        WindowNodeDescriptor {
+    pub fn with_title<Str: Into<String>>(self, title: Str) -> Self {
+        Self {
             state: WindowNodeState {
                 title: Mutable::new(title.into()),
                 ..self.state
@@ -63,11 +60,8 @@ impl<T: ItemDescriptor> WindowNodeDescriptor<T> {
 
     /// Consumes this window node and returns a new one with a reactive title.
     /// The window's title will change every time this signal changes.
-    pub fn with_reactive_title<Sig>(
-        self,
-        title_signal: Mutable<String>,
-    ) -> WindowNodeDescriptor<T> {
-        WindowNodeDescriptor {
+    pub fn with_reactive_title<Sig>(self, title_signal: Mutable<String>) -> Self {
+        Self {
             state: WindowNodeState {
                 title: title_signal,
                 ..self.state
@@ -77,8 +71,8 @@ impl<T: ItemDescriptor> WindowNodeDescriptor<T> {
     }
 
     /// Consumes this window node and returns a new one with the set decoration style.
-    pub fn with_decorations(self, with_decorations: bool) -> WindowNodeDescriptor<T> {
-        WindowNodeDescriptor {
+    pub fn with_decorations(self, with_decorations: bool) -> Self {
+        Self {
             state: WindowNodeState {
                 decorations_enabled: Mutable::new(with_decorations),
                 ..self.state
@@ -90,19 +84,20 @@ impl<T: ItemDescriptor> WindowNodeDescriptor<T> {
 
 /// Describes a new window with its contents and its own state.
 #[allow(non_snake_case)]
-pub fn Window<T>(mut item: T) -> WindowNodeDescriptor<impl ItemDescriptor>
+pub fn Window<T>(mut item: T) -> WindowNodeDescriptor<impl UIItemDescriptor>
 where
-    T: LayoutItem + 'static,
+    T: LayoutItem + Send + Sync,
 {
+    let minimum_size = item.get_natural_size();
+
     let state = WindowNodeState {
-        size: Mutable::new(item.get_natural_size()),
+        size: Mutable::new(minimum_size),
         title: Mutable::new(String::new()),
         mouse_position: Mutable::new(None),
         decorations_enabled: Mutable::new(true),
     };
 
     let window_size_signal = state.size.signal();
-    let minimum_size = item.get_natural_size();
 
     // Right now items resize exclusively through their parent hints.
     let item = state
@@ -128,7 +123,7 @@ where
 
 impl<T> Node for WindowNodeDescriptor<T>
 where
-    T: ItemDescriptor + 'static,
+    T: UIItemDescriptor + 'static,
 {
     type ReifiedType = WindowNode;
 
@@ -159,7 +154,10 @@ where
 
         let render_buffers = RendererBuffers {
             graphics_render_buffers: GraphicsPipelineBuffers::new(gpu_resources, T::QUAD_COUNT),
-            text_render_buffers: TextPipelineBuffers::new(gpu_resources, 1, &mut renderers.text_renderer)
+            text_render_buffers: TextPipelineBuffers::new(
+                gpu_resources,
+                &mut renderers.text_renderer,
+            ),
         };
 
         WindowNode {
@@ -204,12 +202,12 @@ pub struct WindowNode {
     #[pin]
     state: WindowNodeState,
     window: Arc<Window>,
-    content: Box<dyn UIItem>,
+    content: Box<dyn RenderTargetContent>,
     render_buffers: RendererBuffers,
     render_target: WindowRenderTarget,
 }
 
-impl<'window> RNode for WindowNode {
+impl<'window> ReifiedNode for WindowNode {
     fn setup(&mut self, gpu_resources: &GPUResources) {}
 
     fn handle_window_event(
@@ -325,7 +323,7 @@ impl GPURenderTarget for WindowRenderTarget {
 
     fn draw(
         &mut self,
-        content: &mut dyn UIItem,
+        content: &mut dyn RenderTargetContent,
         gpu_resources: &mut GPUResources,
         pipelines: &mut Renderers,
         render_buffers: &mut RendererBuffers,
@@ -376,15 +374,15 @@ impl GPURenderTarget for WindowRenderTarget {
             render_buffers,
         );
 
-        GlyphonTextRenderer::draw(
-            gpu_resources,
-            pipelines,
-            self.size.as_(),
-            &texture.texture,
-            &mut render_pass,
-            content,
-            render_buffers,
-        );
+        // GlyphonTextRenderer::draw(
+        //     gpu_resources,
+        //     pipelines,
+        //     self.size.as_(),
+        //     &texture.texture,
+        //     &mut render_pass,
+        //     content,
+        //     render_buffers,
+        // );
 
         drop(render_pass);
 

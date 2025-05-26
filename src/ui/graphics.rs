@@ -1,3 +1,4 @@
+use crate::gpu::pipeline::graphics::{GraphicItem, GraphicItemDescriptor};
 use bytemuck::{Pod, Zeroable};
 use std::{
     pin::Pin,
@@ -5,7 +6,7 @@ use std::{
 };
 use vek::{Extent3, Mat4, Rect, Rgb, Vec3, Vec4};
 
-use super::node::{ItemDescriptor, UIItem};
+use super::node::UIItem;
 
 /// A small fragment of graphics that can be sent to the GPU and rendered.
 /// You can compose several primitives to make more impressive graphics.
@@ -64,6 +65,11 @@ impl UIItem for Graphic {
         false
     }
 
+    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+        Poll::Ready(Some(()))
+    }
+}
+impl GraphicItem for Graphic {
     fn write_quads(&self, quad_buffer: &mut [Graphic]) {
         quad_buffer[0] = *self;
     }
@@ -71,13 +77,9 @@ impl UIItem for Graphic {
     fn get_quad_count(&self) -> usize {
         Self::QUAD_COUNT
     }
-
-    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
-        Poll::Ready(Some(()))
-    }
 }
 
-impl ItemDescriptor for Graphic {
+impl GraphicItemDescriptor for Graphic {
     const QUAD_COUNT: usize = 1;
 
     fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
