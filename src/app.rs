@@ -12,7 +12,7 @@ impl UIComposer {
     /// Creates and runs a new app in the default backend for the selected target.
     /// For cross-platform compatibility, this should be called in the main thread,
     /// and only once in your program.
-    pub fn run<Nd: Node + 'static>(node_tree_descriptor: Nd) {
+    pub fn run<NodeTreeType: Node + 'static>(node_tree_descriptor: NodeTreeType) {
         DefaultBackend::run(node_tree_descriptor);
     }
 

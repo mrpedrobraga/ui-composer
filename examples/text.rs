@@ -1,0 +1,12 @@
+#![allow(non_snake_case)]
+use ui_composer::prelude::*;
+
+fn main() {
+    UIComposer::run(Window(App()));
+}
+
+fn App() -> impl LayoutItem {
+    ResizableItem::new(|_| {
+        
+    })
+}
