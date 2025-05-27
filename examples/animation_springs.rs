@@ -1,26 +1,35 @@
 #![allow(non_snake_case)]
 
+use ui_composer::app::UIComposer;
+use ui_composer::components::{Center, Column, Row};
+use ui_composer::geometry::RectExt;
 use ui_composer::items;
 use ui_composer::prelude::animation::spring::*;
-use ui_composer::prelude::*;
+use ui_composer::state::process::{UIFutureExt, UISignalExt};
+use ui_composer::state::{Mutable, SignalExt};
+use ui_composer::ui::input::{Hover, Tap};
+use ui_composer::ui::layout::{LayoutItem, Resizable, ResizableItem};
 use ui_composer::winitwgpu::pipeline::graphics::graphic::Graphic;
 use ui_composer::winitwgpu::pipeline::text::Text;
 use ui_composer::winitwgpu::render_target::RenderDescriptor;
+use ui_composer::winitwgpu::window::Window;
+use vek::{Extent2, Lerp, Rect, Rgb, Vec2, Vec4};
 
 fn main() {
-    UIComposer::run(
-        Window(Center(Column(
-            Row(
-                SmoothSquare("A", Rgb::new(126.0, 46.0, 132.0) / 255.0),
-                SmoothSquare("B", Rgb::new(209.0, 64.0, 129.0) / 255.0),
-            ),
-            Row(
-                SmoothSquare("C", Rgb::new(239.0, 121.0, 138.0) / 255.0),
-                SmoothSquare("D", Rgb::new(249.0, 245.0, 227.0) / 255.0),
-            ),
-        )))
-        .with_title("Interactive Animation"),
-    )
+    let app = Center(Column(
+        Row(
+            SmoothSquare("A", Rgb::new(126.0, 46.0, 132.0) / 255.0),
+            SmoothSquare("B", Rgb::new(209.0, 64.0, 129.0) / 255.0),
+        ),
+        Row(
+            SmoothSquare("C", Rgb::new(239.0, 121.0, 138.0) / 255.0),
+            SmoothSquare("D", Rgb::new(249.0, 245.0, 227.0) / 255.0),
+        ),
+    ));
+
+    let window = Window(app).with_title("Interactive Animation");
+
+    UIComposer::run(window)
 }
 
 fn SmoothSquare(name: &'static str, color: Rgb<f32>) -> impl LayoutItem {

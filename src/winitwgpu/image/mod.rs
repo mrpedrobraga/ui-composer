@@ -16,10 +16,11 @@ use {
         },
     },
     pin_project::pin_project,
+    winit::event::WindowEvent,
 };
 
 #[allow(non_snake_case)]
-pub fn Image<A>(rect: Rect<f32, f32>, mut item: A) -> ImageNodeDescriptor<A::UIItemType>
+pub fn Image<A>(rect: Rect<f32, f32>, mut item: A) -> ImageNodeDescriptor<A::UIItem>
 where
     A: LayoutItem + 'static,
 {
@@ -47,14 +48,14 @@ impl<T> Node for ImageNodeDescriptor<T>
 where
     T: Send + Render + RenderGraphicDescriptor + 'static,
 {
-    type ReifiedType = ImageNode;
+    type Reified = ImageNode;
 
     fn reify(
         self,
         _event_loop: &winit::event_loop::ActiveEventLoop,
         gpu_resources: &winitwgpu::backend::Resources,
         renderers: &mut Renderers,
-    ) -> Self::ReifiedType {
+    ) -> Self::Reified {
         ImageNode {
             rect: self.rect,
             content: Box::new(self.content),
@@ -89,11 +90,10 @@ impl ReifiedNode for ImageNode {
         gpu_resources: &mut Resources,
         pipelines: &mut Renderers,
         _window_id: winit::window::WindowId,
-        event: UIEvent,
+        _event: WindowEvent,
     ) {
         self.render(gpu_resources, pipelines);
-
-        self.content.handle_ui_event(event);
+        self.content.handle_ui_event(UIEvent::default());
     }
 
     fn poll_processors(

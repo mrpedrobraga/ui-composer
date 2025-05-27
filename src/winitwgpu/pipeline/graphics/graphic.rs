@@ -1,10 +1,4 @@
-use crate::{
-    app::node::{AppItem, UIEvent},
-    winitwgpu::pipeline::{
-        graphics::{RenderGraphic, RenderGraphicDescriptor},
-        text::RenderText,
-    },
-};
+use crate::app::node::{AppItem, UIEvent};
 use bytemuck::{Pod, Zeroable};
 use std::{
     pin::Pin,

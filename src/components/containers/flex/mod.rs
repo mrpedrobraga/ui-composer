@@ -47,9 +47,9 @@ impl<TItems: FlexItems> FlexContainer<TItems> {
 impl<TItems> LayoutItem for FlexContainer<TItems>
 where
     TItems: FlexItems + Send,
-    TItems::UINodeType: AppItemDescriptor,
+    TItems::UINodeType: AppItemDescriptor + RenderDescriptor,
 {
-    type UIItemType = TItems::UINodeType;
+    type UIItem = TItems::UINodeType;
 
     fn get_natural_size(&self) -> Extent2<f32> {
         self.items.get_natural_size()
@@ -59,7 +59,7 @@ where
         self.items.get_minimum_size()
     }
 
-    fn lay(&mut self, parent_hints: ParentHints) -> Self::UIItemType {
+    fn lay(&mut self, parent_hints: ParentHints) -> Self::UIItem {
         let flow_direction = self.flow_direction.as_cartesian(&parent_hints);
         let minima = self.items.minima(flow_direction).collect::<Vec<f32>>();
         let weights = self.items.weights().collect::<Vec<f32>>();
@@ -143,7 +143,7 @@ where
 pub struct FlexItem<T>(pub T, pub f32);
 
 pub trait FlexItems {
-    type UINodeType: RenderDescriptor;
+    type UINodeType;
     type WeightsType: Iterator<Item = f32>;
     type MinimaType: Iterator<Item = f32>;
 
@@ -158,7 +158,7 @@ impl<A> FlexItems for FlexItem<A>
 where
     A: LayoutItem,
 {
-    type UINodeType = A::UIItemType;
+    type UINodeType = A::UIItem;
     type WeightsType = Once<f32>;
     type MinimaType = Once<f32>;
 

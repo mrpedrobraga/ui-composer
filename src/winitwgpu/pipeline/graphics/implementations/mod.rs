@@ -293,7 +293,7 @@ where
 impl<F, T> RenderGraphic for FutureProcessor<F, T>
 where
     F: Future<Output = T>,
-    T: Render + AppItemDescriptor,
+    T: Render + RenderGraphicDescriptor + AppItemDescriptor,
 {
     fn write_quads(&self, quad_buffer: &mut [Graphic]) {
         if let Some(item) = &self.signal.held_item {

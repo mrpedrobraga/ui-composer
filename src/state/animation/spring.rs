@@ -1,13 +1,16 @@
 use crate::{
-    winitwgpu::render_target::RenderDescriptor,
     prelude::{
         animation::{AnimationFrameParams, Poll, RealTimeStream},
         *,
     },
+    state::process::FutureProcessor,
 };
 use cgmath::BaseFloat;
 use futures_signals::signal::Signal;
-use std::ops::{Add, Div, Mul};
+use std::{
+    future::Future,
+    ops::{Add, Div, Mul},
+};
 
 #[derive(Default)]
 /// A [`super::RealTimeStream`] that simulates Hooke's law
@@ -42,7 +45,7 @@ where
         state: Mutable<T>,
         value_if: T,
         value_else: T,
-    ) -> impl Signal<Item = impl RenderDescriptor>
+    ) -> impl Signal<Item = FutureProcessor<impl Future<Output = ()>, ()>>
     where
         S: Signal<Item = bool>,
     {

@@ -1,7 +1,4 @@
-use crate::{
-    app::node::{AppItem, AppItemDescriptor, UIEvent},
-    winitwgpu::pipeline::graphics::RenderGraphicDescriptor,
-};
+use crate::app::node::{AppItem, AppItemDescriptor, UIEvent};
 use futures_signals::signal::Signal;
 use pin_project::pin_project;
 use std::future::Future;
@@ -75,7 +72,7 @@ where
 impl<S: Send + Sync, T> AppItem for SignalProcessor<S, T>
 where
     S: Signal<Item = T>,
-    T: AppItem + RenderGraphicDescriptor + Send,
+    T: AppItem + Send,
 {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         match &mut self.signal.held_item {
@@ -171,7 +168,7 @@ where
 impl<F, T> AppItem for FutureProcessor<F, T>
 where
     F: Future<Output = T> + Send,
-    T: AppItem + RenderGraphicDescriptor,
+    T: AppItem,
 {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         match &mut self.signal.held_item {

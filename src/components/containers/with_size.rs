@@ -27,7 +27,7 @@ impl<A> LayoutItem for WithSizeContainer<A>
 where
     A: LayoutItem,
 {
-    type UIItemType = A::UIItemType;
+    type UIItem = A::UIItem;
 
     fn get_natural_size(&self) -> Extent2<f32> {
         let inner_size = self.item.get_natural_size();
@@ -41,7 +41,7 @@ where
         self.item.get_minimum_size()
     }
 
-    fn lay(&mut self, layout_hints: ParentHints) -> Self::UIItemType {
+    fn lay(&mut self, layout_hints: ParentHints) -> Self::UIItem {
         self.item.lay(layout_hints)
     }
 }

@@ -1,9 +1,8 @@
+#![allow(unused)]
 use super::InputItem;
 use crate::app::node::{AppItem, UIEvent};
 use crate::prelude::Effect;
 use crate::state::Mutable;
-use crate::winitwgpu::pipeline::graphics::{RenderGraphic, RenderGraphicDescriptor};
-use crate::winitwgpu::pipeline::text::RenderText;
 use std::{
     pin::Pin,
     task::{Context, Poll},
@@ -40,37 +39,38 @@ impl<A> AppItem for Tap<A>
 where
     A: Effect + Send + Sync,
 {
-    fn handle_ui_event(&mut self, event: UIEvent) -> bool {
-        match event {
-            UIEvent::CursorMoved {
-                device_id: _,
-                position,
-            } => {
-                self.mouse_position_state
-                    .set(Some(Vec2::new(position.x, position.y).as_()));
-                false
-            }
-            UIEvent::MouseInput {
-                device_id: _,
-                state,
-                button,
-            } => match (button, state) {
-                (winit::event::MouseButton::Left, winit::event::ElementState::Pressed) => {
-                    if let Some(mouse_position) = self.mouse_position_state.get() {
-                        if self.rect.contains_point(mouse_position) {
-                            self.tap_action.apply();
-                            true
-                        } else {
-                            false
-                        }
-                    } else {
-                        false
-                    }
-                }
-                _ => false,
-            },
-            _ => false,
-        }
+    fn handle_ui_event(&mut self, _event: UIEvent) -> bool {
+        // match event {
+        //     UIEvent::CursorMoved {
+        //         device_id: _,
+        //         position,
+        //     } => {
+        //         self.mouse_position_state
+        //             .set(Some(Vec2::new(position.x, position.y).as_()));
+        //         false
+        //     }
+        //     UIEvent::MouseInput {
+        //         device_id: _,
+        //         state,
+        //         button,
+        //     } => match (button, state) {
+        //         (winit::event::MouseButton::Left, winit::event::ElementState::Pressed) => {
+        //             if let Some(mouse_position) = self.mouse_position_state.get() {
+        //                 if self.rect.contains_point(mouse_position) {
+        //                     self.tap_action.apply();
+        //                     true
+        //                 } else {
+        //                     false
+        //                 }
+        //             } else {
+        //                 false
+        //             }
+        //         }
+        //         _ => false,
+        //     },
+        //     _ => false,
+        // }
+        false
     }
 
     fn poll_processors(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {

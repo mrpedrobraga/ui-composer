@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 
 use ui_composer::prelude::*;
+use ui_composer::winitwgpu::components::Label;
 use ui_composer::winitwgpu::pipeline::graphics::graphic::Graphic;
 use ui_composer::Flex;
 

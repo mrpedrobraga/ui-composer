@@ -3,10 +3,7 @@ use {
     crate::{
         app::node::{AppItem, UIEvent},
         state::process::{FutureProcessor, SignalProcessor},
-        winitwgpu::{
-            pipeline::graphics::{graphic::Graphic, RenderGraphic, RenderGraphicDescriptor},
-            render_target::Render,
-        },
+        winitwgpu::{pipeline::graphics::graphic::Graphic, render_target::Render},
     },
     futures_signals::signal::Signal,
     glyphon::{Color, TextArea, TextBounds},

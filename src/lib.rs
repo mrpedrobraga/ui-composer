@@ -8,8 +8,10 @@ pub mod app;
 pub mod geometry;
 pub mod state;
 
+#[cfg(feature = "winit")]
 pub mod winit;
-pub mod winitwgpu;
 
 pub mod components;
 pub mod ui;
+#[cfg(all(feature = "winit", feature = "wgpu"))]
+pub mod winitwgpu;

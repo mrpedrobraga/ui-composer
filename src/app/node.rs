@@ -1,12 +1,17 @@
-use crate::{
-    state::signal_ext::coalesce_polls, winitwgpu::pipeline::graphics::RenderGraphicDescriptor,
-};
+use crate::state::signal_ext::coalesce_polls;
 use std::{
     pin::Pin,
     task::{Context, Poll},
 };
 
-pub type UIEvent = winit::event::WindowEvent;
+#[derive(Default, Clone, PartialEq)]
+pub enum Event {
+    #[default]
+    None,
+    //Action(String),
+}
+
+pub type UIEvent = Event;
 
 /// A node of a UI tree.
 ///
@@ -21,8 +26,8 @@ pub trait AppItem: Send {
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>>;
 }
 
-pub trait AppItemDescriptor: AppItem + RenderGraphicDescriptor {}
-impl<A> AppItemDescriptor for A where A: AppItem + RenderGraphicDescriptor {}
+pub trait AppItemDescriptor: AppItem {}
+impl<A> AppItemDescriptor for A where A: AppItem {}
 
 impl AppItem for () {
     fn handle_ui_event(&mut self, _event: UIEvent) -> bool {

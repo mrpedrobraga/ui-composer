@@ -1,34 +1,43 @@
 [package]
+edition = "2021"
 name = "ui-composer"
 version = "0.1.0"
-edition = "2021"
 
 [lib]
 name = "ui_composer"
 # crate-type = ["dylib"]
 
 [features]
-default = ["serde"]
-serde = ["dep:serde"]
+default = ["serde", "default-desktop"]
+
 debug = []
+default-desktop = ["wgpu", "winit"]
+
+serde = ["dep:serde"]
+wgpu = ["dep:wgpu"]
+winit = ["dep:winit"]
 
 [dependencies]
-bytemuck = { version = "1.16.1", features = ["derive"] }
+bytemuck = {version = "1.16.1", features = ["derive"]}
 cgmath = "0.18.0"
 cosmic-text = "0.12.1"
 futures = "0.3.30"
 futures-channel = "0.3.30"
 futures-signals = "0.3.33"
 futures-time = "3.0.0"
-glyphon = { git = "https://github.com/grovesNL/glyphon.git" }
+glyphon = {git = "https://github.com/grovesNL/glyphon.git"}
 image = "0.25.5"
 pin-project = "1.1.5"
 seq-macro = "0.3.5"
-serde = { version = "1.0.204", features = ["derive"], optional = true }
+serde = {version = "1.0.204", features = ["derive"], optional = true}
 slotmap = "1.0.7"
-vek = { version = "0.17.0", features = ["bytemuck"] }
-wgpu = { version = "23", default-features = false, features = ["wgsl"] }
-winit = "0.30.7"
+vek = {version = "0.17.0", features = ["bytemuck"]}
+
+# Winit
+winit = {version = "0.30.7", optional = true}
+
+# WGPU
+wgpu = {version = "23", default-features = false, features = ["wgsl"], optional = true}
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]
@@ -39,15 +48,15 @@ opt-level = 1
 opt-level = 3
 
 [profile.release]
-strip = true      # Automatically strip symbols from the binary.
-lto = true
-codegen-units = 1
-opt-level = 's'
- 
+
+codegen-units = 1 
+lto = true 
+opt-level = 's' 
+strip = true # Automatically strip symbols from the binary.
 [dev-dependencies]
-toml = "0.8.15"
+async-std = "1.13.0"
+chttp = "0.5.5"
 itertools = "0.13.0"
 serde_json = "1.0.134"
-async-std = "1.13.0"
-vek = { version = "0.17.0", features = ["serde"] }
-chttp = "0.5.5"
+toml = "0.8.15"
+vek = {version = "0.17.0", features = ["serde"]}

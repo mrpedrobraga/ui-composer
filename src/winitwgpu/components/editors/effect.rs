@@ -1,3 +1,4 @@
+#![allow(non_snake_case)]
 use futures_signals::signal::Mutable;
 use vek::Rgb;
 

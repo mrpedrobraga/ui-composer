@@ -1,12 +1,9 @@
 #![allow(non_snake_case)]
 
 mod containers;
-mod views;
 
 #[doc(inline)]
 pub use containers::*;
-#[doc(inline)]
-pub use views::*;
 
 #[macro_export]
 macro_rules! items_internal {

@@ -1,5 +1,5 @@
 #![allow(non_snake_case)]
-use ui_composer::prelude::*;
+use ui_composer::{prelude::*, winitwgpu::components::Label};
 
 fn main() {
     UIComposer::run(Window(App()).with_title("My Beautiful App"))

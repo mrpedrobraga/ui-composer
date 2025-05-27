@@ -5,9 +5,11 @@ pub use crate::state::process::{UIFutureExt, UISignalExt};
 pub use crate::state::*;
 pub use crate::ui::input::*;
 pub use crate::ui::layout::*;
-pub use crate::winitwgpu::window::{Window, WindowAttributes};
 pub use futures_signals::signal;
 pub use futures_signals::signal_vec;
+
+#[cfg(all(feature = "winit", feature = "wgpu"))]
+pub use crate::winitwgpu::window::{Window, WindowAttributes};
 
 #[macro_export]
 macro_rules! items {

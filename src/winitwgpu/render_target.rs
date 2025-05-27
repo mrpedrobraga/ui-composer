@@ -3,7 +3,10 @@
 use {
     super::{
         backend::Resources,
-        pipeline::{graphics::RenderGraphic, text::RenderText},
+        pipeline::{
+            graphics::{RenderGraphic, RenderGraphicDescriptor},
+            text::RenderText,
+        },
     },
     crate::{
         app::node::{AppItem, AppItemDescriptor},
@@ -33,5 +36,8 @@ pub trait RenderTarget {
 pub trait Render: AppItem + RenderGraphic + RenderText {}
 impl<A> Render for A where A: AppItem + RenderGraphic + RenderText {}
 
-pub trait RenderDescriptor: Render + AppItemDescriptor {}
-impl<A> RenderDescriptor for A where A: Render + AppItemDescriptor {}
+pub trait RenderDescriptor:
+    Render + AppItemDescriptor + RenderGraphicDescriptor + RenderText
+{
+}
+impl<A> RenderDescriptor for A where A: Render + AppItemDescriptor + RenderGraphicDescriptor {}

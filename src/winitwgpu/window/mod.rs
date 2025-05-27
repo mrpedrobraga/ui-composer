@@ -2,7 +2,7 @@ use {
     super::{
         backend::{Node, ReifiedNode, Resources},
         pipeline::{
-            graphics::OrchestraRenderer,
+            graphics::{OrchestraRenderer, RenderGraphicDescriptor},
             text::{GlyphonTextRenderer, TextPipelineBuffers},
             GPURenderer,
         },
@@ -10,9 +10,12 @@ use {
     },
     crate::{
         app::node::{AppItemDescriptor, UIEvent},
-        prelude::flow::CartesianFlowDirection,
-        state::{process::UISignalExt, Mutable},
-        ui::layout::{LayoutItem, ParentHints},
+        prelude::{flow::CartesianFlowDirection, LayoutItem},
+        state::{
+            process::{SignalProcessor, UISignalExt},
+            Mutable,
+        },
+        ui::layout::ParentHints,
         winitwgpu::pipeline::{graphics::GraphicsPipelineBuffers, RendererBuffers, Renderers},
     },
     futures_signals::signal::{Signal, SignalExt},
@@ -77,9 +80,12 @@ impl<A> WindowNodeDescriptor<A> {
 
 /// Describes a new window with its contents and its own state.
 #[allow(non_snake_case)]
-pub fn Window<T>(mut item: T) -> WindowNodeDescriptor<impl RenderDescriptor>
+pub fn Window<T>(
+    mut item: T,
+) -> WindowNodeDescriptor<SignalProcessor<impl Signal<Item = T::UIItem>, T::UIItem>>
 where
     T: LayoutItem + Send + Sync,
+    T::UIItem: RenderDescriptor,
 {
     let minimum_size = item.get_natural_size();
 
@@ -101,7 +107,7 @@ where
         .map(move |window_size| {
             item.lay(ParentHints {
                 rect: Rect::new(0.0, 0.0, window_size.w, window_size.h),
-                // TODO: Allow configuring this from the locale/user settings.
+                // impl RenderDescriptorTODO: Allow configuring this from the locale/user settings.
                 current_flow_direction: CartesianFlowDirection::LeftToRight,
                 current_cross_flow_direction: CartesianFlowDirection::TopToBottom,
                 current_writing_flow_direction: CartesianFlowDirection::LeftToRight,
@@ -118,9 +124,9 @@ where
 
 impl<A> Node for WindowNodeDescriptor<A>
 where
-    A: AppItemDescriptor + Render + 'static,
+    A: AppItemDescriptor + Render + RenderGraphicDescriptor + 'static,
 {
-    type ReifiedType = WindowNode;
+    type Reified = WindowNode;
 
     /// Transforms a WindowNode, which merely describes a window, into an active node in an engine tree.
     fn reify(
@@ -128,7 +134,7 @@ where
         event_loop: &ActiveEventLoop,
         gpu_resources: &Resources,
         renderers: &mut Renderers,
-    ) -> Self::ReifiedType {
+    ) -> Self::Reified {
         let window_default_size = self.state.size.get();
 
         let window = event_loop
@@ -210,7 +216,7 @@ impl ReifiedNode for WindowNode {
         gpu_resources: &mut Resources,
         pipelines: &mut Renderers,
         window_id: WindowId,
-        event: UIEvent,
+        event: WindowEvent,
     ) {
         if window_id == self.window.id() {
             match event {
@@ -239,7 +245,7 @@ impl ReifiedNode for WindowNode {
             }
         }
 
-        self.content.handle_ui_event(event);
+        self.content.handle_ui_event(UIEvent::default());
     }
 
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {

@@ -1,3 +1,4 @@
+#![allow(non_snake_case)]
 use crate::items_internal as items;
 use crate::winitwgpu::pipeline::graphics::graphic::Graphic;
 use crate::{

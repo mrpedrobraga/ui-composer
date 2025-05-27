@@ -20,7 +20,7 @@ pub struct PortalNode<A> {
 
 /// TODO: A View should create a single primitive bound to a texture that the contents draw onto.
 impl<T: Send> LayoutItem for PortalNode<T> {
-    type UIItemType = Graphic;
+    type UIItem = Graphic;
 
     fn get_natural_size(&self) -> vek::Extent2<f32> {
         self.min_size
@@ -30,7 +30,7 @@ impl<T: Send> LayoutItem for PortalNode<T> {
         self.min_size
     }
 
-    fn lay(&mut self, layout_hints: ParentHints) -> Self::UIItemType {
+    fn lay(&mut self, layout_hints: ParentHints) -> Self::UIItem {
         Graphic::new(layout_hints.rect, Rgb::green())
     }
 }

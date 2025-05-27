@@ -1,3 +1,4 @@
+#![allow(non_snake_case)]
 use crate::{
     prelude::{LayoutItem, ParentHints, RectExt as _},
     winitwgpu::pipeline::text::Text,
@@ -38,7 +39,7 @@ impl TextLayoutItem {
 }
 
 impl LayoutItem for TextLayoutItem {
-    type UIItemType = Text;
+    type UIItem = Text;
 
     fn get_natural_size(&self) -> vek::Extent2<f32> {
         vek::Extent2::new(128.0, 48.0)
@@ -48,11 +49,11 @@ impl LayoutItem for TextLayoutItem {
         vek::Extent2::new(128.0, 48.0)
     }
 
-    fn lay(&mut self, parent_hints: ParentHints) -> Self::UIItemType {
+    fn lay(&mut self, parent_hints: ParentHints) -> Self::UIItem {
         Text(
             parent_hints.rect.expand_from_center(-8.0, -8.0, -8.0, -8.0),
             self.text.clone(),
-            self.own_color.unwrap_or(Rgb::white()), // Use the current foreground colour!
+            self.own_color.unwrap_or(Rgb::white()), // TODO: Use the current foreground colour!
         )
     }
 }

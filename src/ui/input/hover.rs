@@ -1,17 +1,12 @@
+#![allow(unused)]
 use super::InputItem;
-use crate::{
-    app::node::{AppItem, UIEvent},
-    winitwgpu::pipeline::{
-        graphics::{RenderGraphic, RenderGraphicDescriptor},
-        text::RenderText,
-    },
-};
+use crate::app::node::{AppItem, UIEvent};
 use futures_signals::signal::Mutable;
 use std::{
     pin::Pin,
     task::{Context, Poll},
 };
-use vek::{Rect, Vec2};
+use vek::Rect;
 
 /// An Interactor that handles a user hovering over it with a cursor.
 pub struct Hover {
@@ -31,24 +26,25 @@ impl Hover {
 impl InputItem for Hover {}
 
 impl AppItem for Hover {
-    fn handle_ui_event(&mut self, event: UIEvent) -> bool {
-        match event {
-            UIEvent::CursorMoved {
-                device_id: _,
-                position,
-            } => {
-                let position = Vec2::new(position.x as f32, position.y as f32);
-                let rect_contains_point = self.rect.contains_point(position);
-                self.is_hovered_state
-                    .set_if(rect_contains_point, |a, b| a != b);
-                true
-            }
-            UIEvent::CursorLeft { device_id: _ } => {
-                self.is_hovered_state.set(false);
-                false
-            }
-            _ => false,
-        }
+    fn handle_ui_event(&mut self, _event: UIEvent) -> bool {
+        // match event {
+        //     UIEvent::CursorMoved {
+        //         device_id: _,
+        //         position,
+        //     } => {
+        //         let position = Vec2::new(position.x as f32, position.y as f32);
+        //         let rect_contains_point = self.rect.contains_point(position);
+        //         self.is_hovered_state
+        //             .set_if(rect_contains_point, |a, b| a != b);
+        //         true
+        //     }
+        //     UIEvent::CursorLeft { device_id: _ } => {
+        //         self.is_hovered_state.set(false);
+        //         false
+        //     }
+        //     _ => false,
+        // }
+        false
     }
 
     fn poll_processors(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {

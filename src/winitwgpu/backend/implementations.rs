@@ -1,18 +1,18 @@
-use std::task::Poll;
 use {
     super::{Node, ReifiedNode},
     crate::app::node::UIEvent,
 };
+use {std::task::Poll, winit::event::WindowEvent};
 
 impl Node for () {
-    type ReifiedType = ();
+    type Reified = ();
 
     fn reify(
         self,
         _event_loop: &winit::event_loop::ActiveEventLoop,
         _gpu_resources: &super::Resources,
         _renderers: &mut crate::winitwgpu::pipeline::Renderers,
-    ) -> Self::ReifiedType {
+    ) -> Self::Reified {
     }
 }
 
@@ -24,7 +24,7 @@ impl ReifiedNode for () {
         _gpu_resources: &mut super::Resources,
         _pipelines: &mut crate::winitwgpu::pipeline::Renderers,
         _window_id: winit::window::WindowId,
-        _event: UIEvent,
+        _event: WindowEvent,
     ) {
     }
 
