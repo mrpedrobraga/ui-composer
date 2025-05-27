@@ -57,7 +57,7 @@ impl<T: Send + AppItem, E: Send + AppItem> AppItem for Result<T, E> {
         }
     }
 
-    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+    fn poll_processors(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
         // let this: &mut Self = self.deref_mut();
         // match this {
         //     Ok(v) => todo!(),

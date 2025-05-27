@@ -33,11 +33,11 @@ impl RenderText for Text {
 }
 
 impl AppItem for Text {
-    fn handle_ui_event(&mut self, event: UIEvent) -> bool {
+    fn handle_ui_event(&mut self, _event: UIEvent) -> bool {
         false
     }
 
-    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+    fn poll_processors(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
         Poll::Ready(Some(()))
     }
 }
@@ -51,7 +51,7 @@ impl RenderGraphicDescriptor for Text {
 }
 
 impl RenderGraphic for Text {
-    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {}
+    fn write_quads(&self, _quad_buffer: &mut [crate::prelude::Graphic]) {}
 
     fn get_quad_count(&self) -> usize {
         Self::QUAD_COUNT
@@ -61,10 +61,11 @@ impl RenderGraphic for Text {
 impl RenderText for () {
     fn push_text<'a>(
         &self,
-        buffer: &'a glyphon::Buffer,
-        bounds: TextBounds,
-        container: &mut Vec<glyphon::TextArea<'a>>,
+        _buffer: &'a glyphon::Buffer,
+        _bounds: TextBounds,
+        _container: &mut Vec<glyphon::TextArea<'a>>,
     ) {
+        // No text here!
     }
 }
 

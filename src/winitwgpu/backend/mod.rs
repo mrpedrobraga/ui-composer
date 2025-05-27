@@ -7,7 +7,6 @@ use {
         winit::WinitBackend,
         winitwgpu::pipeline::{text::GlyphonTextRenderer, Renderers},
     },
-    futures::StreamExt,
     futures_signals::signal::{Signal, SignalExt, SignalFuture},
     pin_project::pin_project,
     std::{
@@ -107,7 +106,7 @@ impl<A: Node + 'static> ApplicationHandler for WinitWGPUApplicationHandler<A> {
 
     fn window_event(
         &mut self,
-        event_loop: &ActiveEventLoop,
+        _event_loop: &ActiveEventLoop,
         window_id: WindowId,
         event: winit::event::WindowEvent,
     ) {
@@ -120,9 +119,10 @@ impl<A: Node + 'static> ApplicationHandler for WinitWGPUApplicationHandler<A> {
     }
 }
 
-impl<'engine: 'static, E: Node + Send + 'engine> WinitWGPUBackend<E> {
+impl<E: Node + Send> WinitWGPUBackend<E> {
     // Little hack to get a "dummy" texture format.
     // This should go unused hopefully!
+    #[allow(unused)]
     fn get_dummy_texture_format(
         event_loop: &ActiveEventLoop,
         instance: &wgpu::Instance,
@@ -144,7 +144,7 @@ impl<'engine: 'static, E: Node + Send + 'engine> WinitWGPUBackend<E> {
         let dummy_texture = dummy_surface
             .get_current_texture()
             .expect("Failure to get dummy texture.");
-        
+
         dummy_texture.texture.format()
     }
 }
@@ -343,9 +343,8 @@ where
         event: UIEvent,
     ) {
         self.0
-                .handle_window_event(gpu_resources, pipelines, window_id, event.clone());
-        self
-            .1
+            .handle_window_event(gpu_resources, pipelines, window_id, event.clone());
+        self.1
             .handle_window_event(gpu_resources, pipelines, window_id, event);
     }
 
@@ -392,7 +391,6 @@ impl<E: Backend> Signal for BackendProcessExecutor<E> {
         let mut backend = backend.lock().expect("Failed to lock ui for polling");
         let backend = backend.deref_mut();
         let backend = unsafe { Pin::new_unchecked(backend) };
-        
 
         backend.poll_processors(cx)
     }

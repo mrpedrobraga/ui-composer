@@ -6,10 +6,7 @@
 //!
 //! ```rust
 //! use ui_composer::prelude::*;
-//!
-//! fn main() {
-//!     UIComposer::run(Window(()));
-//! }
+//! UIComposer::run(Window(()));
 //! ```
 //!
 //! This function _must_ be called in the main thread.

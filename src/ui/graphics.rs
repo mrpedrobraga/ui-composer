@@ -15,8 +15,7 @@ use vek::{Extent3, Mat4, Rect, Rgb, Vec3, Vec4};
 /// A small fragment of graphics that can be sent to the GPU and rendered.
 /// You can compose several primitives to make more impressive graphics.
 #[repr(C)]
-#[derive(Clone, Copy, Debug, Pod, Zeroable)]
-#[derive(Default)]
+#[derive(Clone, Copy, Debug, Pod, Zeroable, Default)]
 pub struct Graphic {
     pub transform: Mat4<f32>,
     pub color: Rgb<f32>,
@@ -55,13 +54,12 @@ impl Graphic {
     }
 }
 
-
 impl AppItem for Graphic {
-    fn handle_ui_event(&mut self, event: UIEvent) -> bool {
+    fn handle_ui_event(&mut self, _event: UIEvent) -> bool {
         false
     }
 
-    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+    fn poll_processors(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
         Poll::Ready(Some(()))
     }
 }
@@ -87,9 +85,9 @@ impl RenderGraphicDescriptor for Graphic {
 impl RenderText for Graphic {
     fn push_text<'a>(
         &self,
-        buffer: &'a glyphon::Buffer,
-        bounds: glyphon::TextBounds,
-        container: &mut Vec<glyphon::TextArea<'a>>,
+        _buffer: &'a glyphon::Buffer,
+        _bounds: glyphon::TextBounds,
+        _container: &mut Vec<glyphon::TextArea<'a>>,
     ) {
         // Nothing here!
     }

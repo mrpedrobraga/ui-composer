@@ -117,13 +117,8 @@ where
 {
     /// Consumes this [`ResizableItem`] and returns a similar one with the minimum size set.
     fn with_minimum_size(self, min_size: Extent2<f32>) -> Self {
-        let child_hints = self.hints;
-
         Self {
-            hints: ChildHints {
-                min_size,
-                ..child_hints
-            },
+            hints: ChildHints { min_size },
             ..self
         }
     }
@@ -160,5 +155,5 @@ impl LayoutItem for () {
         Extent2::new(0.0, 0.0)
     }
 
-    fn lay(&mut self, layout_hints: ParentHints) -> Self::UIItemType {}
+    fn lay(&mut self, _layout_hints: ParentHints) -> Self::UIItemType {}
 }

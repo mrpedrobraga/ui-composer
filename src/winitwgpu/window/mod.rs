@@ -9,7 +9,7 @@ use {
         render_target::{Render, RenderDescriptor, RenderTarget},
     },
     crate::{
-        app::node::{AppItem, AppItemDescriptor, UIEvent},
+        app::node::{AppItemDescriptor, UIEvent},
         prelude::flow::CartesianFlowDirection,
         state::{process::UISignalExt, Mutable},
         ui::layout::{LayoutItem, ParentHints},
@@ -90,7 +90,9 @@ where
         decorations_enabled: Mutable::new(true),
     };
 
-    let window_size_signal = state.size.signal();
+    // TODO: Make this signal change the size of the window...
+    // This should probably be disallowed for targets that aren't exported to support it.
+    let _window_size_signal = state.size.signal();
 
     // Right now items resize exclusively through their parent hints.
     let item = state
@@ -200,8 +202,8 @@ pub struct WindowNode {
     render_target: WindowRenderTarget,
 }
 
-impl<'window> ReifiedNode for WindowNode {
-    fn setup(&mut self, gpu_resources: &Resources) {}
+impl ReifiedNode for WindowNode {
+    fn setup(&mut self, _gpu_resources: &Resources) {}
 
     fn handle_window_event(
         &mut self,
@@ -216,13 +218,6 @@ impl<'window> ReifiedNode for WindowNode {
                     let new_size = Extent2::new(new_size.width, new_size.height);
                     self.render_target.resize(gpu_resources, new_size);
                     self.state.size.set(new_size.as_());
-                }
-                WindowEvent::CursorMoved { position, .. } => {
-                    let v = Vec2::new(position.x, position.y);
-                    let window_size = Vec2::new(
-                        self.window.inner_size().width as f64,
-                        self.window.inner_size().height as f64,
-                    );
                 }
                 WindowEvent::CloseRequested => {
                     // TODO: Handle closing of windows.
@@ -251,9 +246,7 @@ impl<'window> ReifiedNode for WindowNode {
         // TODO: Figure out what do to with the result of this poll (as it might introduce a need for redrawing!!!);
 
         let WindowNodeProj {
-            content,
-            window,
-            ..
+            content, window, ..
         } = self.project();
 
         let content: &mut _ = &mut **content;
@@ -261,7 +254,9 @@ impl<'window> ReifiedNode for WindowNode {
 
         let poll = content.poll_processors(cx);
 
-        if poll.is_ready() { window.request_redraw() }
+        if poll.is_ready() {
+            window.request_redraw()
+        }
 
         poll
     }

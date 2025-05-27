@@ -13,7 +13,7 @@ impl RenderGraphicDescriptor for () {
 }
 
 impl RenderGraphic for () {
-    fn write_quads(&self, quad_buffer: &mut [Graphic]) {
+    fn write_quads(&self, _quad_buffer: &mut [Graphic]) {
         /* No quads to write */
     }
 
@@ -135,8 +135,8 @@ where
         match self {
             Some(inner) => inner.write_quads(quad_buffer),
             None => {
-                for idx in 0..Self::QUAD_COUNT {
-                    quad_buffer[idx] = Graphic::default()
+                for slot in quad_buffer {
+                    *slot = Graphic::default()
                 }
             }
         }

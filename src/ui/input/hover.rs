@@ -37,7 +37,7 @@ impl RenderGraphicDescriptor for Hover {
     }
 }
 impl RenderGraphic for Hover {
-    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
+    fn write_quads(&self, _quad_buffer: &mut [crate::prelude::Graphic]) {
         /* Maybe push something here in Debug mode? */
     }
 
@@ -48,9 +48,9 @@ impl RenderGraphic for Hover {
 impl RenderText for Hover {
     fn push_text<'a>(
         &self,
-        buffer: &'a glyphon::Buffer,
-        bounds: glyphon::TextBounds,
-        container: &mut Vec<glyphon::TextArea<'a>>,
+        _buffer: &'a glyphon::Buffer,
+        _bounds: glyphon::TextBounds,
+        _container: &mut Vec<glyphon::TextArea<'a>>,
     ) {
         // Nothing here!
     }
@@ -76,7 +76,7 @@ impl AppItem for Hover {
         }
     }
 
-    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+    fn poll_processors(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
         Poll::Ready(Some(()))
     }
 }

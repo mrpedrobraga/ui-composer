@@ -51,7 +51,7 @@ where
 
     fn reify(
         self,
-        event_loop: &winit::event_loop::ActiveEventLoop,
+        _event_loop: &winit::event_loop::ActiveEventLoop,
         gpu_resources: &winitwgpu::backend::Resources,
         renderers: &mut Renderers,
     ) -> Self::ReifiedType {
@@ -80,7 +80,7 @@ pub struct ImageNode {
 }
 
 impl ReifiedNode for ImageNode {
-    fn setup(&mut self, gpu_resources: &Resources) {
+    fn setup(&mut self, _gpu_resources: &Resources) {
         /* Do nothing */
     }
 
@@ -88,7 +88,7 @@ impl ReifiedNode for ImageNode {
         &mut self,
         gpu_resources: &mut Resources,
         pipelines: &mut Renderers,
-        window_id: winit::window::WindowId,
+        _window_id: winit::window::WindowId,
         event: UIEvent,
     ) {
         self.render(gpu_resources, pipelines);
@@ -107,9 +107,8 @@ impl ReifiedNode for ImageNode {
 
         let poll = content.poll_processors(cx);
 
-        match &poll {
-            std::task::Poll::Ready(Some(())) => {} // Request redraw
-            _ => (),
+        if let std::task::Poll::Ready(Some(())) = &poll {
+            // Request Redraw!
         }
 
         poll

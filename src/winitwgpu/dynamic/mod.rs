@@ -31,7 +31,7 @@ impl<A: AppItem + RenderGraphicDescriptor> VecItem<A> {
     }
 
     pub fn initialize(&mut self, gpu_resources: &Resources, renderers: &mut Renderers) {
-        if let None = self.render_buffers {
+        if self.render_buffers.is_none() {
             self.render_buffers = Some(RendererBuffers {
                 graphics_render_buffers: GraphicsPipelineBuffers::new(
                     gpu_resources,
@@ -54,7 +54,7 @@ impl<A: RenderGraphicDescriptor + AppItem + Sync> RenderGraphicDescriptor for Ve
     }
 }
 impl<A: RenderGraphicDescriptor + AppItem + Sync> RenderGraphic for VecItem<A> {
-    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
+    fn write_quads(&self, _quad_buffer: &mut [crate::prelude::Graphic]) {
         // TODO: Write no quads.
     }
 
@@ -63,14 +63,14 @@ impl<A: RenderGraphicDescriptor + AppItem + Sync> RenderGraphic for VecItem<A> {
     }
 }
 impl<A: RenderGraphicDescriptor + AppItem + Sync> AppItem for VecItem<A> {
-    fn handle_ui_event(&mut self, event: UIEvent) -> bool {
+    fn handle_ui_event(&mut self, _event: UIEvent) -> bool {
         // Handle UI events for each item!
         false
     }
 
     fn poll_processors(
         self: std::pin::Pin<&mut Self>,
-        cx: &mut std::task::Context,
+        _cx: &mut std::task::Context,
     ) -> std::task::Poll<Option<()>> {
         // TODO: Poll the processors for my items!
         std::task::Poll::Ready(Some(()))

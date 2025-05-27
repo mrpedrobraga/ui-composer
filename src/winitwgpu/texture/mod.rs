@@ -1,3 +1,4 @@
+#![allow(unused)]
 //! Empty for now but this will house different kinds of Textures that can be rendered onto quads!
 
 use super::{backend::Resources, render_target::RenderTarget};
@@ -33,7 +34,7 @@ impl ImageTexture {
         Self { texture }
     }
 
-    fn resize(&mut self, gpu_resources: &Resources, new_size: vek::Extent2<u32>) {}
+    fn resize(&mut self, _gpu_resources: &Resources, _new_size: vek::Extent2<u32>) {}
 }
 
 impl Texture for ImageTexture {}

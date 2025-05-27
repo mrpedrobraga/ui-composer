@@ -1,24 +1,23 @@
+#![allow(unused_variables)]
 //! Pipelines and stuff to render three-dee models!
 //! Nothing is implemented yet, of course.
 
 use {
     super::{GPURenderer, RendererBuffers, Renderers},
     crate::winitwgpu::{backend::Resources, render_target::Render},
-    std::marker::PhantomData,
     vek::Extent2,
     wgpu::{RenderPass, Texture},
 };
 
 /// The pipeline (and resources) for drawings models in a three dee world.
-pub struct IrisRenderer<Tree> {
+#[allow(unused)]
+pub struct IrisRenderer {
     pipeline: wgpu::RenderPipeline,
     pub uniform_buffer: wgpu::Buffer,
     uniform_bind_group: wgpu::BindGroup,
-
-    _tree: PhantomData<Tree>,
 }
 
-impl<Item> GPURenderer for IrisRenderer<Item> {
+impl GPURenderer for IrisRenderer {
     fn draw(
         gpu_resources: &mut Resources,
         pipelines: &mut Renderers,

@@ -1,3 +1,4 @@
+#![allow(non_snake_case)]
 use ui_composer::prelude::*;
 
 fn main() {

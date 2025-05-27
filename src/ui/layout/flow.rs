@@ -117,7 +117,7 @@ impl CoordinateSystemProvider for FlowDirection {
 }
 
 impl CoordinateSystemProvider for CartesianFlowDirection {
-    fn get_axes(&self, parent_hints: &ParentHints) -> Vec2<f32> {
+    fn get_axes(&self, _parent_hints: &ParentHints) -> Vec2<f32> {
         match self {
             CartesianFlowDirection::LeftToRight => Vec2::unit_x(),
             CartesianFlowDirection::RightToLeft => -Vec2::unit_x(),
@@ -126,7 +126,7 @@ impl CoordinateSystemProvider for CartesianFlowDirection {
         }
     }
 
-    fn get_origin(&self, parent_hints: &ParentHints) -> Vec2<f32> {
+    fn get_origin(&self, _parent_hints: &ParentHints) -> Vec2<f32> {
         match self {
             CartesianFlowDirection::LeftToRight => Vec2::zero(),
             CartesianFlowDirection::RightToLeft => Vec2::unit_x(),
@@ -135,7 +135,7 @@ impl CoordinateSystemProvider for CartesianFlowDirection {
         }
     }
 
-    fn as_cartesian(&self, parent_hints: &ParentHints) -> CartesianFlowDirection {
+    fn as_cartesian(&self, _parent_hints: &ParentHints) -> CartesianFlowDirection {
         *self
     }
 }

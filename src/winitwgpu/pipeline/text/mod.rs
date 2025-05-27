@@ -66,7 +66,7 @@ pub struct GlyphonTextRenderer {
     font_system: FontSystem,
     viewport: Viewport,
     atlas: TextAtlas,
-    cache: Cache,
+    //cache: Cache,
     swash_cache: SwashCache,
 }
 
@@ -155,7 +155,7 @@ impl GlyphonTextRenderer {
         Self {
             text_renderer,
             swash_cache,
-            cache,
+            //cache,
             atlas,
             font_system,
             viewport,
