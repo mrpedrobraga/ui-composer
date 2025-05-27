@@ -2,21 +2,6 @@ use crate::prelude::Slot;
 use futures_signals::signal::Mutable;
 use std::task::Poll;
 
-impl<A> Slot for Mutable<A> {
-    type Item = A;
-
-    fn put(&self, value: Self::Item) {
-        self.set(value);
-    }
-
-    fn take(&self) -> Self::Item
-    where
-        Self::Item: Copy,
-    {
-        self.get()
-    }
-}
-
 /// Combines two Polls into a single poll describing a task with two parts.
 /// The result is decided based on a precedence order.
 ///
@@ -36,3 +21,4 @@ pub fn coalesce_polls(poll_a: Poll<Option<()>>, poll_b: Poll<Option<()>>) -> Pol
         (Poll::Pending, Poll::Ready(Some(()))) => Poll::Ready(Some(())),
     }
 }
+

@@ -50,10 +50,10 @@ fn default_buffer(renderer: &mut GlyphonTextRenderer) -> cosmic_text::Buffer {
 
     buffer.set_text(
         &mut renderer.font_system,
-        "Boo 👻!",
+        "Click me...",
         cosmic_text::Attrs::new()
             .family(cosmic_text::Family::Name("Work Sans"))
-            .weight(Weight::EXTRA_BOLD),
+            .weight(Weight::NORMAL),
         cosmic_text::Shaping::Advanced,
     );
     buffer.set_size(&mut renderer.font_system, Some(100.0), Some(100.0));

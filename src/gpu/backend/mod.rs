@@ -1,4 +1,6 @@
-use super::{pipeline::graphics::OrchestraRenderer, render_target::Render, window::WindowRenderTarget};
+use super::{
+    pipeline::graphics::OrchestraRenderer, render_target::Render, window::WindowRenderTarget,
+};
 use crate::backend::Backend;
 use crate::gpu::pipeline::text::GlyphonTextRenderer;
 use crate::gpu::pipeline::Renderers;
@@ -7,7 +9,12 @@ use futures::StreamExt;
 use futures_signals::signal::{Signal, SignalExt, SignalFuture};
 use pin_project::pin_project;
 use std::{
-    future::Future, marker::PhantomData, ops::DerefMut, pin::Pin, sync::{Arc, Mutex}, task::{Context, Poll}
+    future::Future,
+    marker::PhantomData,
+    ops::DerefMut,
+    pin::Pin,
+    sync::{Arc, Mutex},
+    task::{Context, Poll},
 };
 use wgpu::{MemoryHints, TextureFormat};
 use winit::{
@@ -15,6 +22,8 @@ use winit::{
     event_loop::ActiveEventLoop,
     window::{WindowAttributes, WindowId},
 };
+
+pub mod implementations;
 
 /// The collection of resources the GPU backends use to
 /// interact with the GPU.
@@ -38,7 +47,10 @@ pub trait WinitBackend: Backend + Send {
     async fn create(
         event_loop: &ActiveEventLoop,
         tree_descriptor: Self::NodeTreeDescriptorType,
-    ) -> (Arc<Mutex<Self>>, SignalFuture<BackendProcessExecutor<WinitWGPUBackend<Self::NodeTreeDescriptorType>>>);
+    ) -> (
+        Arc<Mutex<Self>>,
+        SignalFuture<BackendProcessExecutor<WinitWGPUBackend<Self::NodeTreeDescriptorType>>>,
+    );
     fn handle_resumed(&mut self);
     fn handle_window_event(&mut self, window_id: WindowId, event: UIEvent);
 }
@@ -153,7 +165,13 @@ impl<'engine: 'static, E: Node + Send + 'engine> WinitWGPUBackend<E> {
 impl<Nd: Node + Send + 'static> WinitBackend for WinitWGPUBackend<Nd> {
     type NodeTreeDescriptorType = Nd;
 
-    async fn create(event_loop: &ActiveEventLoop, tree_descriptor: Nd) -> (Arc<Mutex<Self>>, SignalFuture<BackendProcessExecutor<WinitWGPUBackend<Nd>>>) {
+    async fn create(
+        event_loop: &ActiveEventLoop,
+        tree_descriptor: Nd,
+    ) -> (
+        Arc<Mutex<Self>>,
+        SignalFuture<BackendProcessExecutor<WinitWGPUBackend<Nd>>>,
+    ) {
         let instance = wgpu::Instance::default();
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -219,7 +237,7 @@ impl<Nd: Node + Send + 'static> WinitBackend for WinitWGPUBackend<Nd> {
             queue,
             adapter,
         };
-        
+
         let node_tree = tree_descriptor.reify(event_loop, &gpu_resources, &mut renderers);
 
         let mut backend = Self {
@@ -271,8 +289,12 @@ impl<Nd: Node + Send + 'static> WinitBackend for WinitWGPUBackend<Nd> {
 pub trait Node: Send {
     /// The type this node descriptor generates when reified.
     type ReifiedType: ReifiedNode;
-    fn reify(self, event_loop: &ActiveEventLoop, gpu_resources: &GPUResources, renderers: &mut Renderers)
-        -> Self::ReifiedType;
+    fn reify(
+        self,
+        event_loop: &ActiveEventLoop,
+        gpu_resources: &GPUResources,
+        renderers: &mut Renderers,
+    ) -> Self::ReifiedType;
 }
 
 /// A main node in the app tree.

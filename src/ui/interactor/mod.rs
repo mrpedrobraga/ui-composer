@@ -7,24 +7,26 @@ pub use hover::*;
 pub use tap::*;
 pub use window_drag::*;
 
-pub trait Interactor {}
+/// Trait that describes an `Input` element, something that handles user input and mutates state.
+pub trait InputItem {}
 
-pub trait Action {
-    // Triggers the action.
-    fn trigger(&mut self);
+/// Trait that describes an effect — a modification to an environment.
+pub trait Effect: Clone + Send + Sync {
+    /// Applies the effect.
+    fn apply(&mut self);
 }
 
-impl<F> Action for F
+impl<F> Effect for F
 where
-    F: FnMut(),
+    F: FnMut() + Clone + Send + Sync,
 {
-    fn trigger(&mut self) {
+    fn apply(&mut self) {
         (self)()
     }
 }
 
-impl Action for Mutable<Option<()>> {
-    fn trigger(&mut self) {
+impl Effect for Mutable<Option<()>> {
+    fn apply(&mut self) {
         self.set(Some(()))
     }
 }

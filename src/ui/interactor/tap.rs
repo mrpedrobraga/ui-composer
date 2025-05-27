@@ -1,7 +1,7 @@
-use super::Interactor;
+use super::InputItem;
 use crate::gpu::pipeline::graphics::{RenderGraphic, RenderGraphicDescriptor};
 use crate::gpu::pipeline::text::RenderText;
-use crate::prelude::Action;
+use crate::prelude::Effect;
 use crate::state::Mutable;
 use crate::ui::node::{UIEvent, UIItem};
 use std::{
@@ -11,20 +11,20 @@ use std::{
 use vek::{Rect, Vec2};
 
 /// An Interactor that handles a user hovering over it with a cursor.
-pub struct Tap<A: Action> {
+pub struct Tap<A: Effect> {
     rect: Rect<f32, f32>,
     mouse_position_state: Mutable<Option<Vec2<f32>>>,
     tap_action: A,
 }
 
-impl<A> Tap<A>
+impl<Fx> Tap<Fx>
 where
-    A: Action,
+    Fx: Effect,
 {
     pub fn new(
         rect: Rect<f32, f32>,
         mouse_position_state: Mutable<Option<Vec2<f32>>>,
-        tap_state: A,
+        tap_state: Fx,
     ) -> Self {
         Self {
             rect,
@@ -34,10 +34,10 @@ where
     }
 }
 
-impl<A> Interactor for Tap<A> where A: Action + Send {}
+impl<A> InputItem for Tap<A> where A: Effect + Send {}
 impl<A> RenderGraphicDescriptor for Tap<A>
 where
-    A: Action + Send + Sync,
+    A: Effect + Send + Sync,
 {
     const QUAD_COUNT: usize = 0;
 
@@ -45,7 +45,7 @@ where
         None // Some(self.area))
     }
 }
-impl<A: Action + Send + Sync> RenderGraphic for Tap<A> {
+impl<A: Effect + Send + Sync> RenderGraphic for Tap<A> {
     fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
         /* Maybe push something here in Debug mode? */
     }
@@ -54,7 +54,7 @@ impl<A: Action + Send + Sync> RenderGraphic for Tap<A> {
         Self::QUAD_COUNT
     }
 }
-impl<A: Action + Send + Sync> RenderText for Tap<A> {
+impl<A: Effect + Send + Sync> RenderText for Tap<A> {
     fn push_text<'a>(
         &self,
         buffer: &'a glyphon::Buffer,
@@ -66,7 +66,7 @@ impl<A: Action + Send + Sync> RenderText for Tap<A> {
 }
 impl<A> UIItem for Tap<A>
 where
-    A: Action + Send + Sync,
+    A: Effect + Send + Sync,
 {
     fn handle_ui_event(&mut self, event: crate::ui::node::UIEvent) -> bool {
         match event {
@@ -86,7 +86,7 @@ where
                 (winit::event::MouseButton::Left, winit::event::ElementState::Pressed) => {
                     if let Some(mouse_position) = self.mouse_position_state.get() {
                         if (self.rect.contains_point(mouse_position)) {
-                            self.tap_action.trigger();
+                            self.tap_action.apply();
                             true
                         } else {
                             false

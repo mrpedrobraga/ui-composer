@@ -1,4 +1,4 @@
-use super::Interactor;
+use super::InputItem;
 use crate::{gpu::pipeline::{graphics::{RenderGraphic, RenderGraphicDescriptor}, text::RenderText}, ui::node::{UIEvent, UIItem}};
 use futures_signals::signal::Mutable;
 use std::{
@@ -28,7 +28,7 @@ impl Drag {
     }
 }
 
-impl Interactor for Drag {}
+impl InputItem for Drag {}
 impl RenderGraphicDescriptor for Drag {
     const QUAD_COUNT: usize = 0;
 

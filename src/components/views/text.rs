@@ -1,6 +1,6 @@
 use crate::{
-    gpu::pipeline::text::Text,
-    prelude::{LayoutItem, RectExt as _, Resizable as _, ResizableItem},
+    gpu::pipeline::{graphics::RenderGraphicDescriptor, text::Text},
+    prelude::{LayoutItem, ParentHints, RectExt as _, Resizable as _, ResizableItem, UIItemDescriptor},
 };
 use vek::Rgb;
 
@@ -11,13 +11,42 @@ use vek::Rgb;
 /// will grow in the `WritingCrossAxis`.
 ///
 /// ^ TODO: This is not yet implemented.
-pub fn Label(text: String, color: Rgb<f32>) -> impl LayoutItem {
-    ResizableItem::new(move |hx| {
+pub fn Label<S>(text: S) -> TextLayoutItem where S: Into<String> {
+    let text = text.into();
+    TextLayoutItem { text, own_color: None }
+}
+
+pub struct TextLayoutItem {
+    text: String,
+    own_color: Option<Rgb<f32>>
+}
+
+impl TextLayoutItem {
+    /// Returns this [TextLayoutItem], with a different colour.
+    pub fn with_color(self, new_color: Rgb<f32>) -> Self {
+        Self {
+            own_color: Some(new_color),
+            ..self
+        }
+    }
+}
+
+impl LayoutItem for TextLayoutItem {
+    type UIItemType = Text;
+
+    fn get_natural_size(&self) -> vek::Extent2<f32> {
+        vek::Extent2::new(128.0, 48.0)
+    }
+
+    fn get_minimum_size(&self) -> vek::Extent2<f32> {
+        vek::Extent2::new(128.0, 48.0)
+    }
+
+    fn lay(&mut self, parent_hints: ParentHints) -> Self::UIItemType {
         Text(
-            hx.rect.expand_from_center(-8.0, -8.0, -8.0, -8.0),
-            text.clone(),
-            color,
+            parent_hints.rect.expand_from_center(-8.0, -8.0, -8.0, -8.0),
+            self.text.clone(),
+            self.own_color.unwrap_or(Rgb::white()), // Use the current foreground colour!
         )
-    })
-    .with_minimum_size(vek::Extent2::new(32.0, 48.0))
+    }
 }

@@ -1,4 +1,4 @@
-use super::Interactor;
+use super::InputItem;
 use crate::{
     gpu::pipeline::{graphics::{RenderGraphic, RenderGraphicDescriptor}, text::{Text, RenderText}},
     ui::node::{UIEvent, UIItem},
@@ -25,7 +25,7 @@ impl Hover {
     }
 }
 
-impl Interactor for Hover {}
+impl InputItem for Hover {}
 impl RenderGraphicDescriptor for Hover {
     const QUAD_COUNT: usize = 0;
 

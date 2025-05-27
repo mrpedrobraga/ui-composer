@@ -29,6 +29,16 @@ impl<TItems: FlexItems> FlexContainer<TItems> {
             ..self
         }
     }
+
+    #[inline(always)]
+    /// Adapts this container to lay its items by [WritingFlowDirection::WritingCrossAxisForward]
+    /// (in `en_US`, that's top to bottom).
+    pub fn with_vertical_flow(self) -> Self {
+        Self {
+            flow_direction: FlowDirection::Writing(WritingFlowDirection::WritingCrossAxisForward),
+            ..self
+        }
+    }
 }
 
 impl<TItems> LayoutItem for FlexContainer<TItems>

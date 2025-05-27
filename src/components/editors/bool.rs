@@ -8,7 +8,7 @@ use crate::state::animation::spring::Spring;
 use futures_signals::signal::{Mutable, SignalExt};
 use vek::{Extent2, Lerp, Rect, Rgb, Vec4};
 
-pub trait SwitchGraphics {
+pub trait BoolEditGraphics {
     fn describe_render(
         rect: Rect<f32, f32>,
         anim_factor: f32,
@@ -18,7 +18,7 @@ pub trait SwitchGraphics {
 
 /// A barebones switch which allows the user to toggle a `Mutable<bool>`.
 /// [SwitchGraphics] and a minimum size must be provided for anything to show up on screen!
-pub fn SwitchBase<G>(state: Mutable<bool>) -> impl Resizable + LayoutItem where G: SwitchGraphics {
+pub fn BoolEditBase<G>(state: Mutable<bool>) -> impl Resizable + LayoutItem where G: BoolEditGraphics {
     let anim_state = Mutable::new(0.0);
 
     ResizableItem::new(move |parent_hints| {
@@ -38,21 +38,21 @@ pub fn SwitchBase<G>(state: Mutable<bool>) -> impl Resizable + LayoutItem where 
 }
 
 #[derive(Clone, Copy)]
-pub struct DefaultSwitchGraphics;
+pub struct AnimatedSwitch;
 
 /// A simple switch that edits a `bool` state.
 /// 
 /// The user can press it to toggle the underlying boolean.
 pub fn Switch(state: Mutable<bool>) -> impl LayoutItem {
-    SwitchBase::<DefaultSwitchGraphics>(state).with_minimum_size(Extent2::new(32.0, 20.0))
+    BoolEditBase::<AnimatedSwitch>(state).with_minimum_size(Extent2::new(32.0, 20.0))
 }
 
 /// Same as [Switch]
 pub fn VerticalSwitch(state: Mutable<bool>) -> impl LayoutItem {
-    SwitchBase::<DefaultSwitchGraphics>(state).with_minimum_size(Extent2::new(20.0, 32.0))
+    BoolEditBase::<AnimatedSwitch>(state).with_minimum_size(Extent2::new(20.0, 32.0))
 }
 
-impl SwitchGraphics for DefaultSwitchGraphics {
+impl BoolEditGraphics for AnimatedSwitch {
     fn describe_render(
         rect: Rect<f32, f32>,
         anim_factor: f32,
