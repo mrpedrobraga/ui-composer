@@ -1,5 +1,5 @@
 #![allow(non_snake_case)]
-use ui_composer::{gpu::pipeline::text::Text, items, prelude::*};
+use ui_composer::{winitwgpu::pipeline::text::Text, items, prelude::*};
 
 fn main() {
     UIComposer::run(Window(App()));

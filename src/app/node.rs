@@ -1,13 +1,10 @@
 use crate::{
-    gpu::{backend::GPUResources, pipeline::graphics::RenderGraphicDescriptor},
-    state::signal_ext::coalesce_polls,
-    ui::graphics::Graphic,
+    state::signal_ext::coalesce_polls, winitwgpu::pipeline::graphics::RenderGraphicDescriptor,
 };
 use std::{
     pin::Pin,
     task::{Context, Poll},
 };
-use vek::Rect;
 
 pub type UIEvent = winit::event::WindowEvent;
 
@@ -18,11 +15,9 @@ pub type UIEvent = winit::event::WindowEvent;
 /// The entire user interface is made of UI Nodes arranged in a graph.
 pub trait AppItem: Send {
     /// Handles a UI Event (or not). Returns whether the event was handled.
-    #[inline(always)]
     fn handle_ui_event(&mut self, event: UIEvent) -> bool;
 
     /// Polls this node's processors: `Future`s and `Signal`s.
-    #[inline(always)]
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>>;
 }
 
@@ -30,11 +25,11 @@ pub trait AppItemDescriptor: AppItem + RenderGraphicDescriptor {}
 impl<A> AppItemDescriptor for A where A: AppItem + RenderGraphicDescriptor {}
 
 impl AppItem for () {
-    fn handle_ui_event(&mut self, event: UIEvent) -> bool {
+    fn handle_ui_event(&mut self, _event: UIEvent) -> bool {
         false
     }
 
-    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+    fn poll_processors(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
         Poll::Ready(Some(()))
     }
 }
@@ -46,7 +41,7 @@ impl<A: Send + AppItem> AppItem for Option<A> {
             .unwrap_or(false)
     }
 
-    fn poll_processors(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         // TODO: Maybe I shouldn't return Some(()) in the option by default?
         self.as_pin_mut()
             .map(|inner| inner.poll_processors(cx))
@@ -62,7 +57,7 @@ impl<T: Send + AppItem, E: Send + AppItem> AppItem for Result<T, E> {
         }
     }
 
-    fn poll_processors(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         // let this: &mut Self = self.deref_mut();
         // match this {
         //     Ok(v) => todo!(),
@@ -92,9 +87,9 @@ impl<A: Send + AppItem, B: Send + AppItem> AppItem for (A, B) {
         a_handled || b_handled
     }
 
-    fn poll_processors(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         let (pinned_a, pinned_b) = {
-            let mut mut_ref = unsafe { self.get_unchecked_mut() };
+            let mut_ref = unsafe { self.get_unchecked_mut() };
             let (ref mut a, ref mut b) = mut_ref;
 
             let a = unsafe { Pin::new_unchecked(a) };

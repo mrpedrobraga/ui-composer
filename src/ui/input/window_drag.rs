@@ -1,10 +1,10 @@
 use super::InputItem;
 use crate::{
-    gpu::pipeline::{
+    app::node::{AppItem, UIEvent},
+    winitwgpu::pipeline::{
         graphics::{RenderGraphic, RenderGraphicDescriptor},
         text::RenderText,
     },
-    prelude::{AppItem, UIEvent},
 };
 use futures_signals::signal::Mutable;
 use std::{

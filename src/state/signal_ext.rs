@@ -1,5 +1,3 @@
-use crate::prelude::Slot;
-use futures_signals::signal::Mutable;
 use std::task::Poll;
 
 /// Combines two Polls into a single poll describing a task with two parts.

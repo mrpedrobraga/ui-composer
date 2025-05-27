@@ -61,35 +61,32 @@ pub enum WritingFlowDirection {
     WritingCrossAxisBackwards,
 }
 
-impl Into<FlowDirection> for CartesianFlowDirection {
-    fn into(self) -> FlowDirection {
-        FlowDirection::Cartesian(self)
+impl From<CartesianFlowDirection> for FlowDirection {
+    fn from(val: CartesianFlowDirection) -> Self {
+        FlowDirection::Cartesian(val)
     }
 }
 
-impl Into<FlowDirection> for AlignedFlowDirection {
-    fn into(self) -> FlowDirection {
-        FlowDirection::Aligned(self)
+impl From<AlignedFlowDirection> for FlowDirection {
+    fn from(val: AlignedFlowDirection) -> Self {
+        FlowDirection::Aligned(val)
     }
 }
 
-impl Into<FlowDirection> for WritingFlowDirection {
-    fn into(self) -> FlowDirection {
-        FlowDirection::Writing(self)
+impl From<WritingFlowDirection> for FlowDirection {
+    fn from(val: WritingFlowDirection) -> Self {
+        FlowDirection::Writing(val)
     }
 }
 
 pub trait CoordinateSystemProvider {
     /// The direction of flow, in cartesian x = left to right, y = top to bottom;
-    #[inline(always)]
     fn get_axes(&self, parent_hints: &ParentHints) -> Vec2<f32>;
 
     /// The start of the flow, in cartesian x = left to right, y = top to bottom;
-    #[inline(always)]
     fn get_origin(&self, parent_hints: &ParentHints) -> Vec2<f32>;
 
     /// Transforming into cartesian flow direction!
-    #[inline(always)]
     fn as_cartesian(&self, parent_hints: &ParentHints) -> CartesianFlowDirection;
 }
 
@@ -146,12 +143,8 @@ impl CoordinateSystemProvider for CartesianFlowDirection {
 impl CoordinateSystemProvider for AlignedFlowDirection {
     fn get_axes(&self, parent_hints: &ParentHints) -> Vec2<f32> {
         match self {
-            Self::MainAxisForward => {
-                parent_hints.current_flow_direction.get_axes(parent_hints)
-            }
-            Self::MainAxisBackwards => {
-                -parent_hints.current_flow_direction.get_axes(parent_hints)
-            }
+            Self::MainAxisForward => parent_hints.current_flow_direction.get_axes(parent_hints),
+            Self::MainAxisBackwards => -parent_hints.current_flow_direction.get_axes(parent_hints),
             Self::CrossAxisForward => parent_hints
                 .current_cross_flow_direction
                 .get_axes(parent_hints),
@@ -163,9 +156,7 @@ impl CoordinateSystemProvider for AlignedFlowDirection {
 
     fn get_origin(&self, parent_hints: &ParentHints) -> Vec2<f32> {
         match self {
-            Self::MainAxisForward => {
-                parent_hints.current_flow_direction.get_origin(parent_hints)
-            }
+            Self::MainAxisForward => parent_hints.current_flow_direction.get_origin(parent_hints),
             Self::MainAxisBackwards => {
                 -parent_hints.current_flow_direction.get_origin(parent_hints)
             }
@@ -180,10 +171,20 @@ impl CoordinateSystemProvider for AlignedFlowDirection {
 
     fn as_cartesian(&self, parent_hints: &ParentHints) -> CartesianFlowDirection {
         match self {
-            Self::MainAxisForward => parent_hints.current_flow_direction.as_cartesian(parent_hints),
-            Self::MainAxisBackwards => parent_hints.current_flow_direction.as_cartesian(parent_hints).inverse(),
-            Self::CrossAxisForward => parent_hints.current_cross_flow_direction.as_cartesian(parent_hints),
-            Self::CrossAxisBackwards => parent_hints.current_cross_flow_direction.as_cartesian(parent_hints).inverse(),
+            Self::MainAxisForward => parent_hints
+                .current_flow_direction
+                .as_cartesian(parent_hints),
+            Self::MainAxisBackwards => parent_hints
+                .current_flow_direction
+                .as_cartesian(parent_hints)
+                .inverse(),
+            Self::CrossAxisForward => parent_hints
+                .current_cross_flow_direction
+                .as_cartesian(parent_hints),
+            Self::CrossAxisBackwards => parent_hints
+                .current_cross_flow_direction
+                .as_cartesian(parent_hints)
+                .inverse(),
         }
     }
 }
@@ -225,10 +226,20 @@ impl CoordinateSystemProvider for WritingFlowDirection {
 
     fn as_cartesian(&self, parent_hints: &ParentHints) -> CartesianFlowDirection {
         match self {
-            Self::WritingAxisForward => parent_hints.current_writing_flow_direction.as_cartesian(parent_hints),
-            Self::WritingAxisBackwards => parent_hints.current_writing_flow_direction.as_cartesian(parent_hints).inverse(),
-            Self::WritingCrossAxisForward => parent_hints.current_writing_cross_flow_direction.as_cartesian(parent_hints),
-            Self::WritingCrossAxisBackwards => parent_hints.current_writing_cross_flow_direction.as_cartesian(parent_hints).inverse(),
+            Self::WritingAxisForward => parent_hints
+                .current_writing_flow_direction
+                .as_cartesian(parent_hints),
+            Self::WritingAxisBackwards => parent_hints
+                .current_writing_flow_direction
+                .as_cartesian(parent_hints)
+                .inverse(),
+            Self::WritingCrossAxisForward => parent_hints
+                .current_writing_cross_flow_direction
+                .as_cartesian(parent_hints),
+            Self::WritingCrossAxisBackwards => parent_hints
+                .current_writing_cross_flow_direction
+                .as_cartesian(parent_hints)
+                .inverse(),
         }
     }
 }

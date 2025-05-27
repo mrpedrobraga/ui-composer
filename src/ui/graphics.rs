@@ -1,7 +1,6 @@
-use crate::prelude::UIEvent;
 use crate::{
-    app::node::{self, AppItem},
-    gpu::pipeline::{
+    app::node::{AppItem, UIEvent},
+    winitwgpu::pipeline::{
         graphics::{RenderGraphic, RenderGraphicDescriptor},
         text::RenderText,
     },
@@ -17,6 +16,7 @@ use vek::{Extent3, Mat4, Rect, Rgb, Vec3, Vec4};
 /// You can compose several primitives to make more impressive graphics.
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
+#[derive(Default)]
 pub struct Graphic {
     pub transform: Mat4<f32>,
     pub color: Rgb<f32>,
@@ -55,15 +55,6 @@ impl Graphic {
     }
 }
 
-impl Default for Graphic {
-    fn default() -> Self {
-        Graphic {
-            transform: Default::default(),
-            color: Default::default(),
-            corner_radii: Default::default(),
-        }
-    }
-}
 
 impl AppItem for Graphic {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {

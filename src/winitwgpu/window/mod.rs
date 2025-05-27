@@ -1,43 +1,36 @@
-use super::{
-    backend::{GPUResources, Node, ReifiedNode},
-    pipeline::{graphics::OrchestraRenderer, text::{GlyphonTextRenderer, TextPipelineBuffers}, GPURenderer},
-    render_target::{GPURenderTarget, Render, RenderDescriptor},
-};
-use crate::{prelude::UIEvent, state::Mutable};
-use crate::ui::{
-    graphics::Graphic,
-    layout::{LayoutItem, ParentHints},
-};
-use crate::app::node::AppItem;
-use crate::{
-    gpu::pipeline::{graphics::GraphicsPipelineBuffers, RendererBuffers, Renderers},
-    prelude::{flow::CartesianFlowDirection, AppItemDescriptor},
-    state::process::{SignalProcessor, UISignalExt},
-};
-use futures_signals::signal::{Signal, SignalExt};
-use pin_project::pin_project;
-use std::{
-    mem::size_of,
-    ops::DerefMut,
-    pin::Pin,
-    process::ExitCode,
-    sync::Arc,
-    task::{Context, Poll},
-    time::Instant,
-};
-use vek::{Extent2, Rect, Rgb, Vec2};
-use wgpu::{
-    core::device::queue, BufferUsages, RenderPass, Surface, SurfaceConfiguration, TextureFormat,
-    TextureView,
-};
-use winit::dpi::LogicalSize;
-use winit::event::ElementState;
-use winit::{
-    dpi::{LogicalPosition, PhysicalPosition, PhysicalSize},
-    event::WindowEvent,
-    event_loop::{self, ActiveEventLoop},
-    platform::x11::WindowAttributesExtX11,
-    window::{Window, WindowButtons, WindowId},
+use {
+    super::{
+        backend::{Node, ReifiedNode, Resources},
+        pipeline::{
+            graphics::OrchestraRenderer,
+            text::{GlyphonTextRenderer, TextPipelineBuffers},
+            GPURenderer,
+        },
+        render_target::{Render, RenderDescriptor, RenderTarget},
+    },
+    crate::{
+        app::node::{AppItem, AppItemDescriptor, UIEvent},
+        prelude::flow::CartesianFlowDirection,
+        state::{process::UISignalExt, Mutable},
+        ui::layout::{LayoutItem, ParentHints},
+        winitwgpu::pipeline::{graphics::GraphicsPipelineBuffers, RendererBuffers, Renderers},
+    },
+    futures_signals::signal::{Signal, SignalExt},
+    pin_project::pin_project,
+    std::{
+        pin::Pin,
+        sync::Arc,
+        task::{Context, Poll},
+    },
+    vek::{Extent2, Rect, Vec2},
+    wgpu::{Surface, SurfaceConfiguration, TextureFormat},
+    winit::{
+        dpi::{LogicalSize, PhysicalSize},
+        event::WindowEvent,
+        event_loop::ActiveEventLoop,
+        platform::x11::WindowAttributesExtX11,
+        window::{Window, WindowId},
+    },
 };
 
 /// A node that describes the existence of a new window in the UI tree.
@@ -131,12 +124,12 @@ where
     fn reify(
         self,
         event_loop: &ActiveEventLoop,
-        gpu_resources: &GPUResources,
+        gpu_resources: &Resources,
         renderers: &mut Renderers,
     ) -> Self::ReifiedType {
         let window_default_size = self.state.size.get();
 
-        let mut window = event_loop
+        let window = event_loop
             .create_window(
                 winit::window::WindowAttributes::default()
                     .with_title(self.state.title.get_cloned())
@@ -163,9 +156,9 @@ where
         WindowNode {
             content: Box::new(self.content),
             state: self.state,
-            render_buffers: render_buffers,
+            render_buffers,
             render_target: WindowRenderTarget::new(
-                &gpu_resources,
+                gpu_resources,
                 window.clone(),
                 window_default_size.as_(),
             ),
@@ -208,11 +201,11 @@ pub struct WindowNode {
 }
 
 impl<'window> ReifiedNode for WindowNode {
-    fn setup(&mut self, gpu_resources: &GPUResources) {}
+    fn setup(&mut self, gpu_resources: &Resources) {}
 
     fn handle_window_event(
         &mut self,
-        gpu_resources: &mut GPUResources,
+        gpu_resources: &mut Resources,
         pipelines: &mut Renderers,
         window_id: WindowId,
         event: UIEvent,
@@ -221,7 +214,7 @@ impl<'window> ReifiedNode for WindowNode {
             match event {
                 WindowEvent::Resized(new_size) => {
                     let new_size = Extent2::new(new_size.width, new_size.height);
-                    self.render_target.resize(&gpu_resources, new_size);
+                    self.render_target.resize(gpu_resources, new_size);
                     self.state.size.set(new_size.as_());
                 }
                 WindowEvent::CursorMoved { position, .. } => {
@@ -258,7 +251,7 @@ impl<'window> ReifiedNode for WindowNode {
         // TODO: Figure out what do to with the result of this poll (as it might introduce a need for redrawing!!!);
 
         let WindowNodeProj {
-            mut content,
+            content,
             window,
             ..
         } = self.project();
@@ -268,17 +261,14 @@ impl<'window> ReifiedNode for WindowNode {
 
         let poll = content.poll_processors(cx);
 
-        match &poll {
-            Poll::Ready(_) => window.request_redraw(),
-            _ => (),
-        }
+        if poll.is_ready() { window.request_redraw() }
 
         poll
     }
 }
 
 impl WindowNode {
-    fn redraw(&mut self, gpu_resources: &mut GPUResources, pipelines: &mut Renderers) {
+    fn redraw(&mut self, gpu_resources: &mut Resources, pipelines: &mut Renderers) {
         self.render_target.draw(
             self.content.as_mut(),
             gpu_resources,
@@ -296,7 +286,7 @@ pub struct WindowRenderTarget {
 }
 
 impl WindowRenderTarget {
-    pub fn new(gpu_resources: &GPUResources, target: Arc<Window>, size: Extent2<u32>) -> Self {
+    pub fn new(gpu_resources: &Resources, target: Arc<Window>, size: Extent2<u32>) -> Self {
         let surface = gpu_resources.instance.create_surface(target).unwrap();
         let surface_config = surface
             .get_default_config(&gpu_resources.adapter, size.w, size.h)
@@ -310,8 +300,8 @@ impl WindowRenderTarget {
     }
 }
 
-impl GPURenderTarget for WindowRenderTarget {
-    fn resize(&mut self, gpu_resources: &GPUResources, new_size: Extent2<u32>) {
+impl RenderTarget for WindowRenderTarget {
+    fn resize(&mut self, gpu_resources: &Resources, new_size: Extent2<u32>) {
         self.surface_config = self
             .surface
             .get_default_config(&gpu_resources.adapter, new_size.w, new_size.h)
@@ -324,7 +314,7 @@ impl GPURenderTarget for WindowRenderTarget {
     fn draw(
         &mut self,
         content: &mut dyn Render,
-        gpu_resources: &mut GPUResources,
+        gpu_resources: &mut Resources,
         pipelines: &mut Renderers,
         render_buffers: &mut RendererBuffers,
     ) {

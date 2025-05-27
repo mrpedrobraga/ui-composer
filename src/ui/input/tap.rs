@@ -1,7 +1,7 @@
 use super::InputItem;
 use crate::app::node::{AppItem, UIEvent};
-use crate::gpu::pipeline::graphics::{RenderGraphic, RenderGraphicDescriptor};
-use crate::gpu::pipeline::text::RenderText;
+use crate::winitwgpu::pipeline::graphics::{RenderGraphic, RenderGraphicDescriptor};
+use crate::winitwgpu::pipeline::text::RenderText;
 use crate::prelude::Effect;
 use crate::state::Mutable;
 use std::{
@@ -85,7 +85,7 @@ where
             } => match (button, state) {
                 (winit::event::MouseButton::Left, winit::event::ElementState::Pressed) => {
                     if let Some(mouse_position) = self.mouse_position_state.get() {
-                        if (self.rect.contains_point(mouse_position)) {
+                        if self.rect.contains_point(mouse_position) {
                             self.tap_action.apply();
                             true
                         } else {

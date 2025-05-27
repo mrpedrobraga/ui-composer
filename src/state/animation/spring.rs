@@ -1,6 +1,10 @@
-use crate::gpu::render_target::{Render, RenderDescriptor};
-use crate::prelude::animation::{AnimationFrameParams, Poll, RealTimeStream};
-use crate::prelude::*;
+use crate::{
+    winitwgpu::render_target::RenderDescriptor,
+    prelude::{
+        animation::{AnimationFrameParams, Poll, RealTimeStream},
+        *,
+    },
+};
 use cgmath::BaseFloat;
 use futures_signals::signal::Signal;
 use std::ops::{Add, Div, Mul};

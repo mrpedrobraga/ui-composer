@@ -1,24 +1,20 @@
-use super::graphics::{RenderGraphic, RenderGraphicDescriptor};
-use super::{GPURenderer, RendererBuffers, Renderers};
-use crate::gpu::render_target::GPURenderTarget;
-use crate::gpu::{backend::GPUResources, render_target::Render};
-use crate::prelude::{Graphic, AppItem};
-use crate::ui;
-use glyphon::{
-    Cache, Color, FontSystem, Resolution, SwashCache, TextArea, TextAtlas, TextBounds,
-    TextRenderer, Viewport, Weight,
-};
-use std::{iter::repeat_with, marker::PhantomData};
-use vek::num_traits::bounds;
-use vek::{Extent2, Rect, Rgb, Vec2, Vec4};
-use wgpu::{
-    hal::auxil::db, ColorTargetState, MultisampleState, RenderPass, Texture, TextureFormat,
+use {
+    super::{GPURenderer, RendererBuffers, Renderers},
+    crate::winitwgpu::{
+        backend::Resources,
+        render_target::{Render, RenderTarget},
+    },
+    glyphon::{
+        Cache, FontSystem, Resolution, SwashCache, TextAtlas, TextBounds, TextRenderer, Viewport,
+        Weight,
+    },
+    vek::{Extent2, Rect, Rgb},
+    wgpu::{ColorTargetState, MultisampleState, RenderPass, Texture, TextureFormat},
 };
 
 pub mod implementations;
 pub trait RenderText {
     /// Yields a text area to draw.
-    #[inline(always)]
     fn push_text<'a>(
         &self,
         buffer: &'a glyphon::Buffer,
@@ -34,7 +30,9 @@ pub struct TextPipelineBuffers {
 }
 
 impl TextPipelineBuffers {
-    pub fn new(gpu_resources: &GPUResources, renderer: &mut GlyphonTextRenderer) -> Self {
+    pub fn new(gpu_resources: &Resources, renderer: &mut GlyphonTextRenderer) -> Self {
+        let _ = gpu_resources;
+
         Self {
             buffers: vec![default_buffer(renderer)],
         }
@@ -74,7 +72,7 @@ pub struct GlyphonTextRenderer {
 
 impl GPURenderer for GlyphonTextRenderer {
     fn draw(
-        gpu_resources: &mut GPUResources,
+        gpu_resources: &mut Resources,
         pipelines: &mut Renderers,
         render_target_size: Extent2<f32>,
         texture: &Texture,
@@ -93,17 +91,19 @@ impl GPURenderer for GlyphonTextRenderer {
         );
 
         let buffer = &render_buffers.text_render_buffers.buffers[0];
+
         let mut container = vec![];
-        let text_areas = ui_tree.push_text(
+        ui_tree.push_text(
             buffer,
             TextBounds {
                 left: 0,
                 top: 0,
-                right: texture.width() as i32,
-                bottom: texture.height() as i32,
+                right: render_target_size.w as i32,
+                bottom: render_target_size.h as i32,
             },
             &mut container,
         );
+
         this.text_renderer
             .prepare(
                 &gpu_resources.device,
@@ -130,8 +130,10 @@ impl GlyphonTextRenderer {
         render_target_formats: &'a [Option<ColorTargetState>],
     ) -> Self
     where
-        Target: GPURenderTarget,
+        Target: RenderTarget,
     {
+        let _ = adapter;
+        let _ = render_target_formats;
         let mut font_system = FontSystem::new();
         font_system
             .db_mut()
@@ -143,7 +145,7 @@ impl GlyphonTextRenderer {
             .expect("Failed to load font!");
         let swash_cache = SwashCache::new();
         let cache = Cache::new(device);
-        let mut viewport = glyphon::Viewport::new(device, &cache);
+        let viewport = glyphon::Viewport::new(device, &cache);
 
         let mut atlas =
             glyphon::TextAtlas::new(device, queue, &cache, TextureFormat::Bgra8UnormSrgb);

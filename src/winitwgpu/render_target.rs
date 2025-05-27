@@ -1,20 +1,27 @@
-use crate::{prelude::AppItemDescriptor, app::node::AppItem};
+//! A render target is something that graphics, text, etc, can be rendereed to.
 
-use super::{backend::GPUResources, pipeline::{graphics::RenderGraphic, text::RenderText}};
-use crate::gpu::pipeline::{RendererBuffers, Renderers};
-use vek::Extent2;
-use wgpu::TextureFormat;
+use {
+    super::{
+        backend::Resources,
+        pipeline::{graphics::RenderGraphic, text::RenderText},
+    },
+    crate::{
+        app::node::{AppItem, AppItemDescriptor},
+        winitwgpu::pipeline::{RendererBuffers, Renderers},
+    },
+    vek::Extent2,
+    wgpu::TextureFormat,
+};
 
-/// Describes a RenderTarget that something can render to.
-pub trait GPURenderTarget {
+pub trait RenderTarget {
     /// Resizes the render target to the new size.
-    fn resize(&mut self, gpu_resources: &GPUResources, new_size: Extent2<u32>);
+    fn resize(&mut self, gpu_resources: &Resources, new_size: Extent2<u32>);
 
     /// Returns a reference to the render target's texture;
     fn draw(
         &mut self,
         content: &mut dyn Render,
-        gpu_resources: &mut GPUResources,
+        gpu_resources: &mut Resources,
         pipelines: &mut Renderers,
         render_buffers: &mut RendererBuffers,
     );

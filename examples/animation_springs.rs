@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
-use ui_composer::gpu::pipeline::text::Text;
-use ui_composer::gpu::render_target::RenderDescriptor;
+use ui_composer::winitwgpu::pipeline::text::Text;
+use ui_composer::winitwgpu::render_target::RenderDescriptor;
 use ui_composer::items;
 use ui_composer::prelude::animation::spring::*;
 use ui_composer::prelude::*;

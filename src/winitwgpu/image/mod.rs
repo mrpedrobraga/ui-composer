@@ -1,20 +1,22 @@
-use super::pipeline::graphics::RenderGraphicDescriptor;
-use super::pipeline::text::TextPipelineBuffers;
-use super::render_target::Render;
-use super::{backend::ReifiedNode, texture::ImageRenderTarget};
-use crate::gpu::backend::GPUResources;
-use crate::gpu::pipeline::graphics::GraphicsPipelineBuffers;
-use crate::gpu::pipeline::{RendererBuffers, Renderers};
-use crate::gpu::render_target::GPURenderTarget;
-use crate::prelude::flow::CartesianFlowDirection;
-use crate::{
-    gpu,
-    prelude::*,
-    ui::{
-        self,
+use {
+    super::{
+        backend::ReifiedNode,
+        pipeline::{graphics::RenderGraphicDescriptor, text::TextPipelineBuffers},
+        render_target::Render,
+        texture::ImageRenderTarget,
     },
+    crate::{
+        app::node::UIEvent,
+        prelude::{flow::CartesianFlowDirection, *},
+        winitwgpu::{
+            self,
+            backend::{Node, Resources},
+            pipeline::{graphics::GraphicsPipelineBuffers, RendererBuffers, Renderers},
+            render_target::RenderTarget,
+        },
+    },
+    pin_project::pin_project,
 };
-use pin_project::pin_project;
 
 #[allow(non_snake_case)]
 pub fn Image<A>(rect: Rect<f32, f32>, mut item: A) -> ImageNodeDescriptor<A::UIItemType>
@@ -50,7 +52,7 @@ where
     fn reify(
         self,
         event_loop: &winit::event_loop::ActiveEventLoop,
-        gpu_resources: &gpu::backend::GPUResources,
+        gpu_resources: &winitwgpu::backend::Resources,
         renderers: &mut Renderers,
     ) -> Self::ReifiedType {
         ImageNode {
@@ -59,7 +61,10 @@ where
             render_target: ImageRenderTarget::new(gpu_resources, self.rect.extent()),
             render_buffers: RendererBuffers {
                 graphics_render_buffers: GraphicsPipelineBuffers::new(gpu_resources, T::QUAD_COUNT),
-                text_render_buffers: TextPipelineBuffers::new(gpu_resources, &mut renderers.text_renderer),
+                text_render_buffers: TextPipelineBuffers::new(
+                    gpu_resources,
+                    &mut renderers.text_renderer,
+                ),
             },
         }
     }
@@ -75,13 +80,13 @@ pub struct ImageNode {
 }
 
 impl ReifiedNode for ImageNode {
-    fn setup(&mut self, gpu_resources: &GPUResources) {
+    fn setup(&mut self, gpu_resources: &Resources) {
         /* Do nothing */
     }
 
-    fn handle_window_event (
+    fn handle_window_event(
         &mut self,
-        gpu_resources: &mut GPUResources,
+        gpu_resources: &mut Resources,
         pipelines: &mut Renderers,
         window_id: winit::window::WindowId,
         event: UIEvent,
@@ -112,7 +117,7 @@ impl ReifiedNode for ImageNode {
 }
 
 impl ImageNode {
-    fn render(&mut self, gpu_resources: &mut GPUResources, pipelines: &mut Renderers) {
+    fn render(&mut self, gpu_resources: &mut Resources, pipelines: &mut Renderers) {
         let size_bytes = 4 * 8 * self.rect.w as u64 * self.rect.h as u64;
         let size = self.render_target.image.texture.size();
 

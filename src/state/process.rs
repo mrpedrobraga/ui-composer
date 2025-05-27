@@ -1,17 +1,17 @@
-use futures_signals::signal::{Mutable, Signal, SignalFuture};
+use crate::{
+    app::node::{AppItem, AppItemDescriptor, UIEvent},
+    winitwgpu::{
+        pipeline::{
+            graphics::{RenderGraphic, RenderGraphicDescriptor},
+            text::RenderText,
+        },
+        render_target::Render,
+    },
+};
+use futures_signals::signal::Signal;
 use pin_project::pin_project;
 use std::future::Future;
 use std::{pin::Pin, task::Poll};
-use wgpu::{RenderPass, Texture};
-
-use crate::gpu::backend::GPUResources;
-use crate::gpu::pipeline::graphics::{RenderGraphic, RenderGraphicDescriptor};
-use crate::gpu::pipeline::text::RenderText;
-use crate::gpu::pipeline::Renderers;
-use crate::gpu::render_target::Render;
-use crate::prelude::AppItemDescriptor;
-use crate::app::node::UIEvent;
-use crate::app::node::AppItem;
 
 /// UI Item that processes a signal and updates part of the UI tree whenever it changes.
 #[pin_project(project = SignalProcessorProj)]
@@ -60,7 +60,7 @@ where
         let HoldSignalProj { signal, held_item } = self.project();
 
         let poll = match signal.poll_change(cx) {
-            Poll::Ready(Some(mut v)) => {
+            Poll::Ready(Some(v)) => {
                 held_item.replace(v);
                 Poll::Ready(Some(()))
             }
@@ -211,7 +211,7 @@ where
                 held_item.poll_processors(cx)
             }
             None => match future.poll(cx) {
-                Poll::Ready(mut v) => {
+                Poll::Ready(v) => {
                     held_item.replace(v);
                     Poll::Ready(Some(()))
                 }
@@ -241,10 +241,7 @@ where
     T: Render + AppItemDescriptor,
 {
     fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
-        match &self.signal.held_item {
-            Some(item) => item.write_quads(quad_buffer),
-            None => (),
-        }
+        if let Some(item) = &self.signal.held_item { item.write_quads(quad_buffer) }
     }
 
     fn get_quad_count(&self) -> usize {
@@ -262,10 +259,7 @@ where
         bounds: glyphon::TextBounds,
         container: &mut Vec<glyphon::TextArea<'a>>,
     ) {
-        match &self.signal.held_item {
-            Some(item) => item.push_text(buffer, bounds, container),
-            None => (),
-        }
+        if let Some(item) = &self.signal.held_item { item.push_text(buffer, bounds, container) }
     }
 }
 impl<F, T> AppItem for FutureProcessor<F, T>

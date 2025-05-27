@@ -1,13 +1,19 @@
-use super::backend::GPUResources;
-use super::pipeline::graphics::{RenderGraphic, RenderGraphicDescriptor};
-use super::pipeline::text::TextPipelineBuffers;
-use crate::gpu::pipeline::graphics::GraphicsPipelineBuffers;
-use crate::gpu::pipeline::{RendererBuffers, Renderers};
-use crate::prelude::UIEvent;
-use crate::app::node::{AppItem};
-use futures_signals::signal_vec::MutableVec;
-use vek::Rect;
-use wgpu::{RenderPass, Texture};
+use {
+    super::{
+        backend::Resources,
+        pipeline::{
+            graphics::{RenderGraphic, RenderGraphicDescriptor},
+            text::TextPipelineBuffers,
+        },
+    },
+    crate::{
+        app::node::{AppItem, UIEvent},
+        winitwgpu::pipeline::{graphics::GraphicsPipelineBuffers, RendererBuffers, Renderers},
+    },
+    futures_signals::signal_vec::MutableVec,
+    vek::Rect,
+    wgpu::{RenderPass, Texture},
+};
 
 pub struct VecItem<A: AppItem> {
     rect: Rect<f32, f32>,
@@ -24,14 +30,17 @@ impl<A: AppItem + RenderGraphicDescriptor> VecItem<A> {
         }
     }
 
-    pub fn initialize(&mut self, gpu_resources: &GPUResources, renderers: &mut Renderers) {
+    pub fn initialize(&mut self, gpu_resources: &Resources, renderers: &mut Renderers) {
         if let None = self.render_buffers {
             self.render_buffers = Some(RendererBuffers {
                 graphics_render_buffers: GraphicsPipelineBuffers::new(
                     gpu_resources,
                     self.items.lock_ref().len() * A::QUAD_COUNT,
                 ),
-                text_render_buffers: TextPipelineBuffers::new(gpu_resources, &mut renderers.text_renderer)
+                text_render_buffers: TextPipelineBuffers::new(
+                    gpu_resources,
+                    &mut renderers.text_renderer,
+                ),
             });
         }
     }
@@ -48,7 +57,7 @@ impl<A: RenderGraphicDescriptor + AppItem + Sync> RenderGraphic for VecItem<A> {
     fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
         // TODO: Write no quads.
     }
-    
+
     fn get_quad_count(&self) -> usize {
         Self::QUAD_COUNT
     }
@@ -71,7 +80,7 @@ impl<A: RenderGraphicDescriptor + AppItem + Sync> AppItem for VecItem<A> {
 #[allow(unused)]
 fn prepare<'pass, A: AppItem + RenderGraphicDescriptor + Sync>(
     me: &mut VecItem<A>,
-    gpu_resources: &'pass GPUResources,
+    gpu_resources: &'pass Resources,
     pipelines: &'pass Renderers,
     mut render_pass: &mut RenderPass<'pass>,
     texture: &Texture,
@@ -93,8 +102,7 @@ fn prepare<'pass, A: AppItem + RenderGraphicDescriptor + Sync>(
 
         render_pass.set_pipeline(&pipelines.graphics_renderer.pipeline);
         render_pass.set_bind_group(0, &pipelines.graphics_renderer.uniform_bind_group, &[]);
-        render_pass
-            .set_vertex_buffer(0, pipelines.graphics_renderer.mesh_vertex_buffer.slice(..));
+        render_pass.set_vertex_buffer(0, pipelines.graphics_renderer.mesh_vertex_buffer.slice(..));
         render_pass.set_index_buffer(
             pipelines.graphics_renderer.mesh_index_buffer.slice(..),
             wgpu::IndexFormat::Uint32,

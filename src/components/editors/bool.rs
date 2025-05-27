@@ -1,10 +1,9 @@
-use crate::gpu::pipeline::graphics::RenderGraphicDescriptor;
-use crate::gpu::render_target::{Render, RenderDescriptor};
 use crate::items_internal as items;
-use crate::prelude::{
-    Graphic, LayoutItem, ParentHints, RectExt, Resizable, ResizableItem, Tap, AppItem, AppItemDescriptor, UISignalExt
+use crate::{
+    prelude::{LayoutItem, ParentHints, RectExt, Resizable, ResizableItem, Tap, UISignalExt},
+    state::animation::spring::Spring,
+    winitwgpu::render_target::RenderDescriptor,
 };
-use crate::state::animation::spring::Spring;
 use futures_signals::signal::{Mutable, SignalExt};
 use vek::{Extent2, Lerp, Rect, Rgb, Vec4};
 
@@ -12,13 +11,16 @@ pub trait BoolEditGraphics {
     fn describe_render(
         rect: Rect<f32, f32>,
         anim_factor: f32,
-        parent_hints: ParentHints
+        parent_hints: ParentHints,
     ) -> impl RenderDescriptor;
 }
 
 /// A barebones switch which allows the user to toggle a `Mutable<bool>`.
 /// [SwitchGraphics] and a minimum size must be provided for anything to show up on screen!
-pub fn BoolEditBase<G>(state: Mutable<bool>) -> impl Resizable + LayoutItem where G: BoolEditGraphics {
+pub fn BoolEditBase<G>(state: Mutable<bool>) -> impl Resizable
+where
+    G: BoolEditGraphics,
+{
     let anim_state = Mutable::new(0.0);
 
     ResizableItem::new(move |parent_hints| {
@@ -31,7 +33,7 @@ pub fn BoolEditBase<G>(state: Mutable<bool>) -> impl Resizable + LayoutItem wher
             Spring::if_then_else(state.signal(), anim_state.clone(), 1.0, 0.0).process(),
             anim_state
                 .signal()
-                .map(move |anim_factor| G::describe_render(rect, anim_factor, parent_hints.clone()))
+                .map(move |anim_factor| G::describe_render(rect, anim_factor, parent_hints))
                 .process()
         )
     })
@@ -41,7 +43,7 @@ pub fn BoolEditBase<G>(state: Mutable<bool>) -> impl Resizable + LayoutItem wher
 pub struct AnimatedSwitch;
 
 /// A simple switch that edits a `bool` state.
-/// 
+///
 /// The user can press it to toggle the underlying boolean.
 pub fn Switch(state: Mutable<bool>) -> impl LayoutItem {
     BoolEditBase::<AnimatedSwitch>(state).with_minimum_size(Extent2::new(32.0, 20.0))
@@ -64,7 +66,7 @@ impl BoolEditGraphics for AnimatedSwitch {
         let switch_color_active = Rgb::new(231.0, 231.0, 231.0) / 255.0;
         let inset_radius = 1.5;
         let rect_min_axis = f32::min(rect.w, rect.h);
-    
+
         items! {
             // Background!
             rect
@@ -74,19 +76,18 @@ impl BoolEditGraphics for AnimatedSwitch {
             rect
                 .with_size(Extent2::new(rect_min_axis, rect_min_axis))
                 .expand(-inset_radius * 2.0)
-    
+
                 // Make sure it starts at the right position...
                 .translated(parent_hints.writing_origin() * (rect.w - rect_min_axis))
                 .translated(parent_hints.writing_cross_origin() * (rect.h - rect_min_axis))
-    
+
                 // Animate it moving to the other side of the switch...
                 .translated(parent_hints.writing_axis() * (rect.w - rect_min_axis) * anim_factor)
                 .translated(parent_hints.writing_cross_axis() * (rect.h - rect_min_axis) * anim_factor)
-    
+
                 // Make it pretty!
                 .with_color(Lerp::lerp(switch_color, switch_color_active, anim_factor))
                 .with_corner_radii(Vec4::one() * rect_min_axis * 0.5 - inset_radius * 2.0),
         }
     }
 }
-

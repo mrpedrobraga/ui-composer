@@ -1,8 +1,7 @@
 use futures_signals::signal::Mutable;
-use vek::{Rgb, Vec2};
+use vek::Rgb;
 
 use crate::{
-    gpu::render_target::RenderDescriptor,
     items_internal as items,
     prelude::{Effect, LayoutItem, ParentHints, RectExt, Resizable, ResizableItem, Tap},
 };

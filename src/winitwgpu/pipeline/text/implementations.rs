@@ -1,14 +1,15 @@
-use std::{
-    pin::Pin,
-    task::{Context, Poll},
+use {
+    super::{RenderText, Text},
+    crate::{
+        app::node::{AppItem, UIEvent},
+        winitwgpu::pipeline::graphics::{RenderGraphic, RenderGraphicDescriptor},
+    },
+    glyphon::{Color, TextArea, TextBounds},
+    std::{
+        pin::Pin,
+        task::{Context, Poll},
+    },
 };
-
-use super::{RenderText, Text};
-use crate::{
-    gpu::pipeline::graphics::{RenderGraphic, RenderGraphicDescriptor},
-    prelude::AppItem,
-};
-use glyphon::{Color, TextArea, TextBounds};
 
 impl RenderText for Text {
     fn push_text<'a>(
@@ -32,7 +33,7 @@ impl RenderText for Text {
 }
 
 impl AppItem for Text {
-    fn handle_ui_event(&mut self, event: crate::prelude::UIEvent) -> bool {
+    fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         false
     }
 

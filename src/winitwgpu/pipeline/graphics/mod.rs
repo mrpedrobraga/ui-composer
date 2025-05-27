@@ -1,15 +1,18 @@
-use super::{GPURenderer, RendererBuffers, Renderers};
-use crate::gpu::backend::GPUResources;
-use crate::gpu::render_target::Render;
-use crate::prelude::AppItem;
-use crate::{gpu::render_target::GPURenderTarget, ui::graphics::Graphic};
-use bytemuck::{Pod, Zeroable};
-use std::marker::PhantomData;
-use std::mem::size_of;
-use std::ops::Deref;
-use vek::{Extent2, Mat4, Rect, Vec2, Vec3};
-use wgpu::{
-    util::DeviceExt as _, BufferAddress, BufferUsages, ColorTargetState, RenderPass, Texture,
+use {
+    super::{GPURenderer, RendererBuffers, Renderers},
+    crate::{
+        ui::graphics::Graphic,
+        winitwgpu::{
+            backend::Resources,
+            render_target::{Render, RenderTarget},
+        },
+    },
+    bytemuck::{Pod, Zeroable},
+    std::{mem::size_of, ops::Deref},
+    vek::{Extent2, Mat4, Rect, Vec2, Vec3},
+    wgpu::{
+        util::DeviceExt as _, BufferAddress, BufferUsages, ColorTargetState, RenderPass, Texture,
+    },
 };
 
 pub mod implementations;
@@ -19,13 +22,11 @@ pub trait RenderGraphicDescriptor: RenderGraphic {
     const QUAD_COUNT: usize;
 
     /// Gets the rectangle this primitive occupies, for rendering purposes.
-    #[inline(always)]
     fn get_render_rect(&self) -> Option<Rect<f32, f32>>;
 }
 
 pub trait RenderGraphic {
     /// Pushes quads to a quad buffer slice.
-    #[inline(always)]
     fn write_quads(&self, quad_buffer: &mut [Graphic]);
 
     /// TODO: Remove this when using generics on the engine?
@@ -44,7 +45,7 @@ impl GraphicsPipelineBuffers {
     }
 
     /// Creates new buffers for the UI primitives to be drawn.
-    pub fn new(gpu_resources: &GPUResources, primitive_count: usize) -> Self {
+    pub fn new(gpu_resources: &Resources, primitive_count: usize) -> Self {
         Self {
             instance_buffer_cpu: vec![Graphic::default(); primitive_count],
             instance_buffer: gpu_resources.device.create_buffer(&wgpu::BufferDescriptor {
@@ -64,7 +65,7 @@ impl GraphicsPipelineBuffers {
         self.instance_buffer.slice(..)
     }
 
-    pub fn write_to_gpu(&mut self, gpu_resources: &GPUResources) {
+    pub fn write_to_gpu(&mut self, gpu_resources: &Resources) {
         gpu_resources.queue.write_buffer(
             &self.instance_buffer,
             0,
@@ -72,10 +73,12 @@ impl GraphicsPipelineBuffers {
         );
     }
 
-    pub fn extend<I>(&mut self, gpu_resources: &GPUResources, new_elements: I)
+    pub fn extend<I>(&mut self, gpu_resources: &Resources, new_elements: I)
     where
         I: Iterator<Item = Graphic>,
     {
+        let _ = new_elements;
+        let _ = gpu_resources;
     }
 }
 
@@ -90,7 +93,7 @@ pub struct OrchestraRenderer {
 
 impl GPURenderer for OrchestraRenderer {
     fn draw(
-        gpu_resources: &mut GPUResources,
+        gpu_resources: &mut Resources,
         pipelines: &mut Renderers,
         render_target_size: Extent2<f32>,
         texture: &Texture,
@@ -98,8 +101,9 @@ impl GPURenderer for OrchestraRenderer {
         ui_tree: &mut dyn Render,
         render_buffers: &mut RendererBuffers,
     ) {
+        let _ = texture;
         let this = &mut pipelines.graphics_renderer;
-        let mut graphics_render_buffers = &mut render_buffers.graphics_render_buffers;
+        let graphics_render_buffers = &mut render_buffers.graphics_render_buffers;
 
         let quad_count = graphics_render_buffers.get_quad_count();
 
@@ -142,8 +146,10 @@ impl OrchestraRenderer {
         render_target_formats: &'a [Option<ColorTargetState>],
     ) -> Self
     where
-        Target: GPURenderTarget,
+        Target: RenderTarget,
     {
+        let _ = queue;
+        let _ = adapter;
         let uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Render Stack Uniform Buffer"),
             size: size_of::<Uniforms>() as u64,
@@ -181,7 +187,7 @@ impl OrchestraRenderer {
             push_constant_ranges: &[],
         });
         let shader = device.create_shader_module(wgpu::include_wgsl!(
-            "../orchestra_render_pipeline_shader.wgsl"
+            "./orchestra_render_pipeline_shader.wgsl"
         ));
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,

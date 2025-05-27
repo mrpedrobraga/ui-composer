@@ -1,9 +1,7 @@
 //! Empty for now but this will house different kinds of Textures that can be rendered onto quads!
 
-use super::pipeline::graphics::{RenderGraphic, RenderGraphicDescriptor};
-use super::{backend::GPUResources, render_target::GPURenderTarget};
-use crate::gpu::pipeline::{GPURenderer, RendererBuffers, Renderers};
-use crate::prelude::AppItem;
+use super::{backend::Resources, render_target::RenderTarget};
+use crate::winitwgpu::pipeline::{RendererBuffers, Renderers};
 use vek::Extent2;
 
 /// Color data that can be used by quads or materials to create advanced graphics.
@@ -15,7 +13,7 @@ pub struct ImageTexture {
     pub texture: wgpu::Texture,
 }
 impl ImageTexture {
-    fn new(gpu_resources: &GPUResources, size: Extent2<f32>) -> Self {
+    fn new(gpu_resources: &Resources, size: Extent2<f32>) -> Self {
         let texture_desc = wgpu::TextureDescriptor {
             size: wgpu::Extent3d {
                 width: size.w as u32,
@@ -35,7 +33,7 @@ impl ImageTexture {
         Self { texture }
     }
 
-    fn resize(&mut self, gpu_resources: &GPUResources, new_size: vek::Extent2<u32>) {}
+    fn resize(&mut self, gpu_resources: &Resources, new_size: vek::Extent2<u32>) {}
 }
 
 impl Texture for ImageTexture {}
@@ -51,22 +49,22 @@ pub struct ImageRenderTarget {
 }
 
 impl ImageRenderTarget {
-    pub fn new(gpu_resources: &GPUResources, size: Extent2<f32>) -> Self {
+    pub fn new(gpu_resources: &Resources, size: Extent2<f32>) -> Self {
         Self {
             image: ImageTexture::new(gpu_resources, size),
         }
     }
 }
 
-impl GPURenderTarget for ImageRenderTarget {
-    fn resize(&mut self, gpu_resources: &GPUResources, new_size: vek::Extent2<u32>) {
+impl RenderTarget for ImageRenderTarget {
+    fn resize(&mut self, gpu_resources: &Resources, new_size: vek::Extent2<u32>) {
         self.image.resize(gpu_resources, new_size)
     }
 
     fn draw(
         &mut self,
         content: &mut (dyn super::render_target::Render),
-        gpu_resources: &mut GPUResources,
+        gpu_resources: &mut Resources,
         pipelines: &mut Renderers,
         render_artifacts: &mut RendererBuffers,
     ) {
@@ -82,7 +80,7 @@ impl GPURenderTarget for ImageRenderTarget {
                     label: Some("Command Encoder"),
                 });
 
-        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        let render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: None,
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: &view,

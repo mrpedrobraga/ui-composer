@@ -1,33 +1,44 @@
-use super::{
-    pipeline::graphics::OrchestraRenderer, render_target::Render, window::WindowRenderTarget,
-};
-use crate::backend::Backend;
-use crate::gpu::pipeline::text::GlyphonTextRenderer;
-use crate::gpu::pipeline::Renderers;
-use crate::app::node::UIEvent;
-use futures::StreamExt;
-use futures_signals::signal::{Signal, SignalExt, SignalFuture};
-use pin_project::pin_project;
-use std::{
-    future::Future,
-    marker::PhantomData,
-    ops::DerefMut,
-    pin::Pin,
-    sync::{Arc, Mutex},
-    task::{Context, Poll},
-};
-use wgpu::{MemoryHints, TextureFormat};
-use winit::{
-    application::ApplicationHandler,
-    event_loop::ActiveEventLoop,
-    window::{WindowAttributes, WindowId},
+//! A Backend that uses Winit to create Windowing and WGPU to render to the window.
+
+use {
+    super::{pipeline::graphics::OrchestraRenderer, window::WindowRenderTarget},
+    crate::{
+        app::{backend::Backend, node::UIEvent},
+        winit::WinitBackend,
+        winitwgpu::pipeline::{text::GlyphonTextRenderer, Renderers},
+    },
+    futures::StreamExt,
+    futures_signals::signal::{Signal, SignalExt, SignalFuture},
+    pin_project::pin_project,
+    std::{
+        ops::DerefMut,
+        pin::Pin,
+        sync::{Arc, Mutex},
+        task::{Context, Poll},
+    },
+    wgpu::{MemoryHints, TextureFormat},
+    winit::{
+        application::ApplicationHandler,
+        event_loop::ActiveEventLoop,
+        window::{WindowAttributes, WindowId},
+    },
 };
 
 pub mod implementations;
 
+/// An engine that can render our application to the GPU as well as forward interactive events to the app.
+#[pin_project(project=UIEngineProj)]
+pub struct WinitWGPUBackend<N: Node> {
+    /// The node of the UI tree containing the entirety of the app, UI and behaviour.
+    #[pin]
+    pub node_tree: Arc<Mutex<N::ReifiedType>>,
+    pub gpu_resources: Resources,
+    pub renderers: Renderers,
+}
+
 /// The collection of resources the GPU backends use to
 /// interact with the GPU.
-pub struct GPUResources {
+pub struct Resources {
     pub instance: wgpu::Instance,
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
@@ -36,33 +47,9 @@ pub struct GPUResources {
 
 /// The [`ApplicationHandler`] that sits between [`winit`]
 /// and UI Composer.
-pub struct WinitApplicationHandler<A: Node> {
+pub struct WinitWGPUApplicationHandler<A: Node> {
     node_tree_descriptor_opt: Option<A>,
     backend: Option<Arc<Mutex<WinitWGPUBackend<A>>>>,
-}
-
-/// A Backend that interacts with [`winit`]
-pub trait WinitBackend: Backend + Send {
-    type NodeTreeDescriptorType: Node + 'static;
-    async fn create(
-        event_loop: &ActiveEventLoop,
-        tree_descriptor: Self::NodeTreeDescriptorType,
-    ) -> (
-        Arc<Mutex<Self>>,
-        SignalFuture<BackendProcessExecutor<WinitWGPUBackend<Self::NodeTreeDescriptorType>>>,
-    );
-    fn handle_resumed(&mut self);
-    fn handle_window_event(&mut self, window_id: WindowId, event: UIEvent);
-}
-
-/// An engine that can render our application to the GPU as well as forward interactive events to the app.
-#[pin_project(project=UIEngineProj)]
-pub struct WinitWGPUBackend<Nd: Node> {
-    /// The node of the UI tree containing the entirety of the app, UI and behaviour.
-    #[pin]
-    pub node_tree: Arc<Mutex<Nd::ReifiedType>>,
-    pub gpu_resources: GPUResources,
-    pub renderers: Renderers,
 }
 
 impl<Nd: Node + 'static> Backend for WinitWGPUBackend<Nd> {
@@ -75,7 +62,7 @@ impl<Nd: Node + 'static> Backend for WinitWGPUBackend<Nd> {
         let event_loop = winit::event_loop::EventLoop::builder().build().unwrap();
         event_loop.set_control_flow(winit::event_loop::ControlFlow::Wait);
         event_loop
-            .run_app(&mut WinitApplicationHandler::<Nd> {
+            .run_app(&mut WinitWGPUApplicationHandler::<Nd> {
                 node_tree_descriptor_opt: Some(node_tree),
                 backend: None,
             })
@@ -93,9 +80,9 @@ impl<Nd: Node + 'static> Backend for WinitWGPUBackend<Nd> {
     }
 }
 
-impl<A: Node + 'static> ApplicationHandler for WinitApplicationHandler<A> {
+impl<A: Node + 'static> ApplicationHandler for WinitWGPUApplicationHandler<A> {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        if let None = self.backend {
+        if self.backend.is_none() {
             let (backend, processor) = futures::executor::block_on(WinitWGPUBackend::create(
                 event_loop,
                 self.node_tree_descriptor_opt
@@ -157,8 +144,8 @@ impl<'engine: 'static, E: Node + Send + 'engine> WinitWGPUBackend<E> {
         let dummy_texture = dummy_surface
             .get_current_texture()
             .expect("Failure to get dummy texture.");
-        let dummy_format = dummy_texture.texture.format();
-        dummy_format
+        
+        dummy_texture.texture.format()
     }
 }
 
@@ -231,7 +218,7 @@ impl<Nd: Node + Send + 'static> WinitBackend for WinitWGPUBackend<Nd> {
             text_renderer: text_pipeline,
         };
 
-        let gpu_resources = GPUResources {
+        let gpu_resources = Resources {
             instance,
             device,
             queue,
@@ -240,7 +227,7 @@ impl<Nd: Node + Send + 'static> WinitBackend for WinitWGPUBackend<Nd> {
 
         let node_tree = tree_descriptor.reify(event_loop, &gpu_resources, &mut renderers);
 
-        let mut backend = Self {
+        let backend = Self {
             node_tree: Arc::new(Mutex::new(node_tree)),
             gpu_resources,
             renderers,
@@ -258,7 +245,7 @@ impl<Nd: Node + Send + 'static> WinitBackend for WinitWGPUBackend<Nd> {
 
         // I should perhaps return a (RenderEngine, impl Future) here!
         // The problem of course is that winit does not play well with async Rust yet :-(
-        return (backend, backend_processor);
+        (backend, backend_processor)
     }
 
     fn handle_resumed(&mut self) {
@@ -292,19 +279,19 @@ pub trait Node: Send {
     fn reify(
         self,
         event_loop: &ActiveEventLoop,
-        gpu_resources: &GPUResources,
+        gpu_resources: &Resources,
         renderers: &mut Renderers,
     ) -> Self::ReifiedType;
 }
 
 /// A main node in the app tree.
 pub trait ReifiedNode: Send {
-    fn setup(&mut self, gpu_resources: &GPUResources);
+    fn setup(&mut self, gpu_resources: &Resources);
 
     /// Handles an event and cascades it down its children.
     fn handle_window_event(
         &mut self,
-        gpu_resources: &mut GPUResources,
+        gpu_resources: &mut Resources,
         pipelines: &mut Renderers,
         window_id: WindowId,
         event: UIEvent,
@@ -328,7 +315,7 @@ where
     fn reify(
         self,
         event_loop: &ActiveEventLoop,
-        gpu_resources: &GPUResources,
+        gpu_resources: &Resources,
         renderers: &mut Renderers,
     ) -> Self::ReifiedType {
         (
@@ -343,22 +330,21 @@ where
     A: ReifiedNode,
     B: ReifiedNode,
 {
-    fn setup(&mut self, gpu_resources: &GPUResources) {
+    fn setup(&mut self, gpu_resources: &Resources) {
         self.0.setup(gpu_resources);
         self.1.setup(gpu_resources);
     }
 
     fn handle_window_event(
         &mut self,
-        gpu_resources: &mut GPUResources,
+        gpu_resources: &mut Resources,
         pipelines: &mut Renderers,
         window_id: WindowId,
         event: UIEvent,
     ) {
-        let a_handled =
-            self.0
+        self.0
                 .handle_window_event(gpu_resources, pipelines, window_id, event.clone());
-        let b_handled = self
+        self
             .1
             .handle_window_event(gpu_resources, pipelines, window_id, event);
     }
@@ -368,7 +354,7 @@ where
         cx: &mut std::task::Context,
     ) -> std::task::Poll<Option<()>> {
         let (pinned_a, pinned_b) = {
-            let mut mut_ref = unsafe { self.get_unchecked_mut() };
+            let mut_ref = unsafe { self.get_unchecked_mut() };
             let (ref mut a, ref mut b) = mut_ref;
 
             let a = unsafe { Pin::new_unchecked(a) };
@@ -406,8 +392,8 @@ impl<E: Backend> Signal for BackendProcessExecutor<E> {
         let mut backend = backend.lock().expect("Failed to lock ui for polling");
         let backend = backend.deref_mut();
         let backend = unsafe { Pin::new_unchecked(backend) };
-        let poll = backend.poll_processors(cx);
+        
 
-        poll
+        backend.poll_processors(cx)
     }
 }

@@ -1,7 +1,7 @@
 use crate::app::node::{AppItem, AppItemDescriptor};
-use crate::gpu::render_target::Render;
 use crate::prelude::flow::CartesianFlowDirection;
 use crate::state::process::{SignalProcessor, UISignalExt};
+use crate::winitwgpu::render_target::Render;
 use futures_signals::signal::{Signal, SignalExt};
 use vek::{Extent2, Mat3, Rect, Vec2};
 
@@ -54,11 +54,9 @@ pub trait LayoutItem: Send {
     type UIItemType: Render + AppItemDescriptor;
 
     /// The size this component prefers to be at. It's usually its minimum size.
-    #[inline(always)]
     fn get_natural_size(&self) -> Extent2<f32>;
 
     /// The size this component prefers to be at. It's usually its minimum size.
-    #[inline(always)]
     fn get_minimum_size(&self) -> Extent2<f32>;
 
     /// Renders the content of this layout item with a specific rect.
@@ -72,7 +70,8 @@ pub trait LayoutItem: Send {
     ) -> SignalProcessor<impl Signal<Item = Self::UIItemType>, Self::UIItemType>
     where
         S: Signal<Item = Extent2<f32>> + Send,
-        Self: Sized + Send, <Self as LayoutItem>::UIItemType: AppItem
+        Self: Sized + Send,
+        <Self as LayoutItem>::UIItemType: AppItem,
     {
         size_signal
             .map(move |new_size| {
@@ -114,7 +113,7 @@ where
 impl<F, T> Resizable for ResizableItem<F, T>
 where
     F: FnMut(ParentHints) -> T + Send,
-    T: Render + AppItemDescriptor
+    T: Render + AppItemDescriptor,
 {
     /// Consumes this [`ResizableItem`] and returns a similar one with the minimum size set.
     fn with_minimum_size(self, min_size: Extent2<f32>) -> Self {
@@ -133,7 +132,7 @@ where
 impl<F: Send, T> LayoutItem for ResizableItem<F, T>
 where
     F: FnMut(ParentHints) -> T,
-    T: Render + AppItemDescriptor
+    T: Render + AppItemDescriptor,
 {
     type UIItemType = T;
 
@@ -161,7 +160,5 @@ impl LayoutItem for () {
         Extent2::new(0.0, 0.0)
     }
 
-    fn lay(&mut self, layout_hints: ParentHints) -> Self::UIItemType {
-        ()
-    }
+    fn lay(&mut self, layout_hints: ParentHints) -> Self::UIItemType {}
 }

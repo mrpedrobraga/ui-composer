@@ -18,8 +18,7 @@ pub struct ViewNode<A> {
 }
 
 /// TODO: A View should create a single primitive bound to a texture that the contents draw onto.
-impl<T: Send> LayoutItem for ViewNode<T>
-{
+impl<T: Send> LayoutItem for ViewNode<T> {
     type UIItemType = Graphic;
 
     fn get_natural_size(&self) -> vek::Extent2<f32> {
@@ -37,8 +36,7 @@ impl<T: Send> LayoutItem for ViewNode<T>
 
 /// Creates a new view as the render target for the nodes inside.
 #[allow(non_snake_case)]
-pub fn View<T>(min_size: Extent2<f32>, item: T) -> ViewNode<T>
-{
+pub fn View<T>(min_size: Extent2<f32>, item: T) -> ViewNode<T> {
     ViewNode {
         min_size,
         content: item,

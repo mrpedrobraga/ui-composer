@@ -24,7 +24,9 @@ fn PersonView(uri: &'static str) -> impl LayoutItem {
     std::thread::spawn(move || futures::executor::block_on(person_fetch_process));
 
     ResizableItem::new(move |hx| {
-        let person_square = person_state
+        
+
+        person_state
             .signal_cloned()
             .map(move |person_opt| {
                 if let Some(person) = person_opt {
@@ -35,9 +37,7 @@ fn PersonView(uri: &'static str) -> impl LayoutItem {
                     hx.rect.with_color(Rgb::gray(0.5))
                 }
             })
-            .process();
-
-        person_square
+            .process()
     })
     .with_minimum_size(Extent2::new(100.0, 100.0))
 }

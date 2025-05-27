@@ -13,6 +13,6 @@ macro_rules! items_internal {
     ($a:expr $(,)?) => { $a };
     ($a:expr, $b:expr) => {($a, $b)};
     ($a:expr, $($rest:tt)*) => {
-        ($a, crate::items_internal!($($rest)*))
+        ($a, $crate::items_internal!($($rest)*))
     };
 }

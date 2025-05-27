@@ -1,9 +1,9 @@
-use crate::geometry::Vector;
-use crate::prelude::Slot;
-use futures_time::task;
-use futures_time::time::{Duration, Instant};
-use std::fmt::Debug;
-use std::future::Future;
+use crate::{geometry::Vector, prelude::Slot};
+use futures_time::{
+    task,
+    time::{Duration, Instant},
+};
+use std::{fmt::Debug, future::Future};
 
 pub mod spring;
 
@@ -38,7 +38,7 @@ pub trait RealTimeStream {
     /// Returns a new stream that applies a modification on the value.
     fn for_each<F>(self, f: F) -> ForEach<Self, F>
     where
-        F: FnMut(&Self::Item) -> (),
+        F: FnMut(&Self::Item),
         Self: Sized,
     {
         ForEach { inner: self, f }
@@ -48,7 +48,7 @@ pub trait RealTimeStream {
     where
         Self::Item: Copy,
         Self: Sized,
-        F: FnMut(Self::Item) -> (),
+        F: FnMut(Self::Item),
     {
         let start = Instant::now();
         let mut last_frame = Instant::now();
@@ -156,7 +156,7 @@ where
     }
 }
 
-pub struct ForEach<A: RealTimeStream, F: FnMut(&A::Item) -> ()> {
+pub struct ForEach<A: RealTimeStream, F: FnMut(&A::Item)> {
     inner: A,
     f: F,
 }
@@ -164,7 +164,7 @@ pub struct ForEach<A: RealTimeStream, F: FnMut(&A::Item) -> ()> {
 impl<A, F> RealTimeStream for ForEach<A, F>
 where
     A: RealTimeStream,
-    F: FnMut(&A::Item) -> (),
+    F: FnMut(&A::Item),
 {
     type Item = A::Item;
 
@@ -176,7 +176,7 @@ where
     where
         Self::Item: Copy,
     {
-        let mut poll = self.inner.process_tick(initial_value, frame_params);
+        let poll = self.inner.process_tick(initial_value, frame_params);
 
         match &poll {
             Poll::Ongoing(a) => (self.f)(a),

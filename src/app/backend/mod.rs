@@ -1,4 +1,4 @@
-use crate::prelude::Node;
+use crate::winitwgpu::backend::Node;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 

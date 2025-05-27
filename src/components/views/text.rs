@@ -1,6 +1,6 @@
 use crate::{
-    gpu::pipeline::{graphics::RenderGraphicDescriptor, text::Text},
-    prelude::{LayoutItem, ParentHints, RectExt as _, Resizable as _, ResizableItem, AppItemDescriptor},
+    prelude::{LayoutItem, ParentHints, RectExt as _},
+    winitwgpu::pipeline::text::Text,
 };
 use vek::Rgb;
 
@@ -11,14 +11,20 @@ use vek::Rgb;
 /// will grow in the `WritingCrossAxis`.
 ///
 /// ^ TODO: This is not yet implemented.
-pub fn Label<S>(text: S) -> TextLayoutItem where S: Into<String> {
+pub fn Label<S>(text: S) -> TextLayoutItem
+where
+    S: Into<String>,
+{
     let text = text.into();
-    TextLayoutItem { text, own_color: None }
+    TextLayoutItem {
+        text,
+        own_color: None,
+    }
 }
 
 pub struct TextLayoutItem {
     text: String,
-    own_color: Option<Rgb<f32>>
+    own_color: Option<Rgb<f32>>,
 }
 
 impl TextLayoutItem {

@@ -1,11 +1,13 @@
-use super::backend::{GPUResources, ReifiedNode};
-use super::render_target::Render;
-use crate::gpu::pipeline::graphics::{GraphicsPipelineBuffers, OrchestraRenderer};
-use crate::gpu::pipeline::text::GlyphonTextRenderer;
-use crate::prelude::AppItem;
-use text::TextPipelineBuffers;
-use vek::Extent2;
-use wgpu::{RenderPass, Texture};
+use {
+    super::{backend::Resources, render_target::Render},
+    crate::winitwgpu::pipeline::{
+        graphics::{GraphicsPipelineBuffers, OrchestraRenderer},
+        text::GlyphonTextRenderer,
+    },
+    text::TextPipelineBuffers,
+    vek::Extent2,
+    wgpu::{RenderPass, Texture},
+};
 
 pub mod graphics;
 pub mod text;
@@ -14,7 +16,7 @@ pub mod three_dee;
 /// A renderer for drawing on the GPU.
 pub trait GPURenderer {
     fn draw(
-        gpu_resources: &mut GPUResources,
+        gpu_resources: &mut Resources,
         renderers: &mut Renderers,
         render_target_size: Extent2<f32>,
         texture: &Texture,

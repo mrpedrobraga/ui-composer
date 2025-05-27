@@ -5,17 +5,11 @@
 use cgmath::BaseFloat;
 use vek::{Extent2, Rect, Vec2};
 
+#[derive(Default)]
 struct StackContext {
     offset: Vec2<f32>,
 }
 
-impl Default for StackContext {
-    fn default() -> Self {
-        Self {
-            offset: Vec2::default(),
-        }
-    }
-}
 
 /// Stacks several sizes ([`Extent2`]s) one after another.
 /// The resulting [`Rect`]s will not be stretched at all.
@@ -27,7 +21,7 @@ where
     sizes.scan(StackContext::default(), move |cx, item| {
         let rect = Rect::new(cx.offset.x, cx.offset.y, item.w, item.h);
 
-        if (vertical) {
+        if vertical {
             cx.offset.y += item.h;
             cx.offset.y += gap;
         } else {

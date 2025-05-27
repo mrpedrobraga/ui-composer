@@ -1,7 +1,8 @@
-use crate::gpu::render_target::{Render, RenderDescriptor};
+use crate::app::node::AppItemDescriptor;
 use crate::prelude::flow::{CartesianFlowDirection, FlowDirection, WritingFlowDirection};
 use crate::prelude::functions::weighted_division_with_minima;
-use crate::prelude::{CoordinateSystemProvider, LayoutItem, ParentHints, AppItem, AppItemDescriptor};
+use crate::prelude::{CoordinateSystemProvider, LayoutItem, ParentHints};
+use crate::winitwgpu::render_target::RenderDescriptor;
 use std::iter::{once, Once};
 use vek::{Extent2, Rect};
 
@@ -12,7 +13,10 @@ pub fn Flex<TItems>(items: TItems) -> FlexContainer<TItems>
 where
     TItems: FlexItems,
 {
-    FlexContainer { items, flow_direction: FlowDirection::Writing(WritingFlowDirection::WritingAxisForward) }
+    FlexContainer {
+        items,
+        flow_direction: FlowDirection::Writing(WritingFlowDirection::WritingAxisForward),
+    }
 }
 
 /// The struct created by [Flex].
@@ -44,7 +48,7 @@ impl<TItems: FlexItems> FlexContainer<TItems> {
 impl<TItems> LayoutItem for FlexContainer<TItems>
 where
     TItems: FlexItems + Send,
-    TItems::UINodeType: AppItemDescriptor
+    TItems::UINodeType: AppItemDescriptor,
 {
     type UIItemType = TItems::UINodeType;
 
@@ -135,7 +139,7 @@ where
 pub struct FlexItem<T>(pub T, pub f32);
 
 pub trait FlexItems {
-    type UINodeType : RenderDescriptor;
+    type UINodeType: RenderDescriptor;
     type WeightsType: Iterator<Item = f32>;
     type MinimaType: Iterator<Item = f32>;
 
