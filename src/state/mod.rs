@@ -1,7 +1,6 @@
 pub mod animation;
 pub mod process;
 pub mod signal_ext;
-use crate::prelude::Effect;
 pub use futures_signals::signal::Mutable;
 pub use futures_signals::signal::SignalExt;
 pub use futures_signals::signal_map::MutableBTreeMap;
@@ -48,5 +47,26 @@ impl<A> Slot for Mutable<A> {
         Self::Item: Copy,
     {
         self.get()
+    }
+}
+
+/// Trait that describes an effect — a modification to an environment.
+pub trait Effect: Clone + Send + Sync {
+    /// Applies the effect.
+    fn apply(&mut self);
+}
+
+impl<F> Effect for F
+where
+    F: FnMut() + Clone + Send + Sync,
+{
+    fn apply(&mut self) {
+        (self)()
+    }
+}
+
+impl Effect for Mutable<Option<()>> {
+    fn apply(&mut self) {
+        self.set(Some(()))
     }
 }

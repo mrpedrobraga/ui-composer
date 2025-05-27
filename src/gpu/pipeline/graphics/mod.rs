@@ -1,7 +1,7 @@
 use super::{GPURenderer, RendererBuffers, Renderers};
 use crate::gpu::backend::GPUResources;
 use crate::gpu::render_target::Render;
-use crate::prelude::UIItem;
+use crate::prelude::AppItem;
 use crate::{gpu::render_target::GPURenderTarget, ui::graphics::Graphic};
 use bytemuck::{Pod, Zeroable};
 use std::marker::PhantomData;

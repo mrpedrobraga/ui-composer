@@ -1,4 +1,4 @@
-use super::node::{UIItem, UIItemDescriptor};
+use crate::app::node::{AppItem, AppItemDescriptor};
 use crate::gpu::render_target::Render;
 use crate::prelude::flow::CartesianFlowDirection;
 use crate::state::process::{SignalProcessor, UISignalExt};
@@ -51,7 +51,7 @@ pub struct ChildHints {
 
 /// An item that can be included in a laying out context.
 pub trait LayoutItem: Send {
-    type UIItemType: Render + UIItemDescriptor;
+    type UIItemType: Render + AppItemDescriptor;
 
     /// The size this component prefers to be at. It's usually its minimum size.
     #[inline(always)]
@@ -72,7 +72,7 @@ pub trait LayoutItem: Send {
     ) -> SignalProcessor<impl Signal<Item = Self::UIItemType>, Self::UIItemType>
     where
         S: Signal<Item = Extent2<f32>> + Send,
-        Self: Sized + Send, <Self as LayoutItem>::UIItemType: UIItem
+        Self: Sized + Send, <Self as LayoutItem>::UIItemType: AppItem
     {
         size_signal
             .map(move |new_size| {
@@ -100,7 +100,7 @@ pub trait Resizable: LayoutItem {
 impl<F, T> ResizableItem<F, T>
 where
     F: FnMut(ParentHints) -> T + Send,
-    T: UIItem,
+    T: AppItem,
 {
     /// Creates a new resizable [`LayoutItem`] that redraws using this factory function.
     pub fn new(factory: F) -> Self {
@@ -114,7 +114,7 @@ where
 impl<F, T> Resizable for ResizableItem<F, T>
 where
     F: FnMut(ParentHints) -> T + Send,
-    T: Render + UIItemDescriptor
+    T: Render + AppItemDescriptor
 {
     /// Consumes this [`ResizableItem`] and returns a similar one with the minimum size set.
     fn with_minimum_size(self, min_size: Extent2<f32>) -> Self {
@@ -133,7 +133,7 @@ where
 impl<F: Send, T> LayoutItem for ResizableItem<F, T>
 where
     F: FnMut(ParentHints) -> T,
-    T: Render + UIItemDescriptor
+    T: Render + AppItemDescriptor
 {
     type UIItemType = T;
 

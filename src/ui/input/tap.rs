@@ -1,42 +1,51 @@
 use super::InputItem;
-use crate::{gpu::pipeline::{graphics::{RenderGraphic, RenderGraphicDescriptor}, text::RenderText}, ui::node::{UIEvent, UIItem}};
-use futures_signals::signal::Mutable;
+use crate::app::node::{AppItem, UIEvent};
+use crate::gpu::pipeline::graphics::{RenderGraphic, RenderGraphicDescriptor};
+use crate::gpu::pipeline::text::RenderText;
+use crate::prelude::Effect;
+use crate::state::Mutable;
 use std::{
     pin::Pin,
     task::{Context, Poll},
 };
 use vek::{Rect, Vec2};
 
-/// An Interactor that handles a user dragging the window.
-pub struct Drag {
+/// An Interactor that handles a user hovering over it with a cursor.
+pub struct Tap<A: Effect> {
     rect: Rect<f32, f32>,
-    is_hovered_state: Mutable<bool>,
-    is_dragging_state: Mutable<bool>,
+    mouse_position_state: Mutable<Option<Vec2<f32>>>,
+    tap_action: A,
 }
 
-impl Drag {
+impl<Fx> Tap<Fx>
+where
+    Fx: Effect,
+{
     pub fn new(
         rect: Rect<f32, f32>,
-        is_hovered_state: Mutable<bool>,
-        is_dragging_state: Mutable<bool>,
+        mouse_position_state: Mutable<Option<Vec2<f32>>>,
+        tap_state: Fx,
     ) -> Self {
         Self {
             rect,
-            is_hovered_state,
-            is_dragging_state,
+            mouse_position_state,
+            tap_action: tap_state,
         }
     }
 }
 
-impl InputItem for Drag {}
-impl RenderGraphicDescriptor for Drag {
+impl<A> InputItem for Tap<A> where A: Effect + Send {}
+impl<A> RenderGraphicDescriptor for Tap<A>
+where
+    A: Effect + Send + Sync,
+{
     const QUAD_COUNT: usize = 0;
 
     fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
         None // Some(self.area))
     }
 }
-impl RenderGraphic for Drag {
+impl<A: Effect + Send + Sync> RenderGraphic for Tap<A> {
     fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
         /* Maybe push something here in Debug mode? */
     }
@@ -45,7 +54,7 @@ impl RenderGraphic for Drag {
         Self::QUAD_COUNT
     }
 }
-impl RenderText for Drag {
+impl<A: Effect + Send + Sync> RenderText for Tap<A> {
     fn push_text<'a>(
         &self,
         buffer: &'a glyphon::Buffer,
@@ -55,21 +64,18 @@ impl RenderText for Drag {
         // Nothing here!
     }
 }
-impl UIItem for Drag {
-    fn handle_ui_event(&mut self, event: crate::ui::node::UIEvent) -> bool {
+impl<A> AppItem for Tap<A>
+where
+    A: Effect + Send + Sync,
+{
+    fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         match event {
             UIEvent::CursorMoved {
                 device_id: _,
                 position,
             } => {
-                let position = Vec2::new(position.x as f32, position.y as f32);
-                let rect_contains_point = self.rect.contains_point(position);
-                self.is_hovered_state
-                    .set_if(rect_contains_point, |a, b| a != b);
-                true
-            }
-            UIEvent::CursorLeft { device_id: _ } => {
-                self.is_hovered_state.set(false);
+                self.mouse_position_state
+                    .set(Some(Vec2::new(position.x, position.y).as_()));
                 false
             }
             UIEvent::MouseInput {
@@ -78,16 +84,16 @@ impl UIItem for Drag {
                 button,
             } => match (button, state) {
                 (winit::event::MouseButton::Left, winit::event::ElementState::Pressed) => {
-                    if self.is_hovered_state.get() {
-                        self.is_dragging_state.set(true);
-                        true
+                    if let Some(mouse_position) = self.mouse_position_state.get() {
+                        if (self.rect.contains_point(mouse_position)) {
+                            self.tap_action.apply();
+                            true
+                        } else {
+                            false
+                        }
                     } else {
                         false
                     }
-                }
-                (winit::event::MouseButton::Left, winit::event::ElementState::Released) => {
-                    self.is_dragging_state.set(false);
-                    false
                 }
                 _ => false,
             },

@@ -1,4 +1,4 @@
-use crate::{prelude::UIItemDescriptor, ui::node::UIItem};
+use crate::{prelude::AppItemDescriptor, app::node::AppItem};
 
 use super::{backend::GPUResources, pipeline::{graphics::RenderGraphic, text::RenderText}};
 use crate::gpu::pipeline::{RendererBuffers, Renderers};
@@ -23,8 +23,8 @@ pub trait GPURenderTarget {
     fn get_texture_format(&self) -> TextureFormat;
 }
 
-pub trait Render: UIItem + RenderGraphic + RenderText {}
-impl<A> Render for A where A: UIItem + RenderGraphic + RenderText {}
+pub trait Render: AppItem + RenderGraphic + RenderText {}
+impl<A> Render for A where A: AppItem + RenderGraphic + RenderText {}
 
-pub trait RenderDescriptor: Render + UIItemDescriptor {}
-impl<A> RenderDescriptor for A where A: Render + UIItemDescriptor {}
+pub trait RenderDescriptor: Render + AppItemDescriptor {}
+impl<A> RenderDescriptor for A where A: Render + AppItemDescriptor {}

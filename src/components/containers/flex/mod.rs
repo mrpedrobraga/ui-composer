@@ -1,7 +1,7 @@
 use crate::gpu::render_target::{Render, RenderDescriptor};
 use crate::prelude::flow::{CartesianFlowDirection, FlowDirection, WritingFlowDirection};
 use crate::prelude::functions::weighted_division_with_minima;
-use crate::prelude::{CoordinateSystemProvider, LayoutItem, ParentHints, UIItem, UIItemDescriptor};
+use crate::prelude::{CoordinateSystemProvider, LayoutItem, ParentHints, AppItem, AppItemDescriptor};
 use std::iter::{once, Once};
 use vek::{Extent2, Rect};
 
@@ -44,7 +44,7 @@ impl<TItems: FlexItems> FlexContainer<TItems> {
 impl<TItems> LayoutItem for FlexContainer<TItems>
 where
     TItems: FlexItems + Send,
-    TItems::UINodeType: UIItemDescriptor
+    TItems::UINodeType: AppItemDescriptor
 {
     type UIItemType = TItems::UINodeType;
 

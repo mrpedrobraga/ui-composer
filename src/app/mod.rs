@@ -1,5 +1,28 @@
+//! # Applications
+//!
+//! An application is a composition of [Nodes] each which do something.
+//!
+//! To create your program, call `UIComposer::run` and give it a root [Node], like, for example, a [Window].
+//!
+//! ```rust
+//! use ui_composer::prelude::*;
+//!
+//! fn main() {
+//!     UIComposer::run(Window(()));
+//! }
+//! ```
+//!
+//! This function _must_ be called in the main thread.
+//!
+//! ## Different Backends
+//!
+//! You can also call [UIComposer::run_custom] to give it a custom backend.
+//! By default, apps use [WinitWGPUBackend], running on the GPU.
+
 use crate::backend::Backend;
 use crate::{gpu::backend::WinitWGPUBackend, prelude::Node};
+
+pub mod node;
 
 /// The default backend this crate runs.
 /// I might change it depending on the target.

@@ -12,7 +12,6 @@ use crate::{
     prelude::*,
     ui::{
         self,
-        node::{UIItem},
     },
 };
 use pin_project::pin_project;
@@ -85,7 +84,7 @@ impl ReifiedNode for ImageNode {
         gpu_resources: &mut GPUResources,
         pipelines: &mut Renderers,
         window_id: winit::window::WindowId,
-        event: ui::node::UIEvent,
+        event: UIEvent,
     ) {
         self.render(gpu_resources, pipelines);
 

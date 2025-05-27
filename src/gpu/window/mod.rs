@@ -3,15 +3,15 @@ use super::{
     pipeline::{graphics::OrchestraRenderer, text::{GlyphonTextRenderer, TextPipelineBuffers}, GPURenderer},
     render_target::{GPURenderTarget, Render, RenderDescriptor},
 };
-use crate::state::Mutable;
+use crate::{prelude::UIEvent, state::Mutable};
 use crate::ui::{
     graphics::Graphic,
     layout::{LayoutItem, ParentHints},
-    node::UIItem,
 };
+use crate::app::node::AppItem;
 use crate::{
     gpu::pipeline::{graphics::GraphicsPipelineBuffers, RendererBuffers, Renderers},
-    prelude::{flow::CartesianFlowDirection, UIItemDescriptor},
+    prelude::{flow::CartesianFlowDirection, AppItemDescriptor},
     state::process::{SignalProcessor, UISignalExt},
 };
 use futures_signals::signal::{Signal, SignalExt};
@@ -123,7 +123,7 @@ where
 
 impl<A> Node for WindowNodeDescriptor<A>
 where
-    A: UIItemDescriptor + Render + 'static,
+    A: AppItemDescriptor + Render + 'static,
 {
     type ReifiedType = WindowNode;
 
@@ -215,7 +215,7 @@ impl<'window> ReifiedNode for WindowNode {
         gpu_resources: &mut GPUResources,
         pipelines: &mut Renderers,
         window_id: WindowId,
-        event: crate::ui::node::UIEvent,
+        event: UIEvent,
     ) {
         if window_id == self.window.id() {
             match event {

@@ -5,7 +5,7 @@ use std::marker::PhantomData;
 
 use super::{GPURenderer, RendererBuffers, Renderers};
 use crate::gpu::{backend::GPUResources, render_target::Render};
-use crate::prelude::UIItem;
+use crate::prelude::AppItem;
 use vek::Extent2;
 use wgpu::{RenderPass, Texture};
 

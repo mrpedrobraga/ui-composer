@@ -1,7 +1,10 @@
 use super::InputItem;
 use crate::{
-    gpu::pipeline::{graphics::{RenderGraphic, RenderGraphicDescriptor}, text::{Text, RenderText}},
-    ui::node::{UIEvent, UIItem},
+    gpu::pipeline::{
+        graphics::{RenderGraphic, RenderGraphicDescriptor},
+        text::{RenderText, Text},
+    },
+    prelude::{AppItem, UIEvent},
 };
 use futures_signals::signal::Mutable;
 use std::{
@@ -52,8 +55,8 @@ impl RenderText for Hover {
         // Nothing here!
     }
 }
-impl UIItem for Hover {
-    fn handle_ui_event(&mut self, event: crate::ui::node::UIEvent) -> bool {
+impl AppItem for Hover {
+    fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         match event {
             UIEvent::CursorMoved {
                 device_id: _,

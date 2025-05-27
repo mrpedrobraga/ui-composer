@@ -9,9 +9,9 @@ use crate::gpu::pipeline::graphics::{RenderGraphic, RenderGraphicDescriptor};
 use crate::gpu::pipeline::text::RenderText;
 use crate::gpu::pipeline::Renderers;
 use crate::gpu::render_target::Render;
-use crate::prelude::UIItemDescriptor;
-use crate::ui::node::UIEvent;
-use crate::ui::node::UIItem;
+use crate::prelude::AppItemDescriptor;
+use crate::app::node::UIEvent;
+use crate::app::node::AppItem;
 
 /// UI Item that processes a signal and updates part of the UI tree whenever it changes.
 #[pin_project(project = SignalProcessorProj)]
@@ -19,13 +19,13 @@ use crate::ui::node::UIItem;
 pub struct SignalProcessor<S, T>
 where
     S: Signal<Item = T>,
-    T: UIItem + Send,
+    T: AppItem + Send,
 {
     #[pin]
     signal: HoldSignal<S, T>,
 }
 
-impl<S: Signal<Item = T> + Send, T: UIItem> Signal for SignalProcessor<S, T> {
+impl<S: Signal<Item = T> + Send, T: AppItem> Signal for SignalProcessor<S, T> {
     type Item = ();
 
     fn poll_change(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<Self::Item>> {
@@ -49,7 +49,7 @@ where
 impl<A, B> Signal for HoldSignal<A, B>
 where
     A: Signal<Item = B>,
-    B: UIItem,
+    B: AppItem,
 {
     type Item = ();
 
@@ -125,10 +125,10 @@ where
         }
     }
 }
-impl<S: Send + Sync, T> UIItem for SignalProcessor<S, T>
+impl<S: Send + Sync, T> AppItem for SignalProcessor<S, T>
 where
     S: Signal<Item = T>,
-    T: UIItem + RenderGraphicDescriptor + Send,
+    T: AppItem + RenderGraphicDescriptor + Send,
 {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         match &mut self.signal.held_item {
@@ -147,7 +147,7 @@ pub trait UISignalExt: Signal {
     fn process(self) -> SignalProcessor<Self, Self::Item>
     where
         Self: Sized,
-        Self::Item: UIItemDescriptor + Send,
+        Self::Item: AppItemDescriptor + Send,
     {
         SignalProcessor {
             signal: HoldSignal {
@@ -165,13 +165,13 @@ impl<T> UISignalExt for T where T: Signal {}
 pub struct FutureProcessor<F, T>
 where
     F: Future<Output = T>,
-    T: UIItem,
+    T: AppItem,
 {
     #[pin]
     signal: HoldFuture<F, T>,
 }
 
-impl<F: Future<Output = T>, T: UIItem> Signal for FutureProcessor<F, T> {
+impl<F: Future<Output = T>, T: AppItem> Signal for FutureProcessor<F, T> {
     type Item = ();
 
     fn poll_change(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<Self::Item>> {
@@ -195,7 +195,7 @@ where
 impl<A, B> Signal for HoldFuture<A, B>
 where
     A: Future<Output = B>,
-    B: UIItem,
+    B: AppItem,
 {
     type Item = ();
 
@@ -238,7 +238,7 @@ where
 impl<F, T> RenderGraphic for FutureProcessor<F, T>
 where
     F: Future<Output = T>,
-    T: Render + UIItemDescriptor,
+    T: Render + AppItemDescriptor,
 {
     fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
         match &self.signal.held_item {
@@ -268,10 +268,10 @@ where
         }
     }
 }
-impl<F, T> UIItem for FutureProcessor<F, T>
+impl<F, T> AppItem for FutureProcessor<F, T>
 where
     F: Future<Output = T> + Send,
-    T: UIItem + RenderGraphicDescriptor,
+    T: AppItem + RenderGraphicDescriptor,
 {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         match &mut self.signal.held_item {
@@ -290,7 +290,7 @@ pub trait UIFutureExt: Future {
     fn process(self) -> FutureProcessor<Self, Self::Output>
     where
         Self: Sized,
-        Self::Output: UIItem,
+        Self::Output: AppItem,
     {
         FutureProcessor {
             signal: HoldFuture {

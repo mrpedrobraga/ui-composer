@@ -2,7 +2,7 @@ use crate::gpu::pipeline::graphics::RenderGraphicDescriptor;
 use crate::gpu::render_target::{Render, RenderDescriptor};
 use crate::items_internal as items;
 use crate::prelude::{
-    Graphic, LayoutItem, ParentHints, RectExt, Resizable, ResizableItem, Tap, UIItem, UIItemDescriptor, UISignalExt
+    Graphic, LayoutItem, ParentHints, RectExt, Resizable, ResizableItem, Tap, AppItem, AppItemDescriptor, UISignalExt
 };
 use crate::state::animation::spring::Spring;
 use futures_signals::signal::{Mutable, SignalExt};

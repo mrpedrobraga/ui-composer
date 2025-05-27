@@ -2,7 +2,7 @@ use super::graphics::{RenderGraphic, RenderGraphicDescriptor};
 use super::{GPURenderer, RendererBuffers, Renderers};
 use crate::gpu::render_target::GPURenderTarget;
 use crate::gpu::{backend::GPUResources, render_target::Render};
-use crate::prelude::{Graphic, UIItem};
+use crate::prelude::{Graphic, AppItem};
 use crate::ui;
 use glyphon::{
     Cache, Color, FontSystem, Resolution, SwashCache, TextArea, TextAtlas, TextBounds,

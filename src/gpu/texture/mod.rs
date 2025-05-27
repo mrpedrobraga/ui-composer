@@ -3,7 +3,7 @@
 use super::pipeline::graphics::{RenderGraphic, RenderGraphicDescriptor};
 use super::{backend::GPUResources, render_target::GPURenderTarget};
 use crate::gpu::pipeline::{GPURenderer, RendererBuffers, Renderers};
-use crate::prelude::UIItem;
+use crate::prelude::AppItem;
 use vek::Extent2;
 
 /// Color data that can be used by quads or materials to create advanced graphics.

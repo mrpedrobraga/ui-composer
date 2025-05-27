@@ -6,7 +6,7 @@ use std::{
 use super::{RenderText, Text};
 use crate::{
     gpu::pipeline::graphics::{RenderGraphic, RenderGraphicDescriptor},
-    prelude::UIItem,
+    prelude::AppItem,
 };
 use glyphon::{Color, TextArea, TextBounds};
 
@@ -31,7 +31,7 @@ impl RenderText for Text {
     }
 }
 
-impl UIItem for Text {
+impl AppItem for Text {
     fn handle_ui_event(&mut self, event: crate::prelude::UIEvent) -> bool {
         false
     }

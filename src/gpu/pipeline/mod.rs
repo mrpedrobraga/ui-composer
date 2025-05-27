@@ -2,7 +2,7 @@ use super::backend::{GPUResources, ReifiedNode};
 use super::render_target::Render;
 use crate::gpu::pipeline::graphics::{GraphicsPipelineBuffers, OrchestraRenderer};
 use crate::gpu::pipeline::text::GlyphonTextRenderer;
-use crate::prelude::UIItem;
+use crate::prelude::AppItem;
 use text::TextPipelineBuffers;
 use vek::Extent2;
 use wgpu::{RenderPass, Texture};

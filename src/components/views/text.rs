@@ -1,6 +1,6 @@
 use crate::{
     gpu::pipeline::{graphics::RenderGraphicDescriptor, text::Text},
-    prelude::{LayoutItem, ParentHints, RectExt as _, Resizable as _, ResizableItem, UIItemDescriptor},
+    prelude::{LayoutItem, ParentHints, RectExt as _, Resizable as _, ResizableItem, AppItemDescriptor},
 };
 use vek::Rgb;
 

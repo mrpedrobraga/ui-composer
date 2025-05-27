@@ -1,12 +1,17 @@
-use crate::gpu::pipeline::{graphics::{RenderGraphic, RenderGraphicDescriptor}, text::RenderText};
+use crate::prelude::UIEvent;
+use crate::{
+    app::node::{self, AppItem},
+    gpu::pipeline::{
+        graphics::{RenderGraphic, RenderGraphicDescriptor},
+        text::RenderText,
+    },
+};
 use bytemuck::{Pod, Zeroable};
 use std::{
     pin::Pin,
     task::{Context, Poll},
 };
 use vek::{Extent3, Mat4, Rect, Rgb, Vec3, Vec4};
-
-use super::node::UIItem;
 
 /// A small fragment of graphics that can be sent to the GPU and rendered.
 /// You can compose several primitives to make more impressive graphics.
@@ -60,8 +65,8 @@ impl Default for Graphic {
     }
 }
 
-impl UIItem for Graphic {
-    fn handle_ui_event(&mut self, event: super::node::UIEvent) -> bool {
+impl AppItem for Graphic {
+    fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         false
     }
 

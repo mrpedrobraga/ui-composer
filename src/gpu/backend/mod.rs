@@ -4,7 +4,7 @@ use super::{
 use crate::backend::Backend;
 use crate::gpu::pipeline::text::GlyphonTextRenderer;
 use crate::gpu::pipeline::Renderers;
-use crate::ui::node::UIEvent;
+use crate::app::node::UIEvent;
 use futures::StreamExt;
 use futures_signals::signal::{Signal, SignalExt, SignalFuture};
 use pin_project::pin_project;

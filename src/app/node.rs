@@ -1,14 +1,13 @@
-use crate::gpu::pipeline::graphics::{RenderGraphic, RenderGraphicDescriptor};
-use crate::gpu::pipeline::Renderers;
-use crate::gpu::render_target::Render;
-use crate::state::signal_ext::coalesce_polls;
-use crate::{gpu::backend::GPUResources, ui::graphics::Graphic};
+use crate::{
+    gpu::{backend::GPUResources, pipeline::graphics::RenderGraphicDescriptor},
+    state::signal_ext::coalesce_polls,
+    ui::graphics::Graphic,
+};
 use std::{
     pin::Pin,
     task::{Context, Poll},
 };
 use vek::Rect;
-use wgpu::{RenderPass, Texture};
 
 pub type UIEvent = winit::event::WindowEvent;
 
@@ -17,7 +16,7 @@ pub type UIEvent = winit::event::WindowEvent;
 /// A UINode receives an order to render, to update child nodes or to handle an interaction.
 /// In practice, any single UI node should handle as little as possible.
 /// The entire user interface is made of UI Nodes arranged in a graph.
-pub trait UIItem: Send {
+pub trait AppItem: Send {
     /// Handles a UI Event (or not). Returns whether the event was handled.
     #[inline(always)]
     fn handle_ui_event(&mut self, event: UIEvent) -> bool;
@@ -27,10 +26,10 @@ pub trait UIItem: Send {
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>>;
 }
 
-pub trait UIItemDescriptor: UIItem + RenderGraphicDescriptor {}
-impl<A> UIItemDescriptor for A where A: UIItem + RenderGraphicDescriptor {}
+pub trait AppItemDescriptor: AppItem + RenderGraphicDescriptor {}
+impl<A> AppItemDescriptor for A where A: AppItem + RenderGraphicDescriptor {}
 
-impl UIItem for () {
+impl AppItem for () {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         false
     }
@@ -40,8 +39,7 @@ impl UIItem for () {
     }
 }
 
-impl<A: Send + UIItem> UIItem for Option<A>
-{
+impl<A: Send + AppItem> AppItem for Option<A> {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         self.as_mut()
             .map(|inner| inner.handle_ui_event(event))
@@ -56,8 +54,7 @@ impl<A: Send + UIItem> UIItem for Option<A>
     }
 }
 
-impl<T: Send + UIItem, E: Send + UIItem> UIItem for Result<T, E>
-{
+impl<T: Send + AppItem, E: Send + AppItem> AppItem for Result<T, E> {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         match self {
             Ok(v) => v.handle_ui_event(event),
@@ -75,8 +72,7 @@ impl<T: Send + UIItem, E: Send + UIItem> UIItem for Result<T, E>
     }
 }
 
-impl<A: Send + UIItem> UIItem for Box<A>
-{
+impl<A: Send + AppItem> AppItem for Box<A> {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         self.as_mut().handle_ui_event(event)
     }
@@ -88,8 +84,7 @@ impl<A: Send + UIItem> UIItem for Box<A>
     }
 }
 
-impl<A: Send + UIItem, B: Send + UIItem> UIItem for (A, B)
-{
+impl<A: Send + AppItem, B: Send + AppItem> AppItem for (A, B) {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         let a_handled = self.0.handle_ui_event(event.clone());
         let b_handled = self.1.handle_ui_event(event);
