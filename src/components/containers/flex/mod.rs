@@ -1,6 +1,5 @@
 use crate::app::node::AppItemDescriptor;
 use crate::prelude::flow::{CartesianFlowDirection, FlowDirection, WritingFlowDirection};
-use crate::prelude::functions::weighted_division_with_minima;
 use crate::prelude::{CoordinateSystemProvider, LayoutItem, ParentHints};
 use crate::winitwgpu::render_target::RenderDescriptor;
 use std::iter::{once, Once};
@@ -71,7 +70,12 @@ where
             TopToBottom | BottomToTop => parent_hints.rect.h,
         };
 
-        let sizes = weighted_division_with_minima(parent_size, &weights, &minima, 1.0);
+        let sizes = crate::prelude::flow::weighted_division_with_minima(
+            parent_size,
+            &weights,
+            &minima,
+            1.0,
+        );
         let parent_hints =
             lay_sizes(parent_hints, flow_direction, sizes.into_iter()).collect::<Vec<_>>();
 

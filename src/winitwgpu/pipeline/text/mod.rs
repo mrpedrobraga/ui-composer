@@ -137,11 +137,11 @@ impl GlyphonTextRenderer {
         let mut font_system = FontSystem::new();
         font_system
             .db_mut()
-            .load_font_file("./src/gpu/pipeline/WorkSans-Regular.ttf")
+            .load_font_file("./assets/WorkSans-Regular.ttf")
             .expect("Failed to load font!");
         font_system
             .db_mut()
-            .load_font_file("./src/gpu/pipeline/Anima Sans.ttf")
+            .load_font_file("./assets/Anima Sans.ttf")
             .expect("Failed to load font!");
         let swash_cache = SwashCache::new();
         let cache = Cache::new(device);

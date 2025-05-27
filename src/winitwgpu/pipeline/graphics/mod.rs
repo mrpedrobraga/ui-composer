@@ -1,13 +1,11 @@
 use {
     super::{GPURenderer, RendererBuffers, Renderers},
-    crate::{
-        ui::graphics::Graphic,
-        winitwgpu::{
-            backend::Resources,
-            render_target::{Render, RenderTarget},
-        },
+    crate::winitwgpu::{
+        backend::Resources,
+        render_target::{Render, RenderTarget},
     },
     bytemuck::{Pod, Zeroable},
+    graphic::Graphic,
     std::{mem::size_of, ops::Deref},
     vek::{Extent2, Mat4, Rect, Vec2, Vec3},
     wgpu::{
@@ -15,6 +13,7 @@ use {
     },
 };
 
+pub mod graphic;
 pub mod implementations;
 
 pub trait RenderGraphicDescriptor: RenderGraphic {

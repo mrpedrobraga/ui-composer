@@ -3,7 +3,6 @@ pub use crate::components::*;
 pub use crate::geometry::*;
 pub use crate::state::process::{UIFutureExt, UISignalExt};
 pub use crate::state::*;
-pub use crate::ui::graphics::Graphic;
 pub use crate::ui::input::*;
 pub use crate::ui::layout::*;
 pub use crate::winitwgpu::window::{Window, WindowAttributes};

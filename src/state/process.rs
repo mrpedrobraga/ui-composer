@@ -1,12 +1,6 @@
 use crate::{
     app::node::{AppItem, AppItemDescriptor, UIEvent},
-    winitwgpu::{
-        pipeline::{
-            graphics::{RenderGraphic, RenderGraphicDescriptor},
-            text::RenderText,
-        },
-        render_target::Render,
-    },
+    winitwgpu::pipeline::graphics::RenderGraphicDescriptor,
 };
 use futures_signals::signal::Signal;
 use pin_project::pin_project;
@@ -22,7 +16,7 @@ where
     T: AppItem + Send,
 {
     #[pin]
-    signal: HoldSignal<S, T>,
+    pub(crate) signal: HoldSignal<S, T>,
 }
 
 impl<S: Signal<Item = T> + Send, T: AppItem> Signal for SignalProcessor<S, T> {
@@ -78,53 +72,6 @@ where
     }
 }
 
-impl<S, T> RenderGraphicDescriptor for SignalProcessor<S, T>
-where
-    S: Signal<Item = T>,
-    T: Render + RenderGraphicDescriptor + Send,
-{
-    const QUAD_COUNT: usize = T::QUAD_COUNT;
-
-    fn get_render_rect(&self) -> Option<vek::Rect<f32, f32>> {
-        match &self.signal.held_item {
-            Some(item) => item.get_render_rect(),
-            None => panic!("Reactor was asked for its render rect before being polled!"),
-        }
-    }
-}
-impl<S, T> RenderGraphic for SignalProcessor<S, T>
-where
-    S: Signal<Item = T>,
-    T: Render + RenderGraphicDescriptor + Send,
-{
-    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
-        match &self.signal.held_item {
-            Some(item) => item.write_quads(quad_buffer),
-            None => panic!("Reactor was drawn (graphics) without being polled first!"),
-        }
-    }
-
-    fn get_quad_count(&self) -> usize {
-        Self::QUAD_COUNT
-    }
-}
-impl<S, T> RenderText for SignalProcessor<S, T>
-where
-    S: Signal<Item = T>,
-    T: Render + Send,
-{
-    fn push_text<'a>(
-        &self,
-        buffer: &'a glyphon::Buffer,
-        bounds: glyphon::TextBounds,
-        container: &mut Vec<glyphon::TextArea<'a>>,
-    ) {
-        match &self.signal.held_item {
-            Some(item) => item.push_text(buffer, bounds, container),
-            None => panic!("Reactor was drawn (text) without being polled first!"),
-        }
-    }
-}
 impl<S: Send + Sync, T> AppItem for SignalProcessor<S, T>
 where
     S: Signal<Item = T>,
@@ -168,7 +115,7 @@ where
     T: AppItem,
 {
     #[pin]
-    signal: HoldFuture<F, T>,
+    pub(crate) signal: HoldFuture<F, T>,
 }
 
 impl<F: Future<Output = T>, T: AppItem> Signal for FutureProcessor<F, T> {
@@ -221,47 +168,6 @@ where
     }
 }
 
-impl<F, T> RenderGraphicDescriptor for FutureProcessor<F, T>
-where
-    F: Future<Output = T>,
-    T: Render + RenderGraphicDescriptor,
-{
-    const QUAD_COUNT: usize = T::QUAD_COUNT;
-
-    fn get_render_rect(&self) -> Option<vek::Rect<f32, f32>> {
-        match &self.signal.held_item {
-            Some(item) => item.get_render_rect(),
-            None => panic!("Reactor was asked for its render rect before being polled!"),
-        }
-    }
-}
-impl<F, T> RenderGraphic for FutureProcessor<F, T>
-where
-    F: Future<Output = T>,
-    T: Render + AppItemDescriptor,
-{
-    fn write_quads(&self, quad_buffer: &mut [crate::prelude::Graphic]) {
-        if let Some(item) = &self.signal.held_item { item.write_quads(quad_buffer) }
-    }
-
-    fn get_quad_count(&self) -> usize {
-        Self::QUAD_COUNT
-    }
-}
-impl<F, T> RenderText for FutureProcessor<F, T>
-where
-    F: Future<Output = T>,
-    T: Render,
-{
-    fn push_text<'a>(
-        &self,
-        buffer: &'a glyphon::Buffer,
-        bounds: glyphon::TextBounds,
-        container: &mut Vec<glyphon::TextArea<'a>>,
-    ) {
-        if let Some(item) = &self.signal.held_item { item.push_text(buffer, bounds, container) }
-    }
-}
 impl<F, T> AppItem for FutureProcessor<F, T>
 where
     F: Future<Output = T> + Send,

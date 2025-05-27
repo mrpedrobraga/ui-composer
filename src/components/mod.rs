@@ -1,12 +1,12 @@
 #![allow(non_snake_case)]
 
-pub mod views;
-pub mod editors;
-pub mod containers;
+mod containers;
+mod views;
 
-pub use views::*;
-pub use editors::*;
+#[doc(inline)]
 pub use containers::*;
+#[doc(inline)]
+pub use views::*;
 
 #[macro_export]
 macro_rules! items_internal {

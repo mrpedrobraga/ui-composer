@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 
 use ui_composer::prelude::*;
+use ui_composer::winitwgpu::pipeline::graphics::graphic::Graphic;
 use ui_composer::Flex;
 
 fn main() {
@@ -24,6 +25,6 @@ fn main() {
 }
 
 fn Square(color: Rgb<f32>) -> impl LayoutItem {
-    ResizableItem::new(move |hx| hx.rect.with_color(color))
+    ResizableItem::new(move |hx| Graphic::from(hx.rect).with_color(color))
         .with_minimum_size(Extent2::new(200.0, 100.0))
 }

@@ -1,10 +1,11 @@
 #![allow(non_snake_case)]
 
-use ui_composer::winitwgpu::pipeline::text::Text;
-use ui_composer::winitwgpu::render_target::RenderDescriptor;
 use ui_composer::items;
 use ui_composer::prelude::animation::spring::*;
 use ui_composer::prelude::*;
+use ui_composer::winitwgpu::pipeline::graphics::graphic::Graphic;
+use ui_composer::winitwgpu::pipeline::text::Text;
+use ui_composer::winitwgpu::render_target::RenderDescriptor;
 
 fn main() {
     UIComposer::run(
@@ -91,7 +92,7 @@ fn hover_square(
     items! {
         hover,
         tap,
-        rect.with_color(Lerp::lerp(
+        Graphic::from(rect).with_color(Lerp::lerp(
             original_color,
             original_color,
             animation_factor_pct

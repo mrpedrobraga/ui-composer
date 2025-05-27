@@ -2,7 +2,7 @@ use {
     super::{
         backend::Resources,
         pipeline::{
-            graphics::{RenderGraphic, RenderGraphicDescriptor},
+            graphics::{graphic::Graphic, RenderGraphic, RenderGraphicDescriptor},
             text::TextPipelineBuffers,
         },
     },
@@ -54,7 +54,7 @@ impl<A: RenderGraphicDescriptor + AppItem + Sync> RenderGraphicDescriptor for Ve
     }
 }
 impl<A: RenderGraphicDescriptor + AppItem + Sync> RenderGraphic for VecItem<A> {
-    fn write_quads(&self, _quad_buffer: &mut [crate::prelude::Graphic]) {
+    fn write_quads(&self, _quad_buffer: &mut [Graphic]) {
         // TODO: Write no quads.
     }
 

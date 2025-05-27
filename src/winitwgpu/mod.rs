@@ -9,3 +9,5 @@ pub mod portal;
 pub mod render_target;
 pub mod texture;
 pub mod window;
+
+pub mod components;

@@ -1,10 +1,10 @@
 #![allow(unused)]
-use vek::{Extent2, Rgb};
-
-use crate::ui::{
-    graphics::Graphic,
-    layout::{LayoutItem, ParentHints},
+use {
+    super::pipeline::graphics::graphic::Graphic,
+    vek::{Extent2, Rgb},
 };
+
+use crate::ui::layout::{LayoutItem, ParentHints};
 
 /// A node that describes the existence of a Portal in the UI tree.
 ///

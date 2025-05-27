@@ -1,8 +1,60 @@
-use super::{RenderGraphic, RenderGraphicDescriptor};
-use crate::prelude::Graphic;
-use vek::Rect;
+use {
+    super::{graphic::Graphic, RenderGraphic, RenderGraphicDescriptor},
+    crate::{
+        app::node::AppItemDescriptor,
+        state::process::{FutureProcessor, SignalProcessor},
+        winitwgpu::pipeline::text::Text,
+    },
+    std::future::Future,
+};
+use {crate::winitwgpu::render_target::Render, futures_signals::signal::Signal, vek::Rect};
 
-// --- Empty Graphics ---
+pub mod hover;
+pub mod tap;
+pub mod window_drag;
+
+//MARK: Graphics
+
+impl RenderGraphic for Graphic {
+    fn write_quads(&self, quad_buffer: &mut [Graphic]) {
+        quad_buffer[0] = *self;
+    }
+
+    fn get_quad_count(&self) -> usize {
+        Self::QUAD_COUNT
+    }
+}
+
+impl RenderGraphicDescriptor for Graphic {
+    const QUAD_COUNT: usize = 1;
+
+    fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
+        // Beautifully calculating the bounds of this Primitive
+        // as a Rect!
+        let matrix = self.transform.as_col_slice();
+        Some(Rect::new(matrix[12], matrix[13], matrix[0], matrix[4]))
+    }
+}
+
+//MARK: Text
+
+impl RenderGraphicDescriptor for Text {
+    const QUAD_COUNT: usize = 0;
+
+    fn get_render_rect(&self) -> Option<vek::Rect<f32, f32>> {
+        Some(self.0)
+    }
+}
+
+impl RenderGraphic for Text {
+    fn write_quads(&self, _quad_buffer: &mut [Graphic]) {}
+
+    fn get_quad_count(&self) -> usize {
+        Self::QUAD_COUNT
+    }
+}
+
+//MARK: ()
 
 impl RenderGraphicDescriptor for () {
     const QUAD_COUNT: usize = 0;
@@ -22,7 +74,7 @@ impl RenderGraphic for () {
     }
 }
 
-// --- (A, B) ---
+//MARK: (A, B)
 
 impl<A, B> RenderGraphicDescriptor for (A, B)
 where
@@ -57,7 +109,7 @@ where
     }
 }
 
-// --- [A; N] ---
+// MARK: [A; N]
 
 impl<A, const N: usize> RenderGraphicDescriptor for [A; N]
 where
@@ -87,7 +139,7 @@ where
     }
 }
 
-// --- Box<A> ---
+//MARK: Box<A>
 
 impl<A> RenderGraphicDescriptor for Box<A>
 where
@@ -113,7 +165,7 @@ where
     }
 }
 
-// --- Option<A> ---
+//MARK: Option<A>
 
 impl<A> RenderGraphicDescriptor for Option<A>
 where
@@ -147,7 +199,7 @@ where
     }
 }
 
-// --- Result<A> ---
+//MARK: Result<A>
 
 impl<T, E> RenderGraphicDescriptor for Result<T, E>
 where
@@ -186,5 +238,70 @@ pub const fn max(a: usize, b: usize) -> usize {
         a
     } else {
         b
+    }
+}
+
+//MARK: SignalProcessor
+
+impl<S, T> RenderGraphicDescriptor for SignalProcessor<S, T>
+where
+    S: Signal<Item = T>,
+    T: Render + RenderGraphicDescriptor + Send,
+{
+    const QUAD_COUNT: usize = T::QUAD_COUNT;
+
+    fn get_render_rect(&self) -> Option<vek::Rect<f32, f32>> {
+        match &self.signal.held_item {
+            Some(item) => item.get_render_rect(),
+            None => panic!("Reactor was asked for its render rect before being polled!"),
+        }
+    }
+}
+impl<S, T> RenderGraphic for SignalProcessor<S, T>
+where
+    S: Signal<Item = T>,
+    T: Render + RenderGraphicDescriptor + Send,
+{
+    fn write_quads(&self, quad_buffer: &mut [Graphic]) {
+        match &self.signal.held_item {
+            Some(item) => item.write_quads(quad_buffer),
+            None => panic!("Reactor was drawn (graphics) without being polled first!"),
+        }
+    }
+
+    fn get_quad_count(&self) -> usize {
+        Self::QUAD_COUNT
+    }
+}
+
+//MARK: FutureProcessor
+
+impl<F, T> RenderGraphicDescriptor for FutureProcessor<F, T>
+where
+    F: Future<Output = T>,
+    T: Render + RenderGraphicDescriptor,
+{
+    const QUAD_COUNT: usize = T::QUAD_COUNT;
+
+    fn get_render_rect(&self) -> Option<vek::Rect<f32, f32>> {
+        match &self.signal.held_item {
+            Some(item) => item.get_render_rect(),
+            None => panic!("Reactor was asked for its render rect before being polled!"),
+        }
+    }
+}
+impl<F, T> RenderGraphic for FutureProcessor<F, T>
+where
+    F: Future<Output = T>,
+    T: Render + AppItemDescriptor,
+{
+    fn write_quads(&self, quad_buffer: &mut [Graphic]) {
+        if let Some(item) = &self.signal.held_item {
+            item.write_quads(quad_buffer)
+        }
+    }
+
+    fn get_quad_count(&self) -> usize {
+        Self::QUAD_COUNT
     }
 }

@@ -2,6 +2,7 @@
 
 use ui_composer::items;
 use ui_composer::prelude::*;
+use ui_composer::winitwgpu::pipeline::graphics::graphic::Graphic;
 
 fn main() {
     let window = Window(App())
@@ -31,7 +32,7 @@ fn Drag() -> impl LayoutItem {
 
         items! {
             window_drag,
-            parent.rect.with_color(Rgb::new(1.0, 1.0, 1.0))
+            Graphic::from(parent.rect).with_color(Rgb::new(1.0, 1.0, 1.0))
         }
     })
     .with_minimum_size(Extent2::new(0.0, 32.0))

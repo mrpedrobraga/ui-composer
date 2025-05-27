@@ -29,32 +29,7 @@ impl Hover {
 }
 
 impl InputItem for Hover {}
-impl RenderGraphicDescriptor for Hover {
-    const QUAD_COUNT: usize = 0;
 
-    fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
-        None // Some(self.area))
-    }
-}
-impl RenderGraphic for Hover {
-    fn write_quads(&self, _quad_buffer: &mut [crate::prelude::Graphic]) {
-        /* Maybe push something here in Debug mode? */
-    }
-
-    fn get_quad_count(&self) -> usize {
-        Self::QUAD_COUNT
-    }
-}
-impl RenderText for Hover {
-    fn push_text<'a>(
-        &self,
-        _buffer: &'a glyphon::Buffer,
-        _bounds: glyphon::TextBounds,
-        _container: &mut Vec<glyphon::TextArea<'a>>,
-    ) {
-        // Nothing here!
-    }
-}
 impl AppItem for Hover {
     fn handle_ui_event(&mut self, event: UIEvent) -> bool {
         match event {

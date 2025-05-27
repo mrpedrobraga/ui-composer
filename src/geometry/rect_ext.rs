@@ -1,7 +1,5 @@
 use super::BaseNum;
-use super::{Extent2, Extent3, Mat4, Rect, Vec2, Vec3};
-use crate::prelude::Graphic;
-use vek::Vec4;
+use super::{Extent2, Extent3, Rect, Vec2, Vec3};
 
 pub trait RectExt {
     type Num: BaseNum;
@@ -30,9 +28,6 @@ pub trait RectExt {
 
     /// Translates this rectangle in space.
     fn translated(self, vector: Vec2<Self::Num>) -> Self;
-
-    /// Transforms this rectangle into a renderable graphic.
-    fn with_color(self, color: vek::Rgb<f32>) -> Graphic;
 }
 
 impl<T: BaseNum> RectExt for Rect<T, T>
@@ -71,17 +66,6 @@ where
             x: self.x + vector.x,
             y: self.y + vector.y,
             ..self
-        }
-    }
-
-    /// Consumes the [`Rect`] by returning a coloured rectangular [`Graphic`].
-    fn with_color(self, color: vek::Rgb<f32>) -> Graphic {
-        Graphic {
-            transform: Mat4::identity()
-                .scaled_3d(Extent3::new(self.extent().w, self.extent().h, T::one()))
-                .translated_2d(self.position()),
-            color,
-            corner_radii: Vec4::zero(),
         }
     }
 }

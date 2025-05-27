@@ -3,7 +3,8 @@ use vek::Rgb;
 
 use crate::{
     items_internal as items,
-    prelude::{Effect, LayoutItem, ParentHints, RectExt, Resizable, ResizableItem, Tap},
+    prelude::{Effect, LayoutItem, ParentHints, Resizable, ResizableItem, Tap},
+    winitwgpu::pipeline::graphics::graphic::Graphic,
 };
 
 /// A simple button which you can click!
@@ -17,7 +18,7 @@ where
 
     let render = move |parent_hints: ParentHints| {
         items!(
-            parent_hints.rect.with_color(Rgb::new(0.3, 0.2, 0.5)),
+            Graphic::from(parent_hints.rect).with_color(Rgb::new(0.3, 0.2, 0.5)),
             label.lay(parent_hints),
             Tap::new(parent_hints.rect, mouse_position.clone(), effect.clone()),
         )

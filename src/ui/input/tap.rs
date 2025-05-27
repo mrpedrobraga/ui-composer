@@ -35,35 +35,7 @@ where
 }
 
 impl<A> InputItem for Tap<A> where A: Effect + Send {}
-impl<A> RenderGraphicDescriptor for Tap<A>
-where
-    A: Effect + Send + Sync,
-{
-    const QUAD_COUNT: usize = 0;
 
-    fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
-        None // Some(self.area))
-    }
-}
-impl<A: Effect + Send + Sync> RenderGraphic for Tap<A> {
-    fn write_quads(&self, _quad_buffer: &mut [crate::prelude::Graphic]) {
-        /* Maybe push something here in Debug mode? */
-    }
-
-    fn get_quad_count(&self) -> usize {
-        Self::QUAD_COUNT
-    }
-}
-impl<A: Effect + Send + Sync> RenderText for Tap<A> {
-    fn push_text<'a>(
-        &self,
-        _buffer: &'a glyphon::Buffer,
-        _bounds: glyphon::TextBounds,
-        _container: &mut Vec<glyphon::TextArea<'a>>,
-    ) {
-        // Nothing here!
-    }
-}
 impl<A> AppItem for Tap<A>
 where
     A: Effect + Send + Sync,

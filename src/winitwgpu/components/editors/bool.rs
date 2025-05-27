@@ -1,4 +1,5 @@
 use crate::items_internal as items;
+use crate::winitwgpu::pipeline::graphics::graphic::Graphic;
 use crate::{
     prelude::{LayoutItem, ParentHints, RectExt, Resizable, ResizableItem, Tap, UISignalExt},
     state::animation::spring::Spring,
@@ -69,11 +70,12 @@ impl BoolEditGraphics for AnimatedSwitch {
 
         items! {
             // Background!
-            rect
+            Graphic::from(rect)
                 .with_color(Lerp::lerp(bg_color, bg_color_active, anim_factor))
                 .with_corner_radii(Vec4::one() * rect_min_axis * 0.5),
             // The switch indicator thingy!
-            rect
+            Graphic::from(
+                rect
                 .with_size(Extent2::new(rect_min_axis, rect_min_axis))
                 .expand(-inset_radius * 2.0)
 
@@ -84,10 +86,10 @@ impl BoolEditGraphics for AnimatedSwitch {
                 // Animate it moving to the other side of the switch...
                 .translated(parent_hints.writing_axis() * (rect.w - rect_min_axis) * anim_factor)
                 .translated(parent_hints.writing_cross_axis() * (rect.h - rect_min_axis) * anim_factor)
-
-                // Make it pretty!
-                .with_color(Lerp::lerp(switch_color, switch_color_active, anim_factor))
-                .with_corner_radii(Vec4::one() * rect_min_axis * 0.5 - inset_radius * 2.0),
+            )
+            // Make it pretty!
+            .with_color(Lerp::lerp(switch_color, switch_color_active, anim_factor))
+            .with_corner_radii(Vec4::one() * rect_min_axis * 0.5 - inset_radius * 2.0),
         }
     }
 }

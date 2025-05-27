@@ -1,6 +1,8 @@
 #![allow(non_snake_case)]
 use ui_composer::prelude::*;
 
+use ui_composer::winitwgpu::components::Button;
+
 fn main() {
     UIComposer::run(Window(App()));
 }

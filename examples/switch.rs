@@ -3,6 +3,8 @@
 use ui_composer::prelude::*;
 use ui_composer::Flex;
 
+use ui_composer::winitwgpu::components::Switch;
+
 fn main() {
     UIComposer::run(Window(App()).with_title("Click the Switch!"))
 }

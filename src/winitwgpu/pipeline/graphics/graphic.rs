@@ -10,7 +10,7 @@ use std::{
     pin::Pin,
     task::{Context, Poll},
 };
-use vek::{Extent3, Mat4, Rect, Rgb, Vec3, Vec4};
+use vek::{num_traits::AsPrimitive, Extent3, Mat4, Rect, Rgb, Vec3, Vec4};
 
 /// A small fragment of graphics that can be sent to the GPU and rendered.
 /// You can compose several primitives to make more impressive graphics.
@@ -45,11 +45,31 @@ impl Graphic {
         }
     }
 
-    /// Returns this graphic rotated by some angle.
+    /// Returns this graphic with altered corner radii.
     pub fn with_corner_radii(self, corner_radii: Vec4<f32>) -> Self {
         Self {
             corner_radii,
             ..self
+        }
+    }
+
+    /// Returns this graphic with a new colour.
+    pub fn with_color(self, color: Rgb<f32>) -> Self {
+        Self { color, ..self }
+    }
+}
+
+impl<A, B> From<Rect<A, B>> for Graphic
+where
+    A: AsPrimitive<f32>,
+    B: AsPrimitive<f32> + cgmath::One,
+{
+    fn from(value: Rect<A, B>) -> Self {
+        Graphic {
+            transform: Mat4::identity()
+                .scaled_3d(Extent3::new(value.extent().w, value.extent().h, B::one()).as_())
+                .translated_2d(value.position().as_()),
+            ..Default::default()
         }
     }
 }
@@ -61,34 +81,5 @@ impl AppItem for Graphic {
 
     fn poll_processors(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
         Poll::Ready(Some(()))
-    }
-}
-impl RenderGraphic for Graphic {
-    fn write_quads(&self, quad_buffer: &mut [Graphic]) {
-        quad_buffer[0] = *self;
-    }
-
-    fn get_quad_count(&self) -> usize {
-        Self::QUAD_COUNT
-    }
-}
-impl RenderGraphicDescriptor for Graphic {
-    const QUAD_COUNT: usize = 1;
-
-    fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
-        // Beautifully calculating the bounds of this Primitive
-        // as a Rect!
-        let matrix = self.transform.as_col_slice();
-        Some(Rect::new(matrix[12], matrix[13], matrix[0], matrix[4]))
-    }
-}
-impl RenderText for Graphic {
-    fn push_text<'a>(
-        &self,
-        _buffer: &'a glyphon::Buffer,
-        _bounds: glyphon::TextBounds,
-        _container: &mut Vec<glyphon::TextArea<'a>>,
-    ) {
-        // Nothing here!
     }
 }
