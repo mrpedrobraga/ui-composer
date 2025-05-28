@@ -4,7 +4,7 @@
 use {
     crate::app::{
         backend::Backend,
-        primitives::{CursorEvent, Event},
+        input::{CursorEvent, DeviceId, Event},
     },
     crossterm::{
         cursor::{Hide, SetCursorStyle, Show},
@@ -94,9 +94,12 @@ where
                 event::Event::Mouse(mouse_event) => {
                     if mouse_event.kind == event::MouseEventKind::Moved {
                         node_tree.handle_event(Event::Cursor {
-                            id: 0,
+                            id: DeviceId(0),
                             event: CursorEvent::Moved {
-                                to: Vec2::new(mouse_event.column as f32, mouse_event.row as f32),
+                                position: Vec2::new(
+                                    mouse_event.column as f32,
+                                    mouse_event.row as f32,
+                                ),
                             },
                         });
                     }

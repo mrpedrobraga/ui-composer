@@ -10,7 +10,7 @@
 //! but, really, terminals don't really have a lot of pixels.
 
 use {
-    crate::app::primitives::{Event, Primitive},
+    crate::app::{input::Event, primitives::Primitive},
     crossterm::{
         style::{Color, Stylize as _},
         ExecutableCommand as _,

@@ -51,6 +51,7 @@ wgpu = {version = "23", default-features = false, features = ["wgsl"], optional 
 # Crossterm
 crossterm = {version = "0.28.1", optional = true}
 ndarray = "0.16.1"
+smol_str = "0.3.2"
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]

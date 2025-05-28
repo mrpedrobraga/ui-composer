@@ -6,7 +6,6 @@ use {
         texture::ImageRenderTarget,
     },
     crate::{
-        app::primitives::Event,
         prelude::{flow::CartesianFlowDirection, *},
         winitwgpu::{
             self,
@@ -90,10 +89,12 @@ impl Node for ImageNode {
         gpu_resources: &mut Resources,
         pipelines: &mut Renderers,
         _window_id: winit::window::WindowId,
-        _event: WindowEvent,
+        event: WindowEvent,
     ) {
         self.render(gpu_resources, pipelines);
-        self.content.handle_event(Event::default());
+        if let Ok(event) = event.try_into() {
+            self.content.handle_event(event);
+        }
     }
 
     fn poll_processors(

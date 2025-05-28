@@ -3,7 +3,7 @@ use {
         backend::{Node, NodeDescriptor},
         pipeline::Render,
     },
-    crate::{app::primitives::Event, prelude::LayoutItem},
+    crate::prelude::{Event, LayoutItem},
     crossterm::{style::Stylize as _, ExecutableCommand as _},
     std::{io::Write as _, pin::Pin},
     vek::Vec2,

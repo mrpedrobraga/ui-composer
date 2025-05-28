@@ -23,6 +23,7 @@ where
     }
 }
 
+#[derive(Clone)]
 pub struct TextLayoutItem {
     text: String,
     own_color: Option<Rgb<f32>>,

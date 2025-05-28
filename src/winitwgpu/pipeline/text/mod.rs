@@ -12,7 +12,9 @@ use {
     wgpu::{ColorTargetState, MultisampleState, RenderPass, Texture, TextureFormat},
 };
 
+#[doc(hidden)]
 pub mod implementations;
+
 pub trait RenderText {
     /// Yields a text area to draw.
     fn push_text<'a>(

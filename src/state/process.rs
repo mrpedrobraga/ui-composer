@@ -1,8 +1,12 @@
-use crate::app::primitives::{Event, Primitive, PrimitiveDescriptor};
-use futures_signals::signal::Signal;
-use pin_project::pin_project;
-use std::future::Future;
-use std::{pin::Pin, task::Poll};
+use {
+    crate::app::{
+        input::Event,
+        primitives::{Primitive, PrimitiveDescriptor},
+    },
+    futures_signals::signal::Signal,
+    pin_project::pin_project,
+    std::{future::Future, pin::Pin, task::Poll},
+};
 
 /// UI Item that processes a signal and updates part of the UI tree whenever it changes.
 #[pin_project(project = SignalProcessorProj)]

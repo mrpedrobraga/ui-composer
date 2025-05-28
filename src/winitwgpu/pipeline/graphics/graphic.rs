@@ -1,10 +1,12 @@
-use crate::app::primitives::{Event, Primitive};
-use bytemuck::{Pod, Zeroable};
-use std::{
-    pin::Pin,
-    task::{Context, Poll},
+use {
+    crate::app::{input::Event, primitives::Primitive},
+    bytemuck::{Pod, Zeroable},
+    std::{
+        pin::Pin,
+        task::{Context, Poll},
+    },
+    vek::{num_traits::AsPrimitive, Extent3, Mat4, Rect, Rgb, Vec3, Vec4},
 };
-use vek::{num_traits::AsPrimitive, Extent3, Mat4, Rect, Rgb, Vec3, Vec4};
 
 /// A small fragment of graphics that can be sent to the GPU and rendered.
 /// You can compose several primitives to make more impressive graphics.

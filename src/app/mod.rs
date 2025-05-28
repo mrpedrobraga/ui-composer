@@ -20,6 +20,7 @@ use backend::Backend;
 
 pub mod backend;
 pub mod implementations;
+pub mod input;
 pub mod primitives;
 
 /// App builder, receives a layout item with the entirety of your app.

@@ -106,7 +106,7 @@ where
             },
             RightToLeft => ParentHints {
                 rect: Rect::new(
-                    container.rect.x + container.rect.w - *offset_from_start,
+                    container.rect.x + container.rect.w - *offset_from_start - current_element_size,
                     container.rect.y,
                     current_element_size,
                     container.rect.h,
@@ -125,7 +125,7 @@ where
             BottomToTop => ParentHints {
                 rect: Rect::new(
                     container.rect.x,
-                    container.rect.y + container.rect.w - *offset_from_start,
+                    container.rect.y + container.rect.w - *offset_from_start - current_element_size,
                     container.rect.w,
                     current_element_size,
                 ),

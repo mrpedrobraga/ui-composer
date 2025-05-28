@@ -1,7 +1,4 @@
-use {
-    super::{NodeDescriptor, Node},
-    crate::app::primitives::Event,
-};
+use super::{Node, NodeDescriptor};
 use {std::task::Poll, winit::event::WindowEvent};
 
 impl NodeDescriptor for () {

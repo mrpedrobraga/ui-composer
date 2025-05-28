@@ -6,10 +6,10 @@ use {
             text::{GlyphonTextRenderer, TextPipelineBuffers},
             GPURenderer,
         },
-        render_target::{RenderInternal, Render, RenderTarget},
+        render_target::{Render, RenderInternal, RenderTarget},
     },
     crate::{
-        app::primitives::{Event, PrimitiveDescriptor},
+        app::primitives::PrimitiveDescriptor,
         prelude::{flow::CartesianFlowDirection, LayoutItem},
         state::{
             process::{SignalProcessor, UISignalExt},
@@ -36,6 +36,8 @@ use {
     },
 };
 
+mod conversion;
+
 /// A node that describes the existence of a new window in the UI tree.
 pub struct WindowNodeDescriptor<A> {
     state: WindowNodeState,
@@ -54,9 +56,9 @@ impl<A> WindowNodeDescriptor<A> {
         }
     }
 
-    /// Consumes this window node and returns a new one with a reactive title.
-    /// The window's title will change every time this signal changes.
-    pub fn with_reactive_title<Sig>(self, title_signal: Mutable<String>) -> Self {
+    /// Adapts this window to have a reactive title — the window's title will change
+    /// every time this signal changes.
+    pub fn with_reactive_title(self, title_signal: Mutable<String>) -> Self {
         Self {
             state: WindowNodeState {
                 title: title_signal,
@@ -107,7 +109,8 @@ where
         .map(move |window_size| {
             item.lay(ParentHints {
                 rect: Rect::new(0.0, 0.0, window_size.w, window_size.h),
-                // impl RenderDescriptorTODO: Allow configuring this from the locale/user settings.
+                // TODO: Allow configuring this from the locale/user settings,
+                // possibly turning them into signals!
                 current_flow_direction: CartesianFlowDirection::LeftToRight,
                 current_cross_flow_direction: CartesianFlowDirection::TopToBottom,
                 current_writing_flow_direction: CartesianFlowDirection::LeftToRight,
@@ -245,7 +248,9 @@ impl Node for WindowNode {
             }
         }
 
-        self.content.handle_event(Event::default());
+        if let Ok(app_event) = event.try_into() {
+            self.content.handle_event(app_event);
+        }
     }
 
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {

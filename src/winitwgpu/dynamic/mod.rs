@@ -7,7 +7,8 @@ use {
         },
     },
     crate::{
-        app::primitives::{Event, Primitive},
+        app::primitives::Primitive,
+        prelude::Event,
         winitwgpu::pipeline::{graphics::GraphicsPipelineBuffers, RendererBuffers, Renderers},
     },
     futures_signals::signal_vec::MutableVec,

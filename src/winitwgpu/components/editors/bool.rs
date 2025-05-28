@@ -1,8 +1,9 @@
 #![allow(non_snake_case)]
 use crate::items_internal as items;
+use crate::prelude::items::Tap;
 use crate::winitwgpu::pipeline::graphics::graphic::Graphic;
 use crate::{
-    prelude::{LayoutItem, ParentHints, RectExt, Resizable, ResizableItem, Tap, UISignalExt},
+    prelude::{LayoutItem, ParentHints, RectExt, Resizable, ResizableItem, UISignalExt},
     state::animation::spring::Spring,
     winitwgpu::render_target::Render,
 };

@@ -2,16 +2,16 @@ use {
     super::{graphic::Graphic, RenderGraphic, RenderGraphicDescriptor},
     crate::{
         app::primitives::PrimitiveDescriptor,
-        state::process::{FutureProcessor, SignalProcessor},
+        prelude::items::{Drag, Hover, Tap},
+        state::{
+            process::{FutureProcessor, SignalProcessor},
+            Effect,
+        },
         winitwgpu::pipeline::text::Text,
     },
     std::future::Future,
 };
 use {crate::winitwgpu::render_target::RenderInternal, futures_signals::signal::Signal, vek::Rect};
-
-pub mod hover;
-pub mod tap;
-pub mod window_drag;
 
 //MARK: Graphics
 
@@ -300,6 +300,53 @@ where
             item.write_quads(quad_buffer)
         }
     }
+
+    fn get_quad_count(&self) -> usize {
+        Self::QUAD_COUNT
+    }
+}
+
+//MARK: Primitives
+
+macro_rules! impl_render_graphic {
+    ($name:ident) => {
+        impl RenderGraphicDescriptor for $name {
+            const QUAD_COUNT: usize = 0;
+
+            fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
+                None // Some(self.area))
+            }
+        }
+
+        impl RenderGraphic for $name {
+            fn write_quads(&self, _quad_buffer: &mut [Graphic]) {
+                /* Maybe push something here in Debug mode? */
+            }
+
+            fn get_quad_count(&self) -> usize {
+                Self::QUAD_COUNT
+            }
+        }
+    };
+}
+
+impl_render_graphic!(Hover);
+impl_render_graphic!(Drag);
+
+impl<A> RenderGraphicDescriptor for Tap<A>
+where
+    A: Effect,
+{
+    const QUAD_COUNT: usize = 0;
+    fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
+        None
+    }
+}
+impl<A> RenderGraphic for Tap<A>
+where
+    A: Effect,
+{
+    fn write_quads(&self, _quad_buffer: &mut [Graphic]) {}
 
     fn get_quad_count(&self) -> usize {
         Self::QUAD_COUNT

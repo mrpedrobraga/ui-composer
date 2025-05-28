@@ -1,5 +1,5 @@
 use {
-    super::primitives::{Primitive, Event},
+    super::{input::Event, primitives::Primitive},
     crate::state::signal_ext::coalesce_polls,
     std::{
         pin::Pin,

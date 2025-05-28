@@ -1,19 +1,28 @@
 #![allow(non_snake_case)]
 
-use ui_composer::app::UIComposer;
-use ui_composer::components::{Center, Column, Row};
-use ui_composer::geometry::RectExt;
-use ui_composer::items;
-use ui_composer::prelude::animation::spring::*;
-use ui_composer::state::process::{UIFutureExt, UISignalExt};
-use ui_composer::state::{Mutable, SignalExt};
-use ui_composer::ui::input::{Hover, Tap};
-use ui_composer::ui::layout::{LayoutItem, Resizable, ResizableItem};
-use ui_composer::winitwgpu::pipeline::graphics::graphic::Graphic;
-use ui_composer::winitwgpu::pipeline::text::Text;
-use ui_composer::winitwgpu::render_target::Render;
-use ui_composer::winitwgpu::window::Window;
-use vek::{Extent2, Lerp, Rect, Rgb, Vec2, Vec4};
+use {
+    ui_composer::{
+        app::{
+            input::items::{Hover, Tap},
+            UIComposer,
+        },
+        components::{Center, Column, Row},
+        geometry::RectExt,
+        items,
+        prelude::animation::spring::*,
+        state::{
+            process::{UIFutureExt, UISignalExt},
+            Mutable, SignalExt,
+        },
+        ui::layout::{LayoutItem, Resizable, ResizableItem},
+        winitwgpu::{
+            pipeline::{graphics::graphic::Graphic, text::Text},
+            render_target::Render,
+            window::Window,
+        },
+    },
+    vek::{Extent2, Lerp, Rect, Rgb, Vec2, Vec4},
+};
 
 fn main() {
     let app = Center(Column(
@@ -32,10 +41,7 @@ fn main() {
     UIComposer::run(window)
 }
 
-fn SmoothSquare(
-    name: &'static str,
-    color: Rgb<f32>,
-) -> impl LayoutItem<Content = impl Render> {
+fn SmoothSquare(name: &'static str, color: Rgb<f32>) -> impl LayoutItem<Content = impl Render> {
     let is_hovered_state = Mutable::new(false);
     let mouse_position_state = Mutable::new(None);
     let tap_state = Mutable::new(None);

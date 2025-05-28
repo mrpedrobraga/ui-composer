@@ -1,8 +1,12 @@
 use {
     super::{RenderText, Text},
     crate::{
-        app::primitives::{Event, Primitive},
-        state::process::{FutureProcessor, SignalProcessor},
+        app::{input::Event, primitives::Primitive},
+        prelude::items::{Drag, Hover, Tap},
+        state::{
+            process::{FutureProcessor, SignalProcessor},
+            Effect,
+        },
         winitwgpu::{pipeline::graphics::graphic::Graphic, render_target::RenderInternal},
     },
     futures_signals::signal::Signal,
@@ -13,10 +17,6 @@ use {
         task::{Context, Poll},
     },
 };
-
-pub mod hover;
-pub mod tap;
-pub mod window_drag;
 
 //MARK: Text
 
@@ -131,5 +131,36 @@ where
         if let Some(item) = &self.signal.held_item {
             item.push_text(buffer, bounds, container)
         }
+    }
+}
+
+// MARK: Primitives
+
+macro_rules! impl_render_text {
+    ($name:ident) => {
+        impl RenderText for $name {
+            fn push_text<'a>(
+                &self,
+                _buffer: &'a glyphon::Buffer,
+                _bounds: glyphon::TextBounds,
+                _container: &mut Vec<glyphon::TextArea<'a>>,
+            ) {
+                // Nothing here!
+            }
+        }
+    };
+}
+
+impl_render_text!(Hover);
+impl_render_text!(Drag);
+
+impl<A: Effect + Send + Sync> RenderText for Tap<A> {
+    fn push_text<'a>(
+        &self,
+        _buffer: &'a glyphon::Buffer,
+        _bounds: glyphon::TextBounds,
+        _container: &mut Vec<glyphon::TextArea<'a>>,
+    ) {
+        // Nothing here!
     }
 }

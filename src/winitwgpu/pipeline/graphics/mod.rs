@@ -14,6 +14,8 @@ use {
 };
 
 pub mod graphic;
+
+#[doc(hidden)]
 pub mod implementations;
 
 pub trait RenderGraphicDescriptor: RenderGraphic {
