@@ -22,7 +22,7 @@ impl<A> LayoutItem for CenterContainer<A>
 where
     A: LayoutItem,
 {
-    type UIItem = A::UIItem;
+    type Content = A::Content;
 
     fn get_natural_size(&self) -> Extent2<f32> {
         self.item.get_natural_size()
@@ -32,7 +32,7 @@ where
         self.item.get_minimum_size()
     }
 
-    fn lay(&mut self, layout_hints: ParentHints) -> Self::UIItem {
+    fn lay(&mut self, layout_hints: ParentHints) -> Self::Content {
         let my_rect = layout_hints.rect;
 
         let item_size = self.item.get_natural_size();

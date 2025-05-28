@@ -2,21 +2,24 @@
 use ui_composer::{
     items,
     prelude::*,
-    winitwgpu::pipeline::{graphics::graphic::Graphic, text::Text},
+    winitwgpu::{
+        pipeline::{graphics::graphic::Graphic, text::Text},
+        render_target::Render,
+    },
 };
 
 fn main() {
     UIComposer::run(Window(App()));
 }
 
-fn App() -> impl LayoutItem {
+fn App() -> impl LayoutItem<Content = impl Render> {
     Center(Row(
         Square(Rgb::new(0.6, 0.7, 0.8)),
         Square(Rgb::new(0.7, 0.8, 0.6)),
     ))
 }
 
-fn Square(color: Rgb<f32>) -> impl LayoutItem {
+fn Square(color: Rgb<f32>) -> impl LayoutItem<Content = impl Render> {
     ResizableItem::new(move |parent| {
         items!(
             Graphic::new(parent.rect, color),

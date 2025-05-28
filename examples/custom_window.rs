@@ -3,6 +3,7 @@
 use ui_composer::items;
 use ui_composer::prelude::*;
 use ui_composer::winitwgpu::pipeline::graphics::graphic::Graphic;
+use ui_composer::winitwgpu::render_target::Render;
 
 fn main() {
     let window = Window(App())
@@ -12,7 +13,7 @@ fn main() {
     UIComposer::run(window);
 }
 
-fn App() -> impl LayoutItem {
+fn App() -> impl LayoutItem<Content = impl Render> {
     let mut drag_bar = Drag();
 
     ResizableItem::new(move |parent| {
@@ -23,7 +24,7 @@ fn App() -> impl LayoutItem {
     })
 }
 
-fn Drag() -> impl LayoutItem {
+fn Drag() -> impl LayoutItem<Content = impl Render> {
     let s1 = Mutable::new(false);
     let s2 = Mutable::new(false);
 

@@ -4,7 +4,7 @@ use crate::winitwgpu::pipeline::graphics::graphic::Graphic;
 use crate::{
     prelude::{LayoutItem, ParentHints, RectExt, Resizable, ResizableItem, Tap, UISignalExt},
     state::animation::spring::Spring,
-    winitwgpu::render_target::RenderDescriptor,
+    winitwgpu::render_target::Render,
 };
 use futures_signals::signal::{Mutable, SignalExt};
 use vek::{Extent2, Lerp, Rect, Rgb, Vec4};
@@ -14,12 +14,12 @@ pub trait BoolEditGraphics {
         rect: Rect<f32, f32>,
         anim_factor: f32,
         parent_hints: ParentHints,
-    ) -> impl RenderDescriptor;
+    ) -> impl Render;
 }
 
 /// A barebones switch which allows the user to toggle a `Mutable<bool>`.
 /// [SwitchGraphics] and a minimum size must be provided for anything to show up on screen!
-pub fn BoolEditBase<G>(state: Mutable<bool>) -> impl Resizable
+pub fn BoolEditBase<G>(state: Mutable<bool>) -> impl Resizable<Content = impl Render>
 where
     G: BoolEditGraphics,
 {
@@ -47,12 +47,12 @@ pub struct AnimatedSwitch;
 /// A simple switch that edits a `bool` state.
 ///
 /// The user can press it to toggle the underlying boolean.
-pub fn Switch(state: Mutable<bool>) -> impl LayoutItem {
+pub fn Switch(state: Mutable<bool>) -> impl LayoutItem<Content = impl Render> {
     BoolEditBase::<AnimatedSwitch>(state).with_minimum_size(Extent2::new(32.0, 20.0))
 }
 
 /// Same as [Switch]
-pub fn VerticalSwitch(state: Mutable<bool>) -> impl LayoutItem {
+pub fn VerticalSwitch(state: Mutable<bool>) -> impl LayoutItem<Content = impl Render> {
     BoolEditBase::<AnimatedSwitch>(state).with_minimum_size(Extent2::new(20.0, 32.0))
 }
 
@@ -61,7 +61,7 @@ impl BoolEditGraphics for AnimatedSwitch {
         rect: Rect<f32, f32>,
         anim_factor: f32,
         parent_hints: ParentHints,
-    ) -> impl RenderDescriptor {
+    ) -> impl Render {
         let bg_color = Rgb::new(58.0, 58.0, 58.0) / 255.0;
         let switch_color = Rgb::new(182.0, 182.0, 182.0) / 255.0;
         let bg_color_active = Rgb::new(183.0, 71.0, 71.0) / 255.0;

@@ -1,11 +1,11 @@
 #![allow(non_snake_case)]
 
-use serde::Deserialize;
 use ui_composer::prelude::*;
 use {
     futures_time::{future::FutureExt, time::Duration},
     ui_composer::winitwgpu::pipeline::graphics::graphic::Graphic,
 };
+use {serde::Deserialize, ui_composer::winitwgpu::render_target::Render};
 
 fn main() {
     UIComposer::run(
@@ -20,7 +20,7 @@ struct Person {
     age: i32,
 }
 
-fn PersonView(uri: &'static str) -> impl LayoutItem {
+fn PersonView(uri: &'static str) -> impl LayoutItem<Content = impl Render> {
     let person_state = Mutable::new(None);
 
     let person_fetch_process =

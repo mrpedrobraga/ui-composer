@@ -7,7 +7,7 @@ use {
         },
     },
     crate::{
-        app::node::{AppItem, UIEvent},
+        app::primitives::{Event, Primitive},
         winitwgpu::pipeline::{graphics::GraphicsPipelineBuffers, RendererBuffers, Renderers},
     },
     futures_signals::signal_vec::MutableVec,
@@ -15,13 +15,13 @@ use {
     wgpu::{RenderPass, Texture},
 };
 
-pub struct VecItem<A: AppItem> {
+pub struct VecItem<A: Primitive> {
     rect: Rect<f32, f32>,
     items: MutableVec<A>,
     render_buffers: Option<RendererBuffers>,
 }
 
-impl<A: AppItem + RenderGraphicDescriptor> VecItem<A> {
+impl<A: Primitive + RenderGraphicDescriptor> VecItem<A> {
     pub fn new(rect: Rect<f32, f32>, items: MutableVec<A>) -> Self {
         Self {
             rect,
@@ -46,14 +46,14 @@ impl<A: AppItem + RenderGraphicDescriptor> VecItem<A> {
     }
 }
 
-impl<A: RenderGraphicDescriptor + AppItem + Sync> RenderGraphicDescriptor for VecItem<A> {
+impl<A: RenderGraphicDescriptor + Primitive + Sync> RenderGraphicDescriptor for VecItem<A> {
     const QUAD_COUNT: usize = 0;
 
     fn get_render_rect(&self) -> Option<vek::Rect<f32, f32>> {
         Some(self.rect)
     }
 }
-impl<A: RenderGraphicDescriptor + AppItem + Sync> RenderGraphic for VecItem<A> {
+impl<A: RenderGraphicDescriptor + Primitive + Sync> RenderGraphic for VecItem<A> {
     fn write_quads(&self, _quad_buffer: &mut [Graphic]) {
         // TODO: Write no quads.
     }
@@ -62,8 +62,8 @@ impl<A: RenderGraphicDescriptor + AppItem + Sync> RenderGraphic for VecItem<A> {
         Self::QUAD_COUNT
     }
 }
-impl<A: RenderGraphicDescriptor + AppItem + Sync> AppItem for VecItem<A> {
-    fn handle_ui_event(&mut self, _event: UIEvent) -> bool {
+impl<A: RenderGraphicDescriptor + Primitive + Sync> Primitive for VecItem<A> {
+    fn handle_event(&mut self, _event: Event) -> bool {
         // Handle UI events for each item!
         false
     }
@@ -78,7 +78,7 @@ impl<A: RenderGraphicDescriptor + AppItem + Sync> AppItem for VecItem<A> {
 }
 
 #[allow(unused)]
-fn prepare<'pass, A: AppItem + RenderGraphicDescriptor + Sync>(
+fn prepare<'pass, A: Primitive + RenderGraphicDescriptor + Sync>(
     me: &mut VecItem<A>,
     gpu_resources: &'pass Resources,
     pipelines: &'pass Renderers,

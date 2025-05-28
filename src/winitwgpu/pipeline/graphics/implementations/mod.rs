@@ -1,13 +1,13 @@
 use {
     super::{graphic::Graphic, RenderGraphic, RenderGraphicDescriptor},
     crate::{
-        app::node::AppItemDescriptor,
+        app::primitives::PrimitiveDescriptor,
         state::process::{FutureProcessor, SignalProcessor},
         winitwgpu::pipeline::text::Text,
     },
     std::future::Future,
 };
-use {crate::winitwgpu::render_target::Render, futures_signals::signal::Signal, vek::Rect};
+use {crate::winitwgpu::render_target::RenderInternal, futures_signals::signal::Signal, vek::Rect};
 
 pub mod hover;
 pub mod tap;
@@ -246,7 +246,7 @@ pub const fn max(a: usize, b: usize) -> usize {
 impl<S, T> RenderGraphicDescriptor for SignalProcessor<S, T>
 where
     S: Signal<Item = T>,
-    T: Render + RenderGraphicDescriptor + Send,
+    T: RenderInternal + RenderGraphicDescriptor + Send,
 {
     const QUAD_COUNT: usize = T::QUAD_COUNT;
 
@@ -260,7 +260,7 @@ where
 impl<S, T> RenderGraphic for SignalProcessor<S, T>
 where
     S: Signal<Item = T>,
-    T: Render + RenderGraphicDescriptor + Send,
+    T: RenderInternal + RenderGraphicDescriptor + Send,
 {
     fn write_quads(&self, quad_buffer: &mut [Graphic]) {
         match &self.signal.held_item {
@@ -279,7 +279,7 @@ where
 impl<F, T> RenderGraphicDescriptor for FutureProcessor<F, T>
 where
     F: Future<Output = T>,
-    T: Render + RenderGraphicDescriptor,
+    T: RenderInternal + RenderGraphicDescriptor,
 {
     const QUAD_COUNT: usize = T::QUAD_COUNT;
 
@@ -293,7 +293,7 @@ where
 impl<F, T> RenderGraphic for FutureProcessor<F, T>
 where
     F: Future<Output = T>,
-    T: Render + RenderGraphicDescriptor + AppItemDescriptor,
+    T: RenderInternal + RenderGraphicDescriptor + PrimitiveDescriptor,
 {
     fn write_quads(&self, quad_buffer: &mut [Graphic]) {
         if let Some(item) = &self.signal.held_item {

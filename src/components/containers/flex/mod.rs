@@ -1,7 +1,7 @@
-use crate::app::node::AppItemDescriptor;
+use crate::app::primitives::PrimitiveDescriptor;
 use crate::prelude::flow::{CartesianFlowDirection, FlowDirection, WritingFlowDirection};
 use crate::prelude::{CoordinateSystemProvider, LayoutItem, ParentHints};
-use crate::winitwgpu::render_target::RenderDescriptor;
+use crate::winitwgpu::render_target::Render;
 use std::iter::{once, Once};
 use vek::{Extent2, Rect};
 
@@ -47,9 +47,9 @@ impl<TItems: FlexItems> FlexContainer<TItems> {
 impl<TItems> LayoutItem for FlexContainer<TItems>
 where
     TItems: FlexItems + Send,
-    TItems::UINodeType: AppItemDescriptor + RenderDescriptor,
+    TItems::UINodeType: PrimitiveDescriptor + Render,
 {
-    type UIItem = TItems::UINodeType;
+    type Content = TItems::UINodeType;
 
     fn get_natural_size(&self) -> Extent2<f32> {
         self.items.get_natural_size()
@@ -59,7 +59,7 @@ where
         self.items.get_minimum_size()
     }
 
-    fn lay(&mut self, parent_hints: ParentHints) -> Self::UIItem {
+    fn lay(&mut self, parent_hints: ParentHints) -> Self::Content {
         let flow_direction = self.flow_direction.as_cartesian(&parent_hints);
         let minima = self.items.minima(flow_direction).collect::<Vec<f32>>();
         let weights = self.items.weights().collect::<Vec<f32>>();
@@ -158,7 +158,7 @@ impl<A> FlexItems for FlexItem<A>
 where
     A: LayoutItem,
 {
-    type UINodeType = A::UIItem;
+    type UINodeType = A::Content;
     type WeightsType = Once<f32>;
     type MinimaType = Once<f32>;
 

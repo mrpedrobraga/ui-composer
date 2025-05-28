@@ -39,7 +39,7 @@ impl TextLayoutItem {
 }
 
 impl LayoutItem for TextLayoutItem {
-    type UIItem = Text;
+    type Content = Text;
 
     fn get_natural_size(&self) -> vek::Extent2<f32> {
         vek::Extent2::new(128.0, 48.0)
@@ -49,7 +49,7 @@ impl LayoutItem for TextLayoutItem {
         vek::Extent2::new(128.0, 48.0)
     }
 
-    fn lay(&mut self, parent_hints: ParentHints) -> Self::UIItem {
+    fn lay(&mut self, parent_hints: ParentHints) -> Self::Content {
         Text(
             parent_hints.rect.expand_from_center(-8.0, -8.0, -8.0, -8.0),
             self.text.clone(),

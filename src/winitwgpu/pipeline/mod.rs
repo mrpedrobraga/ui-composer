@@ -1,5 +1,5 @@
 use {
-    super::{backend::Resources, render_target::Render},
+    super::{backend::Resources, render_target::RenderInternal},
     crate::winitwgpu::pipeline::{
         graphics::{GraphicsPipelineBuffers, OrchestraRenderer},
         text::GlyphonTextRenderer,
@@ -21,7 +21,7 @@ pub trait GPURenderer {
         render_target_size: Extent2<f32>,
         texture: &Texture,
         render_pass: &mut RenderPass,
-        ui_tree: &mut dyn Render,
+        ui_tree: &mut dyn RenderInternal,
         render_buffers: &mut RendererBuffers,
     );
 }

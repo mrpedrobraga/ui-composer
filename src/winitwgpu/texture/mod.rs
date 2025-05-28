@@ -64,7 +64,7 @@ impl RenderTarget for ImageRenderTarget {
 
     fn draw(
         &mut self,
-        content: &mut (dyn super::render_target::Render),
+        content: &mut (dyn super::render_target::RenderInternal),
         gpu_resources: &mut Resources,
         pipelines: &mut Renderers,
         render_artifacts: &mut RendererBuffers,

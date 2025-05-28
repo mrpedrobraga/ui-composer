@@ -1,4 +1,4 @@
-use crate::app::node::{AppItem, AppItemDescriptor, UIEvent};
+use crate::app::primitives::{Event, Primitive, PrimitiveDescriptor};
 use futures_signals::signal::Signal;
 use pin_project::pin_project;
 use std::future::Future;
@@ -10,13 +10,13 @@ use std::{pin::Pin, task::Poll};
 pub struct SignalProcessor<S, T>
 where
     S: Signal<Item = T>,
-    T: AppItem + Send,
+    T: Primitive + Send,
 {
     #[pin]
     pub(crate) signal: HoldSignal<S, T>,
 }
 
-impl<S: Signal<Item = T> + Send, T: AppItem> Signal for SignalProcessor<S, T> {
+impl<S: Signal<Item = T> + Send, T: Primitive> Signal for SignalProcessor<S, T> {
     type Item = ();
 
     fn poll_change(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<Self::Item>> {
@@ -40,7 +40,7 @@ where
 impl<A, B> Signal for HoldSignal<A, B>
 where
     A: Signal<Item = B>,
-    B: AppItem,
+    B: Primitive,
 {
     type Item = ();
 
@@ -69,14 +69,14 @@ where
     }
 }
 
-impl<S: Send + Sync, T> AppItem for SignalProcessor<S, T>
+impl<S: Send + Sync, T> Primitive for SignalProcessor<S, T>
 where
     S: Signal<Item = T>,
-    T: AppItem + Send,
+    T: Primitive + Send,
 {
-    fn handle_ui_event(&mut self, event: UIEvent) -> bool {
+    fn handle_event(&mut self, event: Event) -> bool {
         match &mut self.signal.held_item {
-            Some(item) => item.handle_ui_event(event),
+            Some(item) => item.handle_event(event),
             None => false, //panic!("Reactor was asked to handle event without being polled first."),
         }
     }
@@ -91,7 +91,7 @@ pub trait UISignalExt: Signal {
     fn process(self) -> SignalProcessor<Self, Self::Item>
     where
         Self: Sized,
-        Self::Item: AppItemDescriptor + Send,
+        Self::Item: PrimitiveDescriptor + Send,
     {
         SignalProcessor {
             signal: HoldSignal {
@@ -109,13 +109,13 @@ impl<T> UISignalExt for T where T: Signal {}
 pub struct FutureProcessor<F, T>
 where
     F: Future<Output = T>,
-    T: AppItem,
+    T: Primitive,
 {
     #[pin]
     pub(crate) signal: HoldFuture<F, T>,
 }
 
-impl<F: Future<Output = T>, T: AppItem> Signal for FutureProcessor<F, T> {
+impl<F: Future<Output = T>, T: Primitive> Signal for FutureProcessor<F, T> {
     type Item = ();
 
     fn poll_change(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<Self::Item>> {
@@ -139,7 +139,7 @@ where
 impl<A, B> Signal for HoldFuture<A, B>
 where
     A: Future<Output = B>,
-    B: AppItem,
+    B: Primitive,
 {
     type Item = ();
 
@@ -165,14 +165,14 @@ where
     }
 }
 
-impl<F, T> AppItem for FutureProcessor<F, T>
+impl<F, T> Primitive for FutureProcessor<F, T>
 where
     F: Future<Output = T> + Send,
-    T: AppItem,
+    T: Primitive,
 {
-    fn handle_ui_event(&mut self, event: UIEvent) -> bool {
+    fn handle_event(&mut self, event: Event) -> bool {
         match &mut self.signal.held_item {
-            Some(item) => item.handle_ui_event(event),
+            Some(item) => item.handle_event(event),
             None => false, //panic!("Reactor was asked to handle event without being polled first."),
         }
     }
@@ -187,7 +187,7 @@ pub trait UIFutureExt: Future {
     fn process(self) -> FutureProcessor<Self, Self::Output>
     where
         Self: Sized,
-        Self::Output: AppItem,
+        Self::Output: Primitive,
     {
         FutureProcessor {
             signal: HoldFuture {

@@ -9,7 +9,7 @@ use {
         },
     },
     crate::{
-        app::node::{AppItem, AppItemDescriptor},
+        app::primitives::{Primitive, PrimitiveDescriptor},
         winitwgpu::pipeline::{RendererBuffers, Renderers},
     },
     vek::Extent2,
@@ -23,7 +23,7 @@ pub trait RenderTarget {
     /// Returns a reference to the render target's texture;
     fn draw(
         &mut self,
-        content: &mut dyn Render,
+        content: &mut dyn RenderInternal,
         gpu_resources: &mut Resources,
         pipelines: &mut Renderers,
         render_buffers: &mut RendererBuffers,
@@ -33,11 +33,11 @@ pub trait RenderTarget {
     fn get_texture_format(&self) -> TextureFormat;
 }
 
-pub trait Render: AppItem + RenderGraphic + RenderText {}
-impl<A> Render for A where A: AppItem + RenderGraphic + RenderText {}
+pub trait RenderInternal: Primitive + RenderGraphic + RenderText {}
+impl<A> RenderInternal for A where A: Primitive + RenderGraphic + RenderText {}
 
-pub trait RenderDescriptor:
-    Render + AppItemDescriptor + RenderGraphicDescriptor + RenderText
+pub trait Render:
+    RenderInternal + PrimitiveDescriptor + RenderGraphicDescriptor + RenderText
 {
 }
-impl<A> RenderDescriptor for A where A: Render + AppItemDescriptor + RenderGraphicDescriptor {}
+impl<A> Render for A where A: RenderInternal + PrimitiveDescriptor + RenderGraphicDescriptor {}

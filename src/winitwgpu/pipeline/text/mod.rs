@@ -2,7 +2,7 @@ use {
     super::{GPURenderer, RendererBuffers, Renderers},
     crate::winitwgpu::{
         backend::Resources,
-        render_target::{Render, RenderTarget},
+        render_target::{RenderInternal, RenderTarget},
     },
     glyphon::{
         Cache, FontSystem, Resolution, SwashCache, TextAtlas, TextBounds, TextRenderer, Viewport,
@@ -77,7 +77,7 @@ impl GPURenderer for GlyphonTextRenderer {
         render_target_size: Extent2<f32>,
         texture: &Texture,
         render_pass: &mut RenderPass,
-        ui_tree: &mut dyn Render,
+        ui_tree: &mut dyn RenderInternal,
         render_buffers: &mut RendererBuffers,
     ) {
         let this = &mut pipelines.text_renderer;

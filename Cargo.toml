@@ -7,17 +7,26 @@ version = "0.1.0"
 name = "ui_composer"
 # crate-type = ["dylib"]
 
-[features]
-default = ["serde", "default-desktop"]
+[features] #MARK: Features
+default = ["serde", "default-desktop", "tui"]
 
 debug = []
+serde = ["dep:serde"]
+
+#MARK: Desktop
+
 default-desktop = ["wgpu", "winit"]
 
-serde = ["dep:serde"]
 wgpu = ["dep:wgpu"]
 winit = ["dep:winit"]
 
+# MARK: Terminal
+
+default-terminal = ["tui"]
+tui = ["dep:crossterm"]
+
 [dependencies]
+async-std = "1.13.0"
 bytemuck = {version = "1.16.1", features = ["derive"]}
 cgmath = "0.18.0"
 cosmic-text = "0.12.1"
@@ -39,6 +48,10 @@ winit = {version = "0.30.7", optional = true}
 # WGPU
 wgpu = {version = "23", default-features = false, features = ["wgsl"], optional = true}
 
+# Crossterm
+crossterm = {version = "0.28.1", optional = true}
+ndarray = "0.16.1"
+
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]
 opt-level = 1
@@ -53,10 +66,13 @@ codegen-units = 1
 lto = true 
 opt-level = 's' 
 strip = true # Automatically strip symbols from the binary.
+
 [dev-dependencies]
-async-std = "1.13.0"
 chttp = "0.5.5"
+crossterm = "0.28.1"
 itertools = "0.13.0"
 serde_json = "1.0.134"
 toml = "0.8.15"
 vek = {version = "0.17.0", features = ["serde"]}
+wgpu = {version = "23", default-features = false, features = ["wgsl"]}
+winit = {version = "0.30.7"}

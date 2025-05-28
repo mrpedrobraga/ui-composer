@@ -30,7 +30,7 @@ where
     A: LayoutItem,
     B: LayoutItem,
 {
-    type UIItem = (A::UIItem, B::UIItem);
+    type Content = (A::Content, B::Content);
 
     fn get_natural_size(&self) -> Extent2<f32> {
         let a_size = self.item_a.get_natural_size();
@@ -46,7 +46,7 @@ where
         Extent2::new(a_size.w + self.gap + b_size.w, a_size.h.max(b_size.h))
     }
 
-    fn lay(&mut self, parent_hints: ParentHints) -> Self::UIItem {
+    fn lay(&mut self, parent_hints: ParentHints) -> Self::Content {
         let a_size = self.item_a.get_natural_size();
         let b_size = self.item_b.get_natural_size();
 

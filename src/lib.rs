@@ -13,5 +13,9 @@ pub mod winit;
 
 pub mod components;
 pub mod ui;
+
 #[cfg(all(feature = "winit", feature = "wgpu"))]
 pub mod winitwgpu;
+
+#[cfg(feature = "tui")]
+pub mod tui;

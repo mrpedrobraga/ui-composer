@@ -1,16 +1,16 @@
 use {
     super::{
-        backend::ReifiedNode,
+        backend::Node,
         pipeline::{graphics::RenderGraphicDescriptor, text::TextPipelineBuffers},
-        render_target::Render,
+        render_target::RenderInternal,
         texture::ImageRenderTarget,
     },
     crate::{
-        app::node::UIEvent,
+        app::primitives::Event,
         prelude::{flow::CartesianFlowDirection, *},
         winitwgpu::{
             self,
-            backend::{Node, Resources},
+            backend::{NodeDescriptor, Resources},
             pipeline::{graphics::GraphicsPipelineBuffers, RendererBuffers, Renderers},
             render_target::RenderTarget,
         },
@@ -20,7 +20,7 @@ use {
 };
 
 #[allow(non_snake_case)]
-pub fn Image<A>(rect: Rect<f32, f32>, mut item: A) -> ImageNodeDescriptor<A::UIItem>
+pub fn Image<A>(rect: Rect<f32, f32>, mut item: A) -> ImageNodeDescriptor<A::Content>
 where
     A: LayoutItem + 'static,
 {
@@ -44,9 +44,9 @@ where
     content: A,
 }
 
-impl<T> Node for ImageNodeDescriptor<T>
+impl<T> NodeDescriptor for ImageNodeDescriptor<T>
 where
-    T: Send + Render + RenderGraphicDescriptor + 'static,
+    T: Send + RenderInternal + RenderGraphicDescriptor + 'static,
 {
     type Reified = ImageNode;
 
@@ -74,13 +74,13 @@ where
 #[pin_project(project = ImageNodeProj)]
 pub struct ImageNode {
     #[pin]
-    content: Box<dyn Render>,
+    content: Box<dyn RenderInternal>,
     rect: Rect<f32, f32>,
     render_buffers: RendererBuffers,
     render_target: ImageRenderTarget,
 }
 
-impl ReifiedNode for ImageNode {
+impl Node for ImageNode {
     fn setup(&mut self, _gpu_resources: &Resources) {
         /* Do nothing */
     }
@@ -93,7 +93,7 @@ impl ReifiedNode for ImageNode {
         _event: WindowEvent,
     ) {
         self.render(gpu_resources, pipelines);
-        self.content.handle_ui_event(UIEvent::default());
+        self.content.handle_event(Event::default());
     }
 
     fn poll_processors(

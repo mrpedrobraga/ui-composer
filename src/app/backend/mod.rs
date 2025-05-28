@@ -9,10 +9,10 @@ pub trait Backend {
     type Event;
 
     /// The type of the Node tree this Backend executes.
-    type NodeTree;
+    type Tree;
 
     /// Blocking function that runs the application.
-    fn run(node_tree: Self::NodeTree);
+    fn run(node_tree: Self::Tree);
 
     /// Polls the `Futures` and `Signals` from the node tree.
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>>;

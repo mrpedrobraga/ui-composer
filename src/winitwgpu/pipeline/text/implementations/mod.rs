@@ -1,9 +1,9 @@
 use {
     super::{RenderText, Text},
     crate::{
-        app::node::{AppItem, UIEvent},
+        app::primitives::{Event, Primitive},
         state::process::{FutureProcessor, SignalProcessor},
-        winitwgpu::{pipeline::graphics::graphic::Graphic, render_target::Render},
+        winitwgpu::{pipeline::graphics::graphic::Graphic, render_target::RenderInternal},
     },
     futures_signals::signal::Signal,
     glyphon::{Color, TextArea, TextBounds},
@@ -41,8 +41,8 @@ impl RenderText for Text {
     }
 }
 
-impl AppItem for Text {
-    fn handle_ui_event(&mut self, _event: UIEvent) -> bool {
+impl Primitive for Text {
+    fn handle_event(&mut self, _event: Event) -> bool {
         false
     }
 
@@ -100,7 +100,7 @@ where
 impl<S, T> RenderText for SignalProcessor<S, T>
 where
     S: Signal<Item = T>,
-    T: Render + Send,
+    T: RenderInternal + Send,
 {
     fn push_text<'a>(
         &self,
@@ -120,7 +120,7 @@ where
 impl<F, T> RenderText for FutureProcessor<F, T>
 where
     F: Future<Output = T>,
-    T: Render,
+    T: RenderInternal,
 {
     fn push_text<'a>(
         &self,

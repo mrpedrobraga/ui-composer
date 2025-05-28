@@ -4,7 +4,7 @@
 
 use {
     super::{GPURenderer, RendererBuffers, Renderers},
-    crate::winitwgpu::{backend::Resources, render_target::Render},
+    crate::winitwgpu::{backend::Resources, render_target::RenderInternal},
     vek::Extent2,
     wgpu::{RenderPass, Texture},
 };
@@ -24,7 +24,7 @@ impl GPURenderer for IrisRenderer {
         render_target_size: Extent2<f32>,
         texture: &Texture,
         render_pass: &mut RenderPass,
-        ui_tree: &mut dyn Render,
+        ui_tree: &mut dyn RenderInternal,
         render_buffers: &mut RendererBuffers,
     ) {
     }

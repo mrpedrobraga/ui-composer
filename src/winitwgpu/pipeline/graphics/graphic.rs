@@ -1,4 +1,4 @@
-use crate::app::node::{AppItem, UIEvent};
+use crate::app::primitives::{Event, Primitive};
 use bytemuck::{Pod, Zeroable};
 use std::{
     pin::Pin,
@@ -68,8 +68,8 @@ where
     }
 }
 
-impl AppItem for Graphic {
-    fn handle_ui_event(&mut self, _event: UIEvent) -> bool {
+impl Primitive for Graphic {
+    fn handle_event(&mut self, _event: Event) -> bool {
         false
     }
 

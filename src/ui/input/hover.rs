@@ -1,6 +1,6 @@
 #![allow(unused)]
 use super::InputItem;
-use crate::app::node::{AppItem, UIEvent};
+use crate::app::primitives::{Primitive, Event};
 use futures_signals::signal::Mutable;
 use std::{
     pin::Pin,
@@ -25,8 +25,8 @@ impl Hover {
 
 impl InputItem for Hover {}
 
-impl AppItem for Hover {
-    fn handle_ui_event(&mut self, _event: UIEvent) -> bool {
+impl Primitive for Hover {
+    fn handle_event(&mut self, _event: Event) -> bool {
         // match event {
         //     UIEvent::CursorMoved {
         //         device_id: _,

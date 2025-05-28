@@ -5,13 +5,14 @@ use vek::Rgb;
 use crate::{
     items_internal as items,
     prelude::{Effect, LayoutItem, ParentHints, Resizable, ResizableItem, Tap},
-    winitwgpu::pipeline::graphics::graphic::Graphic,
+    winitwgpu::{pipeline::graphics::graphic::Graphic, render_target::Render},
 };
 
 /// A simple button which you can click!
-pub fn Button<L, Fx>(mut label: L, effect: Fx) -> impl LayoutItem
+pub fn Button<L, Fx>(mut label: L, effect: Fx) -> impl LayoutItem<Content = impl Render>
 where
     L: LayoutItem + 'static,
+    L::Content: Render,
     Fx: Effect + Clone + Send + Sync,
 {
     let minimum_size = label.get_minimum_size();

@@ -1,6 +1,6 @@
 #![allow(unused)]
 use super::InputItem;
-use crate::app::node::{AppItem, UIEvent};
+use crate::app::primitives::{Primitive, Event};
 use crate::prelude::Effect;
 use crate::state::Mutable;
 use std::{
@@ -35,11 +35,11 @@ where
 
 impl<A> InputItem for Tap<A> where A: Effect + Send {}
 
-impl<A> AppItem for Tap<A>
+impl<A> Primitive for Tap<A>
 where
     A: Effect + Send + Sync,
 {
-    fn handle_ui_event(&mut self, _event: UIEvent) -> bool {
+    fn handle_event(&mut self, _event: Event) -> bool {
         // match event {
         //     UIEvent::CursorMoved {
         //         device_id: _,

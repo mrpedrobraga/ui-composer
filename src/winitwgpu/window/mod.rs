@@ -1,15 +1,15 @@
 use {
     super::{
-        backend::{Node, ReifiedNode, Resources},
+        backend::{Node, NodeDescriptor, Resources},
         pipeline::{
             graphics::{OrchestraRenderer, RenderGraphicDescriptor},
             text::{GlyphonTextRenderer, TextPipelineBuffers},
             GPURenderer,
         },
-        render_target::{Render, RenderDescriptor, RenderTarget},
+        render_target::{RenderInternal, Render, RenderTarget},
     },
     crate::{
-        app::node::{AppItemDescriptor, UIEvent},
+        app::primitives::{Event, PrimitiveDescriptor},
         prelude::{flow::CartesianFlowDirection, LayoutItem},
         state::{
             process::{SignalProcessor, UISignalExt},
@@ -80,12 +80,12 @@ impl<A> WindowNodeDescriptor<A> {
 
 /// Describes a new window with its contents and its own state.
 #[allow(non_snake_case)]
-pub fn Window<T>(
-    mut item: T,
-) -> WindowNodeDescriptor<SignalProcessor<impl Signal<Item = T::UIItem>, T::UIItem>>
+pub fn Window<A>(
+    mut item: A,
+) -> WindowNodeDescriptor<SignalProcessor<impl Signal<Item = A::Content>, A::Content>>
 where
-    T: LayoutItem + Send + Sync,
-    T::UIItem: RenderDescriptor,
+    A: LayoutItem + Send + Sync,
+    A::Content: Render,
 {
     let minimum_size = item.get_natural_size();
 
@@ -122,9 +122,9 @@ where
     }
 }
 
-impl<A> Node for WindowNodeDescriptor<A>
+impl<A> NodeDescriptor for WindowNodeDescriptor<A>
 where
-    A: AppItemDescriptor + Render + RenderGraphicDescriptor + 'static,
+    A: PrimitiveDescriptor + RenderInternal + RenderGraphicDescriptor + 'static,
 {
     type Reified = WindowNode;
 
@@ -203,12 +203,12 @@ pub struct WindowNode {
     #[pin]
     state: WindowNodeState,
     window: Arc<Window>,
-    content: Box<dyn Render>,
+    content: Box<dyn RenderInternal>,
     render_buffers: RendererBuffers,
     render_target: WindowRenderTarget,
 }
 
-impl ReifiedNode for WindowNode {
+impl Node for WindowNode {
     fn setup(&mut self, _gpu_resources: &Resources) {}
 
     fn handle_window_event(
@@ -245,7 +245,7 @@ impl ReifiedNode for WindowNode {
             }
         }
 
-        self.content.handle_ui_event(UIEvent::default());
+        self.content.handle_event(Event::default());
     }
 
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
@@ -314,7 +314,7 @@ impl RenderTarget for WindowRenderTarget {
 
     fn draw(
         &mut self,
-        content: &mut dyn Render,
+        content: &mut dyn RenderInternal,
         gpu_resources: &mut Resources,
         pipelines: &mut Renderers,
         render_buffers: &mut RendererBuffers,

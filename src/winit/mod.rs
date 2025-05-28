@@ -3,7 +3,7 @@
 use {
     crate::{
         app::backend::Backend,
-        winitwgpu::backend::{BackendProcessExecutor, Node, WinitWGPUBackend},
+        winitwgpu::backend::{BackendProcessExecutor, NodeDescriptor, WinitWGPUBackend},
     },
     futures_signals::signal::SignalFuture,
     std::sync::{Arc, Mutex},
@@ -12,7 +12,7 @@ use {
 
 /// A Backend that interacts with [`winit`]
 pub trait WinitBackend: Backend + Send {
-    type NodeTreeDescriptorType: Node + 'static;
+    type NodeTreeDescriptorType: NodeDescriptor + 'static;
 
     #[allow(async_fn_in_trait)]
     async fn create(

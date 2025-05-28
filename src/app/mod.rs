@@ -19,7 +19,8 @@
 use backend::Backend;
 
 pub mod backend;
-pub mod node;
+pub mod implementations;
+pub mod primitives;
 
 /// App builder, receives a layout item with the entirety of your app.
 pub struct UIComposer;
@@ -28,7 +29,7 @@ impl UIComposer {
     /// Creates and runs a new app in a given backend.
     /// For cross-platform compatibility, this should be called in the main thread,
     /// and only once in your program.
-    pub fn run_custom<CustomBackend: Backend>(node_tree_descriptor: CustomBackend::NodeTree) {
+    pub fn run_custom<CustomBackend: Backend>(node_tree_descriptor: CustomBackend::Tree) {
         CustomBackend::run(node_tree_descriptor);
     }
 }
@@ -37,7 +38,7 @@ impl UIComposer {
 mod winitwgpu {
     use {
         super::{backend::Backend as _, UIComposer},
-        crate::winitwgpu::backend::{Node, WinitWGPUBackend},
+        crate::winitwgpu::backend::{NodeDescriptor, WinitWGPUBackend},
     };
 
     /// The default backend this crate runs.
@@ -48,7 +49,7 @@ mod winitwgpu {
         /// Creates and runs a new app in the default backend for the selected target.
         /// For cross-platform compatibility, this should be called in the main thread,
         /// and only once in your program.
-        pub fn run<N: Node + 'static>(node_tree_descriptor: N) {
+        pub fn run<N: NodeDescriptor + 'static>(node_tree_descriptor: N) {
             DefaultBackend::run(node_tree_descriptor);
         }
     }

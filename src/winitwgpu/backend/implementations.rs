@@ -1,10 +1,10 @@
 use {
-    super::{Node, ReifiedNode},
-    crate::app::node::UIEvent,
+    super::{NodeDescriptor, Node},
+    crate::app::primitives::Event,
 };
 use {std::task::Poll, winit::event::WindowEvent};
 
-impl Node for () {
+impl NodeDescriptor for () {
     type Reified = ();
 
     fn reify(
@@ -16,7 +16,7 @@ impl Node for () {
     }
 }
 
-impl ReifiedNode for () {
+impl Node for () {
     fn setup(&mut self, _gpu_resources: &super::Resources) {}
 
     fn handle_window_event(

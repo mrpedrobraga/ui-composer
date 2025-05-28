@@ -11,7 +11,7 @@ use ui_composer::ui::input::{Hover, Tap};
 use ui_composer::ui::layout::{LayoutItem, Resizable, ResizableItem};
 use ui_composer::winitwgpu::pipeline::graphics::graphic::Graphic;
 use ui_composer::winitwgpu::pipeline::text::Text;
-use ui_composer::winitwgpu::render_target::RenderDescriptor;
+use ui_composer::winitwgpu::render_target::Render;
 use ui_composer::winitwgpu::window::Window;
 use vek::{Extent2, Lerp, Rect, Rgb, Vec2, Vec4};
 
@@ -32,7 +32,10 @@ fn main() {
     UIComposer::run(window)
 }
 
-fn SmoothSquare(name: &'static str, color: Rgb<f32>) -> impl LayoutItem {
+fn SmoothSquare(
+    name: &'static str,
+    color: Rgb<f32>,
+) -> impl LayoutItem<Content = impl Render> {
     let is_hovered_state = Mutable::new(false);
     let mouse_position_state = Mutable::new(None);
     let tap_state = Mutable::new(None);
@@ -80,7 +83,7 @@ fn hover_square(
     is_hovered_state: Mutable<bool>,
     mouse_position_state: Mutable<Option<Vec2<f32>>>,
     tap_state: Mutable<Option<()>>,
-) -> impl RenderDescriptor {
+) -> impl Render {
     let hover_rect = original_rect.expanded_to_contain_point(Vec2::new(
         original_rect.x,
         original_rect.y - animation_factor,

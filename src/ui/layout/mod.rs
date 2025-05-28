@@ -1,10 +1,9 @@
 pub use flow::CoordinateSystemProvider;
 use {
     crate::{
-        app::node::{AppItem, AppItemDescriptor},
+        app::primitives::{Primitive, PrimitiveDescriptor},
         prelude::flow::CartesianFlowDirection,
         state::process::{SignalProcessor, UISignalExt},
-        winitwgpu::render_target::RenderDescriptor,
     },
     futures_signals::signal::{Signal, SignalExt},
     vek::{Extent2, Mat3, Rect, Vec2},
@@ -54,7 +53,7 @@ pub struct ChildHints {
 
 /// An item that can be included in a laying out context.
 pub trait LayoutItem: Send {
-    type UIItem: AppItemDescriptor + RenderDescriptor;
+    type Content: PrimitiveDescriptor;
 
     /// The size this component prefers to be at. It's usually its minimum size.
     fn get_natural_size(&self) -> Extent2<f32>;
@@ -63,18 +62,18 @@ pub trait LayoutItem: Send {
     fn get_minimum_size(&self) -> Extent2<f32>;
 
     /// Renders the content of this layout item with a specific rect.
-    fn lay(&mut self, parent_hints: ParentHints) -> Self::UIItem;
+    fn lay(&mut self, parent_hints: ParentHints) -> Self::Content;
 
     /// Creates a reactive node that re-bakes the layout item to fit a container that can change shape.
     fn lay_reactive<S>(
         mut self,
         size_signal: S,
         parent_hints: ParentHints,
-    ) -> SignalProcessor<impl Signal<Item = Self::UIItem>, Self::UIItem>
+    ) -> SignalProcessor<impl Signal<Item = Self::Content>, Self::Content>
     where
         S: Signal<Item = Extent2<f32>> + Send,
         Self: Sized + Send,
-        <Self as LayoutItem>::UIItem: AppItem,
+        <Self as LayoutItem>::Content: Primitive,
     {
         size_signal
             .map(move |new_size| {
@@ -102,7 +101,7 @@ pub trait Resizable: LayoutItem {
 impl<F, T> ResizableItem<F, T>
 where
     F: FnMut(ParentHints) -> T + Send,
-    T: AppItem,
+    T: Primitive,
 {
     /// Creates a new resizable [`LayoutItem`] that redraws using this factory function.
     pub fn new(factory: F) -> Self {
@@ -116,7 +115,7 @@ where
 impl<F, T> Resizable for ResizableItem<F, T>
 where
     F: FnMut(ParentHints) -> T + Send,
-    T: AppItemDescriptor + RenderDescriptor,
+    T: PrimitiveDescriptor,
 {
     /// Consumes this [`ResizableItem`] and returns a similar one with the minimum size set.
     fn with_minimum_size(self, min_size: Extent2<f32>) -> Self {
@@ -130,9 +129,9 @@ where
 impl<F: Send, T> LayoutItem for ResizableItem<F, T>
 where
     F: FnMut(ParentHints) -> T,
-    T: AppItemDescriptor + RenderDescriptor,
+    T: PrimitiveDescriptor,
 {
-    type UIItem = T;
+    type Content = T;
 
     fn get_natural_size(&self) -> Extent2<f32> {
         self.get_minimum_size()
@@ -142,13 +141,13 @@ where
         self.hints.min_size
     }
 
-    fn lay(&mut self, layout_hints: ParentHints) -> Self::UIItem {
+    fn lay(&mut self, layout_hints: ParentHints) -> Self::Content {
         (self.factory)(layout_hints)
     }
 }
 
 impl LayoutItem for () {
-    type UIItem = ();
+    type Content = ();
 
     fn get_natural_size(&self) -> Extent2<f32> {
         self.get_minimum_size()
@@ -158,5 +157,5 @@ impl LayoutItem for () {
         Extent2::new(0.0, 0.0)
     }
 
-    fn lay(&mut self, _layout_hints: ParentHints) -> Self::UIItem {}
+    fn lay(&mut self, _layout_hints: ParentHints) -> Self::Content {}
 }

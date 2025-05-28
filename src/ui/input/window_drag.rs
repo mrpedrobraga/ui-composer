@@ -1,7 +1,7 @@
 #![allow(unused)]
 use {
     super::InputItem,
-    crate::app::node::{AppItem, UIEvent},
+    crate::app::primitives::{Primitive, Event},
     futures_signals::signal::Mutable,
     std::{
         pin::Pin,
@@ -33,8 +33,8 @@ impl Drag {
 
 impl InputItem for Drag {}
 
-impl AppItem for Drag {
-    fn handle_ui_event(&mut self, _event: UIEvent) -> bool {
+impl Primitive for Drag {
+    fn handle_event(&mut self, _event: Event) -> bool {
         // match event {
         //     UIEvent::CursorMoved {
         //         device_id: _,
