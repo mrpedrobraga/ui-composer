@@ -1,10 +1,9 @@
 #![allow(unused, non_snake_case)]
 
 use ui_composer::prelude::*;
-use ui_composer::winitwgpu::render_target::Render;
-use ui_composer::Flex;
+use ui_composer::wgpu::render_target::Render;
 
-use ui_composer::winitwgpu::components::Switch;
+use ui_composer::wgpu::components::Switch;
 
 fn main() {
     UIComposer::run(Window(App()).with_title("Click the Switch!".into()))

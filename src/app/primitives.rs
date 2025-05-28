@@ -6,10 +6,12 @@ use {
     },
 };
 
-pub trait Primitive: Send {
+pub trait Primitive: PollProcessors + Send {
     /// Handles an Event (or not). Returns whether the event was handled.
     fn handle_event(&mut self, event: Event) -> bool;
+}
 
+pub trait PollProcessors {
     /// Polls this node's processors: `Future`s and `Signal`s.
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>>;
 }

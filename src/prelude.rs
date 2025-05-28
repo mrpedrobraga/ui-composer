@@ -29,7 +29,7 @@ pub use crate::app::{
 
 // MARK: Geometry and Layouting
 pub use crate::geometry::*;
-pub use crate::ui::layout::*;
+pub use crate::layout::*;
 
 pub use crate::components::*;
 pub use crate::state::process::{UIFutureExt, UISignalExt};
@@ -50,6 +50,7 @@ macro_rules! items {
 }
 
 #[macro_export]
+#[allow(non_snake_case)]
 macro_rules! Flex {
     ($( $weight:expr => $item:expr ),* $(,)?) => {
         ::ui_composer::prelude::Flex(
@@ -61,12 +62,13 @@ macro_rules! Flex {
 }
 
 #[macro_export]
-macro_rules! Component {
-    (tui) => {
-        impl ::ui_composer::ui::layout::LayoutItem<Content = impl ::ui_composer::tui::pipeline::Render>
+#[allow(non_snake_case)]
+macro_rules! UI {
+    (terminal) => {
+        impl ::ui_composer::layout::LayoutItem<Content = impl ::ui_composer::tui::pipeline::Render>
     };
 
     () => {
-        impl ::ui_composer::ui::layout::LayoutItem<Content = impl ::ui_composer::winitwgpu::render_target::Render>
+        impl ::ui_composer::layout::LayoutItem<Content = impl ::ui_composer::wgpu::render_target::Render>
     };
 }

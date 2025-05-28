@@ -1,7 +1,7 @@
 use crate::app::primitives::PrimitiveDescriptor;
 use crate::prelude::flow::{CartesianFlowDirection, FlowDirection, WritingFlowDirection};
 use crate::prelude::{CoordinateSystemProvider, LayoutItem, ParentHints};
-use crate::winitwgpu::render_target::Render;
+use crate::wgpu::render_target::Render;
 use std::iter::{once, Once};
 use vek::{Extent2, Rect};
 

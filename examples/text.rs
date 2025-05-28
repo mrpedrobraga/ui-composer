@@ -1,12 +1,7 @@
 #![allow(non_snake_case)]
-use ui_composer::{
-    items,
-    prelude::*,
-    winitwgpu::{
-        pipeline::{graphics::graphic::Graphic, text::Text},
-        render_target::Render,
-    },
-};
+use ui_composer::wgpu::pipeline::{graphics::graphic::Graphic, text::Text};
+use ui_composer::wgpu::render_target::Render;
+use ui_composer::{items, prelude::*};
 
 fn main() {
     UIComposer::run(Window(App()));

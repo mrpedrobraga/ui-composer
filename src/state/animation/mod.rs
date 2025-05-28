@@ -35,6 +35,19 @@ pub trait RealTimeStream {
         }
     }
 
+    /// Chains [self] with an additional linear interpolation of the value.
+    fn lerp_to(
+        self,
+        target_value: Self::Item,
+        duration: Duration,
+    ) -> Chain<Self, LinearInterpolateStream<Self::Item>>
+    where
+        Self: Sized,
+        Self::Item: Vector,
+    {
+        self.chain(LinearInterpolateStream::new(target_value, duration))
+    }
+
     /// Returns a new stream that applies a modification on the value.
     fn for_each<F>(self, f: F) -> ForEach<Self, F>
     where
@@ -44,6 +57,8 @@ pub trait RealTimeStream {
         ForEach { inner: self, f }
     }
 
+    /// Consumes this [RealTimeStream] and produces a future that completes
+    /// when the animation is finished.
     fn animate_from<F>(mut self, mut f: F, initial_value: Self::Item) -> impl Future<Output = ()>
     where
         Self::Item: Copy,
@@ -73,6 +88,8 @@ pub trait RealTimeStream {
         }
     }
 
+    /// Equivalent to [std::iter::Iterator::collect], it consumes the animation
+    /// to animate a value through a slot.
     fn animate_value<S>(self, state: S) -> impl Future<Output = ()>
     where
         Self::Item: Copy,
@@ -83,6 +100,7 @@ pub trait RealTimeStream {
         self.animate_from(move |frame| state.put(frame), initial_value)
     }
 
+    /// Same as [Self::animate_value] but animates with a slot reference...
     fn animate_ref<S>(self, state: &S) -> impl Future<Output = ()>
     where
         Self::Item: Copy,
@@ -184,6 +202,22 @@ where
         }
 
         poll
+    }
+}
+
+pub struct InitialValue<TItem>(pub TItem);
+impl<TItem> RealTimeStream for InitialValue<TItem> {
+    type Item = TItem;
+
+    fn process_tick(
+        &mut self,
+        _initial_value: Self::Item,
+        _frame_params: AnimationFrameParams,
+    ) -> Poll<Self::Item>
+    where
+        Self::Item: Copy,
+    {
+        Poll::Finished(self.0)
     }
 }
 

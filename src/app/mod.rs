@@ -36,15 +36,17 @@ impl UIComposer {
 }
 
 #[cfg(all(feature = "winit", feature = "wgpu"))]
-mod winitwgpu {
+mod winit_wgpu {
+    use crate::wgpu::backend::WGPUBackend;
     use {
         super::{backend::Backend as _, UIComposer},
-        crate::winitwgpu::backend::{NodeDescriptor, WinitWGPUBackend},
+        crate::winitwgpu::backend::NodeDescriptor,
     };
 
     /// The default backend this crate runs.
     /// I might change it depending on the target.
-    type DefaultBackend<N> = WinitWGPUBackend<N>;
+    #[allow(type_alias_bounds)]
+    type DefaultBackend<N: NodeDescriptor> = WGPUBackend<N::Reified, N>;
 
     impl UIComposer {
         /// Creates and runs a new app in the default backend for the selected target.

@@ -1,4 +1,5 @@
 #![allow(unused)]
+use crate::app::primitives::PollProcessors;
 use {
     super::super::{Event, InputItem},
     crate::{
@@ -8,8 +9,8 @@ use {
         },
         prelude::{CursorEvent, Effect},
         state::Mutable,
-    },
-    cosmic_text::ttf_parser::apple_layout::state,
+    }
+    ,
     std::{
         pin::Pin,
         task::{Context, Poll},
@@ -68,7 +69,12 @@ where
             _ => false,
         }
     }
+}
 
+impl<A> PollProcessors for Tap<A>
+where
+    A: Effect + Send + Sync,
+{
     fn poll_processors(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
         Poll::Ready(Some(()))
     }

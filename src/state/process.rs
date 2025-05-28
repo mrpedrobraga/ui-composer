@@ -1,3 +1,6 @@
+use crate::app::primitives::PollProcessors;
+use crate::layout::{LayoutItem, ParentHints};
+use vek::Extent2;
 use {
     crate::app::{
         input::Event,
@@ -84,7 +87,13 @@ where
             None => false, //panic!("Reactor was asked to handle event without being polled first."),
         }
     }
+}
 
+impl<S: Send + Sync, T> PollProcessors for SignalProcessor<S, T>
+where
+    S: Signal<Item = T>,
+    T: Primitive + Send,
+{
     fn poll_processors(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<()>> {
         self.poll_change(cx)
     }
@@ -113,13 +122,16 @@ impl<T> UISignalExt for T where T: Signal {}
 pub struct FutureProcessor<F, T>
 where
     F: Future<Output = T>,
-    T: Primitive,
 {
     #[pin]
     pub(crate) signal: HoldFuture<F, T>,
 }
 
-impl<F: Future<Output = T>, T: Primitive> Signal for FutureProcessor<F, T> {
+impl<T, F> Signal for FutureProcessor<F, T>
+where
+    F: Future<Output = T>,
+    T: PollProcessors,
+{
     type Item = ();
 
     fn poll_change(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<Self::Item>> {
@@ -143,7 +155,7 @@ where
 impl<A, B> Signal for HoldFuture<A, B>
 where
     A: Future<Output = B>,
-    B: Primitive,
+    B: PollProcessors,
 {
     type Item = ();
 
@@ -180,12 +192,47 @@ where
             None => false, //panic!("Reactor was asked to handle event without being polled first."),
         }
     }
+}
 
+impl<F, T> PollProcessors for FutureProcessor<F, T>
+where
+    F: Future<Output = T> + Send,
+    T: Primitive,
+{
     fn poll_processors(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<()>> {
         self.poll_change(cx)
     }
 }
 
+impl<F, T> LayoutItem for FutureProcessor<F, T>
+where
+    F: Future<Output = T> + Send,
+    T: LayoutItem,
+{
+    type Content = Option<T::Content>;
+
+    fn get_natural_size(&self) -> Extent2<f32> {
+        match &self.signal.held_item {
+            None => Extent2::zero(),
+            Some(item) => item.get_natural_size(),
+        }
+    }
+
+    fn get_minimum_size(&self) -> Extent2<f32> {
+        match &self.signal.held_item {
+            None => Extent2::zero(),
+            Some(item) => item.get_natural_size(),
+        }
+    }
+
+    fn lay(&mut self, parent_hints: ParentHints) -> Self::Content {
+        if let Some(held_item) = &mut self.signal.held_item {
+            Some(held_item.lay(parent_hints))
+        } else {
+            None
+        }
+    }
+}
 pub trait UIFutureExt: Future {
     /// Transforms this future into a processable part of the UI tree.
     fn process(self) -> FutureProcessor<Self, Self::Output>

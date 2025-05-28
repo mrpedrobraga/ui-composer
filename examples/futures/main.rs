@@ -1,11 +1,10 @@
 #![allow(non_snake_case)]
 
+use futures_time::{future::FutureExt, time::Duration};
+use serde::Deserialize;
 use ui_composer::prelude::*;
-use {
-    futures_time::{future::FutureExt, time::Duration},
-    ui_composer::winitwgpu::pipeline::graphics::graphic::Graphic,
-};
-use {serde::Deserialize, ui_composer::winitwgpu::render_target::Render};
+use ui_composer::wgpu::pipeline::graphics::graphic::Graphic;
+use ui_composer::wgpu::render_target::Render;
 
 fn main() {
     UIComposer::run(

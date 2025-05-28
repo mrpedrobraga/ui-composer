@@ -1,3 +1,4 @@
+use crate::app::primitives::PollProcessors;
 use {
     super::{input::Event, primitives::Primitive},
     crate::state::signal_ext::coalesce_polls,
@@ -11,7 +12,9 @@ impl Primitive for () {
     fn handle_event(&mut self, _event: Event) -> bool {
         false
     }
+}
 
+impl PollProcessors for () {
     fn poll_processors(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
         Poll::Ready(Some(()))
     }
@@ -23,7 +26,9 @@ impl<A: Send + Primitive> Primitive for Option<A> {
             .map(|inner| inner.handle_event(event))
             .unwrap_or(false)
     }
+}
 
+impl<A: Send + Primitive> PollProcessors for Option<A> {
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         // TODO: Maybe I shouldn't return Some(()) in the option by default?
         self.as_pin_mut()
@@ -39,7 +44,9 @@ impl<T: Send + Primitive, E: Send + Primitive> Primitive for Result<T, E> {
             Err(e) => e.handle_event(event),
         }
     }
+}
 
+impl<T: Send + Primitive, E: Send + Primitive> PollProcessors for Result<T, E> {
     fn poll_processors(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
         // let this: &mut Self = self.deref_mut();
         // match this {
@@ -54,7 +61,9 @@ impl<A: Send + Primitive> Primitive for Box<A> {
     fn handle_event(&mut self, event: Event) -> bool {
         self.as_mut().handle_event(event)
     }
+}
 
+impl<A: Send + Primitive> PollProcessors for Box<A> {
     fn poll_processors(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         // TODO: Why is this unsafe?
         let inner = unsafe { self.as_mut().map_unchecked_mut(|v| &mut **v) };
@@ -69,7 +78,9 @@ impl<A: Send + Primitive, B: Send + Primitive> Primitive for (A, B) {
 
         a_handled || b_handled
     }
+}
 
+impl<A: Send + Primitive, B: Send + Primitive> PollProcessors for (A, B) {
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         let (pinned_a, pinned_b) = {
             let mut_ref = unsafe { self.get_unchecked_mut() };

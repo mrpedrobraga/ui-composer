@@ -2,12 +2,4 @@
 //! Thus, this module supports all platforms that winit and wgpu supports.
 
 pub mod backend;
-pub mod dynamic;
-pub mod image;
-pub mod pipeline;
-pub mod portal;
-pub mod render_target;
-pub mod texture;
 pub mod window;
-
-pub mod components;

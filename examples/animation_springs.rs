@@ -1,5 +1,8 @@
 #![allow(non_snake_case)]
 
+use ui_composer::layout::{LayoutItem, Resizable, ResizableItem};
+use ui_composer::wgpu::pipeline::{graphics::graphic::Graphic, text::Text};
+use ui_composer::wgpu::render_target::Render;
 use {
     ui_composer::{
         app::{
@@ -14,12 +17,7 @@ use {
             process::{UIFutureExt, UISignalExt},
             Mutable, SignalExt,
         },
-        ui::layout::{LayoutItem, Resizable, ResizableItem},
-        winitwgpu::{
-            pipeline::{graphics::graphic::Graphic, text::Text},
-            render_target::Render,
-            window::Window,
-        },
+        winitwgpu::window::Window,
     },
     vek::{Extent2, Lerp, Rect, Rgb, Vec2, Vec4},
 };
@@ -101,7 +99,7 @@ fn hover_square(
     let tap = Tap::new(rect, mouse_position_state, tap_state);
 
     #[cfg(feature = "debug")]
-    let hover_rect_graphic = hover_rect.with_color(Rgb::new(1.0, 0.1, 0.2));
+    let hover_rect_graphic = Graphic::from(hover_rect).with_color(Rgb::new(1.0, 0.1, 0.2));
     #[cfg(not(feature = "debug"))]
     let hover_rect_graphic = ();
 

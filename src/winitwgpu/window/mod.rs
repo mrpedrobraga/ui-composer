@@ -1,13 +1,15 @@
+use crate::app::primitives::PollProcessors;
+use crate::layout::ParentHints;
+use crate::wgpu::backend::Resources;
+use crate::wgpu::pipeline::{graphics::GraphicsPipelineBuffers, RendererBuffers, Renderers};
+use crate::wgpu::pipeline::{
+    graphics::{OrchestraRenderer, RenderGraphicDescriptor},
+    text::{GlyphonTextRenderer, TextPipelineBuffers},
+    GPURenderer,
+};
+use crate::wgpu::render_target::{Render, RenderInternal, RenderTarget};
 use {
-    super::{
-        backend::{Node, NodeDescriptor, Resources},
-        pipeline::{
-            graphics::{OrchestraRenderer, RenderGraphicDescriptor},
-            text::{GlyphonTextRenderer, TextPipelineBuffers},
-            GPURenderer,
-        },
-        render_target::{Render, RenderInternal, RenderTarget},
-    },
+    super::backend::{Node, NodeDescriptor},
     crate::{
         app::primitives::PrimitiveDescriptor,
         prelude::{flow::CartesianFlowDirection, LayoutItem},
@@ -15,10 +17,8 @@ use {
             process::{SignalProcessor, UISignalExt},
             Mutable,
         },
-        ui::layout::ParentHints,
-        winitwgpu::pipeline::{graphics::GraphicsPipelineBuffers, RendererBuffers, Renderers},
     },
-    futures_signals::signal::{DedupeCloned, MutableSignalCloned, Signal, SignalExt},
+    futures_signals::signal::{MutableSignalCloned, Signal, SignalExt},
     pin_project::pin_project,
     std::{
         pin::Pin,
@@ -111,7 +111,7 @@ where
             window_default_size.h,
         )));
 
-        let window = std::sync::Arc::new(window);
+        let window = Arc::new(window);
 
         let render_buffers = RendererBuffers {
             graphics_render_buffers: GraphicsPipelineBuffers::new(gpu_resources, A::QUAD_COUNT),

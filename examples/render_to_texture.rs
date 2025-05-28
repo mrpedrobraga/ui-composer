@@ -2,6 +2,7 @@
 
 use ui_composer::prelude::*;
 use ui_composer::wgpu::components::Label;
+use ui_composer::wgpu::image::Image;
 use ui_composer::wgpu::pipeline::graphics::graphic::Graphic;
 use ui_composer::wgpu::render_target::Render;
 use ui_composer::Flex;
@@ -23,7 +24,7 @@ fn main() {
         1.0 => Square(peach),
     );
 
-    UIComposer::run(Window(flex).with_title("Advanced Layout".to_owned()))
+    UIComposer::run(Image(Rect::new(0.0, 0.0, 320.0, 180.0), flex))
 }
 
 fn Square(color: Rgb<f32>) -> impl LayoutItem<Content = impl Render> {

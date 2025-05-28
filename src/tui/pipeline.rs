@@ -9,6 +9,7 @@
 //! The render can update the stdout partially, by rendering only an AABB. This is useful for huge screens,
 //! but, really, terminals don't really have a lot of pixels.
 
+use crate::app::primitives::PollProcessors;
 use {
     crate::app::{input::Event, primitives::Primitive},
     crossterm::{
@@ -51,7 +52,9 @@ impl Primitive for Graphic {
     fn handle_event(&mut self, _event: Event) -> bool {
         false
     }
+}
 
+impl PollProcessors for Graphic {
     fn poll_processors(
         self: std::pin::Pin<&mut Self>,
         _cx: &mut std::task::Context,

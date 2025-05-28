@@ -6,13 +6,16 @@ pub mod prelude;
 
 pub mod app;
 pub mod geometry;
+pub mod layout;
 pub mod state;
 
 #[cfg(feature = "winit")]
 pub mod winit;
 
 pub mod components;
-pub mod ui;
+
+#[cfg(feature = "wgpu")]
+pub mod wgpu;
 
 #[cfg(all(feature = "winit", feature = "wgpu"))]
 pub mod winitwgpu;

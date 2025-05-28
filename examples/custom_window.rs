@@ -2,8 +2,8 @@
 use ui_composer::app::input::items::Drag;
 use ui_composer::items;
 use ui_composer::prelude::*;
-use ui_composer::winitwgpu::pipeline::graphics::graphic::Graphic;
-use ui_composer::winitwgpu::render_target::Render;
+use ui_composer::wgpu::pipeline::graphics::graphic::Graphic;
+use ui_composer::wgpu::render_target::Render;
 
 fn main() {
     let window = Window(App())
