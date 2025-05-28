@@ -7,7 +7,7 @@ use ui_composer::winitwgpu::render_target::Render;
 
 fn main() {
     let window = Window(App())
-        .with_title("Custom window!")
+        .with_title("Custom window!".into())
         .with_decorations(false);
 
     UIComposer::run(window);

@@ -9,7 +9,7 @@ use {serde::Deserialize, ui_composer::winitwgpu::render_target::Render};
 
 fn main() {
     UIComposer::run(
-        Window(Center(PersonView("https://mrpedrobraga.com/api"))).with_title("Futures"),
+        Window(Center(PersonView("https://mrpedrobraga.com/api"))).with_title("Futures".into()),
     );
 }
 

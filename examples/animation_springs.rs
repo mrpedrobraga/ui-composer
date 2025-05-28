@@ -36,7 +36,7 @@ fn main() {
         ),
     ));
 
-    let window = Window(app).with_title("Interactive Animation");
+    let window = Window(app).with_title("Interactive Animation".into());
 
     UIComposer::run(window)
 }

@@ -1,7 +1,6 @@
 #![allow(non_snake_case)]
-use ui_composer::{prelude::*, Component};
-
 use ui_composer::winitwgpu::components::{Button, Label};
+use ui_composer::{prelude::*, Component};
 
 fn main() {
     let title_state = Mutable::new("Please click the button...".to_owned());

@@ -5,7 +5,7 @@ use ui_composer::{
 };
 
 fn main() {
-    UIComposer::run(Window(App()).with_title("My Beautiful App"))
+    UIComposer::run(Window(App()).with_title("My Beautiful App".into()))
 }
 
 fn App() -> impl LayoutItem<Content = impl Render> {

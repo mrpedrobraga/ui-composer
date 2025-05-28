@@ -7,7 +7,7 @@ use ui_composer::Flex;
 use ui_composer::winitwgpu::components::Switch;
 
 fn main() {
-    UIComposer::run(Window(App()).with_title("Click the Switch!"))
+    UIComposer::run(Window(App()).with_title("Click the Switch!".into()))
 }
 
 fn App() -> impl LayoutItem<Content = impl Render> {
