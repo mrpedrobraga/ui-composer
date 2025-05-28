@@ -23,7 +23,7 @@ fn main() {
         1.0 => Square(peach),
     );
 
-    UIComposer::run(Window(flex).with_title("Advanced Layout"))
+    UIComposer::run(Window(flex).with_title("Advanced Layout".to_owned()))
 }
 
 fn Square(color: Rgb<f32>) -> impl LayoutItem<Content = impl Render> {

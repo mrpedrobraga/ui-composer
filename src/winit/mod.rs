@@ -2,8 +2,8 @@
 
 use {
     crate::{
-        app::backend::Backend,
-        winitwgpu::backend::{BackendProcessExecutor, NodeDescriptor, WinitWGPUBackend},
+        app::backend::{Backend, BackendProcessExecutor},
+        winitwgpu::backend::{NodeDescriptor, WinitWGPUBackend},
     },
     futures_signals::signal::SignalFuture,
     std::sync::{Arc, Mutex},

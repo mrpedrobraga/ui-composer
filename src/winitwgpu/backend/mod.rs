@@ -3,7 +3,7 @@
 use {
     super::{pipeline::graphics::OrchestraRenderer, window::WindowRenderTarget},
     crate::{
-        app::backend::Backend,
+        app::backend::{Backend, BackendProcessExecutor},
         winit::WinitBackend,
         winitwgpu::pipeline::{text::GlyphonTextRenderer, Renderers},
     },
@@ -367,32 +367,5 @@ where
         let poll_b = pinned_b.poll_processors(cx);
 
         crate::state::signal_ext::coalesce_polls(poll_a, poll_b)
-    }
-}
-
-/// A futures-based construct that polls the engine's processes.
-#[pin_project(project=BackendProcessExecutorProj)]
-pub struct BackendProcessExecutor<E: Backend> {
-    #[pin]
-    backend: Arc<Mutex<E>>,
-}
-
-impl<E: Backend> BackendProcessExecutor<E> {
-    pub fn new(backend: Arc<Mutex<E>>) -> Self {
-        BackendProcessExecutor { backend }
-    }
-}
-
-impl<E: Backend> Signal for BackendProcessExecutor<E> {
-    type Item = ();
-
-    fn poll_change(self: std::pin::Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
-        let BackendProcessExecutorProj { backend } = self.project();
-
-        let mut backend = backend.lock().expect("Failed to lock ui for polling");
-        let backend = backend.deref_mut();
-        let backend = unsafe { Pin::new_unchecked(backend) };
-
-        backend.poll_processors(cx)
     }
 }

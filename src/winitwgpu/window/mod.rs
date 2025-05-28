@@ -18,7 +18,7 @@ use {
         ui::layout::ParentHints,
         winitwgpu::pipeline::{graphics::GraphicsPipelineBuffers, RendererBuffers, Renderers},
     },
-    futures_signals::signal::{Signal, SignalExt},
+    futures_signals::signal::{DedupeCloned, MutableSignalCloned, Signal, SignalExt},
     pin_project::pin_project,
     std::{
         pin::Pin,
@@ -38,6 +38,7 @@ use {
 
 mod conversion;
 
+//MARK: Window Node Descriptor!
 /// A node that describes the existence of a new window in the UI tree.
 pub struct WindowNodeDescriptor<A> {
     state: WindowNodeState,
@@ -46,10 +47,12 @@ pub struct WindowNodeDescriptor<A> {
 
 impl<A> WindowNodeDescriptor<A> {
     /// Consumes this window node and returns a new one with the set title.
-    pub fn with_title<Str: Into<String>>(self, title: Str) -> Self {
+    pub fn with_title(self, title: String) -> Self {
+        let title = Mutable::new(title);
+
         Self {
             state: WindowNodeState {
-                title: Mutable::new(title.into()),
+                title_signal: title.signal_cloned(),
                 ..self.state
             },
             ..self
@@ -58,10 +61,10 @@ impl<A> WindowNodeDescriptor<A> {
 
     /// Adapts this window to have a reactive title — the window's title will change
     /// every time this signal changes.
-    pub fn with_reactive_title(self, title_signal: Mutable<String>) -> Self {
+    pub fn with_reactive_title(self, title: MutableSignalCloned<String>) -> Self {
         Self {
             state: WindowNodeState {
-                title: title_signal,
+                title_signal: title,
                 ..self.state
             },
             ..self
@@ -77,51 +80,6 @@ impl<A> WindowNodeDescriptor<A> {
             },
             ..self
         }
-    }
-}
-
-/// Describes a new window with its contents and its own state.
-#[allow(non_snake_case)]
-pub fn Window<A>(
-    mut item: A,
-) -> WindowNodeDescriptor<SignalProcessor<impl Signal<Item = A::Content>, A::Content>>
-where
-    A: LayoutItem + Send + Sync,
-    A::Content: Render,
-{
-    let minimum_size = item.get_natural_size();
-
-    let state = WindowNodeState {
-        size: Mutable::new(minimum_size),
-        title: Mutable::new(String::new()),
-        mouse_position: Mutable::new(None),
-        decorations_enabled: Mutable::new(true),
-    };
-
-    // TODO: Make this signal change the size of the window...
-    // This should probably be disallowed for targets that aren't exported to support it.
-    let _window_size_signal = state.size.signal();
-
-    // Right now items resize exclusively through their parent hints.
-    let item = state
-        .size
-        .signal()
-        .map(move |window_size| {
-            item.lay(ParentHints {
-                rect: Rect::new(0.0, 0.0, window_size.w, window_size.h),
-                // TODO: Allow configuring this from the locale/user settings,
-                // possibly turning them into signals!
-                current_flow_direction: CartesianFlowDirection::LeftToRight,
-                current_cross_flow_direction: CartesianFlowDirection::TopToBottom,
-                current_writing_flow_direction: CartesianFlowDirection::LeftToRight,
-                current_writing_cross_flow_direction: CartesianFlowDirection::TopToBottom,
-            })
-        })
-        .process();
-
-    WindowNodeDescriptor {
-        state,
-        content: item,
     }
 }
 
@@ -143,7 +101,6 @@ where
         let window = event_loop
             .create_window(
                 winit::window::WindowAttributes::default()
-                    .with_title(self.state.title.get_cloned())
                     .with_inner_size(LogicalSize::new(400.0, 400.0))
                     .with_name("UI Composer App", "UI Composer App"),
             )
@@ -178,13 +135,58 @@ where
     }
 }
 
+// MARK: Fn Constructor!
+/// Describes a new window with its contents and its own state.
+#[allow(non_snake_case)]
+pub fn Window<A>(
+    mut item: A,
+) -> WindowNodeDescriptor<SignalProcessor<impl Signal<Item = A::Content>, A::Content>>
+where
+    A: LayoutItem + Send + Sync,
+    A::Content: Render,
+{
+    // This should be a signal that comes from the item...
+    let minimum_size = item.get_natural_size();
+    let minimum_size = Mutable::new(minimum_size);
+
+    let state = WindowNodeState::new(minimum_size);
+
+    // TODO: Make this signal change the size of the window...
+    // This should probably be disallowed for targets that aren't exported to support it.
+    let _window_size_signal = state.size.signal();
+
+    // Right now items resize exclusively through their parent hints.
+    let item = state
+        .size
+        .signal()
+        .map(move |window_size| {
+            item.lay(ParentHints {
+                rect: Rect::new(0.0, 0.0, window_size.w, window_size.h),
+                // TODO: Allow configuring this from the locale/user settings,
+                // possibly turning them into signals!
+                current_flow_direction: CartesianFlowDirection::LeftToRight,
+                current_cross_flow_direction: CartesianFlowDirection::TopToBottom,
+                current_writing_flow_direction: CartesianFlowDirection::LeftToRight,
+                current_writing_cross_flow_direction: CartesianFlowDirection::TopToBottom,
+            })
+        })
+        .process();
+
+    WindowNodeDescriptor {
+        state,
+        content: item,
+    }
+}
+
+//MARK: Attributes and state!
+
 #[derive(Debug, Default, Clone)]
 pub struct WindowAttributes<TitleSignal: Signal<Item = String>> {
     pub title: TitleSignal,
 }
 
 pub struct WindowNodeState {
-    pub title: Mutable<String>,
+    pub title_signal: MutableSignalCloned<String>,
     pub size: Mutable<Extent2<f32>>,
     pub mouse_position: Mutable<Option<Vec2<f32>>>,
     pub decorations_enabled: Mutable<bool>,
@@ -192,15 +194,21 @@ pub struct WindowNodeState {
 
 impl WindowNodeState {
     pub fn new(window_size: Mutable<Extent2<f32>>) -> Self {
+        let title = Mutable::new(String::new());
+        let title_signal = title.signal_cloned();
+        let decorations_enabled = Mutable::new(true);
+
         WindowNodeState {
             size: window_size,
-            title: Mutable::new(String::new()),
+            title_signal,
             mouse_position: Mutable::new(None),
-            decorations_enabled: Mutable::new(true),
+            decorations_enabled,
         }
     }
 }
-/// A live window which contains a UI tree inside.
+
+//MARK: Window Node!
+
 #[pin_project(project = WindowNodeProj)]
 pub struct WindowNode {
     #[pin]
@@ -257,19 +265,26 @@ impl Node for WindowNode {
         // TODO: Figure out what do to with the result of this poll (as it might introduce a need for redrawing!!!);
 
         let WindowNodeProj {
-            content, window, ..
+            content,
+            window,
+            mut state,
+            ..
         } = self.project();
 
         let content: &mut _ = &mut **content;
         let content = unsafe { Pin::new_unchecked(content) };
+        let content_poll = content.poll_processors(cx);
 
-        let poll = content.poll_processors(cx);
-
-        if poll.is_ready() {
+        if content_poll.is_ready() {
             window.request_redraw()
         }
 
-        poll
+        // Every time that a new title arrives, we update the Window!
+        if let Poll::Ready(Some(new_title)) = state.title_signal.poll_change_unpin(cx) {
+            window.set_title(new_title.as_str())
+        }
+
+        content_poll
     }
 }
 
@@ -284,6 +299,7 @@ impl WindowNode {
     }
 }
 
+//MARK: Window Render Target?
 /// A render target that will be rendered to a window.
 pub struct WindowRenderTarget {
     pub size: Extent2<u32>,
