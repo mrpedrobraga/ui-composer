@@ -1,10 +1,10 @@
 //! # Applications
 //!
-//! An application is a composition of [Nodes] each which do something.
+//! An application is a composition of [primitives::Node]s each which do something.
 //!
-//! To create your program, call `UIComposer::run` and give it a root [Node], like, for example, a [Window].
+//! To create your program, call `UIComposer::run` and give it a root [primitives::Node], like, for example, a [super::winitwgpu::window::WindowNode].
 //!
-//! ```rust
+//! ```ignore
 //! use ui_composer::prelude::*;
 //! UIComposer::run(Window(()));
 //! ```
@@ -14,7 +14,6 @@
 //! ## Different Backends
 //!
 //! You can also call [UIComposer::run_custom] to give it a custom backend.
-//! By default, apps use [WinitWGPUBackend], running on the GPU.
 
 use backend::Backend;
 
@@ -38,22 +37,18 @@ impl UIComposer {
 #[cfg(all(feature = "winit", feature = "wgpu"))]
 mod winit_wgpu {
     use crate::wgpu::backend::WGPUBackend;
+    use crate::winitwgpu::backend::WithWinit;
     use {
         super::{backend::Backend as _, UIComposer},
         crate::winitwgpu::backend::NodeDescriptor,
     };
-
-    /// The default backend this crate runs.
-    /// I might change it depending on the target.
-    #[allow(type_alias_bounds)]
-    type DefaultBackend<N: NodeDescriptor> = WGPUBackend<N::Reified, N>;
 
     impl UIComposer {
         /// Creates and runs a new app in the default backend for the selected target.
         /// For cross-platform compatibility, this should be called in the main thread,
         /// and only once in your program.
         pub fn run<N: NodeDescriptor + 'static>(node_tree_descriptor: N) {
-            DefaultBackend::run(node_tree_descriptor);
+            WithWinit::<WGPUBackend<N::Reified, N>>::run(node_tree_descriptor);
         }
     }
 }

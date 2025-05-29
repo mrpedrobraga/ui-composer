@@ -2,7 +2,7 @@ use crate::app::primitives::PollProcessors;
 use {
     super::{input::Event, primitives::Primitive},
     crate::state::signal_ext::coalesce_polls,
-    std::{
+    core::{
         pin::Pin,
         task::{Context, Poll},
     },
@@ -57,12 +57,14 @@ impl<T: Send + Primitive, E: Send + Primitive> PollProcessors for Result<T, E> {
     }
 }
 
+#[cfg(feature = "std")]
 impl<A: Send + Primitive> Primitive for Box<A> {
     fn handle_event(&mut self, event: Event) -> bool {
         self.as_mut().handle_event(event)
     }
 }
 
+#[cfg(feature = "std")]
 impl<A: Send + Primitive> PollProcessors for Box<A> {
     fn poll_processors(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         // TODO: Why is this unsafe?

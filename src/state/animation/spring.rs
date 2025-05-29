@@ -6,11 +6,11 @@ use crate::{
     state::process::FutureProcessor,
 };
 use cgmath::BaseFloat;
-use futures_signals::signal::Signal;
-use std::{
+use core::{
     future::Future,
     ops::{Add, Div, Mul},
 };
+use futures_signals::signal::Signal;
 
 #[derive(Default)]
 /// A [`super::RealTimeStream`] that simulates Hooke's law
@@ -27,7 +27,7 @@ pub struct Spring<T> {
 impl<T> Spring<T>
 where
     T: Default + Vector + Send + Sync + 'static,
-    f32: std::ops::Mul<T, Output = T>,
+    f32: Mul<T, Output = T>,
 {
     pub fn new(equilibrium: T, stiffness: f32, damping: f32, mass: f32) -> Self {
         Self {
@@ -83,7 +83,7 @@ impl<T> Vector for T where
 
 impl<T: BaseFloat> RealTimeStream for Spring<T>
 where
-    f32: std::ops::Mul<T, Output = T>,
+    f32: Mul<T, Output = T>,
     T: Copy + Vector,
 {
     type Item = T;

@@ -1,7 +1,6 @@
 #![allow(non_snake_case)]
 
 use ui_composer::prelude::*;
-use ui_composer::wgpu::components::Label;
 use ui_composer::wgpu::pipeline::graphics::graphic::Graphic;
 use ui_composer::wgpu::render_target::Render;
 use ui_composer::Flex;
@@ -12,12 +11,12 @@ fn main() {
     let vanilla = Rgb::new(249.0, 245.0, 227.0) / 255.0;
     let peach = Rgb::new(239.0, 121.0, 138.0) / 255.0;
 
-    let flex = Flex! (
+    let flex = Flex! ( 3;
         0.0 => Square(grape),
-        2.0 => Flex! (
-            0.0 => Label(String::from("Sample Text")).with_color(dragonfruit),
+        2.0 => Flex! ( 3;
+            0.0 => Square(dragonfruit),
             1.0 => Square(vanilla),
-            0.0 => Square(dragonfruit)
+            0.0 => Square(dragonfruit),
         )
         .with_vertical_flow(),
         1.0 => Square(peach),

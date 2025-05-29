@@ -50,9 +50,11 @@ fn SmoothSquare(name: &'static str, color: Rgb<f32>) -> impl LayoutItem<Content 
         let mouse_position_state_anim = mouse_position_state.clone();
         let tap_state_anim = tap_state.clone();
 
+        let animation =
+            Spring::if_then_else(is_hovered_state.signal(), anim_state.clone(), 50.0, 0.0);
+
         items!(
-            Spring::if_then_else(is_hovered_state.signal(), anim_state.clone(), 50.0, 0.0)
-                .process(),
+            animation.process(),
             anim_state
                 .signal()
                 .map(move |animation_factor| {

@@ -52,8 +52,8 @@ macro_rules! items {
 #[macro_export]
 #[allow(non_snake_case)]
 macro_rules! Flex {
-    ($( $weight:expr => $item:expr ),* $(,)?) => {
-        ::ui_composer::prelude::Flex(
+    ($n:expr ; $( $weight:expr => $item:expr ),* $(,)?) => {
+        ::ui_composer::prelude::Flex::<$n, _>(
             ::ui_composer::items![
                 $(::ui_composer::prelude::FlexItem($item, $weight),)*
             ]

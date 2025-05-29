@@ -1,4 +1,9 @@
-use std::task::Poll;
+use crate::app::primitives::Primitive;
+use crate::prelude::UISignalExt;
+use crate::state::process::SignalProcessor;
+use core::task::Poll;
+use futures_signals::signal::{Map, SignalExt};
+use futures_signals::signal::{Mutable, MutableSignal};
 
 /// Combines two Polls into a single poll describing a task with two parts.
 /// The result is decided based on a precedence order.
@@ -20,3 +25,36 @@ pub fn coalesce_polls(poll_a: Poll<Option<()>>, poll_b: Poll<Option<()>>) -> Pol
     }
 }
 
+pub trait MutableExt {
+    type Item;
+    type Output<F, U>
+    where
+        F: FnMut(Self::Item) -> U,
+        Self::Item: Copy,
+        U: Primitive;
+
+    fn derive<F, U>(&self, predicate: F) -> Self::Output<F, U>
+    where
+        F: FnMut(Self::Item) -> U,
+        Self::Item: Copy,
+        U: Primitive;
+}
+
+impl<Item> MutableExt for Mutable<Item> {
+    type Item = Item;
+    type Output<F, U>
+        = SignalProcessor<Map<MutableSignal<Item>, F>, U>
+    where
+        F: FnMut(Self::Item) -> U,
+        Self::Item: Copy,
+        U: Primitive;
+
+    fn derive<F, U>(&self, predicate: F) -> Self::Output<F, U>
+    where
+        F: FnMut(Self::Item) -> U,
+        Self::Item: Copy,
+        U: Primitive,
+    {
+        self.signal().map(predicate).process()
+    }
+}

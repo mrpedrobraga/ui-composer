@@ -1,11 +1,13 @@
+use crate::tui::pipeline::Canvas;
+use core::pin::Pin;
+use core::task::{Context, Poll};
+use vek::Rgba;
 use {
     super::{
         backend::{Node, NodeDescriptor},
         pipeline::Render,
     },
     crate::prelude::{Event, LayoutItem},
-    crossterm::{style::Stylize as _, ExecutableCommand as _},
-    std::{io::Write as _, pin::Pin},
     vek::Vec2,
 };
 
@@ -45,10 +47,11 @@ impl<N: LayoutItem + Send + Sync> Node for TerminalNode<N> {
         // Nothing yet
     }
 
-    fn draw(&self, stdout: &mut std::io::Stdout, rect: vek::Rect<u16, u16>) -> std::io::Result<()> {
-        stdout.execute(crossterm::terminal::Clear(
-            crossterm::terminal::ClearType::All,
-        ))?;
+    fn draw<C>(&self, canvas: &mut C, rect: vek::Rect<u16, u16>)
+    where
+        C: Canvas<Pixel = Rgba<u8>>,
+    {
+        // Clear canvas
 
         //self.item.draw(stdout, rect)?;
         let item_size = self.item.get_minimum_size();
@@ -65,25 +68,14 @@ impl<N: LayoutItem + Send + Sync> Node for TerminalNode<N> {
         };
         for y in item_rect.min.y..item_rect.max.y {
             for x in item_rect.min.x..item_rect.max.x {
-                stdout.execute(crossterm::cursor::MoveTo(x, y))?.execute(
-                    crossterm::style::PrintStyledContent(" ".on(crossterm::style::Color::Rgb {
-                        r: color.r,
-                        g: color.g,
-                        b: color.b,
-                    })),
-                )?;
+                canvas.put_pixel(Vec2::new(x as u32, y as u32), color);
             }
         }
 
-        stdout.flush()?;
-
-        Ok(())
+        // Flush canvas to framebuffer, possibly!
     }
 
-    fn poll_processors(
-        self: Pin<&mut Self>,
-        _cx: &mut std::task::Context,
-    ) -> std::task::Poll<Option<()>> {
-        std::task::Poll::Ready(Some(()))
+    fn poll_processors(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
+        Poll::Ready(Some(()))
     }
 }

@@ -9,11 +9,11 @@ use {
         },
         prelude::CursorEvent,
     },
-    futures_signals::signal::Mutable,
-    std::{
+    core::{
         pin::Pin,
         task::{Context, Poll},
     },
+    futures_signals::signal::Mutable,
     vek::Rect,
 };
 

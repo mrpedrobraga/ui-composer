@@ -31,6 +31,7 @@
 //! require things to be shown the same way for everybody. Compasses, drawings, etc.
 
 use crate::prelude::ParentHints;
+use arrayvec::ArrayVec;
 use cgmath::BaseFloat;
 use vek::{Extent2, Rect, Vec2};
 
@@ -306,17 +307,17 @@ where
 }
 
 /// Divides a total number of shares for n elements, where the elements can be biased with a weight, or have a minimum share.
-pub fn weighted_division_with_minima<T: BaseFloat + std::iter::Sum>(
+pub fn weighted_division_with_minima<const SIZE: usize, T: BaseFloat + core::iter::Sum>(
     total: T,
-    w: &[T],
-    m: &[T],
+    w: &[T; SIZE],
+    m: &[T; SIZE],
     tolerance: T,
-) -> Vec<T> {
+) -> ArrayVec<T, SIZE> {
     let total_m: T = m.iter().copied().sum();
     let total_w: T = w.iter().copied().sum();
 
     if total_m >= total || total_w <= T::zero() {
-        return m.to_vec();
+        return ArrayVec::from(*m);
     }
 
     // Precompute normalized weights

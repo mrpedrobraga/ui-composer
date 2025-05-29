@@ -10,19 +10,20 @@
 //! but, really, terminals don't really have a lot of pixels.
 
 use crate::app::primitives::PollProcessors;
+use core::pin::Pin;
+use core::task::{Context, Poll};
+use vek::Vec2;
 use {
     crate::app::{input::Event, primitives::Primitive},
-    crossterm::{
-        style::{Color, Stylize as _},
-        ExecutableCommand as _,
-    },
     ndarray::Array2,
     vek::{Rgb, Rgba},
 };
 
 /// A trait that marks a trait as renderable with this pipeline.
 pub trait Render {
-    fn draw(&self, stdout: &mut std::io::Stdout, rect: vek::Rect<u16, u16>) -> std::io::Result<()>;
+    fn draw<C: Canvas>(&self, canvas: &mut C, rect: vek::Rect<u16, u16>)
+    where
+        C: Canvas<Pixel = Rgba<u8>>;
 }
 
 /// A simple coloured graphic.
@@ -55,41 +56,43 @@ impl Primitive for Graphic {
 }
 
 impl PollProcessors for Graphic {
-    fn poll_processors(
-        self: std::pin::Pin<&mut Self>,
-        _cx: &mut std::task::Context,
-    ) -> std::task::Poll<Option<()>> {
-        std::task::Poll::Ready(Some(()))
+    fn poll_processors(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
+        Poll::Ready(Some(()))
     }
 }
 
 impl Render for Graphic {
-    fn draw(
-        &self,
-        stdout: &mut std::io::Stdout,
-        _rect: vek::Rect<u16, u16>,
-    ) -> std::io::Result<()> {
-        let my_rect: vek::Aabr<u16> = self.rect.as_().into_aabr();
+    fn draw<C>(&self, canvas: &mut C, _rect: vek::Rect<u16, u16>)
+    where
+        C: Canvas<Pixel = Rgba<u8>>,
+    {
+        let my_rect: vek::Aabr<u32> = self.rect.as_().into_aabr();
 
         let color: Rgba<u8> = (self.color * 255.0).as_();
         for y in my_rect.min.y..my_rect.max.y {
             for x in my_rect.min.x..my_rect.max.x {
-                stdout.execute(crossterm::cursor::MoveTo(x, y))?.execute(
-                    crossterm::style::PrintStyledContent(" ".on(Color::Rgb {
-                        r: color.r,
-                        g: color.g,
-                        b: color.b,
-                    })),
-                )?;
+                canvas.put_pixel(Vec2::new(x, y), color);
             }
         }
-
-        Ok(())
     }
+}
+
+pub trait Canvas {
+    type Pixel;
+
+    // Places a single pixel within the frame buffer.
+    fn put_pixel(&mut self, position: Vec2<u32>, pixel: Self::Pixel);
 }
 
 struct Framebuffer<P> {
     pixels: Array2<P>,
+}
+impl<P> Canvas for Framebuffer<P> {
+    type Pixel = P;
+
+    fn put_pixel(&mut self, position: Vec2<u32>, pixel: P) {
+        self.pixels[(position.x as usize, position.y as usize)] = pixel;
+    }
 }
 
 trait Pixel {
@@ -97,7 +100,7 @@ trait Pixel {
     ///
     /// If `self` is opaque, the result equals `self`.
     /// If `self` is transparent, the result equals `other`.
-    /// If `self` is translucid, it lerp `self` and `other`
+    /// If `self` is translucent, it lerp `self` and `other`
     /// according to `self`'s opacity.
     ///
     /// This operation is non-commutative.

@@ -1,9 +1,9 @@
 use crate::{geometry::Vector, prelude::Slot};
+use core::{fmt::Debug, future::Future};
 use futures_time::{
     task,
     time::{Duration, Instant},
 };
-use std::{fmt::Debug, future::Future};
 
 pub mod spring;
 

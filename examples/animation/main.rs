@@ -34,10 +34,7 @@ where
     S: Slot<Item = f32> + 'static,
 {
     InitialValue(0.0)
-        .lerp_to(100.0, Duration::from_secs(3))
+        .lerp_to(500.0, Duration::from_secs(3))
         .lerp_to(0.0, Duration::from_secs(1))
-        .for_each(|x| {
-            dbg!(x);
-        })
         .animate_value(slot)
 }

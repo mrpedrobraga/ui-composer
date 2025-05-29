@@ -1,6 +1,7 @@
+#[cfg(feature = "std")]
+use std::{ops::Range, path::PathBuf};
 use {
     smol_str::SmolStr,
-    std::{ops::Range, path::PathBuf},
     vek::{Extent2, Vec2},
 };
 
@@ -12,6 +13,7 @@ pub trait InputItem {}
 pub type EvNum = f32;
 
 #[derive(Clone, PartialEq)]
+#[non_exhaustive]
 pub enum Event {
     /// The user requested that the application closes.
     CloseRequested,
@@ -35,8 +37,10 @@ pub enum Event {
     Keyboard { id: DeviceId, event: KeyboardEvent },
 
     /// An Input Method Editor event, for inserting text.
+    #[cfg(feature = "std")]
     Ime(ImeEvent),
     /// A [FileDragAndDropEvent].
+    #[cfg(feature = "std")]
     File(FileDragAndDropEvent),
 }
 
@@ -45,6 +49,7 @@ pub enum Event {
 pub struct DeviceId(pub i32);
 
 #[derive(Clone, PartialEq)]
+#[non_exhaustive]
 pub enum CursorEvent {
     Moved {
         position: Vec2<EvNum>,
@@ -87,6 +92,7 @@ pub enum CursorEvent {
 
 /// The mouse button that an event was about.
 #[derive(Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum MouseButton {
     /// The left mouse button, usually associated with activation.
     Left,
@@ -124,8 +130,8 @@ pub enum ScrollOffset {
     // Scroll offset in pixels.
     Pixels(Vec2<EvNum>),
 }
-
 /// Events for dragging files into your application.
+#[cfg(feature = "std")]
 #[derive(Clone, PartialEq)]
 pub enum FileDragAndDropEvent {
     /// The user entered the app holding a file.
@@ -144,6 +150,7 @@ pub enum ThemeType {
 }
 
 #[derive(Clone, PartialEq)]
+#[cfg(feature = "std")]
 pub enum ImeEvent {
     /// IME was enabled, and you should get ready to handle IME events such as
     /// [Self::Preedit] or [Self::Commit].

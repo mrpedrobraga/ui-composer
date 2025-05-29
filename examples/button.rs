@@ -1,17 +1,6 @@
-#![allow(non_snake_case)]
-use ui_composer::wgpu::components::{Button, Label};
-use ui_composer::{prelude::*, UI};
+use ui_composer::prelude::*;
+use ui_composer::wgpu::components::Label;
 
 fn main() {
-    let title_state = Mutable::new("Please click the button...".to_owned());
-
-    UIComposer::run(
-        Window(App(title_state.clone())).with_reactive_title(title_state.signal_cloned()),
-    );
-}
-
-fn App(title_signal: Mutable<String>) -> UI!() {
-    Center(Button(Label("Click me..."), move || {
-        title_signal.set("Thank you.".to_owned())
-    }))
+    UIComposer::run(Window(Label("Hello, World!")))
 }

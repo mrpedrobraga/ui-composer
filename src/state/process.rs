@@ -1,14 +1,15 @@
 use crate::app::primitives::PollProcessors;
 use crate::layout::{LayoutItem, ParentHints};
+use core::task::Context;
 use vek::Extent2;
 use {
     crate::app::{
         input::Event,
         primitives::{Primitive, PrimitiveDescriptor},
     },
+    core::{future::Future, pin::Pin, task::Poll},
     futures_signals::signal::Signal,
     pin_project::pin_project,
-    std::{future::Future, pin::Pin, task::Poll},
 };
 
 /// UI Item that processes a signal and updates part of the UI tree whenever it changes.
@@ -17,16 +18,16 @@ use {
 pub struct SignalProcessor<S, T>
 where
     S: Signal<Item = T>,
-    T: Primitive + Send,
+    T: PollProcessors,
 {
     #[pin]
     pub(crate) signal: HoldSignal<S, T>,
 }
 
-impl<S: Signal<Item = T> + Send, T: Primitive> Signal for SignalProcessor<S, T> {
+impl<S: Signal<Item = T> + Send, T: PollProcessors> Signal for SignalProcessor<S, T> {
     type Item = ();
 
-    fn poll_change(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<Self::Item>> {
+    fn poll_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let SignalProcessorProj { signal } = self.project();
         signal.poll_change(cx)
     }
@@ -47,14 +48,11 @@ where
 impl<A, B> Signal for HoldSignal<A, B>
 where
     A: Signal<Item = B>,
-    B: Primitive,
+    B: PollProcessors,
 {
     type Item = ();
 
-    fn poll_change(
-        self: std::pin::Pin<&mut Self>,
-        cx: &mut std::task::Context,
-    ) -> std::task::Poll<Option<Self::Item>> {
+    fn poll_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let HoldSignalProj { signal, held_item } = self.project();
 
         let poll = match signal.poll_change(cx) {
@@ -94,7 +92,7 @@ where
     S: Signal<Item = T>,
     T: Primitive + Send,
 {
-    fn poll_processors(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<()>> {
+    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         self.poll_change(cx)
     }
 }
@@ -134,7 +132,7 @@ where
 {
     type Item = ();
 
-    fn poll_change(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<Self::Item>> {
+    fn poll_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let FutureProcessorProj { signal } = self.project();
         signal.poll_change(cx)
     }
@@ -159,10 +157,7 @@ where
 {
     type Item = ();
 
-    fn poll_change(
-        self: std::pin::Pin<&mut Self>,
-        cx: &mut std::task::Context,
-    ) -> std::task::Poll<Option<Self::Item>> {
+    fn poll_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let HoldFutureProj { future, held_item } = self.project();
 
         match held_item {
@@ -199,7 +194,7 @@ where
     F: Future<Output = T> + Send,
     T: Primitive,
 {
-    fn poll_processors(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<()>> {
+    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         self.poll_change(cx)
     }
 }

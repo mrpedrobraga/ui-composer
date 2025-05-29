@@ -7,8 +7,38 @@ version = "0.1.0"
 name = "ui_composer"
 # crate-type = ["dylib"]
 
-[features] #MARK: Features
-default = ["serde", "default-desktop", "tui"]
+# MARK: Dependencies
+[dependencies]
+async-std = "1.13.0"
+bytemuck = { version = "1.16.1", features = ["derive"] }
+cgmath = "0.18.0"
+cosmic-text = "0.12.1"
+futures = { version = "0.3.30", default-features = false }
+futures-signals = "0.3.33"
+futures-time = "3.0.0"
+glyphon = { git = "https://github.com/grovesNL/glyphon.git" }
+image = "0.25.5"
+pin-project = "1.1.5"
+serde = { version = "1.0.204", features = ["derive"], optional = true }
+vek = { version = "0.17.0", features = ["bytemuck"] }
+
+# Winit
+winit = { version = "0.30.7", optional = true }
+
+# WGPU
+wgpu = { version = "23", default-features = false, features = ["wgsl"], optional = true }
+
+# Crossterm
+crossterm = { version = "0.28.1", optional = true }
+ndarray = "0.16.1"
+smol_str = "0.3.2"
+spin = "0.10.0"
+arrayvec = { version = "0.7.6", default-features = false }
+rand = { version = "0.9.0-beta.3", features = [] }
+
+#MARK: Features
+[features]
+default = ["default-desktop", "serde"]
 
 debug = []
 serde = ["dep:serde"]
@@ -17,41 +47,23 @@ serde = ["dep:serde"]
 
 default-desktop = ["wgpu", "winit"]
 
-wgpu = ["dep:wgpu"]
-winit = ["dep:winit"]
+wgpu = ["dep:wgpu", "std"]
+winit = ["dep:winit", "std", "futures/executor"]
 
 # MARK: Terminal
 
 default-terminal = ["tui"]
-tui = ["dep:crossterm"]
+tui = ["dep:crossterm", "std"]
 
-[dependencies]
-async-std = "1.13.0"
-bytemuck = {version = "1.16.1", features = ["derive"]}
-cgmath = "0.18.0"
-cosmic-text = "0.12.1"
-futures = "0.3.30"
-futures-channel = "0.3.30"
-futures-signals = "0.3.33"
-futures-time = "3.0.0"
-glyphon = {git = "https://github.com/grovesNL/glyphon.git"}
-image = "0.25.5"
-pin-project = "1.1.5"
-seq-macro = "0.3.5"
-serde = {version = "1.0.204", features = ["derive"], optional = true}
-slotmap = "1.0.7"
-vek = {version = "0.17.0", features = ["bytemuck"]}
+std = []
 
-# Winit
-winit = {version = "0.30.7", optional = true}
-
-# WGPU
-wgpu = {version = "23", default-features = false, features = ["wgsl"], optional = true}
-
-# Crossterm
-crossterm = {version = "0.28.1", optional = true}
-ndarray = "0.16.1"
-smol_str = "0.3.2"
+[dev-dependencies]
+chttp = "0.5.5"
+crossterm = "0.28.1"
+serde_json = "1.0.134"
+vek = { version = "0.17.0", features = ["serde"] }
+wgpu = { version = "23", default-features = false, features = ["wgsl"] }
+winit = { version = "0.30.7" }
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]
@@ -63,17 +75,7 @@ opt-level = 3
 
 [profile.release]
 
-codegen-units = 1 
-lto = true 
-opt-level = 's' 
+codegen-units = 1
+lto = true
+opt-level = 's'
 strip = true # Automatically strip symbols from the binary.
-
-[dev-dependencies]
-chttp = "0.5.5"
-crossterm = "0.28.1"
-itertools = "0.13.0"
-serde_json = "1.0.134"
-toml = "0.8.15"
-vek = {version = "0.17.0", features = ["serde"]}
-wgpu = {version = "23", default-features = false, features = ["wgsl"]}
-winit = {version = "0.30.7"}

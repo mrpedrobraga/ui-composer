@@ -1,7 +1,11 @@
 #![allow(non_snake_case)]
-use crate::prelude::{LayoutItem, ParentHints, RectExt as _};
+
+use crate::app::primitives::{PollProcessors, Primitive};
+use crate::prelude::{Event, LayoutItem, ParentHints, RectExt as _};
 use crate::wgpu::pipeline::text::Text;
-use vek::Rgb;
+use std::pin::Pin;
+use std::task::{Context, Poll};
+use vek::{Rgb, Vec2};
 
 /// A simple label that visualises a String!
 ///
@@ -41,18 +45,31 @@ impl LayoutItem for TextLayoutItem {
     type Content = Text;
 
     fn get_natural_size(&self) -> vek::Extent2<f32> {
-        vek::Extent2::new(128.0, 48.0)
+        vek::Extent2::new(120.0, 32.0)
     }
 
     fn get_minimum_size(&self) -> vek::Extent2<f32> {
-        vek::Extent2::new(128.0, 48.0)
+        vek::Extent2::new(120.0, 32.0)
     }
 
     fn lay(&mut self, parent_hints: ParentHints) -> Self::Content {
         Text(
-            parent_hints.rect.expand_from_center(-8.0, -8.0, -8.0, -8.0),
+            parent_hints.rect.translated(Vec2::new(0.0, 4.0)),
             self.text.clone(),
             self.own_color.unwrap_or(Rgb::white()), // TODO: Use the current foreground colour!
         )
+    }
+}
+
+impl PollProcessors for TextLayoutItem {
+    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+        Poll::Ready(Some(()))
+    }
+}
+
+impl Primitive for TextLayoutItem {
+    fn handle_event(&mut self, _: Event) -> bool {
+        // Event was not handled
+        false
     }
 }

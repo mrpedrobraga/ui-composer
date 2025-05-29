@@ -1,5 +1,6 @@
 use crate::wgpu::backend::Resources;
 use crate::wgpu::render_target::{RenderInternal, RenderTarget};
+use cosmic_text::{Align, Attrs, Buffer, Family, Metrics, Shaping, Wrap};
 use {
     super::{GPURenderer, RendererBuffers, Renderers},
     glyphon::{
@@ -30,9 +31,7 @@ pub struct TextPipelineBuffers {
 }
 
 impl TextPipelineBuffers {
-    pub fn new(gpu_resources: &Resources, renderer: &mut GlyphonTextRenderer) -> Self {
-        let _ = gpu_resources;
-
+    pub fn new(_gpu_resources: &Resources, renderer: &mut GlyphonTextRenderer) -> Self {
         Self {
             buffers: vec![default_buffer(renderer)],
         }
@@ -40,22 +39,20 @@ impl TextPipelineBuffers {
 }
 
 #[allow(unused)]
-fn default_buffer(renderer: &mut GlyphonTextRenderer) -> cosmic_text::Buffer {
-    let mut buffer = cosmic_text::Buffer::new(
-        &mut renderer.font_system,
-        cosmic_text::Metrics::new(16.0, 20.0),
-    );
+fn default_buffer(renderer: &mut GlyphonTextRenderer) -> Buffer {
+    let mut buffer = Buffer::new(&mut renderer.font_system, Metrics::new(16.0, 20.0));
 
     buffer.set_text(
         &mut renderer.font_system,
         "Click me...",
-        cosmic_text::Attrs::new()
-            .family(cosmic_text::Family::Name("Work Sans"))
+        Attrs::new()
+            .family(Family::Name("Work Sans"))
             .weight(Weight::NORMAL),
-        cosmic_text::Shaping::Advanced,
+        Shaping::Advanced,
     );
+    buffer.lines[0].set_align(Some(Align::Center));
     buffer.set_size(&mut renderer.font_system, Some(100.0), Some(100.0));
-    buffer.set_wrap(&mut renderer.font_system, cosmic_text::Wrap::Word);
+    buffer.set_wrap(&mut renderer.font_system, Wrap::Word);
     buffer.shape_until_scroll(&mut renderer.font_system, false);
     buffer
 }

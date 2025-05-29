@@ -3,11 +3,11 @@ use crate::app::primitives::PollProcessors;
 use {
     super::super::{Event, InputItem},
     crate::{app::primitives::Primitive, prelude::CursorEvent},
-    futures_signals::signal::Mutable,
-    std::{
+    core::{
         pin::Pin,
         task::{Context, Poll},
     },
+    futures_signals::signal::Mutable,
     vek::Rect,
 };
 

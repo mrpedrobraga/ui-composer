@@ -9,9 +9,8 @@ use {
         },
         prelude::{CursorEvent, Effect},
         state::Mutable,
-    }
-    ,
-    std::{
+    },
+    core::{
         pin::Pin,
         task::{Context, Poll},
     },

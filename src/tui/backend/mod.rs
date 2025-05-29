@@ -1,30 +1,36 @@
 //! # TUIBackend
 //!
 //! This module is for rendering UI to the terminal using [crossterm].
+
+use crate::tui::pipeline::Canvas;
+use core::ops::DerefMut;
+use core::pin::Pin;
+use core::task::{Context, Poll};
+use crossterm::cursor::{Hide, SetCursorStyle, Show};
+use crossterm::event;
+use crossterm::event::{
+    DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture, KeyCode,
+};
+use crossterm::terminal::{Clear, ClearType, DisableLineWrap, EnableLineWrap};
+use spin::Mutex;
+use vek::{Rgba, Vec2};
 use {
-    crate::app::{
-        backend::Backend,
-        input::{CursorEvent, DeviceId, Event},
-    },
-    crossterm::{
-        cursor::{Hide, SetCursorStyle, Show},
-        event::{
-            self, DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste,
-            EnableMouseCapture, KeyCode,
-        },
-        terminal::{
-            disable_raw_mode, enable_raw_mode, Clear, ClearType, DisableLineWrap, EnableLineWrap,
-        },
-        ExecutableCommand as _,
-    },
+    crate::app::{backend::Backend, input::Event},
+    crossterm::terminal::{disable_raw_mode, enable_raw_mode},
     futures::FutureExt,
     pin_project::pin_project,
+    vek::Rect,
+};
+
+use crate::app::input::DeviceId;
+use crate::prelude::CursorEvent;
+#[cfg(feature = "std")]
+use {
+    crossterm::ExecutableCommand,
     std::{
-        io::{stdout, Stdout, Write},
-        pin::Pin,
-        sync::{Arc, Mutex},
+        io::{stdout, Write as _},
+        sync::Arc,
     },
-    vek::{Rect, Vec2},
 };
 
 #[pin_project(project=TUIBackendProj)]
@@ -37,7 +43,6 @@ impl<N> Backend for TUIBackend<N>
 where
     N: NodeDescriptor,
 {
-    type Event = Event;
     type Tree = N;
 
     fn run(node_tree: Self::Tree) {
@@ -49,20 +54,18 @@ where
         disable_raw_mode().expect("Couldn't disable raw mode.")
     }
 
-    fn poll_processors(
-        self: std::pin::Pin<&mut Self>,
-        cx: &mut std::task::Context,
-    ) -> std::task::Poll<Option<()>> {
+    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         let TUIBackendProj { node_tree, .. } = self.project();
 
-        let mut engine_tree = node_tree.lock().expect("Failed to lock tree for polling");
-        let engine_tree = std::ops::DerefMut::deref_mut(&mut engine_tree);
+        let mut engine_tree = node_tree.lock();
+        let engine_tree = DerefMut::deref_mut(&mut engine_tree);
         let engine_tree_pin = unsafe { Pin::new_unchecked(engine_tree) };
 
         engine_tree_pin.poll_processors(cx)
     }
 }
 
+#[cfg(feature = "tui")]
 impl<N> TUIBackend<N>
 where
     N: NodeDescriptor,
@@ -78,7 +81,7 @@ where
             .execute(Clear(ClearType::All))?
             .flush()?;
 
-        Self::redraw(&node_tree, Rect::new(0, 0, 16, 16), &mut stdout)?;
+        //Self::redraw(&node_tree, Rect::new(0, 0, 16, 16), &mut stdout)?;
         loop {
             let event = event::read()?;
 
@@ -89,7 +92,7 @@ where
                     }
                 }
                 event::Event::Resize(w, h) => {
-                    Self::redraw(&node_tree, Rect::new(0, 0, w, h), &mut stdout)?;
+                    //Self::redraw(&node_tree, Rect::new(0, 0, w, h), &mut stdout)?;
                 }
                 event::Event::Mouse(mouse_event) => {
                     if mouse_event.kind == event::MouseEventKind::Moved {
@@ -119,9 +122,11 @@ where
         Ok(())
     }
 
-    fn redraw(tree: &N::Reified, rect: Rect<u16, u16>, stdout: &mut Stdout) -> std::io::Result<()> {
-        tree.draw(stdout, rect)?;
-        Ok(())
+    fn redraw<C>(tree: &N::Reified, canvas: &mut C, rect: Rect<u16, u16>)
+    where
+        C: Canvas<Pixel = Rgba<u8>>,
+    {
+        tree.draw(canvas, rect);
     }
 }
 
@@ -143,12 +148,11 @@ pub trait Node: Send {
     fn handle_event(&mut self, event: Event);
 
     /// Draws to the standard output.
-    fn draw(&self, stdout: &mut Stdout, rect: Rect<u16, u16>) -> std::io::Result<()>;
+    fn draw<C>(&self, canvas: &mut C, rect: Rect<u16, u16>)
+    where
+        C: Canvas<Pixel = Rgba<u8>>;
 
     /// Polls underlying processors: `Future`s and `Signal`s within the app.
     /// This should advance animations, async processes and reactivity.
-    fn poll_processors(
-        self: Pin<&mut Self>,
-        cx: &mut std::task::Context,
-    ) -> std::task::Poll<Option<()>>;
+    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>>;
 }

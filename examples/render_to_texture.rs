@@ -13,9 +13,9 @@ fn main() {
     let vanilla = Rgb::new(249.0, 245.0, 227.0) / 255.0;
     let peach = Rgb::new(239.0, 121.0, 138.0) / 255.0;
 
-    let flex = Flex! (
+    let flex = Flex! ( 3;
         0.0 => Square(grape),
-        2.0 => Flex! (
+        2.0 => Flex! ( 3;
             0.0 => Label(String::from("Sample Text")).with_color(dragonfruit),
             1.0 => Square(vanilla),
             0.0 => Square(dragonfruit)

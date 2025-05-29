@@ -1,9 +1,11 @@
 //! A Backend that uses Winit to create Windowing and WGPU to render to the window.
 
-use crate::wgpu::backend::{Resources, WGPUBackend, WGPUBackendProj};
+use crate::wgpu::backend::{Resources, WGPUBackend};
 use crate::wgpu::pipeline::graphics::OrchestraRenderer;
 use crate::wgpu::pipeline::{text::GlyphonTextRenderer, Renderers};
+use pin_project::pin_project;
 use std::marker::PhantomData;
+use std::sync::Mutex;
 use winit::event::{DeviceEvent, DeviceId};
 use {
     super::window::WindowRenderTarget,
@@ -15,7 +17,7 @@ use {
     std::{
         ops::DerefMut,
         pin::Pin,
-        sync::{Arc, Mutex},
+        sync::Arc,
         task::{Context, Poll},
     },
     wgpu::{MemoryHints, TextureFormat},
@@ -64,12 +66,13 @@ pub trait Node: Send {
 /// and UI Composer.
 pub struct WinitWGPUApplicationHandler<A: NodeDescriptor> {
     tree_descriptor: Option<A>,
-    backend: Option<Arc<Mutex<WGPUBackend<A::Reified, A>>>>,
+    backend: Option<Arc<Mutex<WithWinit<WGPUBackend<A::Reified, A>>>>>,
 }
 
-impl<A: NodeDescriptor + 'static> Backend for WGPUBackend<A::Reified, A> {
-    type Event = WindowEvent;
+#[pin_project(project=WithWinitProj)]
+pub struct WithWinit<A>(A);
 
+impl<A: NodeDescriptor + 'static> Backend for WithWinit<WGPUBackend<A::Reified, A>> {
     type Tree = A;
 
     /// This function *must* be called on the main thread, because of winit.
@@ -85,9 +88,9 @@ impl<A: NodeDescriptor + 'static> Backend for WGPUBackend<A::Reified, A> {
     }
 
     fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
-        let WGPUBackendProj { tree, .. } = self.project();
+        let WithWinitProj(backend) = self.project();
 
-        let mut tree = tree.lock().expect("Failed to lock tree for polling");
+        let mut tree = backend.tree.lock().unwrap();
         let tree = tree.deref_mut();
         let tree_pin = unsafe { Pin::new_unchecked(tree) };
 
@@ -98,12 +101,13 @@ impl<A: NodeDescriptor + 'static> Backend for WGPUBackend<A::Reified, A> {
 impl<A: NodeDescriptor + 'static> ApplicationHandler for WinitWGPUApplicationHandler<A> {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         if self.backend.is_none() {
-            let (backend, processor) = futures::executor::block_on(WGPUBackend::create(
-                event_loop,
-                self.tree_descriptor
-                    .take()
-                    .expect("Failed to create WinitWgpu app."),
-            ));
+            let (backend, processor) =
+                futures::executor::block_on(WithWinit::<WGPUBackend<_, _>>::create(
+                    event_loop,
+                    self.tree_descriptor
+                        .take()
+                        .expect("Failed to create WinitWgpu app."),
+                ));
 
             std::thread::spawn(|| {
                 futures::executor::block_on(processor);
@@ -113,9 +117,7 @@ impl<A: NodeDescriptor + 'static> ApplicationHandler for WinitWGPUApplicationHan
         }
 
         if let Some(backend) = &mut self.backend {
-            let mut backend = backend
-                .lock()
-                .expect("Could not lock Render Engine to pump resumed event.");
+            let mut backend = backend.lock().unwrap();
             backend.handle_resumed();
         }
     }
@@ -127,9 +129,7 @@ impl<A: NodeDescriptor + 'static> ApplicationHandler for WinitWGPUApplicationHan
         event: WindowEvent,
     ) {
         if let Some(backend) = &mut self.backend {
-            let mut backend = backend
-                .lock()
-                .expect("Could not lock Render Engine to pump window event");
+            let mut backend = backend.lock().unwrap();
             backend.handle_window_event(window_id, event);
         }
     }
@@ -174,16 +174,13 @@ impl<A: NodeDescriptor + Send> WGPUBackend<A::Reified, A> {
     }
 }
 
-impl<A: NodeDescriptor + Send + 'static> WinitBackend for WGPUBackend<A::Reified, A> {
+impl<A: NodeDescriptor + Send + 'static> WinitBackend for WithWinit<WGPUBackend<A::Reified, A>> {
     type NodeTreeDescriptorType = A;
 
     async fn create(
         event_loop: &ActiveEventLoop,
         tree_descriptor: A,
-    ) -> (
-        Arc<Mutex<Self>>,
-        SignalFuture<BackendProcessExecutor<WGPUBackend<A::Reified, A>>>,
-    ) {
+    ) -> (Arc<Mutex<Self>>, SignalFuture<BackendProcessExecutor<Self>>) {
         let instance = wgpu::Instance::default();
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -252,7 +249,7 @@ impl<A: NodeDescriptor + Send + 'static> WinitBackend for WGPUBackend<A::Reified
 
         let tree = tree_descriptor.reify(event_loop, &gpu_resources, &mut renderers);
 
-        let backend = Self {
+        let backend = WGPUBackend {
             tree: Arc::new(Mutex::new(tree)),
             gpu_resources,
             renderers,
@@ -261,7 +258,7 @@ impl<A: NodeDescriptor + Send + 'static> WinitBackend for WGPUBackend<A::Reified
 
         // This render engine will be shared between your application (so that it can receive OS events)
         // and a reactor processor in another thread (so that it can process its own `Future`s and `Signal`s)
-        let backend = Arc::new(Mutex::new(backend));
+        let backend = Arc::new(Mutex::new(WithWinit(backend)));
 
         // TODO: Process the render engine's processors and reactors on another thread.
         // It needs not be an other thread, just a different execution context.
@@ -275,24 +272,16 @@ impl<A: NodeDescriptor + Send + 'static> WinitBackend for WGPUBackend<A::Reified
     }
 
     fn handle_resumed(&mut self) {
-        match self.tree.lock() {
-            Ok(mut engine_tree) => {
-                engine_tree.setup(&self.gpu_resources);
-            }
-            Err(_) => unimplemented!("Could not lock mutex for handling resumed event!"),
-        }
+        self.0.tree.lock().unwrap().setup(&self.0.gpu_resources);
     }
 
     /// Forwards window events for the engine tree to process.
     fn handle_window_event(&mut self, window_id: WindowId, event: WindowEvent) {
-        match self.tree.lock() {
-            Ok(mut tree) => tree.handle_window_event(
-                &mut self.gpu_resources,
-                &mut self.renderers,
-                window_id,
-                event,
-            ),
-            Err(_) => unimplemented!("Could not unlock mutex for handling event!"),
-        };
+        self.0.tree.lock().unwrap().handle_window_event(
+            &mut self.0.gpu_resources,
+            &mut self.0.renderers,
+            window_id,
+            event,
+        )
     }
 }
