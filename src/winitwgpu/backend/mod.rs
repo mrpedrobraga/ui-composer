@@ -33,6 +33,7 @@ pub mod implementations;
 
 /// Trait that represents a descriptor main node of the app tree.
 /// These nodes are used for creating windows and processes and rendering contexts.
+#[diagnostic::on_unimplemented(message = "This value is not a proper node descriptor.")]
 pub trait NodeDescriptor: Send {
     /// The type this node descriptor generates when reified.
     type Reified: Node;

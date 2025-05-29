@@ -52,6 +52,7 @@ impl<A> Slot for Mutable<A> {
 }
 
 /// Trait that describes an effect — a modification to an environment.
+#[must_use = "effects are lazy and do nothing unless applied"]
 pub trait Effect: Clone + Send + Sync {
     /// Applies the effect.
     fn apply(&mut self);

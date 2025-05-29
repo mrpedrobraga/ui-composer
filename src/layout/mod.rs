@@ -52,6 +52,12 @@ pub struct ChildHints {
 }
 
 /// An item that can be included in a laying out context.
+#[diagnostic::on_unimplemented(
+    message = "Value is not a `LayoutItem` thus can not be used.",
+    label = "In this context...",
+    note = "You can use `ResizableItem` to use graphics/input primitives as layout items."
+)]
+#[must_use = "layout items need to be put in a layout context to be used."]
 pub trait LayoutItem: Send {
     type Content: PrimitiveDescriptor;
 

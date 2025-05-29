@@ -62,6 +62,33 @@ macro_rules! Flex {
 }
 
 #[macro_export]
+macro_rules! or_default {
+    (_, $default:expr) => {
+        $default
+    };
+    ($w:expr, $default:expr) => {
+        $w
+    };
+}
+
+#[macro_export]
+#[allow(non_snake_case)]
+macro_rules! Flex2 {
+    ($n:expr ; $([$weight:tt] $item:expr ),* $(,)?) => {
+        ::ui_composer::prelude::Flex::<$n, _>(
+            ::ui_composer::items![
+                $(
+                    ::ui_composer::prelude::FlexItem(
+                        $item,
+                        ::ui_composer::or_default!($weight, 0.0)
+                    ),
+                )*
+            ]
+        )
+    };
+}
+
+#[macro_export]
 #[allow(non_snake_case)]
 macro_rules! UI {
     (terminal) => {

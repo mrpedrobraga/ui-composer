@@ -23,7 +23,7 @@ where
     let mouse_position = Mutable::new(None);
     let is_hovered_state = Mutable::new(false);
 
-    let render = move |parent_hints: ParentHints| {
+    let render_ui = move |parent_hints: ParentHints| {
         let hover = Hover::new(parent_hints.rect, is_hovered_state.clone());
         let tap = Tap::new(parent_hints.rect, mouse_position.clone(), effect.clone());
 
@@ -46,5 +46,5 @@ where
             )
     };
 
-    ResizableItem::new(render).with_minimum_size(minimum_size)
+    ResizableItem::new(render_ui).with_minimum_size(minimum_size)
 }

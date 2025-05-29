@@ -62,7 +62,7 @@ impl LayoutItem for TextLayoutItem {
 }
 
 impl PollProcessors for TextLayoutItem {
-    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+    fn poll_processors(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
         Poll::Ready(Some(()))
     }
 }
