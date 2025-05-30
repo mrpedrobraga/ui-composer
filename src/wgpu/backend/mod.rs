@@ -1,7 +1,9 @@
+use crate::app::primitives::PollProcessors;
 use crate::prelude::Backend;
 use crate::wgpu::pipeline::Renderers;
 use pin_project::pin_project;
 use std::marker::PhantomData;
+use std::ops::DerefMut;
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll};
@@ -27,14 +29,20 @@ pub struct Resources {
     pub adapter: wgpu::Adapter,
 }
 
-impl<N, D> Backend for WGPUBackend<N, D> {
+impl<A, D> Backend for WGPUBackend<A, D>
+where
+    A: PollProcessors,
+{
     type Tree = D;
 
-    fn run(_node_tree: Self::Tree) {
-        todo!()
+    fn run(node_tree: Self::Tree) {
+        unimplemented!()
     }
 
-    fn poll_processors(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
-        todo!()
+    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+        let mut tree = self.tree.lock().unwrap();
+        let tree = tree.deref_mut();
+        let tree_pin = unsafe { Pin::new_unchecked(tree) };
+        tree_pin.poll_processors(cx)
     }
 }

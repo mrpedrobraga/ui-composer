@@ -1,11 +1,9 @@
 use super::{Node, NodeDescriptor};
 use crate::wgpu::backend::Resources;
 use crate::wgpu::pipeline::Renderers;
-use std::pin::Pin;
-use std::task::Context;
+use winit::event::WindowEvent;
 use winit::event_loop::ActiveEventLoop;
 use winit::window::WindowId;
-use {std::task::Poll, winit::event::WindowEvent};
 
 impl NodeDescriptor for () {
     type Reified = ();
@@ -29,13 +27,6 @@ impl Node for () {
         _window_id: winit::window::WindowId,
         _event: WindowEvent,
     ) {
-    }
-
-    fn poll_processors(
-        self: std::pin::Pin<&mut Self>,
-        _cx: &mut std::task::Context,
-    ) -> std::task::Poll<Option<()>> {
-        Poll::Ready(Some(()))
     }
 }
 
@@ -80,22 +71,5 @@ where
             .handle_window_event(gpu_resources, pipelines, window_id, event.clone());
         self.1
             .handle_window_event(gpu_resources, pipelines, window_id, event);
-    }
-
-    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
-        let (pinned_a, pinned_b) = {
-            let mut_ref = unsafe { self.get_unchecked_mut() };
-            let (ref mut a, ref mut b) = mut_ref;
-
-            let a = unsafe { Pin::new_unchecked(a) };
-            let b = unsafe { Pin::new_unchecked(b) };
-
-            (a, b)
-        };
-
-        let poll_a = pinned_a.poll_processors(cx);
-        let poll_b = pinned_b.poll_processors(cx);
-
-        crate::state::signal_ext::coalesce_polls(poll_a, poll_b)
     }
 }

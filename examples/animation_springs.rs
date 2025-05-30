@@ -3,6 +3,7 @@
 use ui_composer::layout::{LayoutItem, Resizable, ResizableItem};
 use ui_composer::wgpu::pipeline::{graphics::graphic::Graphic, text::Text};
 use ui_composer::wgpu::render_target::Render;
+use vek::Vec3;
 use {
     ui_composer::{
         app::{
@@ -115,6 +116,7 @@ fn hover_square(
             original_color,
             animation_factor_pct
         ))
+        .translated_3d(Vec3::new(0.0, 0.0, -0.1 * animation_factor_pct))
         .with_corner_radii(Lerp::lerp(
             Vec4::zero(),
             Vec4::one() * 50.0,

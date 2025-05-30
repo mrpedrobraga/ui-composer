@@ -42,6 +42,14 @@ impl Graphic {
         }
     }
 
+    /// Returns this graphic translated by a 3d vector.
+    pub fn translated_3d(self, translation: Vec3<f32>) -> Self {
+        Self {
+            transform: self.transform.translated_3d(translation),
+            ..self
+        }
+    }
+
     /// Returns this graphic with altered corner radii.
     pub fn with_corner_radii(self, corner_radii: Vec4<f32>) -> Self {
         Self {
@@ -62,10 +70,12 @@ where
     B: AsPrimitive<f32> + cgmath::One,
 {
     fn from(value: Rect<A, B>) -> Self {
+        let pos_2d = value.position().as_();
+
         Graphic {
             transform: Mat4::identity()
                 .scaled_3d(Extent3::new(value.extent().w, value.extent().h, B::one()).as_())
-                .translated_2d(value.position().as_()),
+                .translated_3d(Vec3::new(pos_2d.x, pos_2d.y, 0.5)),
             ..Default::default()
         }
     }

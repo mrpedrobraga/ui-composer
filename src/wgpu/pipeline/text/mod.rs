@@ -1,6 +1,8 @@
 use crate::wgpu::backend::Resources;
 use crate::wgpu::render_target::{RenderInternal, RenderTarget};
-use cosmic_text::{Align, Attrs, Buffer, Family, Metrics, Shaping, Wrap};
+use glyphon::cosmic_text::Align;
+use glyphon::{Attrs, Buffer, Family, Metrics, Shaping, Wrap};
+use wgpu::{CompareFunction, DepthStencilState};
 use {
     super::{GPURenderer, RendererBuffers, Renderers},
     glyphon::{
@@ -27,7 +29,7 @@ pub trait RenderText {
 pub struct Text(pub Rect<f32, f32>, pub String, pub Rgb<f32>);
 
 pub struct TextPipelineBuffers {
-    buffers: Vec<cosmic_text::Buffer>,
+    buffers: Vec<Buffer>,
 }
 
 impl TextPipelineBuffers {
@@ -45,7 +47,7 @@ fn default_buffer(renderer: &mut GlyphonTextRenderer) -> Buffer {
     buffer.set_text(
         &mut renderer.font_system,
         "Click me...",
-        Attrs::new()
+        &Attrs::new()
             .family(Family::Name("Work Sans"))
             .weight(Weight::NORMAL),
         Shaping::Advanced,
@@ -146,8 +148,18 @@ impl GlyphonTextRenderer {
 
         let mut atlas =
             glyphon::TextAtlas::new(device, queue, &cache, TextureFormat::Bgra8UnormSrgb);
-        let text_renderer =
-            TextRenderer::new(&mut atlas, device, MultisampleState::default(), None);
+        let text_renderer = TextRenderer::new(
+            &mut atlas,
+            device,
+            MultisampleState::default(),
+            Some(DepthStencilState {
+                format: TextureFormat::Depth32Float,
+                depth_write_enabled: true,
+                depth_compare: CompareFunction::Less,
+                stencil: Default::default(),
+                bias: Default::default(),
+            }),
+        );
 
         Self {
             text_renderer,

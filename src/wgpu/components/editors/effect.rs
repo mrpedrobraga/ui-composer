@@ -28,22 +28,22 @@ where
         let tap = Tap::new(parent_hints.rect, mouse_position.clone(), effect.clone());
 
         items!(
-                tap,
-                hover,
-                is_hovered_state
-                    .signal()
-                    .map(move |is_hovered| {
-                        if is_hovered {
-                            items!(Graphic::from(parent_hints.rect)
-                                .with_color(Rgb::new(0.6, 0.6, 0.6)),)
-                        } else {
-                            items!(Graphic::from(parent_hints.rect)
-                                .with_color(Rgb::new(0.2, 0.2, 0.2)),)
-                        }
-                    })
-                    .process(),
-                label.lay(parent_hints)
-            )
+            tap,
+            hover,
+            is_hovered_state
+                .signal()
+                .map(move |is_hovered| {
+                    if is_hovered {
+                        items!(Graphic::from(parent_hints.rect)
+                            .with_color(Rgb::new(0.6, 0.6, 0.6)),)
+                    } else {
+                        items!(Graphic::from(parent_hints.rect)
+                            .with_color(Rgb::new(0.2, 0.2, 0.2)),)
+                    }
+                })
+                .process(),
+            label.lay(parent_hints)
+        )
     };
 
     ResizableItem::new(render_ui).with_minimum_size(minimum_size)

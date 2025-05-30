@@ -1,5 +1,6 @@
 //! A Backend that uses Winit to create Windowing and WGPU to render to the window.
 
+use crate::app::primitives::{PollProcessors, Primitive};
 use crate::wgpu::backend::{Resources, WGPUBackend};
 use crate::wgpu::pipeline::graphics::OrchestraRenderer;
 use crate::wgpu::pipeline::{text::GlyphonTextRenderer, Renderers};
@@ -46,7 +47,7 @@ pub trait NodeDescriptor: Send {
 }
 
 /// A main node in the app tree.
-pub trait Node: Send {
+pub trait Node: Primitive {
     fn setup(&mut self, gpu_resources: &Resources);
 
     /// Handles an event and cascades it down its children.
@@ -57,10 +58,6 @@ pub trait Node: Send {
         window_id: WindowId,
         event: WindowEvent,
     );
-
-    /// Polls underlying processors: `Future`s and `Signal`s within the app.
-    /// This should advance animations, async processes and reactivity.
-    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>>;
 }
 
 /// The [`ApplicationHandler`] that sits between [`winit`]
@@ -193,16 +190,15 @@ impl<A: NodeDescriptor + Send + 'static> WinitBackend for WithWinit<WGPUBackend<
             .unwrap();
 
         let (device, queue) = adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: None,
-                    required_features: wgpu::Features::empty(),
-                    required_limits: wgpu::Limits::downlevel_webgl2_defaults()
-                        .using_resolution(adapter.limits()),
-                    memory_hints: MemoryHints::default(),
-                },
-                None,
-            )
+            .request_device(&wgpu::DeviceDescriptor {
+                label: None,
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::downlevel_webgl2_defaults()
+                    .using_resolution(adapter.limits()),
+                memory_hints: MemoryHints::default(),
+                // TODO: Add something here in debug mode.
+                trace: Default::default(),
+            })
             .await
             .unwrap();
 

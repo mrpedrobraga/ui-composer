@@ -1,4 +1,6 @@
+use crate::app::primitives::{PollProcessors, Primitive};
 use crate::layout::ParentHints;
+use crate::prelude::Event;
 use crate::wgpu::backend::Resources;
 use crate::wgpu::pipeline::{graphics::GraphicsPipelineBuffers, RendererBuffers, Renderers};
 use crate::wgpu::pipeline::{
@@ -7,6 +9,10 @@ use crate::wgpu::pipeline::{
     GPURenderer,
 };
 use crate::wgpu::render_target::{Render, RenderInternal, RenderTarget};
+use wgpu::{
+    Color, LoadOp, Operations, RenderPassColorAttachment, RenderPassDepthStencilAttachment,
+    RenderPassDescriptor, StoreOp, TextureDescriptor, TextureDimension, TextureUsages,
+};
 use {
     super::backend::{Node, NodeDescriptor},
     crate::{
@@ -218,6 +224,40 @@ pub struct WindowNode {
     render_target: WindowRenderTarget,
 }
 
+impl Primitive for WindowNode {
+    fn handle_event(&mut self, event: Event) -> bool {
+        self.content.handle_event(event)
+    }
+}
+
+impl PollProcessors for WindowNode {
+    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+        // TODO: Figure out what do to with the result of this poll (as it might introduce a need for redrawing!!!);
+
+        let WindowNodeProj {
+            content,
+            window,
+            mut state,
+            ..
+        } = self.project();
+
+        let content: &mut _ = &mut **content;
+        let content = unsafe { Pin::new_unchecked(content) };
+        let content_poll = content.poll_processors(cx);
+
+        if content_poll.is_ready() {
+            window.request_redraw()
+        }
+
+        // Every time that a new title arrives, we update the Window!
+        if let Poll::Ready(Some(new_title)) = state.title_signal.poll_change_unpin(cx) {
+            window.set_title(new_title.as_str())
+        }
+
+        content_poll
+    }
+}
+
 impl Node for WindowNode {
     fn setup(&mut self, _gpu_resources: &Resources) {}
 
@@ -256,34 +296,8 @@ impl Node for WindowNode {
         }
 
         if let Ok(app_event) = event.try_into() {
-            self.content.handle_event(app_event);
+            self.handle_event(app_event);
         }
-    }
-
-    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
-        // TODO: Figure out what do to with the result of this poll (as it might introduce a need for redrawing!!!);
-
-        let WindowNodeProj {
-            content,
-            window,
-            mut state,
-            ..
-        } = self.project();
-
-        let content: &mut _ = &mut **content;
-        let content = unsafe { Pin::new_unchecked(content) };
-        let content_poll = content.poll_processors(cx);
-
-        if content_poll.is_ready() {
-            window.request_redraw()
-        }
-
-        // Every time that a new title arrives, we update the Window!
-        if let Poll::Ready(Some(new_title)) = state.title_signal.poll_change_unpin(cx) {
-            window.set_title(new_title.as_str())
-        }
-
-        content_poll
     }
 }
 
@@ -304,6 +318,7 @@ pub struct WindowRenderTarget {
     pub size: Extent2<u32>,
     pub surface: Surface<'static>,
     pub surface_config: SurfaceConfiguration,
+    pub depth_texture: wgpu::Texture,
 }
 
 impl WindowRenderTarget {
@@ -313,11 +328,34 @@ impl WindowRenderTarget {
             .get_default_config(&gpu_resources.adapter, size.w, size.h)
             .expect("No default configuration found?");
 
+        let depth_texture = Self::create_depth_texture(gpu_resources, size);
+
         Self {
             size,
             surface,
             surface_config,
+            depth_texture,
         }
+    }
+
+    fn create_depth_texture(gpu_resources: &Resources, size: Extent2<u32>) -> wgpu::Texture {
+        gpu_resources.device.create_texture(&TextureDescriptor {
+            // TODO: Use better labels everywhere (possibly identifying this window).
+            label: Some("Window depth texture"),
+            size: wgpu::Extent3d {
+                width: size.w,
+                height: size.h,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: TextureDimension::D2,
+            // TODO: For 2D rendering maybe I should use integers...
+            // But for 3D rendering, float might be it.
+            format: TextureFormat::Depth32Float,
+            usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        })
     }
 }
 
@@ -329,6 +367,7 @@ impl RenderTarget for WindowRenderTarget {
             .unwrap();
         self.surface
             .configure(&gpu_resources.device, &self.surface_config);
+        self.depth_texture = Self::create_depth_texture(gpu_resources, new_size);
         self.size = new_size;
     }
 
@@ -344,8 +383,12 @@ impl RenderTarget for WindowRenderTarget {
             .get_current_texture()
             .expect("Error retrieving the current texture.");
 
-        let view = texture
+        let color_view = texture
             .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+
+        let depth_view = self
+            .depth_texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
         let mut encoder =
@@ -355,22 +398,29 @@ impl RenderTarget for WindowRenderTarget {
                     label: Some("Command Encoder"),
                 });
 
-        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
             label: None,
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &view,
+            color_attachments: &[Some(RenderPassColorAttachment {
+                view: &color_view,
                 resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color {
+                ops: Operations {
+                    load: LoadOp::Clear(Color {
                         r: 0.015,
                         g: 0.015,
                         b: 0.015,
                         a: 1.0,
                     }),
-                    store: wgpu::StoreOp::Store,
+                    store: StoreOp::Store,
                 },
             })],
-            depth_stencil_attachment: None,
+            depth_stencil_attachment: Some(RenderPassDepthStencilAttachment {
+                view: &depth_view,
+                depth_ops: Some(Operations {
+                    load: LoadOp::Clear(1.0),
+                    store: StoreOp::Store,
+                }),
+                stencil_ops: None,
+            }),
             timestamp_writes: None,
             occlusion_query_set: None,
         });

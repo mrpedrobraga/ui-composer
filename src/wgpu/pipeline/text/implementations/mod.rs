@@ -1,7 +1,7 @@
 use crate::app::primitives::PollProcessors;
 use crate::wgpu::pipeline::graphics::graphic::Graphic;
 use crate::wgpu::render_target::RenderInternal;
-use cosmic_text::Buffer;
+use glyphon::Buffer;
 use {
     super::{RenderText, Text},
     crate::{

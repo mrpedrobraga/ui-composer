@@ -122,6 +122,8 @@ impl RenderTarget for ImageRenderTarget {
         //     render_artifacts,
         // );
 
+        drop(render_pass);
+
         gpu_resources
             .queue
             .submit(std::iter::once(encoder.finish()));

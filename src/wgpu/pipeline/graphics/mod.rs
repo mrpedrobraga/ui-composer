@@ -1,5 +1,6 @@
 use crate::wgpu::backend::Resources;
 use crate::wgpu::render_target::{RenderInternal, RenderTarget};
+use wgpu::{CompareFunction, DepthBiasState, DepthStencilState, StencilState, TextureFormat};
 use {
     super::{GPURenderer, RendererBuffers, Renderers},
     bytemuck::{Pod, Zeroable},
@@ -204,7 +205,13 @@ impl OrchestraRenderer {
                 targets: render_target_formats,
             }),
             primitive: wgpu::PrimitiveState::default(),
-            depth_stencil: None, // yet
+            depth_stencil: Some(DepthStencilState {
+                format: TextureFormat::Depth32Float,
+                depth_write_enabled: true,
+                depth_compare: CompareFunction::Less,
+                stencil: StencilState::default(),
+                bias: DepthBiasState::default(),
+            }),
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
             cache: None, // TODO: Perhaps have some cache?

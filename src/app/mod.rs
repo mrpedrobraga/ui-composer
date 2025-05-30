@@ -36,6 +36,7 @@ impl UIComposer {
 
 #[cfg(all(feature = "winit", feature = "wgpu"))]
 mod winit_wgpu {
+    use crate::app::primitives::PollProcessors;
     use crate::wgpu::backend::WGPUBackend;
     use crate::winitwgpu::backend::WithWinit;
     use {
@@ -49,6 +50,13 @@ mod winit_wgpu {
         /// and only once in your program.
         pub fn run<N: NodeDescriptor + 'static>(node_tree_descriptor: N) {
             WithWinit::<WGPUBackend<N::Reified, N>>::run(node_tree_descriptor);
+        }
+
+        pub fn run2<N: NodeDescriptor + 'static>(node_tree_descriptor: N)
+        where
+            N::Reified: PollProcessors,
+        {
+            WGPUBackend::<N::Reified, N>::run(node_tree_descriptor);
         }
     }
 }

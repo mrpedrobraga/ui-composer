@@ -24,7 +24,7 @@ fn main() {
         1.0 => Square(peach),
     );
 
-    UIComposer::run(Image(Rect::new(0.0, 0.0, 320.0, 180.0), flex))
+    UIComposer::run2(Image(Rect::new(0.0, 0.0, 320.0, 180.0), flex))
 }
 
 fn Square(color: Rgb<f32>) -> impl LayoutItem<Content = impl Render> {

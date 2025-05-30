@@ -1,8 +1,14 @@
+use crate::app::primitives::{PollProcessors, Primitive};
 use crate::wgpu::backend::Resources;
 use crate::wgpu::pipeline::{graphics::GraphicsPipelineBuffers, RendererBuffers, Renderers};
 use crate::wgpu::pipeline::{graphics::RenderGraphicDescriptor, text::TextPipelineBuffers};
 use crate::wgpu::render_target::{RenderInternal, RenderTarget};
 use crate::winitwgpu::backend::Node;
+use image::{ImageBuffer, Rgba};
+use wgpu::wgt::PollType;
+use wgpu::{
+    Origin3d, TexelCopyBufferInfo, TexelCopyBufferLayout, TexelCopyTextureInfo, TextureAspect,
+};
 use {
     super::texture::ImageRenderTarget,
     crate::{
@@ -75,6 +81,12 @@ pub struct ImageNode {
 }
 
 /* Use a different implementation of "Node" for Image Node that's detached from winit!  */
+impl Primitive for ImageNode {
+    fn handle_event(&mut self, event: Event) -> bool {
+        self.content.handle_event(event)
+    }
+}
+
 impl Node for ImageNode {
     fn setup(&mut self, _gpu_resources: &Resources) {
         /* Do nothing */
@@ -90,10 +102,12 @@ impl Node for ImageNode {
     ) {
         self.render(gpu_resources, renderers);
         if let Ok(event) = event.try_into() {
-            self.content.handle_event(event);
+            self.handle_event(event);
         }
     }
+}
 
+impl PollProcessors for ImageNode {
     fn poll_processors(
         self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context,
@@ -143,15 +157,15 @@ impl ImageNode {
                 });
 
         encoder.copy_texture_to_buffer(
-            wgpu::ImageCopyTexture {
+            TexelCopyTextureInfo {
                 texture: &self.render_target.image.texture,
                 mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
+                origin: Origin3d::ZERO,
+                aspect: TextureAspect::All,
             },
-            wgpu::ImageCopyBuffer {
+            TexelCopyBufferInfo {
                 buffer: buffer.as_ref(),
-                layout: wgpu::ImageDataLayout {
+                layout: TexelCopyBufferLayout {
                     offset: 0,
                     bytes_per_row: Some(4 * size.width),
                     rows_per_image: Some(size.height),
@@ -171,7 +185,10 @@ impl ImageNode {
             buffer_slice.map_async(wgpu::MapMode::Read, move |result| {
                 tx.send(result).unwrap();
             });
-            gpu_resources.device.poll(wgpu::Maintain::Wait);
+            gpu_resources
+                .device
+                .poll(PollType::Wait)
+                .expect("Couldn't... wait?");
             rx.recv().unwrap().unwrap();
 
             let data = buffer_slice.get_mapped_range();
@@ -180,7 +197,6 @@ impl ImageNode {
                 .chunks_exact(4)
                 .flat_map(|chunk| [chunk[2], chunk[1], chunk[0], chunk[3]])
                 .collect();
-            use image::{ImageBuffer, Rgba};
             let img_buffer =
                 ImageBuffer::<Rgba<u8>, _>::from_raw(size.width, size.height, v).unwrap();
             img_buffer.save("image.png").unwrap();
