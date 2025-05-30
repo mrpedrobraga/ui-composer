@@ -17,6 +17,7 @@ pub mod graphic;
 #[doc(hidden)]
 pub mod implementations;
 
+/// Descriptor for some [RenderGraphic].
 pub trait RenderGraphicDescriptor: RenderGraphic {
     /// The amount of primitives this UI Item will have when drawing.
     const QUAD_COUNT: usize;
@@ -25,6 +26,8 @@ pub trait RenderGraphicDescriptor: RenderGraphic {
     fn get_render_rect(&self) -> Option<Rect<f32, f32>>;
 }
 
+/// Trait for a [Primitive] that can render graphics using this pipeline.
+/// There's no trait bounds on this trait for convenience.
 pub trait RenderGraphic {
     /// Pushes quads to a quad buffer slice.
     fn write_quads(&self, quad_buffer: &mut [Graphic]);

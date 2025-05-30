@@ -1,4 +1,4 @@
-use crate::app::primitives::PollProcessors;
+use crate::app::primitives::Processor;
 use {
     crate::app::{input::Event, primitives::Primitive},
     bytemuck::{Pod, Zeroable},
@@ -87,8 +87,8 @@ impl Primitive for Graphic {
     }
 }
 
-impl PollProcessors for Graphic {
-    fn poll_processors(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
+impl Processor for Graphic {
+    fn poll(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
         Poll::Ready(Some(()))
     }
 }

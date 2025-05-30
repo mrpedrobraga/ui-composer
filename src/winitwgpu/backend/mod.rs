@@ -1,6 +1,6 @@
 //! A Backend that uses Winit to create Windowing and WGPU to render to the window.
 
-use crate::app::primitives::{PollProcessors, Primitive};
+use crate::app::primitives::{Primitive, Processor};
 use crate::wgpu::backend::{Resources, WGPUBackend};
 use crate::wgpu::pipeline::graphics::OrchestraRenderer;
 use crate::wgpu::pipeline::{text::GlyphonTextRenderer, Renderers};
@@ -60,11 +60,14 @@ pub trait Node: Primitive {
     );
 }
 
+#[expect(type_alias_bounds)]
+type SharedWWBackend<A: NodeDescriptor> = Arc<Mutex<WithWinit<WGPUBackend<A::Reified, A>>>>;
+
 /// The [`ApplicationHandler`] that sits between [`winit`]
 /// and UI Composer.
 pub struct WinitWGPUApplicationHandler<A: NodeDescriptor> {
     tree_descriptor: Option<A>,
-    backend: Option<Arc<Mutex<WithWinit<WGPUBackend<A::Reified, A>>>>>,
+    backend: Option<SharedWWBackend<A>>,
 }
 
 #[pin_project(project=WithWinitProj)]
@@ -92,7 +95,7 @@ impl<A: NodeDescriptor + 'static> Backend for WithWinit<WGPUBackend<A::Reified, 
         let tree = tree.deref_mut();
         let tree_pin = unsafe { Pin::new_unchecked(tree) };
 
-        tree_pin.poll_processors(cx)
+        tree_pin.poll(cx)
     }
 }
 

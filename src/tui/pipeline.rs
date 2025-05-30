@@ -9,7 +9,7 @@
 //! The render can update the stdout partially, by rendering only an AABB. This is useful for huge screens,
 //! but, really, terminals don't really have a lot of pixels.
 
-use crate::app::primitives::PollProcessors;
+use crate::app::primitives::Processor;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use vek::Vec2;
@@ -55,8 +55,8 @@ impl Primitive for Graphic {
     }
 }
 
-impl PollProcessors for Graphic {
-    fn poll_processors(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
+impl Processor for Graphic {
+    fn poll(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
         Poll::Ready(Some(()))
     }
 }

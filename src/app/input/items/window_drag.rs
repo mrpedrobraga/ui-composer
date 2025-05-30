@@ -1,5 +1,5 @@
 #![allow(unused)]
-use crate::app::primitives::PollProcessors;
+use crate::app::primitives::Processor;
 use {
     super::super::{Event, InputItem},
     crate::{
@@ -74,8 +74,8 @@ impl Primitive for Drag {
     }
 }
 
-impl PollProcessors for Drag {
-    fn poll_processors(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
+impl Processor for Drag {
+    fn poll(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
         Poll::Ready(Some(()))
     }
 }

@@ -1,5 +1,5 @@
 #![allow(unused)]
-use crate::app::primitives::PollProcessors;
+use crate::app::primitives::Processor;
 use {
     super::super::{Event, InputItem},
     crate::{
@@ -70,11 +70,11 @@ where
     }
 }
 
-impl<A> PollProcessors for Tap<A>
+impl<A> Processor for Tap<A>
 where
     A: Effect + Send + Sync,
 {
-    fn poll_processors(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
+    fn poll(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
         Poll::Ready(Some(()))
     }
 }

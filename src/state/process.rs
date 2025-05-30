@@ -1,4 +1,4 @@
-use crate::app::primitives::PollProcessors;
+use crate::app::primitives::Processor;
 use crate::layout::{LayoutItem, ParentHints};
 use core::task::Context;
 use vek::Extent2;
@@ -18,13 +18,13 @@ use {
 pub struct SignalProcessor<S, T>
 where
     S: Signal<Item = T>,
-    T: PollProcessors,
+    T: Processor,
 {
     #[pin]
     pub(crate) signal: HoldSignal<S, T>,
 }
 
-impl<S: Signal<Item = T> + Send, T: PollProcessors> Signal for SignalProcessor<S, T> {
+impl<S: Signal<Item = T> + Send, T: Processor> Signal for SignalProcessor<S, T> {
     type Item = ();
 
     fn poll_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
@@ -48,7 +48,7 @@ where
 impl<A, B> Signal for HoldSignal<A, B>
 where
     A: Signal<Item = B>,
-    B: PollProcessors,
+    B: Processor,
 {
     type Item = ();
 
@@ -67,7 +67,7 @@ where
         match held_item {
             Some(held_item) => {
                 let held_item = unsafe { Pin::new_unchecked(held_item) };
-                held_item.poll_processors(cx)
+                held_item.poll(cx)
             }
             None => poll,
         }
@@ -87,12 +87,12 @@ where
     }
 }
 
-impl<S: Send + Sync, T> PollProcessors for SignalProcessor<S, T>
+impl<S: Send + Sync, T> Processor for SignalProcessor<S, T>
 where
     S: Signal<Item = T>,
     T: Primitive + Send,
 {
-    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+    fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         self.poll_change(cx)
     }
 }
@@ -128,7 +128,7 @@ where
 impl<T, F> Signal for FutureProcessor<F, T>
 where
     F: Future<Output = T>,
-    T: PollProcessors,
+    T: Processor,
 {
     type Item = ();
 
@@ -153,7 +153,7 @@ where
 impl<A, B> Signal for HoldFuture<A, B>
 where
     A: Future<Output = B>,
-    B: PollProcessors,
+    B: Processor,
 {
     type Item = ();
 
@@ -163,7 +163,7 @@ where
         match held_item {
             Some(held_item) => {
                 let held_item = unsafe { Pin::new_unchecked(held_item) };
-                held_item.poll_processors(cx)
+                held_item.poll(cx)
             }
             None => match future.poll(cx) {
                 Poll::Ready(v) => {
@@ -189,12 +189,12 @@ where
     }
 }
 
-impl<F, T> PollProcessors for FutureProcessor<F, T>
+impl<F, T> Processor for FutureProcessor<F, T>
 where
     F: Future<Output = T> + Send,
     T: Primitive,
 {
-    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+    fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         self.poll_change(cx)
     }
 }
@@ -221,11 +221,10 @@ where
     }
 
     fn lay(&mut self, parent_hints: ParentHints) -> Self::Content {
-        if let Some(held_item) = &mut self.signal.held_item {
-            Some(held_item.lay(parent_hints))
-        } else {
-            None
-        }
+        self.signal
+            .held_item
+            .as_mut()
+            .map(|held_item| held_item.lay(parent_hints))
     }
 }
 pub trait UIFutureExt: Future {

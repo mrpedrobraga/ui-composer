@@ -1,4 +1,4 @@
-use crate::app::primitives::PollProcessors;
+use crate::app::primitives::Processor;
 use crate::prelude::Backend;
 use crate::wgpu::pipeline::Renderers;
 use pin_project::pin_project;
@@ -31,11 +31,11 @@ pub struct Resources {
 
 impl<A, D> Backend for WGPUBackend<A, D>
 where
-    A: PollProcessors,
+    A: Processor,
 {
     type Tree = D;
 
-    fn run(node_tree: Self::Tree) {
+    fn run(_node_tree: Self::Tree) {
         unimplemented!()
     }
 
@@ -43,6 +43,6 @@ where
         let mut tree = self.tree.lock().unwrap();
         let tree = tree.deref_mut();
         let tree_pin = unsafe { Pin::new_unchecked(tree) };
-        tree_pin.poll_processors(cx)
+        tree_pin.poll(cx)
     }
 }

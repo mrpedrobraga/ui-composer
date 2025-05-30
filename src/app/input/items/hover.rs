@@ -1,5 +1,5 @@
 #![allow(unused)]
-use crate::app::primitives::PollProcessors;
+use crate::app::primitives::Processor;
 use {
     super::super::{Event, InputItem},
     crate::{app::primitives::Primitive, prelude::CursorEvent},
@@ -49,8 +49,8 @@ impl Primitive for Hover {
     }
 }
 
-impl PollProcessors for Hover {
-    fn poll_processors(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
+impl Processor for Hover {
+    fn poll(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
         Poll::Ready(Some(()))
     }
 }

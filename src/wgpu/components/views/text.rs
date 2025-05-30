@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use crate::app::primitives::{PollProcessors, Primitive};
+use crate::app::primitives::{Primitive, Processor};
 use crate::prelude::{Event, LayoutItem, ParentHints, RectExt as _};
 use crate::wgpu::pipeline::text::Text;
 use std::pin::Pin;
@@ -61,8 +61,8 @@ impl LayoutItem for TextLayoutItem {
     }
 }
 
-impl PollProcessors for TextLayoutItem {
-    fn poll_processors(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
+impl Processor for TextLayoutItem {
+    fn poll(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
         Poll::Ready(Some(()))
     }
 }

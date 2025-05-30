@@ -1,4 +1,4 @@
-use crate::app::primitives::{PollProcessors, Primitive};
+use crate::app::primitives::{Primitive, Processor};
 use crate::layout::ParentHints;
 use crate::prelude::Event;
 use crate::wgpu::backend::Resources;
@@ -230,8 +230,8 @@ impl Primitive for WindowNode {
     }
 }
 
-impl PollProcessors for WindowNode {
-    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+impl Processor for WindowNode {
+    fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         // TODO: Figure out what do to with the result of this poll (as it might introduce a need for redrawing!!!);
 
         let WindowNodeProj {
@@ -243,7 +243,7 @@ impl PollProcessors for WindowNode {
 
         let content: &mut _ = &mut **content;
         let content = unsafe { Pin::new_unchecked(content) };
-        let content_poll = content.poll_processors(cx);
+        let content_poll = content.poll(cx);
 
         if content_poll.is_ready() {
             window.request_redraw()

@@ -1,4 +1,4 @@
-use crate::app::primitives::PollProcessors;
+use crate::app::primitives::Processor;
 use crate::wgpu::pipeline::graphics::graphic::Graphic;
 use crate::wgpu::render_target::RenderInternal;
 use glyphon::Buffer;
@@ -49,8 +49,8 @@ impl Primitive for Text {
     }
 }
 
-impl PollProcessors for Text {
-    fn poll_processors(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
+impl Processor for Text {
+    fn poll(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
         Poll::Ready(Some(()))
     }
 }

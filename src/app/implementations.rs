@@ -1,4 +1,4 @@
-use crate::app::primitives::PollProcessors;
+use crate::app::primitives::Processor;
 use {
     super::{input::Event, primitives::Primitive},
     crate::state::signal_ext::coalesce_polls,
@@ -14,8 +14,8 @@ impl Primitive for () {
     }
 }
 
-impl PollProcessors for () {
-    fn poll_processors(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
+impl Processor for () {
+    fn poll(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
         Poll::Ready(Some(()))
     }
 }
@@ -28,11 +28,11 @@ impl<A: Send + Primitive> Primitive for Option<A> {
     }
 }
 
-impl<A: Send + Primitive> PollProcessors for Option<A> {
-    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+impl<A: Send + Primitive> Processor for Option<A> {
+    fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         // TODO: Maybe I shouldn't return Some(()) in the option by default?
         self.as_pin_mut()
-            .map(|inner| inner.poll_processors(cx))
+            .map(|inner| inner.poll(cx))
             .unwrap_or(Poll::Ready(Some(())))
     }
 }
@@ -46,8 +46,8 @@ impl<T: Send + Primitive, E: Send + Primitive> Primitive for Result<T, E> {
     }
 }
 
-impl<T: Send + Primitive, E: Send + Primitive> PollProcessors for Result<T, E> {
-    fn poll_processors(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
+impl<T: Send + Primitive, E: Send + Primitive> Processor for Result<T, E> {
+    fn poll(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
         // let this: &mut Self = self.deref_mut();
         // match this {
         //     Ok(v) => todo!(),
@@ -65,11 +65,11 @@ impl<A: Send + Primitive> Primitive for Box<A> {
 }
 
 #[cfg(feature = "std")]
-impl<A: Send + Primitive> PollProcessors for Box<A> {
-    fn poll_processors(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+impl<A: Send + Primitive> Processor for Box<A> {
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         // TODO: Why is this unsafe?
         let inner = unsafe { self.as_mut().map_unchecked_mut(|v| &mut **v) };
-        inner.poll_processors(cx)
+        inner.poll(cx)
     }
 }
 
@@ -82,8 +82,8 @@ impl<A: Send + Primitive, B: Send + Primitive> Primitive for (A, B) {
     }
 }
 
-impl<A: Send + Primitive, B: Send + Primitive> PollProcessors for (A, B) {
-    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+impl<A: Send + Primitive, B: Send + Primitive> Processor for (A, B) {
+    fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
         let (pinned_a, pinned_b) = {
             let mut_ref = unsafe { self.get_unchecked_mut() };
             let (ref mut a, ref mut b) = mut_ref;
@@ -94,8 +94,8 @@ impl<A: Send + Primitive, B: Send + Primitive> PollProcessors for (A, B) {
             (a, b)
         };
 
-        let poll_a = pinned_a.poll_processors(cx);
-        let poll_b = pinned_b.poll_processors(cx);
+        let poll_a = pinned_a.poll(cx);
+        let poll_b = pinned_b.poll(cx);
 
         coalesce_polls(poll_a, poll_b)
     }

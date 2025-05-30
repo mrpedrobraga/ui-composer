@@ -1,4 +1,4 @@
-use crate::app::primitives::PollProcessors;
+use crate::app::primitives::Processor;
 use crate::wgpu::backend::Resources;
 use crate::wgpu::pipeline::{graphics::GraphicsPipelineBuffers, RendererBuffers, Renderers};
 use crate::wgpu::pipeline::{
@@ -66,8 +66,8 @@ impl<A: RenderGraphicDescriptor + Primitive + Sync> Primitive for VecItem<A> {
     }
 }
 
-impl<A: RenderGraphicDescriptor + Primitive + Sync> PollProcessors for VecItem<A> {
-    fn poll_processors(
+impl<A: RenderGraphicDescriptor + Primitive + Sync> Processor for VecItem<A> {
+    fn poll(
         self: std::pin::Pin<&mut Self>,
         _cx: &mut std::task::Context,
     ) -> std::task::Poll<Option<()>> {

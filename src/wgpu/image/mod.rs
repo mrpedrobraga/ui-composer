@@ -1,4 +1,4 @@
-use crate::app::primitives::{PollProcessors, Primitive};
+use crate::app::primitives::{Primitive, Processor};
 use crate::wgpu::backend::Resources;
 use crate::wgpu::pipeline::{graphics::GraphicsPipelineBuffers, RendererBuffers, Renderers};
 use crate::wgpu::pipeline::{graphics::RenderGraphicDescriptor, text::TextPipelineBuffers};
@@ -107,8 +107,8 @@ impl Node for ImageNode {
     }
 }
 
-impl PollProcessors for ImageNode {
-    fn poll_processors(
+impl Processor for ImageNode {
+    fn poll(
         self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context,
     ) -> std::task::Poll<Option<()>> {
@@ -117,7 +117,7 @@ impl PollProcessors for ImageNode {
         let content: &mut _ = &mut **content;
         let content = unsafe { std::pin::Pin::new_unchecked(content) };
 
-        let poll = content.poll_processors(cx);
+        let poll = content.poll(cx);
 
         if let std::task::Poll::Ready(Some(())) = &poll {
             // Request Redraw!
