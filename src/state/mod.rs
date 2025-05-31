@@ -9,6 +9,11 @@ pub use futures_signals::signal_map::SignalMapExt;
 pub use futures_signals::signal_vec::MutableVec;
 pub use futures_signals::signal_vec::SignalVecExt;
 
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` is not a container with interior mutability.",
+    label = "This item is not a `Slot`!",
+    note = "`Mutable<A>` is a Slot, and can do reactivity on top!"
+)]
 pub trait Slot {
     type Item;
     fn put(&self, value: Self::Item);

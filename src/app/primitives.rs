@@ -40,7 +40,7 @@ use {
     },
 };
 
-pub trait Primitive: Processor + Send {
+pub trait Primitive<Resources>: Processor<Resources> + Send {
     /// Handles an Event (or not). Returns whether the event was handled.
     fn handle_event(&mut self, event: Event) -> bool;
 }
@@ -50,15 +50,23 @@ pub trait Primitive: Processor + Send {
 /// This trait exists because [Primitive]s might require references
 /// to runtime resources (buffers and stuff) that the user does not
 /// have access when building their components.
-pub trait PrimitiveDescriptor: Primitive {}
-impl<A> PrimitiveDescriptor for A where A: Primitive {}
+pub trait PrimitiveDescriptor<Resources> {
+    type Primitive: Primitive<Resources>;
+
+    /// Yields the [Primitive] this descriptor describes.
+    fn reify(self, resources: &mut Resources) -> Self::Primitive;
+}
 
 /// A trait representing a [Primitive] or [Node] that _might_
 /// process internal [Future]s or [Signal]s.
 #[must_use = "processors are lazy and do nothing unless polled"]
-pub trait Processor: Send {
+pub trait Processor<Resources>: Send {
     /// Recursively polls this primitive's inner processes (`Future`s and `Signal`s).
-    fn poll(self: Pin<&mut Self>, #[expect(unused)] cx: &mut Context) -> Poll<Option<()>> {
+    fn poll(
+        self: Pin<&mut Self>,
+        #[expect(unused)] cx: &mut Context,
+        #[expect(unused)] resources: &mut Resources,
+    ) -> Poll<Option<()>> {
         Poll::Ready(Some(()))
     }
 }

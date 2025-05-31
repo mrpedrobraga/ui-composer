@@ -1,10 +1,9 @@
+use crate::app::primitives::PrimitiveDescriptor;
+use crate::prelude::process::React;
 pub use flow::CoordinateSystemProvider;
+use std::marker::PhantomData;
 use {
-    crate::{
-        app::primitives::{Primitive, PrimitiveDescriptor},
-        prelude::flow::CartesianFlowDirection,
-        state::process::{SignalProcessor, UISignalExt},
-    },
+    crate::prelude::flow::CartesianFlowDirection,
     futures_signals::signal::{Signal, SignalExt},
     vek::{Extent2, Mat3, Rect, Vec2},
 };
@@ -53,13 +52,13 @@ pub struct ChildHints {
 
 /// An item that can be included in a laying out context.
 #[diagnostic::on_unimplemented(
-    message = "Value is not a `LayoutItem` thus can not be used.",
-    label = "In this context...",
+    message = "{Self} is not a `LayoutItem` thus can not be used...",
+    label = "...in this context...",
     note = "You can use `ResizableItem` to use graphics/input primitives as layout items."
 )]
 #[must_use = "layout items need to be put in a layout context to be used."]
 pub trait LayoutItem: Send {
-    type Content: PrimitiveDescriptor;
+    type Content;
 
     /// The size this component prefers to be at. It's usually its minimum size.
     fn get_natural_size(&self) -> Extent2<f32>;
@@ -75,29 +74,27 @@ pub trait LayoutItem: Send {
         mut self,
         size_signal: S,
         parent_hints: ParentHints,
-    ) -> SignalProcessor<impl Signal<Item = Self::Content>, Self::Content>
+    ) -> React<impl Signal<Item = Self::Content>>
     where
         S: Signal<Item = Extent2<f32>> + Send,
         Self: Sized + Send,
-        <Self as LayoutItem>::Content: Primitive,
     {
-        size_signal
-            .map(move |new_size| {
-                self.lay(ParentHints {
-                    rect: Rect::new(0.0, 0.0, new_size.w, new_size.h),
-                    ..parent_hints
-                })
+        React(size_signal.map(move |new_size| {
+            self.lay(ParentHints {
+                rect: Rect::new(0.0, 0.0, new_size.w, new_size.h),
+                ..parent_hints
             })
-            .process()
+        }))
     }
 }
 
-pub struct ResizableItem<F: Send, T>
+pub struct ResizableItem<F, A, Resources>
 where
-    F: FnMut(ParentHints) -> T,
+    F: Send + FnMut(ParentHints) -> A,
 {
     hints: ChildHints,
     factory: F,
+    __resources: PhantomData<fn() -> Resources>,
 }
 
 pub trait Resizable: LayoutItem {
@@ -105,24 +102,24 @@ pub trait Resizable: LayoutItem {
     fn with_minimum_size(self, min_size: Extent2<f32>) -> Self;
 }
 
-impl<F, T> ResizableItem<F, T>
+impl<F, T, Res> ResizableItem<F, T, Res>
 where
     F: FnMut(ParentHints) -> T + Send,
-    T: Primitive,
+    T: PrimitiveDescriptor<Res>,
 {
     /// Creates a new resizable [`LayoutItem`] that redraws using this factory function.
     pub fn new(factory: F) -> Self {
         Self {
             hints: ChildHints::default(),
             factory,
+            __resources: PhantomData,
         }
     }
 }
 
-impl<F, T> Resizable for ResizableItem<F, T>
+impl<F, T, Res> Resizable for ResizableItem<F, T, Res>
 where
-    F: FnMut(ParentHints) -> T + Send,
-    T: PrimitiveDescriptor,
+    F: Send + FnMut(ParentHints) -> T,
 {
     /// Consumes this [`ResizableItem`] and returns a similar one with the minimum size set.
     fn with_minimum_size(self, min_size: Extent2<f32>) -> Self {
@@ -133,10 +130,9 @@ where
     }
 }
 
-impl<F: Send, T> LayoutItem for ResizableItem<F, T>
+impl<F: Send, T, Res> LayoutItem for ResizableItem<F, T, Res>
 where
     F: FnMut(ParentHints) -> T,
-    T: PrimitiveDescriptor,
 {
     type Content = T;
 

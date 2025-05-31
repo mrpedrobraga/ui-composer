@@ -2,8 +2,8 @@
 //! Pipelines and stuff to render three-dee models!
 //! Nothing is implemented yet, of course.
 
-use crate::wgpu::backend::Resources;
-use crate::wgpu::render_target::RenderInternal;
+use crate::wgpu::backend::GPUResources;
+use crate::wgpu::render_target::Render;
 use {
     super::{GPURenderer, RendererBuffers, Renderers},
     vek::Extent2,
@@ -19,13 +19,13 @@ pub struct ThreeDeeRenderer {
 }
 
 impl GPURenderer for ThreeDeeRenderer {
-    fn draw(
-        gpu_resources: &mut Resources,
+    fn draw<R: Render>(
+        gpu_resources: &mut GPUResources,
         pipelines: &mut Renderers,
         render_target_size: Extent2<f32>,
         texture: &Texture,
         render_pass: &mut RenderPass,
-        ui_tree: &mut dyn RenderInternal,
+        ui_tree: &R,
         render_buffers: &mut RendererBuffers,
     ) {
     }

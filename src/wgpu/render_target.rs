@@ -1,26 +1,26 @@
 //! A render target is something that graphics, text, etc., can be rendered to.
 
-use crate::wgpu::backend::Resources;
-use crate::wgpu::pipeline::{RendererBuffers, Renderers};
+use crate::app::primitives::PrimitiveDescriptor;
+use crate::wgpu::backend::GPUResources;
+use crate::wgpu::pipeline::graphics::RenderGraphicDescriptor;
+use crate::wgpu::pipeline::{RendererBuffers, Renderers, UIReifyResources};
 use {
-    super::pipeline::{
-        graphics::{RenderGraphic, RenderGraphicDescriptor},
-        text::RenderText,
-    },
-    crate::app::primitives::{Primitive, PrimitiveDescriptor},
+    super::pipeline::{graphics::RenderGraphic, text::RenderText},
+    crate::app::primitives::Primitive,
     vek::Extent2,
     wgpu::TextureFormat,
 };
 
+/// Trait that describes the target of a render operation with this pipeline.
 pub trait RenderTarget {
     /// Resizes the render target to the new size.
-    fn resize(&mut self, gpu_resources: &Resources, new_size: Extent2<u32>);
+    fn resize(&mut self, gpu_resources: &GPUResources, new_size: Extent2<u32>);
 
     /// Returns a reference to the render target's texture;
-    fn draw(
+    fn draw<'a, R: Render>(
         &mut self,
-        content: &mut dyn RenderInternal,
-        gpu_resources: &mut Resources,
+        content: &mut R,
+        gpu_resources: &mut GPUResources,
         pipelines: &mut Renderers,
         render_buffers: &mut RendererBuffers,
     );
@@ -29,11 +29,16 @@ pub trait RenderTarget {
     fn get_texture_format(&self) -> TextureFormat;
 }
 
-pub trait RenderInternal: Primitive + RenderGraphic + RenderText {}
-impl<A> RenderInternal for A where A: Primitive + RenderGraphic + RenderText {}
+/// Trait that describes an item that can be rendered with this pipeline.
+pub trait Render: Primitive<UIReifyResources> + RenderGraphic + RenderText {}
+impl<A> Render for A where A: Primitive<UIReifyResources> + RenderGraphic + RenderText {}
 
-pub trait Render:
-    RenderInternal + PrimitiveDescriptor + RenderGraphicDescriptor + RenderText
+/// Trait that describes an item that can be reified into a [Render] primitive.
+pub trait RenderDescriptor: RenderGraphicDescriptor<UIReifyResources, Primitive: Render> {}
+
+impl<A> RenderDescriptor for A
+where
+    A: PrimitiveDescriptor<UIReifyResources> + RenderGraphicDescriptor<UIReifyResources>,
+    <A as PrimitiveDescriptor<UIReifyResources>>::Primitive: Render,
 {
 }
-impl<A> Render for A where A: RenderInternal + PrimitiveDescriptor + RenderGraphicDescriptor {}

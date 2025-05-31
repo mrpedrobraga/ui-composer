@@ -3,8 +3,6 @@
 use crate::app::primitives::{Primitive, Processor};
 use crate::prelude::{Event, LayoutItem, ParentHints, RectExt as _};
 use crate::wgpu::pipeline::text::Text;
-use std::pin::Pin;
-use std::task::{Context, Poll};
 use vek::{Rgb, Vec2};
 
 /// A simple label that visualises a String!
@@ -61,13 +59,9 @@ impl LayoutItem for TextLayoutItem {
     }
 }
 
-impl Processor for TextLayoutItem {
-    fn poll(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
-        Poll::Ready(Some(()))
-    }
-}
+impl<Res> Processor<Res> for TextLayoutItem {}
 
-impl Primitive for TextLayoutItem {
+impl<Res> Primitive<Res> for TextLayoutItem {
     fn handle_event(&mut self, _: Event) -> bool {
         // Event was not handled
         false

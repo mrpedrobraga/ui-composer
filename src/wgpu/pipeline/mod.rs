@@ -1,9 +1,9 @@
-use crate::wgpu::backend::Resources;
+use crate::wgpu::backend::GPUResources;
 use crate::wgpu::pipeline::{
     graphics::{GraphicsPipelineBuffers, OrchestraRenderer},
     text::GlyphonTextRenderer,
 };
-use crate::wgpu::render_target::RenderInternal;
+use crate::wgpu::render_target::Render;
 use {
     text::TextPipelineBuffers,
     vek::Extent2,
@@ -16,13 +16,14 @@ pub mod three_dee;
 
 /// A renderer for drawing on the GPU.
 pub trait GPURenderer {
-    fn draw(
-        gpu_resources: &mut Resources,
+    fn draw<'draw, R: Render>(
+        gpu_resources: &mut GPUResources,
         renderers: &mut Renderers,
         render_target_size: Extent2<f32>,
         texture: &Texture,
         render_pass: &mut RenderPass,
-        ui_tree: &mut dyn RenderInternal,
+        // TODO: Maybe each [GPURenderer] should be able to specify different bounds for the UI tree...
+        ui_tree: &'draw R,
         render_buffers: &mut RendererBuffers,
     );
 }
@@ -37,5 +38,9 @@ pub struct Renderers {
 
 pub struct RendererBuffers {
     pub(crate) graphics_render_buffers: GraphicsPipelineBuffers,
-    pub(crate) text_render_buffers: TextPipelineBuffers,
+    pub(crate) _text_render_buffers: TextPipelineBuffers,
+}
+
+pub struct UIReifyResources {
+    pub renderers: Renderers,
 }

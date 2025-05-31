@@ -3,10 +3,6 @@ use crate::app::primitives::Processor;
 use {
     super::super::{Event, InputItem},
     crate::{app::primitives::Primitive, prelude::CursorEvent},
-    core::{
-        pin::Pin,
-        task::{Context, Poll},
-    },
     futures_signals::signal::Mutable,
     vek::Rect,
 };
@@ -28,7 +24,7 @@ impl Hover {
 
 impl InputItem for Hover {}
 
-impl Primitive for Hover {
+impl<Res> Primitive<Res> for Hover {
     fn handle_event(&mut self, event: Event) -> bool {
         match event {
             Event::Cursor { id, event } => match event {
@@ -49,8 +45,4 @@ impl Primitive for Hover {
     }
 }
 
-impl Processor for Hover {
-    fn poll(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
-        Poll::Ready(Some(()))
-    }
-}
+impl<Res> Processor<Res> for Hover {}

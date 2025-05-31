@@ -9,11 +9,8 @@ use {
         },
         prelude::{CursorEvent, Effect},
         state::Mutable,
-    },
-    core::{
-        pin::Pin,
-        task::{Context, Poll},
-    },
+    }
+    ,
     vek::{Rect, Vec2},
 };
 
@@ -43,7 +40,7 @@ where
 
 impl<A> InputItem for Tap<A> where A: Effect + Send {}
 
-impl<A> Primitive for Tap<A>
+impl<A, Res> Primitive<Res> for Tap<A>
 where
     A: Effect + Send + Sync,
 {
@@ -70,11 +67,4 @@ where
     }
 }
 
-impl<A> Processor for Tap<A>
-where
-    A: Effect + Send + Sync,
-{
-    fn poll(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
-        Poll::Ready(Some(()))
-    }
-}
+impl<A, Res> Processor<Res> for Tap<A> where A: Effect + Send + Sync {}

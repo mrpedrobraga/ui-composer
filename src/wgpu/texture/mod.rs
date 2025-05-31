@@ -1,9 +1,9 @@
 #![allow(unused)]
 //! Empty for now but this will house different kinds of Textures that can be rendered onto quads!
 
-use crate::wgpu::backend::Resources;
+use crate::wgpu::backend::GPUResources;
 use crate::wgpu::pipeline::{RendererBuffers, Renderers};
-use crate::wgpu::render_target::{RenderInternal, RenderTarget};
+use crate::wgpu::render_target::{Render, RenderTarget};
 use vek::Extent2;
 
 /// Color data that can be used by quads or materials to create advanced graphics.
@@ -15,7 +15,7 @@ pub struct ImageTexture {
     pub texture: wgpu::Texture,
 }
 impl ImageTexture {
-    fn new(gpu_resources: &Resources, size: Extent2<f32>) -> Self {
+    fn new(gpu_resources: &GPUResources, size: Extent2<f32>) -> Self {
         let texture_desc = wgpu::TextureDescriptor {
             size: wgpu::Extent3d {
                 width: size.w as u32,
@@ -35,7 +35,7 @@ impl ImageTexture {
         Self { texture }
     }
 
-    fn resize(&mut self, _gpu_resources: &Resources, _new_size: vek::Extent2<u32>) {}
+    fn resize(&mut self, _gpu_resources: &GPUResources, _new_size: vek::Extent2<u32>) {}
 }
 
 impl Texture for ImageTexture {}
@@ -51,7 +51,7 @@ pub struct ImageRenderTarget {
 }
 
 impl ImageRenderTarget {
-    pub fn new(gpu_resources: &Resources, size: Extent2<f32>) -> Self {
+    pub fn new(gpu_resources: &GPUResources, size: Extent2<f32>) -> Self {
         Self {
             image: ImageTexture::new(gpu_resources, size),
         }
@@ -59,14 +59,14 @@ impl ImageRenderTarget {
 }
 
 impl RenderTarget for ImageRenderTarget {
-    fn resize(&mut self, gpu_resources: &Resources, new_size: vek::Extent2<u32>) {
+    fn resize(&mut self, gpu_resources: &GPUResources, new_size: vek::Extent2<u32>) {
         self.image.resize(gpu_resources, new_size)
     }
 
-    fn draw(
+    fn draw<'a, R: Render>(
         &mut self,
-        content: &mut (dyn RenderInternal),
-        gpu_resources: &mut Resources,
+        content: &mut R,
+        gpu_resources: &mut GPUResources,
         pipelines: &mut Renderers,
         render_artifacts: &mut RendererBuffers,
     ) {

@@ -1,5 +1,6 @@
-use crate::wgpu::backend::Resources;
-use crate::wgpu::render_target::{RenderInternal, RenderTarget};
+use crate::app::primitives::PrimitiveDescriptor;
+use crate::wgpu::backend::GPUResources;
+use crate::wgpu::render_target::{Render, RenderTarget};
 use wgpu::{CompareFunction, DepthBiasState, DepthStencilState, StencilState, TextureFormat};
 use {
     super::{GPURenderer, RendererBuffers, Renderers},
@@ -18,10 +19,9 @@ pub mod graphic;
 pub mod implementations;
 
 /// Descriptor for some [RenderGraphic].
-pub trait RenderGraphicDescriptor: RenderGraphic {
-    /// The amount of primitives this UI Item will have when drawing.
-    const QUAD_COUNT: usize;
-
+pub trait RenderGraphicDescriptor<Resources>:
+    PrimitiveDescriptor<Resources, Primitive: RenderGraphic>
+{
     /// Gets the rectangle this primitive occupies, for rendering purposes.
     fn get_render_rect(&self) -> Option<Rect<f32, f32>>;
 }
@@ -29,11 +29,11 @@ pub trait RenderGraphicDescriptor: RenderGraphic {
 /// Trait for a [Primitive] that can render graphics using this pipeline.
 /// There's no trait bounds on this trait for convenience.
 pub trait RenderGraphic {
+    /// The number of quads this primitive pushes to render.
+    const QUAD_COUNT: usize;
+
     /// Pushes quads to a quad buffer slice.
     fn write_quads(&self, quad_buffer: &mut [Graphic]);
-
-    /// TODO: Remove this when using generics on the engine?
-    fn get_quad_count(&self) -> usize;
 }
 
 /// The buffers that hold the soon-to-be-rendered UI.
@@ -48,7 +48,7 @@ impl GraphicsPipelineBuffers {
     }
 
     /// Creates new buffers for the UI primitives to be drawn.
-    pub fn new(gpu_resources: &Resources, primitive_count: usize) -> Self {
+    pub fn new(gpu_resources: &GPUResources, primitive_count: usize) -> Self {
         Self {
             instance_buffer_cpu: vec![Graphic::default(); primitive_count],
             instance_buffer: gpu_resources.device.create_buffer(&wgpu::BufferDescriptor {
@@ -68,7 +68,7 @@ impl GraphicsPipelineBuffers {
         self.instance_buffer.slice(..)
     }
 
-    pub fn write_to_gpu(&mut self, gpu_resources: &Resources) {
+    pub fn write_to_gpu(&mut self, gpu_resources: &GPUResources) {
         gpu_resources.queue.write_buffer(
             &self.instance_buffer,
             0,
@@ -76,7 +76,7 @@ impl GraphicsPipelineBuffers {
         );
     }
 
-    pub fn extend<I>(&mut self, gpu_resources: &Resources, new_elements: I)
+    pub fn extend<I>(&mut self, gpu_resources: &GPUResources, new_elements: I)
     where
         I: Iterator<Item = Graphic>,
     {
@@ -95,17 +95,17 @@ pub struct OrchestraRenderer {
 }
 
 impl GPURenderer for OrchestraRenderer {
-    fn draw(
-        gpu_resources: &mut Resources,
-        pipelines: &mut Renderers,
+    fn draw<'draw, R: Render>(
+        gpu_resources: &mut GPUResources,
+        renderers: &mut Renderers,
         render_target_size: Extent2<f32>,
         texture: &Texture,
         render_pass: &mut RenderPass,
-        ui_tree: &mut dyn RenderInternal,
+        ui_tree: &'draw R,
         render_buffers: &mut RendererBuffers,
     ) {
         let _ = texture;
-        let this = &mut pipelines.graphics_renderer;
+        let this = &mut renderers.graphics_renderer;
         let graphics_render_buffers = &mut render_buffers.graphics_render_buffers;
 
         let quad_count = graphics_render_buffers.get_quad_count();

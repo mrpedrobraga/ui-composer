@@ -1,6 +1,4 @@
-use crate::app::primitives::Primitive;
-use crate::prelude::UISignalExt;
-use crate::state::process::SignalProcessor;
+use crate::prelude::process::React;
 use core::task::Poll;
 use futures_signals::signal::{Map, SignalExt};
 use futures_signals::signal::{Mutable, MutableSignal};
@@ -30,31 +28,27 @@ pub trait MutableExt {
     type Output<F, U>
     where
         F: FnMut(Self::Item) -> U,
-        Self::Item: Copy,
-        U: Primitive;
+        Self::Item: Copy;
 
     fn derive<F, U>(&self, predicate: F) -> Self::Output<F, U>
     where
         F: FnMut(Self::Item) -> U,
-        Self::Item: Copy,
-        U: Primitive;
+        Self::Item: Copy;
 }
 
 impl<Item> MutableExt for Mutable<Item> {
     type Item = Item;
     type Output<F, U>
-        = SignalProcessor<Map<MutableSignal<Item>, F>, U>
+        = React<Map<MutableSignal<Item>, F>>
     where
         F: FnMut(Self::Item) -> U,
-        Self::Item: Copy,
-        U: Primitive;
+        Self::Item: Copy;
 
     fn derive<F, U>(&self, predicate: F) -> Self::Output<F, U>
     where
         F: FnMut(Self::Item) -> U,
         Self::Item: Copy,
-        U: Primitive,
     {
-        self.signal().map(predicate).process()
+        React(self.signal().map(predicate))
     }
 }

@@ -1,5 +1,5 @@
-use crate::wgpu::backend::Resources;
-use crate::wgpu::render_target::{RenderInternal, RenderTarget};
+use crate::wgpu::backend::GPUResources;
+use crate::wgpu::render_target::{Render, RenderTarget};
 use glyphon::cosmic_text::Align;
 use glyphon::{Attrs, Buffer, Family, Metrics, Shaping, Wrap};
 use wgpu::{CompareFunction, DepthStencilState};
@@ -16,27 +16,28 @@ use {
 #[doc(hidden)]
 pub mod implementations;
 
+/// Trait that describes something that can render to this text pipeline.
 pub trait RenderText {
     /// Yields a text area to draw.
-    fn push_text<'a>(
-        &self,
-        buffer: &'a glyphon::Buffer,
-        bounds: TextBounds,
-        container: &mut Vec<glyphon::TextArea<'a>>,
-    );
+    fn push_text<'a>(&'a self, bounds: TextBounds, container: &mut Vec<glyphon::TextArea<'a>>);
 }
 
 pub struct Text(pub Rect<f32, f32>, pub String, pub Rgb<f32>);
 
-pub struct TextPipelineBuffers {
-    buffers: Vec<Buffer>,
+pub struct TextItem {
+    pub rect: Rect<f32, f32>,
+    pub buffer: Buffer,
+    pub color: Rgb<f32>,
 }
 
+pub struct TextPipelineBuffers {}
+
 impl TextPipelineBuffers {
-    pub fn new(_gpu_resources: &Resources, renderer: &mut GlyphonTextRenderer) -> Self {
-        Self {
-            buffers: vec![default_buffer(renderer)],
-        }
+    pub fn new(
+        _gpu_resources: &GPUResources,
+        #[expect(unused)] renderer: &mut GlyphonTextRenderer,
+    ) -> Self {
+        Self {}
     }
 }
 
@@ -70,14 +71,14 @@ pub struct GlyphonTextRenderer {
 }
 
 impl GPURenderer for GlyphonTextRenderer {
-    fn draw(
-        gpu_resources: &mut Resources,
+    fn draw<'draw, R: Render>(
+        gpu_resources: &mut GPUResources,
         pipelines: &mut Renderers,
         render_target_size: Extent2<f32>,
         texture: &Texture,
         render_pass: &mut RenderPass,
-        ui_tree: &mut dyn RenderInternal,
-        render_buffers: &mut RendererBuffers,
+        ui_tree: &'draw R,
+        _render_buffers: &mut RendererBuffers,
     ) {
         let this = &mut pipelines.text_renderer;
 
@@ -89,11 +90,8 @@ impl GPURenderer for GlyphonTextRenderer {
             },
         );
 
-        let buffer = &render_buffers.text_render_buffers.buffers[0];
-
         let mut container = vec![];
         ui_tree.push_text(
-            buffer,
             TextBounds {
                 left: 0,
                 top: 0,

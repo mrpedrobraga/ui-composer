@@ -1,8 +1,10 @@
 #![allow(non_snake_case)]
 
-use ui_composer::layout::{LayoutItem, Resizable, ResizableItem};
+use ui_composer::layout::{LayoutItem, ParentHints, Resizable, ResizableItem};
+use ui_composer::prelude::process::Await;
+use ui_composer::state::process::React;
 use ui_composer::wgpu::pipeline::{graphics::graphic::Graphic, text::Text};
-use ui_composer::wgpu::render_target::Render;
+use ui_composer::wgpu::render_target::RenderDescriptor;
 use vek::Vec3;
 use {
     ui_composer::{
@@ -14,10 +16,7 @@ use {
         geometry::RectExt,
         items,
         prelude::animation::spring::*,
-        state::{
-            process::{UIFutureExt, UISignalExt},
-            Mutable, SignalExt,
-        },
+        state::{Mutable, SignalExt},
         winitwgpu::window::Window,
     },
     vek::{Extent2, Lerp, Rect, Rgb, Vec2, Vec4},
@@ -40,13 +39,16 @@ fn main() {
     UIComposer::run(window)
 }
 
-fn SmoothSquare(name: &'static str, color: Rgb<f32>) -> impl LayoutItem<Content = impl Render> {
+fn SmoothSquare(
+    name: &'static str,
+    color: Rgb<f32>,
+) -> impl LayoutItem<Content = impl RenderDescriptor> {
     let is_hovered_state = Mutable::new(false);
     let mouse_position_state = Mutable::new(None);
     let tap_state = Mutable::new(None);
     let anim_state = Mutable::new(0.0);
 
-    ResizableItem::new(move |hx| {
+    let factory = move |hx: ParentHints| {
         let is_hovered_state = is_hovered_state.clone();
         let mouse_position_state_anim = mouse_position_state.clone();
         let tap_state_anim = tap_state.clone();
@@ -54,43 +56,40 @@ fn SmoothSquare(name: &'static str, color: Rgb<f32>) -> impl LayoutItem<Content 
         let animation =
             Spring::if_then_else(is_hovered_state.signal(), anim_state.clone(), 50.0, 0.0);
 
-        items!(
-            animation.process(),
-            anim_state
-                .signal()
-                .map(move |animation_factor| {
-                    hover_square(
-                        hx.rect,
-                        color,
-                        animation_factor,
-                        is_hovered_state.clone(),
-                        mouse_position_state_anim.clone(),
-                        tap_state_anim.clone(),
-                    )
-                })
-                .process(),
-            tap_state
-                .signal()
-                .for_each(move |tap| {
-                    if tap.is_some() {
-                        println!("Tapped {}!", name);
-                    }
-                    async {}
-                })
-                .process(),
-        )
-    })
-    .with_minimum_size(Extent2::new(100.0, 100.0))
+        let animation2 = anim_state.signal().map(move |animation_factor| {
+            hover_square(
+                name,
+                hx.rect,
+                color,
+                animation_factor,
+                is_hovered_state.clone(),
+                mouse_position_state_anim.clone(),
+                tap_state_anim.clone(),
+            )
+        });
+
+        let f = tap_state.signal().for_each(move |tap| {
+            if tap.is_some() {
+                println!("Tapped {}!", name);
+            }
+            async {}
+        });
+
+        items!(React(animation), React(animation2), Await(f))
+    };
+
+    ResizableItem::new(factory).with_minimum_size(Extent2::new(100.0, 100.0))
 }
 
 fn hover_square(
+    name: &'static str,
     original_rect: Rect<f32, f32>,
     original_color: Rgb<f32>,
     animation_factor: f32,
     is_hovered_state: Mutable<bool>,
     mouse_position_state: Mutable<Option<Vec2<f32>>>,
     tap_state: Mutable<Option<()>>,
-) -> impl Render {
+) -> impl RenderDescriptor {
     let hover_rect = original_rect.expanded_to_contain_point(Vec2::new(
         original_rect.x,
         original_rect.y - animation_factor,
@@ -123,6 +122,6 @@ fn hover_square(
             animation_factor_pct
         )),
         hover_rect_graphic,
-        Text(rect, "Dummy text!".to_owned(), Rgb::new(1.0, 1.0, 1.0) - original_color)
+        Text(rect, name.to_string(), Rgb::new(1.0, 1.0, 1.0) - original_color)
     }
 }

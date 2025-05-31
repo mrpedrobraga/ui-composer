@@ -1,14 +1,19 @@
+use crate::app::backend::NodeReifyResources;
 use crate::app::primitives::{Primitive, Processor};
 use crate::layout::ParentHints;
+use crate::prelude::process::React;
 use crate::prelude::Event;
-use crate::wgpu::backend::Resources;
-use crate::wgpu::pipeline::{graphics::GraphicsPipelineBuffers, RendererBuffers, Renderers};
+use crate::wgpu::backend::GPUResources;
+use crate::wgpu::pipeline::graphics::RenderGraphic;
 use crate::wgpu::pipeline::{
-    graphics::{OrchestraRenderer, RenderGraphicDescriptor},
+    graphics::GraphicsPipelineBuffers, RendererBuffers, Renderers, UIReifyResources,
+};
+use crate::wgpu::pipeline::{
+    graphics::OrchestraRenderer,
     text::{GlyphonTextRenderer, TextPipelineBuffers},
     GPURenderer,
 };
-use crate::wgpu::render_target::{Render, RenderInternal, RenderTarget};
+use crate::wgpu::render_target::{Render, RenderDescriptor, RenderTarget};
 use wgpu::{
     Color, LoadOp, Operations, RenderPassColorAttachment, RenderPassDepthStencilAttachment,
     RenderPassDescriptor, StoreOp, TextureDescriptor, TextureDimension, TextureUsages,
@@ -16,12 +21,8 @@ use wgpu::{
 use {
     super::backend::{Node, NodeDescriptor},
     crate::{
-        app::primitives::PrimitiveDescriptor,
         prelude::{flow::CartesianFlowDirection, LayoutItem},
-        state::{
-            process::{SignalProcessor, UISignalExt},
-            Mutable,
-        },
+        state::Mutable,
     },
     futures_signals::signal::{MutableSignalCloned, Signal, SignalExt},
     pin_project::pin_project,
@@ -90,18 +91,21 @@ impl<A> WindowNodeDescriptor<A> {
 
 impl<A> NodeDescriptor for WindowNodeDescriptor<A>
 where
-    A: PrimitiveDescriptor + RenderInternal + RenderGraphicDescriptor + 'static,
+    A: RenderDescriptor + Send + 'static,
 {
-    type Reified = WindowNode;
+    type Reified = WindowNode<A::Primitive>;
 
     /// Transforms a WindowNode, which merely describes a window, into an active node in an engine tree.
     fn reify(
         self,
         event_loop: &ActiveEventLoop,
-        gpu_resources: &Resources,
-        renderers: &mut Renderers,
+        gpu_resources: &GPUResources,
+        mut renderers: Renderers,
     ) -> Self::Reified {
         let window_default_size = self.state.size.get();
+
+        assert_ne!(window_default_size.w, 0.0);
+        assert_ne!(window_default_size.h, 0.0);
 
         let window = event_loop
             .create_window(
@@ -119,15 +123,21 @@ where
         let window = Arc::new(window);
 
         let render_buffers = RendererBuffers {
-            graphics_render_buffers: GraphicsPipelineBuffers::new(gpu_resources, A::QUAD_COUNT),
-            text_render_buffers: TextPipelineBuffers::new(
+            graphics_render_buffers: GraphicsPipelineBuffers::new(
+                gpu_resources,
+                A::Primitive::QUAD_COUNT,
+            ),
+            _text_render_buffers: TextPipelineBuffers::new(
                 gpu_resources,
                 &mut renderers.text_renderer,
             ),
         };
 
+        let mut reify_resources = UIReifyResources { renderers };
+        let content = self.content.reify(&mut reify_resources);
+
         WindowNode {
-            content: Box::new(self.content),
+            content,
             state: self.state,
             render_buffers,
             render_target: WindowRenderTarget::new(
@@ -136,6 +146,7 @@ where
                 window_default_size.as_(),
             ),
             window,
+            reify_resources,
         }
     }
 }
@@ -143,12 +154,10 @@ where
 // MARK: Fn Constructor!
 /// Describes a new window with its contents and its own state.
 #[allow(non_snake_case)]
-pub fn Window<A>(
-    mut item: A,
-) -> WindowNodeDescriptor<SignalProcessor<impl Signal<Item = A::Content>, A::Content>>
+pub fn Window<A>(mut item: A) -> WindowNodeDescriptor<React<impl Signal<Item = A::Content>>>
 where
     A: LayoutItem + Send + Sync,
-    A::Content: Render,
+    A::Content: RenderDescriptor,
 {
     // This should be a signal that comes from the item...
     let minimum_size = item.get_natural_size();
@@ -161,25 +170,21 @@ where
     let _window_size_signal = state.size.signal();
 
     // Right now items resize exclusively through their parent hints.
-    let item = state
-        .size
-        .signal()
-        .map(move |window_size| {
-            item.lay(ParentHints {
-                rect: Rect::new(0.0, 0.0, window_size.w, window_size.h),
-                // TODO: Allow configuring this from the locale/user settings,
-                // possibly turning them into signals!
-                current_flow_direction: CartesianFlowDirection::LeftToRight,
-                current_cross_flow_direction: CartesianFlowDirection::TopToBottom,
-                current_writing_flow_direction: CartesianFlowDirection::LeftToRight,
-                current_writing_cross_flow_direction: CartesianFlowDirection::TopToBottom,
-            })
+    let item = state.size.signal().map(move |window_size| {
+        item.lay(ParentHints {
+            rect: Rect::new(0.0, 0.0, window_size.w, window_size.h),
+            // TODO: Allow configuring this from the locale/user settings,
+            // possibly turning them into signals!
+            current_flow_direction: CartesianFlowDirection::LeftToRight,
+            current_cross_flow_direction: CartesianFlowDirection::TopToBottom,
+            current_writing_flow_direction: CartesianFlowDirection::LeftToRight,
+            current_writing_cross_flow_direction: CartesianFlowDirection::TopToBottom,
         })
-        .process();
+    });
 
     WindowNodeDescriptor {
         state,
-        content: item,
+        content: React(item),
     }
 }
 
@@ -215,35 +220,46 @@ impl WindowNodeState {
 //MARK: Window Node!
 
 #[pin_project(project = WindowNodeProj)]
-pub struct WindowNode {
+pub struct WindowNode<R> {
     #[pin]
     state: WindowNodeState,
     window: Arc<Window>,
-    content: Box<dyn RenderInternal>,
+    content: R,
     render_buffers: RendererBuffers,
     render_target: WindowRenderTarget,
+    reify_resources: UIReifyResources,
 }
 
-impl Primitive for WindowNode {
+impl<A> Primitive<NodeReifyResources> for WindowNode<A>
+where
+    A: Primitive<UIReifyResources>,
+{
     fn handle_event(&mut self, event: Event) -> bool {
         self.content.handle_event(event)
     }
 }
 
-impl Processor for WindowNode {
-    fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+impl<A> Processor<NodeReifyResources> for WindowNode<A>
+where
+    A: Processor<UIReifyResources>,
+{
+    fn poll(
+        self: Pin<&mut Self>,
+        cx: &mut Context,
+        #[expect(unused)] resources: &mut NodeReifyResources,
+    ) -> Poll<Option<()>> {
         // TODO: Figure out what do to with the result of this poll (as it might introduce a need for redrawing!!!);
 
         let WindowNodeProj {
             content,
             window,
             mut state,
+            reify_resources,
             ..
         } = self.project();
 
-        let content: &mut _ = &mut **content;
         let content = unsafe { Pin::new_unchecked(content) };
-        let content_poll = content.poll(cx);
+        let content_poll = content.poll(cx, reify_resources);
 
         if content_poll.is_ready() {
             window.request_redraw()
@@ -258,13 +274,15 @@ impl Processor for WindowNode {
     }
 }
 
-impl Node for WindowNode {
-    fn setup(&mut self, _gpu_resources: &Resources) {}
+impl<R> Node for WindowNode<R>
+where
+    R: Render,
+{
+    fn setup(&mut self, _gpu_resources: &GPUResources) {}
 
     fn handle_window_event(
         &mut self,
-        gpu_resources: &mut Resources,
-        pipelines: &mut Renderers,
+        gpu_resources: &mut GPUResources,
         window_id: WindowId,
         event: WindowEvent,
     ) {
@@ -289,7 +307,7 @@ impl Node for WindowNode {
                     std::process::exit(0);
                 }
                 WindowEvent::RedrawRequested => {
-                    self.redraw(gpu_resources, pipelines);
+                    self.redraw(gpu_resources);
                 }
                 _ => (),
             }
@@ -301,12 +319,15 @@ impl Node for WindowNode {
     }
 }
 
-impl WindowNode {
-    fn redraw(&mut self, gpu_resources: &mut Resources, pipelines: &mut Renderers) {
+impl<R> WindowNode<R>
+where
+    R: Render,
+{
+    fn redraw(&mut self, gpu_resources: &mut GPUResources) {
         self.render_target.draw(
-            self.content.as_mut(),
+            &mut self.content,
             gpu_resources,
-            pipelines,
+            &mut self.reify_resources.renderers,
             &mut self.render_buffers,
         );
     }
@@ -322,7 +343,7 @@ pub struct WindowRenderTarget {
 }
 
 impl WindowRenderTarget {
-    pub fn new(gpu_resources: &Resources, target: Arc<Window>, size: Extent2<u32>) -> Self {
+    pub fn new(gpu_resources: &GPUResources, target: Arc<Window>, size: Extent2<u32>) -> Self {
         let surface = gpu_resources.instance.create_surface(target).unwrap();
         let surface_config = surface
             .get_default_config(&gpu_resources.adapter, size.w, size.h)
@@ -338,7 +359,7 @@ impl WindowRenderTarget {
         }
     }
 
-    fn create_depth_texture(gpu_resources: &Resources, size: Extent2<u32>) -> wgpu::Texture {
+    fn create_depth_texture(gpu_resources: &GPUResources, size: Extent2<u32>) -> wgpu::Texture {
         gpu_resources.device.create_texture(&TextureDescriptor {
             // TODO: Use better labels everywhere (possibly identifying this window).
             label: Some("Window depth texture"),
@@ -360,7 +381,7 @@ impl WindowRenderTarget {
 }
 
 impl RenderTarget for WindowRenderTarget {
-    fn resize(&mut self, gpu_resources: &Resources, new_size: Extent2<u32>) {
+    fn resize(&mut self, gpu_resources: &GPUResources, new_size: Extent2<u32>) {
         self.surface_config = self
             .surface
             .get_default_config(&gpu_resources.adapter, new_size.w, new_size.h)
@@ -371,10 +392,10 @@ impl RenderTarget for WindowRenderTarget {
         self.size = new_size;
     }
 
-    fn draw(
+    fn draw<'a, R: Render>(
         &mut self,
-        content: &mut dyn RenderInternal,
-        gpu_resources: &mut Resources,
+        content: &mut R,
+        gpu_resources: &mut GPUResources,
         pipelines: &mut Renderers,
         render_buffers: &mut RendererBuffers,
     ) {

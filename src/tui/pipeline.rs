@@ -10,8 +10,6 @@
 //! but, really, terminals don't really have a lot of pixels.
 
 use crate::app::primitives::Processor;
-use core::pin::Pin;
-use core::task::{Context, Poll};
 use vek::Vec2;
 use {
     crate::app::{input::Event, primitives::Primitive},
@@ -49,17 +47,13 @@ impl Graphic {
     }
 }
 
-impl Primitive for Graphic {
+impl<Res> Primitive<Res> for Graphic {
     fn handle_event(&mut self, _event: Event) -> bool {
         false
     }
 }
 
-impl Processor for Graphic {
-    fn poll(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
-        Poll::Ready(Some(()))
-    }
-}
+impl<Res> Processor<Res> for Graphic {}
 
 impl Render for Graphic {
     fn draw<C>(&self, canvas: &mut C, _rect: vek::Rect<u16, u16>)

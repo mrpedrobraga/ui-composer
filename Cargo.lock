@@ -3379,9 +3379,19 @@ dependencies = [
  "serde_json",
  "smol_str 0.3.2",
  "spin",
+ "ui-composer-macros",
  "vek",
  "wgpu",
  "winit",
+]
+
+[[package]]
+name = "ui-composer-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

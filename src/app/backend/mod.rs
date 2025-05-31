@@ -15,7 +15,11 @@ pub trait Backend {
     fn run(node_tree: Self::Tree);
 
     /// Polls the `Futures` and `Signals` from the node tree.
-    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>>;
+    fn poll_processors(
+        self: Pin<&mut Self>,
+        cx: &mut Context,
+        resources: &mut NodeReifyResources,
+    ) -> Poll<Option<()>>;
 }
 
 #[cfg(feature = "std")]
@@ -46,6 +50,8 @@ impl<B: Backend> Signal for BackendProcessExecutor<B> {
         let backend = backend.deref_mut();
         let backend = unsafe { Pin::new_unchecked(backend) };
 
-        backend.poll_processors(cx)
+        backend.poll_processors(cx, &mut NodeReifyResources {})
     }
 }
+
+pub struct NodeReifyResources {}

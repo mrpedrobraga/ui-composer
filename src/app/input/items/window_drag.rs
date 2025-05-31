@@ -8,11 +8,8 @@ use {
             primitives::Primitive,
         },
         prelude::CursorEvent,
-    },
-    core::{
-        pin::Pin,
-        task::{Context, Poll},
-    },
+    }
+    ,
     futures_signals::signal::Mutable,
     vek::Rect,
 };
@@ -40,7 +37,7 @@ impl Drag {
 
 impl InputItem for Drag {}
 
-impl Primitive for Drag {
+impl<Res> Primitive<Res> for Drag {
     fn handle_event(&mut self, event: Event) -> bool {
         match event {
             Event::Cursor { id, event } => match event {
@@ -74,8 +71,4 @@ impl Primitive for Drag {
     }
 }
 
-impl Processor for Drag {
-    fn poll(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
-        Poll::Ready(Some(()))
-    }
-}
+impl<Res> Processor<Res> for Drag {}

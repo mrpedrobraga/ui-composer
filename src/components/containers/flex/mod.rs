@@ -1,4 +1,3 @@
-use crate::app::primitives::PrimitiveDescriptor;
 use crate::layout::flow::weighted_division_with_minima;
 use crate::layout::flow::CartesianFlowDirection::{
     BottomToTop, LeftToRight, RightToLeft, TopToBottom,
@@ -51,11 +50,12 @@ impl<const SIZE: usize, TItems: FlexItemList> FlexContainer<SIZE, TItems> {
 impl<const SIZE: usize, ItemList> LayoutItem for FlexContainer<SIZE, ItemList>
 where
     ItemList: FlexItemList + Send,
-    ItemList::Content: PrimitiveDescriptor,
 {
     type Content = ItemList::Content;
 
     fn get_natural_size(&self) -> Extent2<f32> {
+        let item_natural_sizes = self.items.get_natural_sizes();
+
         // TODO: Receive the parent hints from... well, the parent.
         let flow_direction = self.flow_direction.as_cartesian(&ParentHints {
             rect: Rect::new(0.0, 0.0, 0.0, 0.0),
@@ -64,8 +64,6 @@ where
             current_writing_flow_direction: CartesianFlowDirection::LeftToRight,
             current_writing_cross_flow_direction: CartesianFlowDirection::TopToBottom,
         });
-
-        let item_natural_sizes = self.items.get_natural_sizes();
 
         match flow_direction {
             LeftToRight | RightToLeft => {
@@ -79,6 +77,8 @@ where
     }
 
     fn get_minimum_size(&self) -> Extent2<f32> {
+        let item_min_sizes = self.items.get_minimum_sizes();
+
         // TODO: Receive the parent hints from... well, the parent.
         let flow_direction = self.flow_direction.as_cartesian(&ParentHints {
             rect: Rect::new(0.0, 0.0, 0.0, 0.0),
@@ -87,8 +87,6 @@ where
             current_writing_flow_direction: CartesianFlowDirection::LeftToRight,
             current_writing_cross_flow_direction: CartesianFlowDirection::TopToBottom,
         });
-
-        let item_min_sizes = self.items.get_minimum_sizes();
 
         match flow_direction {
             LeftToRight | RightToLeft => {

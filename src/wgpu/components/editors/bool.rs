@@ -1,10 +1,11 @@
 #![allow(non_snake_case)]
 use crate::items_internal as items;
 use crate::prelude::items::Tap;
+use crate::state::process::React;
 use crate::wgpu::pipeline::graphics::graphic::Graphic;
-use crate::wgpu::render_target::Render;
+use crate::wgpu::render_target::RenderDescriptor;
 use crate::{
-    prelude::{LayoutItem, ParentHints, RectExt, Resizable, ResizableItem, UISignalExt},
+    prelude::{LayoutItem, ParentHints, RectExt, Resizable, ResizableItem},
     state::animation::spring::Spring,
 };
 use futures_signals::signal::{Mutable, SignalExt};
@@ -15,31 +16,32 @@ pub trait BoolEditGraphics {
         rect: Rect<f32, f32>,
         anim_factor: f32,
         parent_hints: ParentHints,
-    ) -> impl Render;
+    ) -> impl RenderDescriptor;
 }
 
 /// A barebones switch which allows the user to toggle a `Mutable<bool>`.
 /// [SwitchGraphics] and a minimum size must be provided for anything to show up on screen!
-pub fn BoolEditBase<G>(state: Mutable<bool>) -> impl Resizable<Content = impl Render>
+pub fn BoolEditBase<G>(state: Mutable<bool>) -> impl Resizable<Content = impl RenderDescriptor>
 where
     G: BoolEditGraphics,
 {
     let anim_state = Mutable::new(0.0);
 
-    ResizableItem::new(move |parent_hints| {
+    let factory = move |parent_hints: ParentHints| {
         let rect = parent_hints.rect;
         let state_ = state.clone();
         let tap = Tap::new(rect, Mutable::new(None), move || state_.set(!state_.get()));
 
-        items!(
-            tap,
-            Spring::if_then_else(state.signal(), anim_state.clone(), 1.0, 0.0).process(),
-            anim_state
-                .signal()
-                .map(move |anim_factor| G::describe_render(rect, anim_factor, parent_hints))
-                .process()
-        )
-    })
+        let spring_animation = Spring::if_then_else(state.signal(), anim_state.clone(), 1.0, 0.0);
+
+        let spring_square = anim_state
+            .signal()
+            .map(move |anim_factor| G::describe_render(rect, anim_factor, parent_hints));
+
+        items!(tap, React(spring_animation), React(spring_square))
+    };
+
+    ResizableItem::new(factory)
 }
 
 #[derive(Clone, Copy)]
@@ -48,12 +50,12 @@ pub struct AnimatedSwitch;
 /// A simple switch that edits a `bool` state.
 ///
 /// The user can press it to toggle the underlying boolean.
-pub fn Switch(state: Mutable<bool>) -> impl LayoutItem<Content = impl Render> {
+pub fn Switch(state: Mutable<bool>) -> impl LayoutItem<Content = impl RenderDescriptor> {
     BoolEditBase::<AnimatedSwitch>(state).with_minimum_size(Extent2::new(32.0, 20.0))
 }
 
 /// Same as [Switch]
-pub fn VerticalSwitch(state: Mutable<bool>) -> impl LayoutItem<Content = impl Render> {
+pub fn VerticalSwitch(state: Mutable<bool>) -> impl LayoutItem<Content = impl RenderDescriptor> {
     BoolEditBase::<AnimatedSwitch>(state).with_minimum_size(Extent2::new(20.0, 32.0))
 }
 
@@ -62,7 +64,7 @@ impl BoolEditGraphics for AnimatedSwitch {
         rect: Rect<f32, f32>,
         anim_factor: f32,
         parent_hints: ParentHints,
-    ) -> impl Render {
+    ) -> impl RenderDescriptor {
         let bg_color = Rgb::new(58.0, 58.0, 58.0) / 255.0;
         let switch_color = Rgb::new(182.0, 182.0, 182.0) / 255.0;
         let bg_color_active = Rgb::new(183.0, 71.0, 71.0) / 255.0;

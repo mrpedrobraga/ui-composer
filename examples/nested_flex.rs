@@ -3,7 +3,8 @@
 use rand::random;
 use ui_composer::prelude::*;
 use ui_composer::wgpu::pipeline::graphics::graphic::Graphic;
-use ui_composer::wgpu::render_target::Render;
+use ui_composer::wgpu::pipeline::UIReifyResources;
+use ui_composer::wgpu::render_target::RenderDescriptor;
 use ui_composer::Flex;
 
 fn main() {
@@ -25,9 +26,11 @@ fn main() {
     UIComposer::run(Window(flex).with_title("Advanced Layout".to_owned()))
 }
 
-fn Square(color: Rgb<f32>) -> impl LayoutItem<Content = impl Render> {
-    ResizableItem::new(move |hx| Graphic::from(hx.rect).with_color(random_color()))
-        .with_minimum_size(Extent2::new(200.0, 100.0))
+fn Square(color: Rgb<f32>) -> impl LayoutItem<Content = impl RenderDescriptor> {
+    ResizableItem::<_, _, UIReifyResources>::new(move |hx| {
+        Graphic::from(hx.rect).with_color(random_color())
+    })
+    .with_minimum_size(Extent2::new(200.0, 100.0))
 }
 
 fn random_color() -> Rgb<f32> {

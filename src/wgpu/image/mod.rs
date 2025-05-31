@@ -1,10 +1,15 @@
 use crate::app::primitives::{Primitive, Processor};
-use crate::wgpu::backend::Resources;
-use crate::wgpu::pipeline::{graphics::GraphicsPipelineBuffers, RendererBuffers, Renderers};
-use crate::wgpu::pipeline::{graphics::RenderGraphicDescriptor, text::TextPipelineBuffers};
-use crate::wgpu::render_target::{RenderInternal, RenderTarget};
+use crate::wgpu::backend::GPUResources;
+use crate::wgpu::pipeline::graphics::RenderGraphic;
+use crate::wgpu::pipeline::text::TextPipelineBuffers;
+use crate::wgpu::pipeline::{
+    graphics::GraphicsPipelineBuffers, RendererBuffers, Renderers, UIReifyResources,
+};
+use crate::wgpu::render_target::{Render, RenderDescriptor, RenderTarget};
 use crate::winitwgpu::backend::Node;
 use image::{ImageBuffer, Rgba};
+use std::pin::Pin;
+use std::task::{Context, Poll};
 use wgpu::wgt::PollType;
 use wgpu::{
     Origin3d, TexelCopyBufferInfo, TexelCopyBufferLayout, TexelCopyTextureInfo, TextureAspect,
@@ -36,35 +41,39 @@ where
     }
 }
 
-pub struct ImageNodeDescriptor<A>
-where
-    A: 'static,
-{
+pub struct ImageNodeDescriptor<A> {
     rect: Rect<f32, f32>,
     content: A,
 }
 
-impl<T> NodeDescriptor for ImageNodeDescriptor<T>
+impl<A> NodeDescriptor for ImageNodeDescriptor<A>
 where
-    T: Send + RenderInternal + RenderGraphicDescriptor + 'static,
+    A: RenderDescriptor + Send + 'static,
 {
-    type Reified = ImageNode;
+    type Reified = ImageNode<A::Primitive>;
 
     fn reify(
         self,
         _event_loop: &winit::event_loop::ActiveEventLoop,
-        gpu_resources: &Resources,
-        renderers: &mut Renderers,
+        gpu_resources: &GPUResources,
+        renderers: Renderers,
     ) -> Self::Reified {
+        // TODO: Maybe store this?
+        let mut reify_resources = UIReifyResources { renderers };
+        let content = self.content.reify(&mut reify_resources);
+
         ImageNode {
             rect: self.rect,
-            content: Box::new(self.content),
+            content,
             render_target: ImageRenderTarget::new(gpu_resources, self.rect.extent()),
             render_buffers: RendererBuffers {
-                graphics_render_buffers: GraphicsPipelineBuffers::new(gpu_resources, T::QUAD_COUNT),
-                text_render_buffers: TextPipelineBuffers::new(
+                graphics_render_buffers: GraphicsPipelineBuffers::new(
                     gpu_resources,
-                    &mut renderers.text_renderer,
+                    A::Primitive::QUAD_COUNT,
+                ),
+                _text_render_buffers: TextPipelineBuffers::new(
+                    gpu_resources,
+                    &mut reify_resources.renderers.text_renderer,
                 ),
             },
         }
@@ -72,70 +81,76 @@ where
 }
 
 #[pin_project(project = ImageNodeProj)]
-pub struct ImageNode {
+pub struct ImageNode<A: Render> {
     #[pin]
-    content: Box<dyn RenderInternal>,
+    content: A,
     rect: Rect<f32, f32>,
     render_buffers: RendererBuffers,
     render_target: ImageRenderTarget,
 }
 
 /* Use a different implementation of "Node" for Image Node that's detached from winit!  */
-impl Primitive for ImageNode {
+impl<Res, A> Primitive<Res> for ImageNode<A>
+where
+    A: Render,
+{
     fn handle_event(&mut self, event: Event) -> bool {
         self.content.handle_event(event)
     }
 }
 
-impl Node for ImageNode {
-    fn setup(&mut self, _gpu_resources: &Resources) {
+impl<A> Node for ImageNode<A>
+where
+    A: Render,
+{
+    fn setup(&mut self, _gpu_resources: &GPUResources) {
         /* Do nothing */
         println!("Image node was asked to be set up!");
     }
 
     fn handle_window_event(
         &mut self,
-        gpu_resources: &mut Resources,
-        renderers: &mut Renderers,
+        _gpu_resources: &mut GPUResources,
         _window_id: winit::window::WindowId,
-        event: WindowEvent,
+        _event: WindowEvent,
     ) {
-        self.render(gpu_resources, renderers);
-        if let Ok(event) = event.try_into() {
-            self.handle_event(event);
-        }
+        // No event handling, it's an image!!!
     }
 }
 
-impl Processor for ImageNode {
-    fn poll(
-        self: std::pin::Pin<&mut Self>,
-        cx: &mut std::task::Context,
-    ) -> std::task::Poll<Option<()>> {
-        let ImageNodeProj { mut content, .. } = self.project();
+impl<A, Res> Processor<Res> for ImageNode<A>
+where
+    A: Render,
+{
+    fn poll(self: Pin<&mut Self>, _cx: &mut Context, _resources: &mut Res) -> Poll<Option<()>> {
+        let ImageNodeProj { .. } = self.project();
 
-        let content: &mut _ = &mut **content;
-        let content = unsafe { std::pin::Pin::new_unchecked(content) };
-
-        let poll = content.poll(cx);
-
-        if let std::task::Poll::Ready(Some(())) = &poll {
-            // Request Redraw!
-        }
-
-        poll
+        // let resources = ...;
+        // let poll = content.poll(cx, resources);
+        //
+        // if let std::task::Poll::Ready(Some(())) = &poll {
+        //     // Request Redraw!
+        //     println!("Requesting that the image redraws!")
+        // }
+        //
+        // poll
+        Poll::Ready(Some(()))
     }
 }
 
-impl ImageNode {
-    fn render(&mut self, gpu_resources: &mut Resources, pipelines: &mut Renderers) {
+impl<A> ImageNode<A>
+where
+    A: Render,
+{
+    #[allow(unused)]
+    fn render(&mut self, gpu_resources: &mut GPUResources, pipelines: &mut Renderers) {
         println!("Image Render Requested");
 
         let size_bytes = 4 * 8 * self.rect.w as u64 * self.rect.h as u64;
         let size = self.render_target.image.texture.size();
 
         self.render_target.draw(
-            self.content.as_mut(),
+            &mut self.content,
             gpu_resources,
             pipelines,
             &mut self.render_buffers,

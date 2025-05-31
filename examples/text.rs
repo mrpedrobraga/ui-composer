@@ -1,20 +1,20 @@
 #![allow(non_snake_case)]
 use ui_composer::wgpu::pipeline::{graphics::graphic::Graphic, text::Text};
-use ui_composer::wgpu::render_target::Render;
+use ui_composer::wgpu::render_target::RenderDescriptor;
 use ui_composer::{items, prelude::*};
 
 fn main() {
     UIComposer::run(Window(App()));
 }
 
-fn App() -> impl LayoutItem<Content = impl Render> {
+fn App() -> impl LayoutItem<Content = impl RenderDescriptor> {
     Center(Row(
         Square(Rgb::new(0.6, 0.7, 0.8)),
         Square(Rgb::new(0.7, 0.8, 0.6)),
     ))
 }
 
-fn Square(color: Rgb<f32>) -> impl LayoutItem<Content = impl Render> {
+fn Square(color: Rgb<f32>) -> impl LayoutItem<Content = impl RenderDescriptor> {
     ResizableItem::new(move |parent| {
         items!(
             Graphic::new(parent.rect, color),

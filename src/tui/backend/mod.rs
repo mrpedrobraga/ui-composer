@@ -22,6 +22,7 @@ use {
     vek::Rect,
 };
 
+use crate::app::backend::NodeReifyResources;
 use crate::app::input::DeviceId;
 use crate::prelude::CursorEvent;
 #[cfg(feature = "std")]
@@ -54,7 +55,11 @@ where
         disable_raw_mode().expect("Couldn't disable raw mode.")
     }
 
-    fn poll_processors(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<()>> {
+    fn poll_processors(
+        self: Pin<&mut Self>,
+        cx: &mut Context,
+        resources: &mut NodeReifyResources,
+    ) -> Poll<Option<()>> {
         let TUIBackendProj { node_tree, .. } = self.project();
 
         let mut engine_tree = node_tree.lock();

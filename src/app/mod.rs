@@ -38,6 +38,7 @@ impl UIComposer {
 mod winit_wgpu {
     use crate::app::primitives::Processor;
     use crate::wgpu::backend::WGPUBackend;
+    use crate::wgpu::pipeline::UIReifyResources;
     use crate::winitwgpu::backend::WithWinit;
     use {
         super::{backend::Backend as _, UIComposer},
@@ -49,14 +50,14 @@ mod winit_wgpu {
         /// For cross-platform compatibility, this should be called in the main thread,
         /// and only once in your program.
         pub fn run<N: NodeDescriptor + 'static>(node_tree_descriptor: N) {
-            WithWinit::<WGPUBackend<N::Reified, N>>::run(node_tree_descriptor);
+            WithWinit::<WGPUBackend<N>>::run(node_tree_descriptor);
         }
 
         pub fn run2<N: NodeDescriptor + 'static>(node_tree_descriptor: N)
         where
-            N::Reified: Processor,
+            N::Reified: Processor<UIReifyResources>,
         {
-            WGPUBackend::<N::Reified, N>::run(node_tree_descriptor);
+            WGPUBackend::<N>::run(node_tree_descriptor);
         }
     }
 }

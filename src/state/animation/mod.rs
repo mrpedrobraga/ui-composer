@@ -45,7 +45,7 @@ pub trait RealTimeStream {
         Self: Sized,
         Self::Item: Vector,
     {
-        self.chain(LinearInterpolateStream::new(target_value, duration))
+        self.chain(lerp(target_value, duration))
     }
 
     /// Returns a new stream that applies a modification on the value.
@@ -205,8 +205,13 @@ where
     }
 }
 
-pub struct InitialValue<TItem>(pub TItem);
-impl<TItem> RealTimeStream for InitialValue<TItem> {
+/// Assigns the animated value to this value immediately.
+pub fn set<TItem>(value: TItem) -> SetStream<TItem> {
+    SetStream(value)
+}
+/// See [set].
+pub struct SetStream<TItem>(TItem);
+impl<TItem> RealTimeStream for SetStream<TItem> {
     type Item = TItem;
 
     fn process_tick(
@@ -221,16 +226,15 @@ impl<TItem> RealTimeStream for InitialValue<TItem> {
     }
 }
 
-/// Stream that interpolates the initial value towards a target.
+/// Interpolates the initial value to a destination value in a certain time.
+pub fn lerp<TItem: Vector>(to: TItem, duration: Duration) -> LinearInterpolateStream<TItem> {
+    LinearInterpolateStream { to, duration }
+}
+
+/// See [lerp].
 pub struct LinearInterpolateStream<TItem: Vector> {
     to: TItem,
     duration: Duration,
-}
-
-impl<TItem: Vector> LinearInterpolateStream<TItem> {
-    pub fn new(to: TItem, duration: Duration) -> Self {
-        Self { to, duration }
-    }
 }
 
 impl<TItem: Vector> RealTimeStream for LinearInterpolateStream<TItem> {
@@ -255,20 +259,24 @@ impl<TItem: Vector> RealTimeStream for LinearInterpolateStream<TItem> {
     }
 }
 
+/// Moves towards the target value with a scalar speed.
+/// Unlike [lerp], this animation does not have a defined duration,
+/// instead, it takes longer the further away the value is from the target.
+pub fn move_toward<TItem: Vector>(target: TItem, speed: TItem) -> MoveToward<TItem> {
+    MoveToward {
+        current_value: None,
+        target,
+        speed,
+    }
+}
+
+/// See [move_toward].
 pub struct MoveToward<TItem: Vector> {
     current_value: Option<TItem>,
     target: TItem,
-    speed: f32,
+    speed: TItem,
 }
-impl<TItem: Vector + Copy> MoveToward<TItem> {
-    pub fn new(target: TItem, speed: f32) -> Self {
-        MoveToward {
-            current_value: None,
-            target,
-            speed,
-        }
-    }
-}
+
 impl<TItem: Vector + Copy> RealTimeStream for MoveToward<TItem> {
     type Item = TItem;
 

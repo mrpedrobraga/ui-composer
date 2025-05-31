@@ -27,12 +27,11 @@ pub use crate::app::{
     UIComposer,
 };
 
-// MARK: Geometry and Layouting
+// MARK: Geometry and Layout
 pub use crate::geometry::*;
 pub use crate::layout::*;
 
 pub use crate::components::*;
-pub use crate::state::process::{UIFutureExt, UISignalExt};
 pub use crate::state::*;
 pub use futures_signals::signal;
 pub use futures_signals::signal_vec;
@@ -92,7 +91,7 @@ macro_rules! Flex2 {
 #[allow(non_snake_case)]
 macro_rules! UI {
     (terminal) => {
-        impl ::ui_composer::layout::LayoutItem<Content = impl ::ui_composer::tui::pipeline::Render>
+        impl ::ui_composer::layout::LayoutItem<Content = impl ::ui_composer::tui::pipeline::RenderDescriptor>
     };
 
     () => {

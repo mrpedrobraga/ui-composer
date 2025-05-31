@@ -2,10 +2,6 @@ use crate::app::primitives::Processor;
 use {
     crate::app::{input::Event, primitives::Primitive},
     bytemuck::{Pod, Zeroable},
-    std::{
-        pin::Pin,
-        task::{Context, Poll},
-    },
     vek::{num_traits::AsPrimitive, Extent3, Mat4, Rect, Rgb, Vec3, Vec4},
 };
 
@@ -81,14 +77,10 @@ where
     }
 }
 
-impl Primitive for Graphic {
+impl<Res> Primitive<Res> for Graphic {
     fn handle_event(&mut self, _event: Event) -> bool {
         false
     }
 }
 
-impl Processor for Graphic {
-    fn poll(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<Option<()>> {
-        Poll::Ready(Some(()))
-    }
-}
+impl<Res> Processor<Res> for Graphic {}
