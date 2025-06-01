@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 
 use ui_composer::prelude::*;
+use ui_composer::wgpu::components::Label;
 use ui_composer::wgpu::pipeline::graphics::graphic::Graphic;
 use ui_composer::wgpu::pipeline::UIReifyResources;
 use ui_composer::wgpu::render_target::RenderDescriptor;
@@ -14,7 +15,8 @@ fn main() {
 
     let flex = Flex2! ( 3;
         [_] Square(grape),
-        [2.0] Flex2! ( 3;
+        [2.0] Flex2! ( 4;
+            [1.0] Label("Move everything around and see how it reshapes — go on, I dare you!"),
             [_] Square(dragonfruit),
             [3.0] Square(vanilla),
             [2.0] Square(dragonfruit),

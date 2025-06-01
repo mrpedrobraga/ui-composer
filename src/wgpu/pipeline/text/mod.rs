@@ -71,15 +71,17 @@ pub struct GlyphonTextRenderer {
 }
 
 impl GPURenderer for GlyphonTextRenderer {
-    fn draw<'draw, R: Render>(
+    fn draw<R>(
         gpu_resources: &mut GPUResources,
         pipelines: &mut Renderers,
         render_target_size: Extent2<f32>,
         texture: &Texture,
         render_pass: &mut RenderPass,
-        ui_tree: &'draw R,
+        ui_tree: &R,
         _render_buffers: &mut RendererBuffers,
-    ) {
+    ) where
+        R: Render,
+    {
         let this = &mut pipelines.text_renderer;
 
         this.viewport.update(
@@ -90,7 +92,12 @@ impl GPURenderer for GlyphonTextRenderer {
             },
         );
 
+        // TODO: Move this container into [RendererBuffers] if I decide this is the way to go.
         let mut container = vec![];
+
+        // This can be parallelized, I think.
+        // It certainly can be parallelized if I don't `push`
+        // and instead `assign` text areas...
         ui_tree.push_text(
             TextBounds {
                 left: 0,

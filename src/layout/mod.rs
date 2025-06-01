@@ -61,9 +61,17 @@ pub trait LayoutItem: Send {
     type Content;
 
     /// The size this component prefers to be at. It's usually its minimum size.
+    ///
+    /// DEPRECATED: Instead of a callback, [Self::lay] will have a "natural size"
+    /// reverse [Signal] in its child hints.
+    #[deprecated]
     fn get_natural_size(&self) -> Extent2<f32>;
 
     /// The size this component prefers to be at. It's usually its minimum size.
+    ///
+    /// DEPRECATED: Instead of a callback, [Self::lay] will have a "minimum size"
+    /// reverse [Signal] in its child hints.
+    #[deprecated]
     fn get_minimum_size(&self) -> Extent2<f32>;
 
     /// Renders the content of this layout item with a specific rect.
@@ -98,7 +106,7 @@ where
 }
 
 pub trait Resizable: LayoutItem {
-    /// Adapts this item to have a new minimum size.
+    /// Consumes this [`ResizableItem`] and returns a similar one with the minimum size set.
     fn with_minimum_size(self, min_size: Extent2<f32>) -> Self;
 }
 
@@ -121,7 +129,6 @@ impl<F, T, Res> Resizable for ResizableItem<F, T, Res>
 where
     F: Send + FnMut(ParentHints) -> T,
 {
-    /// Consumes this [`ResizableItem`] and returns a similar one with the minimum size set.
     fn with_minimum_size(self, min_size: Extent2<f32>) -> Self {
         Self {
             hints: ChildHints { min_size },

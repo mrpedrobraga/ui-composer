@@ -25,12 +25,12 @@ use {
 fn main() {
     let app = Center(Column(
         Row(
-            SmoothSquare("A", Rgb::new(126.0, 46.0, 132.0) / 255.0),
-            SmoothSquare("B", Rgb::new(209.0, 64.0, 129.0) / 255.0),
+            SmoothSquare("Becky", Rgb::new(126.0, 46.0, 132.0) / 255.0),
+            SmoothSquare("Daniel", Rgb::new(209.0, 64.0, 129.0) / 255.0),
         ),
         Row(
-            SmoothSquare("C", Rgb::new(239.0, 121.0, 138.0) / 255.0),
-            SmoothSquare("D", Rgb::new(249.0, 245.0, 227.0) / 255.0),
+            SmoothSquare("Carlos", Rgb::new(239.0, 121.0, 138.0) / 255.0),
+            SmoothSquare("Damien", Rgb::new(249.0, 245.0, 227.0) / 255.0),
         ),
     ));
 
@@ -122,6 +122,6 @@ fn hover_square(
             animation_factor_pct
         )),
         hover_rect_graphic,
-        Text(rect, name.to_string(), Rgb::new(1.0, 1.0, 1.0) - original_color)
+        Text(rect, name.to_string(), Rgb::new(0.0, 0.0, 0.0))
     }
 }
