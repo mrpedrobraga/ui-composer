@@ -1,15 +1,16 @@
 use crate::app::primitives::PrimitiveDescriptor;
+use crate::prelude::items::Typing;
 use crate::prelude::process::React;
 use crate::state::process::Await;
-use crate::wgpu::pipeline::text::{Text, TextItem};
 use crate::wgpu::pipeline::UIReifyResources;
+use crate::wgpu::pipeline::text::{Text, TextItem};
 use {
-    super::{graphic::Graphic, RenderGraphic, RenderGraphicDescriptor},
+    super::{RenderGraphic, RenderGraphicDescriptor, graphic::Graphic},
     crate::{
         prelude::items::{Drag, Hover, Tap},
         state::{
-            process::{FutureProcessor, SignalProcessor},
             Effect,
+            process::{FutureProcessor, SignalProcessor},
         },
     },
     std::future::Future,
@@ -43,7 +44,7 @@ impl RenderGraphic for Graphic {
 
 //MARK: Text
 
-impl RenderGraphicDescriptor<UIReifyResources> for Text {
+impl<S: AsRef<str>> RenderGraphicDescriptor<UIReifyResources> for Text<S> {
     fn get_render_rect(&self) -> Option<vek::Rect<f32, f32>> {
         Some(self.0)
     }
@@ -311,6 +312,7 @@ macro_rules! impl_render_graphic_nop {
 
 impl_render_graphic_nop!(Hover);
 impl_render_graphic_nop!(Drag);
+impl_render_graphic_nop!(Typing);
 
 impl<A, Res> PrimitiveDescriptor<Res> for Tap<A>
 where

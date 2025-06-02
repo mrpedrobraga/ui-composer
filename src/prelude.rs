@@ -22,9 +22,9 @@
 // MARK: General Items
 
 pub use crate::app::{
-    backend::Backend,
-    input::{items, CursorEvent, EvNum, Event},
     UIComposer,
+    backend::Backend,
+    input::{CursorEvent, EvNum, Event, items},
 };
 
 // MARK: Geometry and Layout

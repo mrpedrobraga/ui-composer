@@ -8,8 +8,8 @@ use crate::wgpu::render_target::RenderDescriptor;
 use crate::{
     items_internal as items,
     prelude::{
-        items::{Hover, Tap},
         Effect, LayoutItem, ParentHints, Resizable, ResizableItem,
+        items::{Hover, Tap},
     },
 };
 
@@ -41,7 +41,7 @@ where
                     items!(Graphic::from(parent_hints.rect).with_color(Rgb::new(0.2, 0.2, 0.2)),)
                 }
             })),
-            label.lay(parent_hints)
+            label.lay(ParentHints { ..parent_hints }),
         )
     };
 

@@ -9,8 +9,7 @@ use {
         },
         prelude::{CursorEvent, Effect},
         state::Mutable,
-    }
-    ,
+    },
     vek::{Rect, Vec2},
 };
 

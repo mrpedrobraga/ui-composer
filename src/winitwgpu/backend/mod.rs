@@ -4,7 +4,7 @@ use crate::app::backend::NodeReifyResources;
 use crate::app::primitives::{Primitive, Processor};
 use crate::wgpu::backend::{GPUResources, WGPUBackend};
 use crate::wgpu::pipeline::graphics::OrchestraRenderer;
-use crate::wgpu::pipeline::{text::GlyphonTextRenderer, Renderers, UIReifyResources};
+use crate::wgpu::pipeline::{Renderers, UIReifyResources, text::GlyphonTextRenderer};
 use pin_project::pin_project;
 use std::sync::Mutex;
 use winit::event::{DeviceEvent, DeviceId};

@@ -1,11 +1,11 @@
-use crate::layout::flow::weighted_division_with_minima;
 use crate::layout::flow::CartesianFlowDirection::{
     BottomToTop, LeftToRight, RightToLeft, TopToBottom,
 };
+use crate::layout::flow::weighted_division_with_minima;
 use crate::prelude::flow::{CartesianFlowDirection, FlowDirection, WritingFlowDirection};
 use crate::prelude::{CoordinateSystemProvider, LayoutItem, ParentHints};
 use arrayvec::ArrayVec;
-use core::iter::{once, Chain, Once};
+use core::iter::{Chain, Once, once};
 use vek::{Extent2, Rect};
 
 #[allow(non_snake_case)]

@@ -9,7 +9,7 @@ use {
     std::{mem::size_of, ops::Deref},
     vek::{Extent2, Mat4, Rect, Vec2, Vec3},
     wgpu::{
-        util::DeviceExt as _, BufferAddress, BufferUsages, ColorTargetState, RenderPass, Texture,
+        BufferAddress, BufferUsages, ColorTargetState, RenderPass, Texture, util::DeviceExt as _,
     },
 };
 

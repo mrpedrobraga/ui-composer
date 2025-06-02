@@ -183,4 +183,7 @@ pub struct KeyEvent {
 
     /// The text representation of this event.
     pub text_repr: Option<SmolStr>,
+
+    /// The state of this key event.
+    pub button_state: ButtonState,
 }

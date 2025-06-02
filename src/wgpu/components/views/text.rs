@@ -1,9 +1,9 @@
 #![allow(non_snake_case)]
 
 use crate::app::primitives::{Primitive, Processor};
-use crate::prelude::{Event, LayoutItem, ParentHints, RectExt as _};
+use crate::prelude::{Event, LayoutItem, ParentHints};
 use crate::wgpu::pipeline::text::Text;
-use vek::{Rgb, Vec2};
+use vek::Rgb;
 
 /// A simple label that visualises a String!
 ///
@@ -12,11 +12,10 @@ use vek::{Rgb, Vec2};
 /// will grow in the `WritingCrossAxis`.
 ///
 /// ^ TODO: This is not yet implemented.
-pub fn Label<S>(text: S) -> TextLayoutItem
+pub fn Label<S>(text: S) -> TextLayoutItem<S>
 where
-    S: Into<String>,
+    S: AsRef<str>,
 {
-    let text = text.into();
     TextLayoutItem {
         text,
         own_color: None,
@@ -24,12 +23,18 @@ where
 }
 
 #[derive(Clone)]
-pub struct TextLayoutItem {
-    text: String,
+pub struct TextLayoutItem<S>
+where
+    S: AsRef<str>,
+{
+    text: S,
     own_color: Option<Rgb<f32>>,
 }
 
-impl TextLayoutItem {
+impl<S> TextLayoutItem<S>
+where
+    S: AsRef<str>,
+{
     /// Returns this [TextLayoutItem], with a different colour.
     pub fn with_color(self, new_color: Rgb<f32>) -> Self {
         Self {
@@ -39,8 +44,8 @@ impl TextLayoutItem {
     }
 }
 
-impl LayoutItem for TextLayoutItem {
-    type Content = Text;
+impl<S: AsRef<str> + Send + Clone> LayoutItem for TextLayoutItem<S> {
+    type Content = Text<S>;
 
     fn get_natural_size(&self) -> vek::Extent2<f32> {
         vek::Extent2::new(120.0, 32.0)
@@ -52,16 +57,16 @@ impl LayoutItem for TextLayoutItem {
 
     fn lay(&mut self, parent_hints: ParentHints) -> Self::Content {
         Text(
-            parent_hints.rect.translated(Vec2::new(0.0, 4.0)),
+            parent_hints.rect,
             self.text.clone(),
             self.own_color.unwrap_or(Rgb::white()), // TODO: Use the current foreground colour!
         )
     }
 }
 
-impl<Res> Processor<Res> for TextLayoutItem {}
+impl<S: AsRef<str> + Send, Res> Processor<Res> for TextLayoutItem<S> {}
 
-impl<Res> Primitive<Res> for TextLayoutItem {
+impl<S: AsRef<str> + Send, Res> Primitive<Res> for TextLayoutItem<S> {
     fn handle_event(&mut self, _: Event) -> bool {
         // Event was not handled
         false

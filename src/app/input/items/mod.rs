@@ -1,6 +1,8 @@
+pub mod drag;
 pub mod hover;
 pub mod tap;
-pub mod window_drag;
+pub mod typing;
+pub use drag::*;
 pub use hover::*;
 pub use tap::*;
-pub use window_drag::*;
+pub use typing::*;

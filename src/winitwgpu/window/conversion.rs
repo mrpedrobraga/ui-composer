@@ -1,3 +1,4 @@
+use winit::event::ElementState;
 use {
     crate::{
         app::input::{
@@ -171,6 +172,7 @@ impl TryFrom<WindowEvent> for Event {
                 event: KeyboardEvent::Key(KeyEvent {
                     is_implicit: is_synthetic,
                     text_repr: event.text.map(|s| SmolStr::from(s.as_str())),
+                    button_state: event.state.into(),
                 }),
             }),
 
@@ -210,6 +212,15 @@ impl From<TouchPhase> for TouchStage {
             TouchPhase::Moved => TouchStage::Moved,
             TouchPhase::Ended => TouchStage::Ended,
             TouchPhase::Cancelled => TouchStage::Cancelled,
+        }
+    }
+}
+
+impl From<ElementState> for ButtonState {
+    fn from(value: ElementState) -> Self {
+        match value {
+            ElementState::Pressed => ButtonState::Pressed,
+            ElementState::Released => ButtonState::Released,
         }
     }
 }

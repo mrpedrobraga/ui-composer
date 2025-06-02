@@ -1,6 +1,6 @@
 use futures_signals::signal::{Mutable, SignalExt};
 use futures_time::time::Duration;
-use ui_composer::prelude::animation::{lerp, set, RealTimeStream};
+use ui_composer::prelude::animation::{RealTimeStream, lerp, set};
 use ui_composer::state::animation::move_toward;
 use ui_composer_macros::chain;
 

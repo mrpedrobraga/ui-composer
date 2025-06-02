@@ -2,7 +2,7 @@ use crate::app::primitives::Processor;
 use {
     crate::app::{input::Event, primitives::Primitive},
     bytemuck::{Pod, Zeroable},
-    vek::{num_traits::AsPrimitive, Extent3, Mat4, Rect, Rgb, Vec3, Vec4},
+    vek::{Extent3, Mat4, Rect, Rgb, Vec3, Vec4, num_traits::AsPrimitive},
 };
 
 /// A small fragment of graphics that can be sent to the GPU and rendered.

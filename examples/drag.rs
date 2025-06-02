@@ -6,8 +6,8 @@ use ui_composer::items;
 use ui_composer::prelude::items::DragState;
 use ui_composer::prelude::process::React;
 use ui_composer::prelude::*;
-use ui_composer::wgpu::pipeline::graphics::graphic::Graphic;
 use ui_composer::wgpu::pipeline::UIReifyResources;
+use ui_composer::wgpu::pipeline::graphics::graphic::Graphic;
 use ui_composer::wgpu::render_target::RenderDescriptor;
 
 fn main() {

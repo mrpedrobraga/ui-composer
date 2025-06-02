@@ -14,7 +14,7 @@ use vek::Vec2;
 use {
     crate::app::{input::Event, primitives::Primitive},
     ndarray::Array2,
-    vek::{Rgb, Rgba},
+    vek::Rgba,
 };
 
 /// A trait that marks a trait as renderable with this pipeline.
@@ -89,12 +89,13 @@ impl<P> Canvas for Framebuffer<P> {
     }
 }
 
-trait Pixel {
+/// Trait that defines a pixel of a canvas.
+pub trait Pixel {
     /// Blends `self` on top of `other`.
     ///
     /// If `self` is opaque, the result equals `self`.
     /// If `self` is transparent, the result equals `other`.
-    /// If `self` is translucent, it lerp `self` and `other`
+    /// If `self` is translucent, it interpolates opaque `self` and `other`
     /// according to `self`'s opacity.
     ///
     /// This operation is non-commutative.
@@ -102,14 +103,44 @@ trait Pixel {
 }
 
 /// A unit of the beautiful frame buffer.
-struct TextModePixel {
+#[derive(Copy, Clone, PartialEq)]
+pub struct TextModePixel {
     bg_color: Rgba<f32>,
-    fg_color: Rgb<f32>,
+    fg_color: Rgba<f32>,
     character: char,
 }
 
 impl Pixel for TextModePixel {
     fn blend_normal(&self, other: Self) -> Self {
-        todo!()
+        let self_bg_color_opaque =
+            Rgba::new(self.bg_color.r, self.bg_color.g, self.bg_color.b, 1.0);
+
+        // The background colour is just the NORMAL blend of the background colours.
+        let bg_color = lerp(other.bg_color, self_bg_color_opaque, self.bg_color.a);
+
+        let (fg_color, character) = if self.character == ' ' {
+            (
+                // The bottom pixel will have its character partially "occluded" by
+                // the top pixel's background.
+                lerp(other.fg_color, self_bg_color_opaque, self.bg_color.a),
+                other.character,
+            )
+        } else {
+            // The top pixel's character can not be occluded.
+            // If it has any alpha, that won't be resolved right now,
+            // it will be resolved when drawing to the canvas...
+            (self.fg_color, self.character)
+        };
+
+        TextModePixel {
+            bg_color,
+            fg_color,
+            character,
+        }
     }
+}
+
+/// Interpolates linearly between A and B.
+fn lerp(a: Rgba<f32>, b: Rgba<f32>, factor: f32) -> Rgba<f32> {
+    a * (factor) + b * (1.0 - factor)
 }

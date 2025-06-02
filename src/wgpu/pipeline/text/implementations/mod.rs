@@ -1,8 +1,8 @@
 use crate::app::primitives::{PrimitiveDescriptor, Processor};
+use crate::prelude::items::Typing;
+use crate::wgpu::pipeline::UIReifyResources;
 use crate::wgpu::pipeline::graphics::graphic::Graphic;
 use crate::wgpu::pipeline::text::TextItem;
-use crate::wgpu::pipeline::UIReifyResources;
-use glyphon::cosmic_text::Align;
 use glyphon::{Attrs, Buffer, Family, Metrics, Shaping, Weight, Wrap};
 use {
     super::{RenderText, Text},
@@ -10,8 +10,8 @@ use {
         app::{input::Event, primitives::Primitive},
         prelude::items::{Drag, Hover, Tap},
         state::{
-            process::{FutureProcessor, SignalProcessor},
             Effect,
+            process::{FutureProcessor, SignalProcessor},
         },
     },
     futures_signals::signal::Signal,
@@ -20,7 +20,7 @@ use {
 };
 //MARK: Text
 
-impl<Res> Primitive<Res> for Text {
+impl<S: AsRef<str> + Send, Res> Primitive<Res> for Text<S> {
     fn handle_event(&mut self, _event: Event) -> bool {
         false
     }
@@ -52,7 +52,7 @@ impl RenderText for TextItem {
     }
 }
 
-impl PrimitiveDescriptor<UIReifyResources> for Text {
+impl<S: AsRef<str>> PrimitiveDescriptor<UIReifyResources> for Text<S> {
     type Primitive = TextItem;
 
     fn reify(self, resources: &mut UIReifyResources) -> Self::Primitive {
@@ -68,7 +68,6 @@ impl PrimitiveDescriptor<UIReifyResources> for Text {
                 .weight(Weight::NORMAL),
             Shaping::Advanced,
         );
-        buffer.lines[0].set_align(Some(Align::Center));
         buffer.set_size(&mut renderer.font_system, Some(self.0.w), Some(self.0.h));
         // TODO: Perhaps add another primitive that won't wrap?
         buffer.set_wrap(&mut renderer.font_system, Wrap::Word);
@@ -83,7 +82,7 @@ impl PrimitiveDescriptor<UIReifyResources> for Text {
     }
 }
 
-impl<Res> Processor<Res> for Text {}
+impl<S: AsRef<str> + Send, Res> Processor<Res> for Text<S> {}
 //MARK: Graphics
 
 impl RenderText for Graphic {
@@ -180,6 +179,7 @@ macro_rules! impl_render_text_nop {
 
 impl_render_text_nop!(Hover);
 impl_render_text_nop!(Drag);
+impl_render_text_nop!(Typing);
 
 impl<A: Effect + Send + Sync> RenderText for Tap<A> {
     fn push_text<'a>(

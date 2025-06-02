@@ -1,11 +1,11 @@
 #![allow(non_snake_case)]
 
 use rand::random;
-use ui_composer::prelude::*;
-use ui_composer::wgpu::pipeline::graphics::graphic::Graphic;
-use ui_composer::wgpu::pipeline::UIReifyResources;
-use ui_composer::wgpu::render_target::RenderDescriptor;
 use ui_composer::Flex;
+use ui_composer::prelude::*;
+use ui_composer::wgpu::pipeline::UIReifyResources;
+use ui_composer::wgpu::pipeline::graphics::graphic::Graphic;
+use ui_composer::wgpu::render_target::RenderDescriptor;
 
 fn main() {
     let flex = Flex! ( 3;

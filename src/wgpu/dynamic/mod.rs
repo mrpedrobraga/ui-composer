@@ -1,6 +1,6 @@
 use crate::app::primitives::{PrimitiveDescriptor, Processor};
-use crate::wgpu::pipeline::graphics::{graphic::Graphic, RenderGraphic, RenderGraphicDescriptor};
 use crate::wgpu::pipeline::RendererBuffers;
+use crate::wgpu::pipeline::graphics::{RenderGraphic, RenderGraphicDescriptor, graphic::Graphic};
 use futures_signals::signal_vec::SignalVec;
 use std::pin::Pin;
 use std::task::{Context, Poll};

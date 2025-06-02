@@ -41,7 +41,7 @@ mod winit_wgpu {
     use crate::wgpu::pipeline::UIReifyResources;
     use crate::winitwgpu::backend::WithWinit;
     use {
-        super::{backend::Backend as _, UIComposer},
+        super::{UIComposer, backend::Backend as _},
         crate::winitwgpu::backend::NodeDescriptor,
     };
 

@@ -9,8 +9,8 @@ use vek::Vec3;
 use {
     ui_composer::{
         app::{
-            input::items::{Hover, Tap},
             UIComposer,
+            input::items::{Hover, Tap},
         },
         components::{Center, Column, Row},
         geometry::RectExt,

@@ -29,7 +29,7 @@ use crate::prelude::CursorEvent;
 use {
     crossterm::ExecutableCommand,
     std::{
-        io::{stdout, Write as _},
+        io::{Write as _, stdout},
         sync::Arc,
     },
 };

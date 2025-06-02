@@ -1,11 +1,11 @@
 #![allow(non_snake_case)]
 
+use ui_composer::Flex2;
 use ui_composer::prelude::*;
 use ui_composer::wgpu::components::Label;
-use ui_composer::wgpu::pipeline::graphics::graphic::Graphic;
 use ui_composer::wgpu::pipeline::UIReifyResources;
+use ui_composer::wgpu::pipeline::graphics::graphic::Graphic;
 use ui_composer::wgpu::render_target::RenderDescriptor;
-use ui_composer::Flex2;
 
 fn main() {
     let grape = Rgb::new(126.0, 46.0, 132.0) / 255.0;

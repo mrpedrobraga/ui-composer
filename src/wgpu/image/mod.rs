@@ -3,7 +3,7 @@ use crate::wgpu::backend::GPUResources;
 use crate::wgpu::pipeline::graphics::RenderGraphic;
 use crate::wgpu::pipeline::text::TextPipelineBuffers;
 use crate::wgpu::pipeline::{
-    graphics::GraphicsPipelineBuffers, RendererBuffers, Renderers, UIReifyResources,
+    RendererBuffers, Renderers, UIReifyResources, graphics::GraphicsPipelineBuffers,
 };
 use crate::wgpu::render_target::{Render, RenderDescriptor, RenderTarget};
 use crate::winitwgpu::backend::Node;

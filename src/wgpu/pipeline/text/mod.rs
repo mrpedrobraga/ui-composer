@@ -1,13 +1,11 @@
 use crate::wgpu::backend::GPUResources;
 use crate::wgpu::render_target::{Render, RenderTarget};
-use glyphon::cosmic_text::Align;
-use glyphon::{Attrs, Buffer, Family, Metrics, Shaping, Wrap};
+use glyphon::Buffer;
 use wgpu::{CompareFunction, DepthStencilState};
 use {
     super::{GPURenderer, RendererBuffers, Renderers},
     glyphon::{
         Cache, FontSystem, Resolution, SwashCache, TextAtlas, TextBounds, TextRenderer, Viewport,
-        Weight,
     },
     vek::{Extent2, Rect, Rgb},
     wgpu::{ColorTargetState, MultisampleState, RenderPass, Texture, TextureFormat},
@@ -22,7 +20,9 @@ pub trait RenderText {
     fn push_text<'a>(&'a self, bounds: TextBounds, container: &mut Vec<glyphon::TextArea<'a>>);
 }
 
-pub struct Text(pub Rect<f32, f32>, pub String, pub Rgb<f32>);
+pub struct Text<S>(pub Rect<f32, f32>, pub S, pub Rgb<f32>)
+where
+    S: AsRef<str>;
 
 pub struct TextItem {
     pub rect: Rect<f32, f32>,
@@ -39,25 +39,6 @@ impl TextPipelineBuffers {
     ) -> Self {
         Self {}
     }
-}
-
-#[allow(unused)]
-fn default_buffer(renderer: &mut GlyphonTextRenderer) -> Buffer {
-    let mut buffer = Buffer::new(&mut renderer.font_system, Metrics::new(16.0, 20.0));
-
-    buffer.set_text(
-        &mut renderer.font_system,
-        "Click me...",
-        &Attrs::new()
-            .family(Family::Name("Work Sans"))
-            .weight(Weight::NORMAL),
-        Shaping::Advanced,
-    );
-    buffer.lines[0].set_align(Some(Align::Center));
-    buffer.set_size(&mut renderer.font_system, Some(100.0), Some(100.0));
-    buffer.set_wrap(&mut renderer.font_system, Wrap::Word);
-    buffer.shape_until_scroll(&mut renderer.font_system, false);
-    buffer
 }
 
 /// The pipeline for rendering text.

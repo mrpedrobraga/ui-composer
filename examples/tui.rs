@@ -1,7 +1,7 @@
 use crossterm::{
-    cursor,
+    ExecutableCommand, QueueableCommand, cursor,
     style::{self, Stylize},
-    terminal, ExecutableCommand, QueueableCommand,
+    terminal,
 };
 use std::io::{self, Stdout, Write};
 use vek::{Rect, Rgb};

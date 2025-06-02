@@ -164,7 +164,7 @@ impl LayoutItem for () {
     }
 
     fn get_minimum_size(&self) -> Extent2<f32> {
-        Extent2::new(0.0, 0.0)
+        Extent2::zero()
     }
 
     fn lay(&mut self, _layout_hints: ParentHints) -> Self::Content {}

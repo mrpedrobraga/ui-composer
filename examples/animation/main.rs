@@ -3,8 +3,8 @@ use ui_composer::prelude::animation::{lerp, set};
 use ui_composer::prelude::*;
 use ui_composer::state::animation::RealTimeStream;
 use ui_composer::state::process::{Await, React};
-use ui_composer::wgpu::pipeline::graphics::graphic::Graphic;
 use ui_composer::wgpu::pipeline::UIReifyResources;
+use ui_composer::wgpu::pipeline::graphics::graphic::Graphic;
 use ui_composer::wgpu::render_target::RenderDescriptor;
 use ui_composer_macros::chain;
 
@@ -23,10 +23,6 @@ fn App() -> impl LayoutItem<Content = impl RenderDescriptor> {
                 .rotated(x / 100.0)
         });
 
-        // To Do -- Currently I'm regenerating this future
-        // at every layout shift, which causes data races.
-        //
-        // It should be possible to hold processes as "LayoutItem" instead of "Primitive"
         let animation = chain!({
             yield set(0.0);
             yield lerp(500.0, Duration::from_secs(3));
