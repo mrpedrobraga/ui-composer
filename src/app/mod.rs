@@ -22,7 +22,7 @@ pub mod implementations;
 pub mod input;
 pub mod primitives;
 
-/// App builder, receives a layout item with the entirety of your app.
+/// This struct is the "entry point" of an UI Composer project.
 pub struct UIComposer;
 
 impl UIComposer {

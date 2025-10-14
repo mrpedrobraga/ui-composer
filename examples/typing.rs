@@ -1,9 +1,9 @@
+use ui_composer::Flex2;
 use ui_composer::prelude::items::Typing;
 use ui_composer::prelude::process::React;
 use ui_composer::prelude::*;
 use ui_composer::wgpu::components::*;
 use ui_composer::winitwgpu::prelude::*;
-use ui_composer::Flex2;
 
 fn main() {
     let state = Mutable::new(String::new());

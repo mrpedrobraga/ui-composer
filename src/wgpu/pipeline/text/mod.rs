@@ -24,7 +24,7 @@ pub struct Text<S>(pub Rect<f32, f32>, pub S, pub Rgb<f32>)
 where
     S: AsRef<str>;
 
-pub struct TextItem {
+pub struct TextItemRe {
     pub rect: Rect<f32, f32>,
     pub buffer: Buffer,
     pub color: Rgb<f32>,

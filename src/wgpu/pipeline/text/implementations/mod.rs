@@ -2,7 +2,7 @@ use crate::app::primitives::{PrimitiveDescriptor, Processor};
 use crate::prelude::items::Typing;
 use crate::wgpu::pipeline::UIReifyResources;
 use crate::wgpu::pipeline::graphics::graphic::Graphic;
-use crate::wgpu::pipeline::text::TextItem;
+use crate::wgpu::pipeline::text::TextItemRe;
 use glyphon::{Attrs, Buffer, Family, Metrics, Shaping, Weight, Wrap};
 use {
     super::{RenderText, Text},
@@ -26,15 +26,15 @@ impl<S: AsRef<str> + Send, Res> Primitive<Res> for Text<S> {
     }
 }
 
-impl<Res> Processor<Res> for TextItem {}
+impl<Res> Processor<Res> for TextItemRe {}
 
-impl<Res> Primitive<Res> for TextItem {
+impl<Res> Primitive<Res> for TextItemRe {
     fn handle_event(&mut self, #[expect(unused)] event: Event) -> bool {
         false
     }
 }
 
-impl RenderText for TextItem {
+impl RenderText for TextItemRe {
     fn push_text<'a>(&'a self, bounds: TextBounds, container: &mut Vec<TextArea<'a>>) {
         let color: vek::Rgb<u8> = (self.color * 255.0).as_();
         let rect = self.rect;
@@ -53,7 +53,7 @@ impl RenderText for TextItem {
 }
 
 impl<S: AsRef<str>> PrimitiveDescriptor<UIReifyResources> for Text<S> {
-    type Primitive = TextItem;
+    type Primitive = TextItemRe;
 
     fn reify(self, resources: &mut UIReifyResources) -> Self::Primitive {
         let renderer = &mut resources.renderers.text_renderer;
@@ -74,7 +74,7 @@ impl<S: AsRef<str>> PrimitiveDescriptor<UIReifyResources> for Text<S> {
         // TODO: This should be configurable, too.
         buffer.shape_until_scroll(&mut renderer.font_system, false);
 
-        TextItem {
+        TextItemRe {
             rect: self.0,
             buffer,
             color: self.2,

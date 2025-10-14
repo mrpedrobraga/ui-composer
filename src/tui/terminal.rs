@@ -54,7 +54,8 @@ impl<N: LayoutItem + Send + Sync> Node for TerminalNode<N> {
         // Clear canvas
 
         //self.item.draw(stdout, rect)?;
-        let item_size = self.item.get_minimum_size();
+        #[allow(deprecated)]
+        let item_size = self.item.get_natural_size();
         let texture_size = Into::<Vec2<f32>>::into(rect.extent().as_());
         let item_position = (texture_size - Into::<Vec2<f32>>::into(item_size)) / 2.0;
 

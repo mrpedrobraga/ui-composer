@@ -19,7 +19,7 @@ use {
 
 /// A trait that marks a trait as renderable with this pipeline.
 pub trait Render {
-    fn draw<C: Canvas>(&self, canvas: &mut C, rect: vek::Rect<u16, u16>)
+    fn draw<C>(&self, canvas: &mut C, rect: vek::Rect<u16, u16>)
     where
         C: Canvas<Pixel = Rgba<u8>>;
 }

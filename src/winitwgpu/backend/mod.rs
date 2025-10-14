@@ -11,10 +11,7 @@ use winit::event::{DeviceEvent, DeviceId};
 use winit::event_loop::{ControlFlow, EventLoop};
 use {
     super::window::WindowRenderTarget,
-    crate::{
-        app::backend::{Backend, BackendProcessExecutor},
-        winit::WinitBackend,
-    },
+    crate::app::backend::{Backend, BackendProcessExecutor},
     futures_signals::signal::{SignalExt, SignalFuture},
     std::{
         ops::DerefMut,
@@ -189,12 +186,10 @@ impl<A: NodeDescriptor> WGPUBackend<A> {
     }
 }
 
-impl<A> WinitBackend for WithWinit<WGPUBackend<A>>
+impl<A> WithWinit<WGPUBackend<A>>
 where
     A: NodeDescriptor<Reified: Processor<NodeReifyResources>> + 'static,
 {
-    type NodeTreeDescriptorType = A;
-
     async fn create(
         event_loop: &ActiveEventLoop,
         tree_descriptor: A,

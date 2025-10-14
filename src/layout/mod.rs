@@ -144,6 +144,7 @@ where
     type Content = T;
 
     fn get_natural_size(&self) -> Extent2<f32> {
+        #[allow(deprecated)]
         self.get_minimum_size()
     }
 
@@ -160,6 +161,7 @@ impl LayoutItem for () {
     type Content = ();
 
     fn get_natural_size(&self) -> Extent2<f32> {
+        #[allow(deprecated)]
         self.get_minimum_size()
     }
 

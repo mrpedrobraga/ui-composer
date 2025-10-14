@@ -59,8 +59,7 @@ where
 
         let inner_poll = if let Some(held_item) = held_item {
             let held_item = unsafe { Pin::new_unchecked(held_item) };
-            let poll = held_item.poll(cx, resources);
-            poll
+            held_item.poll(cx, resources)
         } else {
             Poll::Pending
         };
@@ -176,6 +175,7 @@ where
     type Content =
         Option<<<Fut::Output as PrimitiveDescriptor<Res>>::Primitive as LayoutItem>::Content>;
 
+    #[allow(deprecated)]
     fn get_natural_size(&self) -> Extent2<f32> {
         self.held_item
             .as_ref()
@@ -183,6 +183,7 @@ where
             .unwrap_or(Extent2::zero())
     }
 
+    #[allow(deprecated)]
     fn get_minimum_size(&self) -> Extent2<f32> {
         self.held_item
             .as_ref()

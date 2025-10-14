@@ -18,7 +18,6 @@ use wgpu::{
     Color, LoadOp, Operations, RenderPassColorAttachment, RenderPassDepthStencilAttachment,
     RenderPassDescriptor, StoreOp, TextureDescriptor, TextureDimension, TextureUsages,
 };
-use winit::dpi::PhysicalPosition;
 use {
     super::backend::{Node, NodeDescriptor},
     crate::{
@@ -161,6 +160,7 @@ where
     A::Content: RenderDescriptor,
 {
     // This should be a signal that comes from the item...
+    #[allow(deprecated)]
     let minimum_size = item.get_natural_size();
     let minimum_size = Mutable::new(minimum_size);
 

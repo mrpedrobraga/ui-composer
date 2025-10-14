@@ -37,13 +37,12 @@ No-std is planned but not yet available.
 #[rust_analyzer::completions(ignore_flyimport)]
 pub mod prelude;
 
+pub mod fp;
+
 pub mod app;
 pub mod geometry;
 pub mod layout;
 pub mod state;
-
-#[cfg(feature = "winit")]
-pub mod winit;
 
 pub mod components;
 

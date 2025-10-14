@@ -3,7 +3,7 @@ use crate::prelude::items::Typing;
 use crate::prelude::process::React;
 use crate::state::process::Await;
 use crate::wgpu::pipeline::UIReifyResources;
-use crate::wgpu::pipeline::text::{Text, TextItem};
+use crate::wgpu::pipeline::text::{Text, TextItemRe};
 use {
     super::{RenderGraphic, RenderGraphicDescriptor, graphic::Graphic},
     crate::{
@@ -50,7 +50,7 @@ impl<S: AsRef<str>> RenderGraphicDescriptor<UIReifyResources> for Text<S> {
     }
 }
 
-impl RenderGraphic for TextItem {
+impl RenderGraphic for TextItemRe {
     const QUAD_COUNT: usize = 0;
 
     fn write_quads(&self, _quad_buffer: &mut [Graphic]) {}
