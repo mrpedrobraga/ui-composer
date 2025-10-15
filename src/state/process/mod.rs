@@ -1,10 +1,11 @@
 use crate::app::building_blocks::Reifiable;
-use crate::layout::{LayoutItem, ParentHints};
+use crate::layout::LayoutItem;
+use crate::layout::hints::ParentHints;
 use crate::state::signal_ext::coalesce_polls;
 use core::task::Context;
 use vek::Extent2;
 use {
-    crate::app::{input::Event, building_blocks::BuildingBlock},
+    crate::app::{building_blocks::BuildingBlock, input::Event},
     core::{future::Future, pin::Pin, task::Poll},
     futures_signals::signal::Signal,
     pin_project::pin_project,
@@ -86,7 +87,10 @@ where
 ///
 /// This wrapper is necessary as a technical limitation.
 #[allow(non_snake_case)]
-pub fn React<Sig>(signal: Sig) -> SignalReactItem<Sig> where Sig: Signal + Send {
+pub fn React<Sig>(signal: Sig) -> SignalReactItem<Sig>
+where
+    Sig: Signal + Send,
+{
     SignalReactItem(signal)
 }
 
@@ -115,8 +119,7 @@ where
     Sig::Item: Reifiable<Cx>,
     <Sig::Item as Reifiable<Cx>>::Reified: LayoutItem,
 {
-    type Content =
-    Option<<<Sig::Item as Reifiable<Cx>>::Reified as LayoutItem>::Content>;
+    type Content = Option<<<Sig::Item as Reifiable<Cx>>::Reified as LayoutItem>::Content>;
 
     #[allow(deprecated)]
     fn get_natural_size(&self) -> Extent2<f32> {
@@ -145,7 +148,10 @@ where
 ///
 /// This wrapper is necessary as a technical limitation.
 #[allow(non_snake_case)]
-pub fn Await<Fut>(future: Fut) -> FutureAwaitItem<Fut> where Fut: Future {
+pub fn Await<Fut>(future: Fut) -> FutureAwaitItem<Fut>
+where
+    Fut: Future,
+{
     FutureAwaitItem(future)
 }
 
@@ -226,8 +232,7 @@ where
     Fut::Output: Reifiable<Cx>,
     <Fut::Output as Reifiable<Cx>>::Reified: LayoutItem,
 {
-    type Content =
-        Option<<<Fut::Output as Reifiable<Cx>>::Reified as LayoutItem>::Content>;
+    type Content = Option<<<Fut::Output as Reifiable<Cx>>::Reified as LayoutItem>::Content>;
 
     #[allow(deprecated)]
     fn get_natural_size(&self) -> Extent2<f32> {

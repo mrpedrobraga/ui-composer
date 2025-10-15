@@ -1,56 +1,82 @@
+//! # Layout
+//!
+//! This module contains types and utility functions for efficiently calculating layouts.
+//!
+//! The star of the show here is [`LayoutItem`], a trait that behaves like a closure
+//! with some metadata.
+//!
+//! ## LayoutItem
+//!
+//! In UI Composer, you draw graphics by producing [`Reifiable`]. Technically speaking,
+//! you can do anything with them — as you can place your graphics anywhere... But if
+//! you write a function that produces primitives yourself, you don't have access to
+//! internal variables that might be helpful for laying out (window size, hierarchy, theme, etc.),
+//! what we call "parent hints";
+//!
+//! What you can do though is create a higher order function: a function that returns a closure
+//! which in turn produces [`Reifiable`]s, those which can depend on internal data.
+//!
+//! ```rust
+//! # #![allow(non_snake_case)]
+//! # use ui_composer::app::building_blocks::Reifiable;//!
+//! # use ui_composer::backends::wgpu::pipeline::text::Text;
+//! # use vek::Rgb;
+//! # use ui_composer::backends::wgpu::pipeline::UIContext;
+//! # use ui_composer::layout::hints::ParentHints;
+//!
+//! // Like this.
+//! // 'text' here is like a "prop" of your component. It's readily available
+//! // for you to compose with other components.
+//! fn MyText<F, R>(text: String) -> F
+//!     where
+//!         F: Fn(ParentHints) -> R,
+//!         R: Reifiable<UIContext> {
+//!
+//!     // hints is some internal context that's only gonna be available later.
+//!     |hints| {
+//!         Text(hints.rect, text, Rgb::white())
+//!     }
+//! }
+//!
+//! fn main() {
+//!     let string = String::from("Hello, World");
+//!     let app = MyText(string);
+//! }
+//! ```
+//!
+//! This would work but:
+//! 1. It looks mad ugly.
+//! 2. We can't attach any metadata to the inner closure like minimum size, etc.
+//!
+//! It makes sense, instead, to return a struct that houses a closure and also some additional
+//! information. Instead of a single concrete struct, the library offers [`LayoutItem`] so that
+//! different types can be implemented as you see fit.
+//!
+//! ## Hints
+//!
+//! There is some rather subtle intercommunication between "parent" and "children" layout items,
+//! those happen through [`ParentHints`] and [`ChildHints`], available in [`hints`]. Check that
+//! module out for more detail.
+//!
+//! ## Flow
+//!
+//! Some utility functions for calculating layouts are in the [`flow`] module.
+
 use crate::app::building_blocks::Reifiable;
 use crate::prelude::process::SignalReactItem;
 pub use flow::CoordinateSystemProvider;
+use hints::{ChildHints, ParentHints};
 use std::marker::PhantomData;
 use {
-    crate::prelude::flow::CartesianFlowDirection,
     futures_signals::signal::{Signal, SignalExt},
-    vek::{Extent2, Mat3, Rect, Vec2},
+    vek::{Extent2, Rect},
 };
 
 pub mod flow;
+pub mod hints;
+pub mod implementations;
 
-#[derive(Debug, Clone, Copy)]
-pub struct ParentHints {
-    pub rect: Rect<f32, f32>,
-    pub current_flow_direction: CartesianFlowDirection,
-    pub current_cross_flow_direction: CartesianFlowDirection,
-    pub current_writing_flow_direction: CartesianFlowDirection,
-    pub current_writing_cross_flow_direction: CartesianFlowDirection,
-}
-
-impl ParentHints {
-    pub fn writing_axis(&self) -> Vec2<f32> {
-        self.current_writing_flow_direction.get_axes(self)
-    }
-
-    pub fn writing_cross_axis(&self) -> Vec2<f32> {
-        self.current_writing_cross_flow_direction.get_axes(self)
-    }
-
-    pub fn writing_origin(&self) -> Vec2<f32> {
-        self.current_writing_flow_direction.get_origin(self)
-    }
-
-    pub fn writing_cross_origin(&self) -> Vec2<f32> {
-        self.current_writing_cross_flow_direction.get_origin(self)
-    }
-
-    pub fn writing_coordinate_system(&self) -> Mat3<f32> {
-        let wo = self.writing_origin();
-        let wx = self.writing_axis();
-        let wy = self.writing_cross_axis();
-
-        Mat3::new(wx.x, wx.y, 0.0, wy.x, wy.y, 0.0, wo.x, wo.y, 1.0)
-    }
-}
-
-#[derive(Debug, Clone, Copy, Default)]
-pub struct ChildHints {
-    min_size: Extent2<f32>,
-}
-
-/// An item that can be included in a laying out context.
+/// The closure-like trait that produces [`Reifiable`]s.
 #[diagnostic::on_unimplemented(
     message = "{Self} is not a `LayoutItem` thus can not be used...",
     label = "...in this context...",
@@ -96,7 +122,25 @@ pub trait LayoutItem: Send {
     }
 }
 
-pub struct ResizableItem<F, A, Context>
+/// A quite interesting auxiliary trait that
+/// describes layout items that have size characteristics
+/// that might be of interest to the user while they are writing
+/// components in their app.
+///
+/// You see, it's common for you to write `impl UI` as the return type
+/// of components instead of concrete type... but that might result in loss
+/// of functionality for types that have them.
+///
+/// [`Resizable`] indicates that the item in question can have sizing characteristics
+/// edited. Use it like `impl UI + Resizable`.
+pub trait Resizable: LayoutItem {
+    /// Consumes this [`ItemBox`] and returns a similar one with the minimum size set.
+    fn with_minimum_size(self, min_size: Extent2<f32>) -> Self;
+}
+
+/// Simple layout item that can be resized by its parent
+/// in whatever way the parent sees fit.
+pub struct ItemBox<F, A, Context>
 where
     F: Send + FnMut(ParentHints) -> A,
 {
@@ -105,15 +149,10 @@ where
     __context: PhantomData<fn() -> Context>,
 }
 
-pub trait Resizable: LayoutItem {
-    /// Consumes this [`ResizableItem`] and returns a similar one with the minimum size set.
-    fn with_minimum_size(self, min_size: Extent2<f32>) -> Self;
-}
-
-impl<F, T, Res> ResizableItem<F, T, Res>
+impl<F, Items, Res> ItemBox<F, Items, Res>
 where
-    F: FnMut(ParentHints) -> T + Send,
-    T: Reifiable<Res>,
+    F: FnMut(ParentHints) -> Items + Send,
+    Items: Reifiable<Res>,
 {
     /// Creates a new resizable [`LayoutItem`] that redraws using this factory function.
     pub fn new(factory: F) -> Self {
@@ -125,19 +164,7 @@ where
     }
 }
 
-impl<F, T, Res> Resizable for ResizableItem<F, T, Res>
-where
-    F: Send + FnMut(ParentHints) -> T,
-{
-    fn with_minimum_size(self, min_size: Extent2<f32>) -> Self {
-        Self {
-            hints: ChildHints { min_size },
-            ..self
-        }
-    }
-}
-
-impl<F: Send, T, Res> LayoutItem for ResizableItem<F, T, Res>
+impl<F: Send, T, Res> LayoutItem for ItemBox<F, T, Res>
 where
     F: FnMut(ParentHints) -> T,
 {
@@ -149,7 +176,7 @@ where
     }
 
     fn get_minimum_size(&self) -> Extent2<f32> {
-        self.hints.min_size
+        self.hints.minimum_size
     }
 
     fn lay(&mut self, layout_hints: ParentHints) -> Self::Content {
@@ -157,17 +184,16 @@ where
     }
 }
 
-impl LayoutItem for () {
-    type Content = ();
-
-    fn get_natural_size(&self) -> Extent2<f32> {
-        #[allow(deprecated)]
-        self.get_minimum_size()
+impl<F, T, Res> Resizable for ItemBox<F, T, Res>
+where
+    F: Send + FnMut(ParentHints) -> T,
+{
+    fn with_minimum_size(self, min_size: Extent2<f32>) -> Self {
+        Self {
+            hints: ChildHints {
+                minimum_size: min_size,
+            },
+            ..self
+        }
     }
-
-    fn get_minimum_size(&self) -> Extent2<f32> {
-        Extent2::zero()
-    }
-
-    fn lay(&mut self, _layout_hints: ParentHints) -> Self::Content {}
 }

@@ -1,63 +1,36 @@
 //! # Applications
 //!
-//! An application is a composition of [building_blocks::BuildingBlock]s each which do something.
+//! This module has two concepts: [`BuildingBlock`]s and [`Backend`], as well as some utilities.
 //!
-//! To create your program, call `UIComposer::run` and give it a root [building_blocks::BuildingBlock], like, for example, a [super::winitwgpu::window::WindowNodeRe].
+//! When you are writing an application with UI Composer, you will work with [`Reifiable`]s:
+//! those are types that *describe* parts of your application, but don't actually *do* anything.
 //!
-//! ```ignore
-//! use ui_composer::prelude::*;
-//! UIComposer::run(Window(()));
+//! The [`Window`] item shown here produces something that describes a winit window but
+//! doesn't actually have any references to any operating system resources.
+//!
+//! ```rust
+//! # use ui_composer::prelude::*;
+//! Window(())
 //! ```
 //!
-//! This function _must_ be called in the main thread.
+//! When you pass your app description to a [`Backend`], it will be [`Reifiable::reify`]ed into
+//! types that do have access to system resources (for example, `Window` here will get a handle
+//! to a winit window).
 //!
-//! ## Different Backends
+//! ## Backend-generic apps
 //!
-//! You can also call [UIComposer::run_custom] to give it a custom backend.
-
-use backend::Backend;
+//! The [`Reifiable`] trait has a generic parameter `Context` — this means that you can implement
+//! the trait several times for the same type... which means the same application can be reified
+//! by two or more distinct backends.
+//!
+//! For example, you could have the same application run on the GPU, or in the CPU with multiple threads,
+//! or in a CPU single-threaded, or in the terminal, or in the web, etc, though not all [`Reifiable`]s
+//! work with all backends.
 
 pub mod backend;
-pub mod implementations;
-pub mod input;
 pub mod building_blocks;
+pub mod input;
 
-/// This struct is the "entry point" of an UI Composer project.
-pub struct UIComposer;
+use backend::Backend;
+use building_blocks::{BuildingBlock, Reifiable};
 
-impl UIComposer {
-    /// Creates and runs a new app in a given backend.
-    /// For cross-platform compatibility, this should be called in the main thread,
-    /// and only once in your program.
-    pub fn run_custom<CustomBackend: Backend>(node_tree_descriptor: CustomBackend::Tree) {
-        CustomBackend::run(node_tree_descriptor);
-    }
-}
-
-#[cfg(all(feature = "winit", feature = "wgpu"))]
-mod winit_wgpu {
-    use crate::state::process::Pollable;
-    use crate::wgpu::backend::WgpuBackend;
-    use crate::wgpu::pipeline::UIContext;
-    use crate::winitwgpu::backend::WinitWgpuBackend;
-    use {
-        super::{UIComposer, backend::Backend as _},
-        crate::winitwgpu::backend::Node,
-    };
-
-    impl UIComposer {
-        /// Creates and runs a new app in the default backend for the selected target.
-        /// For cross-platform compatibility, this should be called in the main thread,
-        /// and only once in your program.
-        pub fn run<N: Node + 'static>(node_tree_descriptor: N) {
-            WinitWgpuBackend::<N>::run(node_tree_descriptor);
-        }
-
-        pub fn run2<N: Node + 'static>(node_tree_descriptor: N)
-        where
-            N::Reified: Pollable<UIContext>,
-        {
-            WgpuBackend::<N>::run(node_tree_descriptor);
-        }
-    }
-}

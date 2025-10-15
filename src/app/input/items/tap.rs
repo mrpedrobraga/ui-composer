@@ -4,8 +4,8 @@ use {
     super::super::{Event, InputItem},
     crate::{
         app::{
-            input::{ButtonState, MouseButton},
             building_blocks::BuildingBlock,
+            input::{ButtonState, MouseButton},
         },
         prelude::{CursorEvent, Effect},
         state::Mutable,

@@ -25,7 +25,7 @@ At the moment it supports:
 
 - PC, Android, Web
     - [winitwgpu]
-    - [wgpu]
+    - [backends::wgpu]
 - Terminal
     - [tui]
 
@@ -34,22 +34,31 @@ At the moment it supports:
 No-std is planned but not yet available.
 */
 
+use backends::{tui, winitwgpu};
+
 #[doc(hidden)]
 #[rust_analyzer::completions(ignore_flyimport)]
 pub mod prelude;
 
+/// Module for the app "orchestration" functionality of UI composer,
+/// as it pertains to generic user interface.
+///
+/// Apps, Graphical Backends, input and traits for things that can be
+/// "composed" together to create apps.
 pub mod app;
+
+/// Module for graphical mathematics utilities.
 pub mod geometry;
+
+/// Module for layout functions and utilities.
 pub mod layout;
+
+/// Module for state management.
 pub mod state;
 
+/// Module for optional builtin backends. Might move each backend to a sub-crate.
+/// `ui-composer-winit` and `ui-composer-tui` and `ui-composer-embedded`.
+pub mod backends;
+/// Module for optional builtin components.Might move this to a sub-crate, too.
+/// `ui-composer-standard` has a nice ring to it, no?
 pub mod components;
-
-#[cfg(feature = "wgpu")]
-pub mod wgpu;
-
-#[cfg(all(feature = "winit", feature = "wgpu"))]
-pub mod winitwgpu;
-
-#[cfg(feature = "tui")]
-pub mod tui;

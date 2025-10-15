@@ -5,7 +5,7 @@ pub trait RectExt {
     type Num: BaseNum;
 
     /// Expands this rectangle keeping its center in the same place, some amount from each face.
-    /// This is useful for adding paddings to items inside containers.
+    /// This is useful for adding paddings to items inside layout.
     fn expand_from_center(
         self,
         left: Self::Num,
@@ -15,7 +15,7 @@ pub trait RectExt {
     ) -> Self;
 
     /// Expands this rectangle keeping its center in the same place, the same amount for every face.
-    /// This is useful for adding paddings to items inside containers.
+    /// This is useful for adding paddings to items inside layout.
     fn expand(self, offset: Self::Num) -> Self
     where
         Self: Sized,

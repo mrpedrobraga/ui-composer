@@ -8,6 +8,8 @@ pub use futures_signals::signal_map::MutableBTreeMap;
 pub use futures_signals::signal_map::SignalMapExt;
 pub use futures_signals::signal_vec::MutableVec;
 pub use futures_signals::signal_vec::SignalVecExt;
+pub use futures_signals::signal::Signal;
+pub use futures_signals::signal_vec::SignalVec;
 
 #[diagnostic::on_unimplemented(
     message = "`{Self}` is not a container with interior mutability.",
@@ -20,7 +22,9 @@ pub trait Slot {
     fn take(&self) -> Self::Item
     where
         Self::Item: Copy;
-    fn modify<F>(&self, predicate: F) where F: Fn(&mut Self::Item);
+    fn modify<F>(&self, predicate: F)
+    where
+        F: Fn(&mut Self::Item);
 }
 
 /// Trait that describes a state which can change.
@@ -53,7 +57,10 @@ impl<A> Slot for Mutable<A> {
         self.get()
     }
 
-    fn modify<F>(&self, mut predicate: F) where F: FnMut(&mut Self::Item) {
+    fn modify<F>(&self, mut predicate: F)
+    where
+        F: FnMut(&mut Self::Item),
+    {
         let mut lock = self.lock_mut();
         predicate(&mut *lock);
     }

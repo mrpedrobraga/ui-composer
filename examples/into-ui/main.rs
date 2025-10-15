@@ -1,6 +1,6 @@
-use ui_composer::app::UIComposer;
+use ui_composer::prelude::UIComposer;
+use ui_composer::backends::wgpu::components::{Label, TextLayoutItem};
 use ui_composer::prelude::Window;
-use ui_composer::wgpu::components::{Label, TextLayoutItem};
 
 fn main() {
     UIComposer::run(Window(

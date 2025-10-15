@@ -1,9 +1,9 @@
 #![allow(non_snake_case)]
 
-mod containers;
+mod layout;
 
 #[doc(inline)]
-pub use containers::*;
+pub use layout::*;
 
 #[macro_export]
 macro_rules! items_internal {

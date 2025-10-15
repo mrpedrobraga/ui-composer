@@ -1,8 +1,8 @@
-use crate::app::input::{ButtonState, InputItem, KeyEvent, KeyboardEvent};
 use crate::app::building_blocks::BuildingBlock;
+use crate::app::input::{ButtonState, InputItem, KeyEvent, KeyboardEvent};
 use crate::prelude::Event;
-use futures_signals::signal::Mutable;
 use crate::state::process::Pollable;
+use futures_signals::signal::Mutable;
 
 /// Input item that receives key events...
 #[derive(Clone)]

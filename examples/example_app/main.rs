@@ -1,16 +1,13 @@
 #![allow(non_snake_case)]
 
-use serde_json::Value;
 use ui_composer::prelude::*;
-use ui_composer::state::process::React;
-use ui_composer::wgpu::components::*;
-use ui_composer::wgpu::pipeline::text::Text;
-use ui_composer::winitwgpu::prelude::*;
-use ui_composer::Flex2;
-use ui_composer::prelude::items::Typing;
-use ui_composer::wgpu::image::Image;
-use ui_composer::wgpu::pipeline::graphics::graphic::Graphic;
-use ui_composer::wgpu::pipeline::UIContext;
+use ui_composer::prelude::items::*;
+use ui_composer::backends::wgpu::components::*;
+use ui_composer::backends::wgpu::pipeline::graphics::graphic::Graphic;
+use ui_composer::backends::wgpu::pipeline::text::Text;
+use ui_composer::backends::winitwgpu::prelude::*;
+use ui_composer::Flex;
+use ui_composer::prelude::process::React;
 
 extern crate serde_json;
 
@@ -31,7 +28,7 @@ fn App() -> impl UI {
     let t1 = TextEdit(state.clone());
     let b2 = Button(Label("Format"), state.effect(json_format_quick));
 
-    (Flex2! { 3;
+    (Flex! { 3;
         [_] l0,
         [1.0] t1,
         [_] b2
@@ -41,7 +38,7 @@ fn App() -> impl UI {
 
 fn json_format_quick(input: &mut String) {
     let mut parse = move || -> Option<()> {
-        let parsed: Value = serde_json::from_str(input).ok()?;
+        let parsed: serde_json::Value = serde_json::from_str(input).ok()?;
         let mut bytes: Vec<_> = Vec::new();
         serde_json::to_writer_pretty(&mut bytes, &parsed).ok()?;
         input.clear();
@@ -55,13 +52,18 @@ fn TextEdit(state: Mutable<String>) -> impl UI {
     ReactiveLabel(state.clone())
 }
 
-fn ReactiveLabel(state: Mutable<String>) -> impl UI
-{
-    ResizableItem::new(move |hx| {
+fn ReactiveLabel(state: Mutable<String>) -> impl UI {
+    ItemBox::new(move |hx| {
         let text_typer = Typing::new(state.clone());
-        let text_view = state.signal_cloned().map(move |s| Text(hx.rect.expand_from_center(-10.0, -10.0, -10.0, -10.0), s, vek::Rgb::black()));
+        let text_view = state.signal_cloned().map(move |s| {
+            Text(
+                hx.rect.expand_from_center(-10.0, -10.0, -10.0, -10.0),
+                s,
+                vek::Rgb::black(),
+            )
+        });
 
-        ui_composer::items! (
+        ui_composer::items!(
             Graphic::new(hx.rect, Rgb::gray(0.9)),
             React(text_view),
             text_typer
