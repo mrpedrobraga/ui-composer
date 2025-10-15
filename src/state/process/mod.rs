@@ -109,6 +109,38 @@ where
     }
 }
 
+impl<Sig, Cx> LayoutItem for SignalReactItemRe<Sig, Cx>
+where
+    Sig: Signal + Send,
+    Sig::Item: Reifiable<Cx>,
+    <Sig::Item as Reifiable<Cx>>::Reified: LayoutItem,
+{
+    type Content =
+    Option<<<Sig::Item as Reifiable<Cx>>::Reified as LayoutItem>::Content>;
+
+    #[allow(deprecated)]
+    fn get_natural_size(&self) -> Extent2<f32> {
+        self.held_item
+            .as_ref()
+            .map(|item| item.get_natural_size())
+            .unwrap_or(Extent2::zero())
+    }
+
+    #[allow(deprecated)]
+    fn get_minimum_size(&self) -> Extent2<f32> {
+        self.held_item
+            .as_ref()
+            .map(|item| item.get_minimum_size())
+            .unwrap_or(Extent2::zero())
+    }
+
+    fn lay(&mut self, parent_hints: ParentHints) -> Self::Content {
+        self.held_item
+            .as_mut()
+            .map(|held_item| held_item.lay(parent_hints))
+    }
+}
+
 /// A wrapper for [Future] that allows it to interact with UI Composer.
 ///
 /// This wrapper is necessary as a technical limitation.

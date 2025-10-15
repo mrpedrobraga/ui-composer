@@ -20,6 +20,7 @@ pub trait Slot {
     fn take(&self) -> Self::Item
     where
         Self::Item: Copy;
+    fn modify<F>(&self, predicate: F) where F: Fn(&mut Self::Item);
 }
 
 /// Trait that describes a state which can change.
@@ -28,13 +29,10 @@ pub trait State: Slot {
     fn effect<F>(self, predicate: F) -> impl Effect
     where
         Self: Clone + Sized + Send + Sync,
-        Self::Item: Copy,
-        F: Clone + Send + Sync + Fn(Self::Item) -> Self::Item,
+        F: Clone + Send + Sync + Fn(&mut Self::Item),
     {
         move || {
-            let current_value = self.take();
-            let new_value = (predicate)(current_value);
-            self.put(new_value)
+            self.modify(&predicate);
         }
     }
 }
@@ -53,6 +51,11 @@ impl<A> Slot for Mutable<A> {
         Self::Item: Copy,
     {
         self.get()
+    }
+
+    fn modify<F>(&self, mut predicate: F) where F: FnMut(&mut Self::Item) {
+        let mut lock = self.lock_mut();
+        predicate(&mut *lock);
     }
 }
 

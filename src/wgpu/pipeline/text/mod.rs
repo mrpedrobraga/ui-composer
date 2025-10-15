@@ -1,5 +1,5 @@
 use crate::wgpu::backend::WgpuResources;
-use crate::wgpu::render_target::{RenderWgpu, RenderTarget};
+use crate::wgpu::render_target::{RenderBuildingBlock, RenderTarget};
 use glyphon::Buffer;
 use wgpu::{CompareFunction, DepthStencilState};
 use {
@@ -70,7 +70,7 @@ impl WgpuRenderer for TextRenderer {
         ui_tree: &R,
         _render_buffers: &mut RendererBuffers,
     ) where
-        R: RenderWgpu,
+        R: RenderBuildingBlock,
     {
         let this = &mut pipelines.text_renderer;
 

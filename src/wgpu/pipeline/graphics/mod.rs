@@ -1,6 +1,6 @@
 use crate::app::building_blocks::Reifiable;
 use crate::wgpu::backend::WgpuResources;
-use crate::wgpu::render_target::{RenderWgpu, RenderTarget};
+use crate::wgpu::render_target::{RenderBuildingBlock, RenderTarget};
 use wgpu::{CompareFunction, DepthBiasState, DepthStencilState, StencilState, TextureFormat};
 use {
     super::{WgpuRenderer, RendererBuffers, WgpuRenderers},
@@ -95,7 +95,7 @@ pub struct OrchestraRenderer {
 }
 
 impl WgpuRenderer for OrchestraRenderer {
-    fn draw<R: RenderWgpu>(
+    fn draw<R: RenderBuildingBlock>(
         gpu_resources: &mut WgpuResources,
         renderers: &mut WgpuRenderers,
         render_target_size: Extent2<f32>,

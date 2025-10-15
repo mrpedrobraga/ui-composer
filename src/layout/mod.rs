@@ -96,13 +96,13 @@ pub trait LayoutItem: Send {
     }
 }
 
-pub struct ResizableItem<F, A, Resources>
+pub struct ResizableItem<F, A, Context>
 where
     F: Send + FnMut(ParentHints) -> A,
 {
     hints: ChildHints,
     factory: F,
-    __resources: PhantomData<fn() -> Resources>,
+    __context: PhantomData<fn() -> Context>,
 }
 
 pub trait Resizable: LayoutItem {
@@ -120,7 +120,7 @@ where
         Self {
             hints: ChildHints::default(),
             factory,
-            __resources: PhantomData,
+            __context: PhantomData,
         }
     }
 }

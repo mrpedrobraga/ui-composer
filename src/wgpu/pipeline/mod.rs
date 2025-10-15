@@ -3,7 +3,7 @@ use crate::wgpu::pipeline::{
     graphics::{GraphicsPipelineBuffers, OrchestraRenderer},
     text::TextRenderer,
 };
-use crate::wgpu::render_target::RenderWgpu;
+use crate::wgpu::render_target::RenderBuildingBlock;
 use {
     text::TextPipelineResources,
     vek::Extent2,
@@ -16,7 +16,7 @@ pub mod three_dee;
 
 /// A renderer for drawing on the GPU.
 pub trait WgpuRenderer {
-    fn draw<R: RenderWgpu>(
+    fn draw<R: RenderBuildingBlock>(
         gpu_resources: &mut WgpuResources,
         renderers: &mut WgpuRenderers,
         render_target_size: Extent2<f32>,

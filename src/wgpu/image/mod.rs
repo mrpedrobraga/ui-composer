@@ -5,7 +5,7 @@ use crate::wgpu::pipeline::text::TextPipelineResources;
 use crate::wgpu::pipeline::{
     graphics::GraphicsPipelineBuffers, RendererBuffers, UIContext, WgpuRenderers,
 };
-use crate::wgpu::render_target::{RenderDescriptor, RenderTarget, RenderWgpu};
+use crate::wgpu::render_target::{Render, RenderTarget, RenderBuildingBlock};
 use crate::winitwgpu::backend::NodeRe;
 use image::{ImageBuffer, Rgba};
 use std::pin::Pin;
@@ -42,16 +42,16 @@ where
     }
 }
 
-pub struct ImageNode<A> {
+pub struct ImageNode<Item> {
     rect: Rect<f32, f32>,
-    content: A,
+    content: Item,
 }
 
-impl<A> Node for ImageNode<A>
+impl<Item> Node for ImageNode<Item>
 where
-    A: RenderDescriptor + Send + 'static,
+    Item: Render + Send + 'static,
 {
-    type Reified = ImageNodeRe<A::Reified>;
+    type Reified = ImageNodeRe<Item::Reified>;
 
     fn reify(
         self,
@@ -70,7 +70,7 @@ where
             render_buffers: RendererBuffers {
                 graphics_render_buffers: GraphicsPipelineBuffers::new(
                     gpu_resources,
-                    A::Reified::QUAD_COUNT,
+                    Item::Reified::QUAD_COUNT,
                 ),
                 _text_render_buffers: TextPipelineResources::new(
                     gpu_resources,
@@ -82,7 +82,7 @@ where
 }
 
 #[pin_project(project = ImageNodeProj)]
-pub struct ImageNodeRe<A: RenderWgpu> {
+pub struct ImageNodeRe<A: RenderBuildingBlock> {
     #[pin]
     content: A,
     rect: Rect<f32, f32>,
@@ -93,7 +93,7 @@ pub struct ImageNodeRe<A: RenderWgpu> {
 /* Use a different implementation of "Node" for Image Node that's detached from winit!  */
 impl<Res, A> BuildingBlock<Res> for ImageNodeRe<A>
 where
-    A: RenderWgpu,
+    A: RenderBuildingBlock,
 {
     fn handle_event(&mut self, event: Event) -> bool {
         self.content.handle_event(event)
@@ -102,7 +102,7 @@ where
 
 impl<A> NodeRe for ImageNodeRe<A>
 where
-    A: RenderWgpu,
+    A: RenderBuildingBlock,
 {
     fn setup(&mut self, _gpu_resources: &WgpuResources) {
         /* Do nothing */
@@ -121,7 +121,7 @@ where
 
 impl<A, Res> Pollable<Res> for ImageNodeRe<A>
 where
-    A: RenderWgpu,
+    A: RenderBuildingBlock,
 {
     fn poll(self: Pin<&mut Self>, _cx: &mut Context, _resources: &mut Res) -> Poll<Option<()>> {
         let ImageNodeProj { .. } = self.project();
@@ -141,7 +141,7 @@ where
 
 impl<A> ImageNodeRe<A>
 where
-    A: RenderWgpu,
+    A: RenderBuildingBlock,
 {
     #[allow(unused)]
     fn render(&mut self, gpu_resources: &mut WgpuResources, pipelines: &mut WgpuRenderers) {

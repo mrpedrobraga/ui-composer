@@ -13,7 +13,7 @@ use crate::wgpu::pipeline::{
 use crate::wgpu::pipeline::{
     graphics::GraphicsPipelineBuffers, RendererBuffers, UIContext, WgpuRenderers,
 };
-use crate::wgpu::render_target::{RenderDescriptor, RenderTarget, RenderWgpu};
+use crate::wgpu::render_target::{Render, RenderTarget, RenderBuildingBlock};
 use wgpu::{
     Color, LoadOp, Operations, RenderPassColorAttachment, RenderPassDepthStencilAttachment,
     RenderPassDescriptor, StoreOp, TextureDescriptor, TextureDimension, TextureUsages,
@@ -47,12 +47,12 @@ mod conversion;
 
 //MARK: Window Node Descriptor!
 /// A node that describes the existence of a new window in the UI tree.
-pub struct WindowNode<A> {
+pub struct WindowNode<Item> {
     state: WindowNodeState,
-    content: A,
+    content: Item,
 }
 
-impl<A> WindowNode<A> {
+impl<Item> WindowNode<Item> {
     /// Consumes this window node and returns a new one with the set title.
     pub fn with_title(self, title: String) -> Self {
         let title = Mutable::new(title);
@@ -92,7 +92,7 @@ impl<A> WindowNode<A> {
 
 impl<A> Node for WindowNode<A>
 where
-    A: RenderDescriptor + Send + 'static,
+    A: Render + Send + 'static,
 {
     type Reified = WindowNodeRe<A::Reified>;
 
@@ -103,7 +103,10 @@ where
         gpu_resources: &WgpuResources,
         mut renderers: WgpuRenderers,
     ) -> Self::Reified {
-        let window_default_size = self.state.size.get();
+        let mut window_default_size = self.state.size.get();
+
+        window_default_size.w = window_default_size.w.max(1.0);
+        window_default_size.h = window_default_size.h.max(1.0);
 
         assert_ne!(window_default_size.w, 0.0);
         assert_ne!(window_default_size.h, 0.0);
@@ -158,7 +161,7 @@ where
 pub fn Window<A>(mut item: A) -> WindowNode<SignalReactItem<impl Signal<Item = A::Content>>>
 where
     A: LayoutItem + Send + Sync,
-    A::Content: RenderDescriptor,
+    A::Content: Render,
 {
     // This should be a signal that comes from the item...
     #[allow(deprecated)]
@@ -278,7 +281,7 @@ where
 
 impl<Item> NodeRe for WindowNodeRe<Item>
 where
-    Item: RenderWgpu,
+    Item: RenderBuildingBlock,
 {
     fn setup(&mut self, _gpu_resources: &WgpuResources) {}
 
@@ -323,7 +326,7 @@ where
 
 impl<Item> WindowNodeRe<Item>
 where
-    Item: RenderWgpu,
+    Item: RenderBuildingBlock,
 {
     fn redraw(&mut self, gpu_resources: &mut WgpuResources) {
         self.render_target.draw(
@@ -394,7 +397,7 @@ impl RenderTarget for WindowRenderTarget {
         self.size = new_size;
     }
 
-    fn draw<'a, R: RenderWgpu>(
+    fn draw<'a, R: RenderBuildingBlock>(
         &mut self,
         content: &mut R,
         gpu_resources: &mut WgpuResources,
@@ -428,9 +431,9 @@ impl RenderTarget for WindowRenderTarget {
                 resolve_target: None,
                 ops: Operations {
                     load: LoadOp::Clear(Color {
-                        r: 0.015,
-                        g: 0.015,
-                        b: 0.015,
+                        r: 1.0,
+                        g: 1.0,
+                        b: 1.0,
                         a: 1.0,
                     }),
                     store: StoreOp::Store,

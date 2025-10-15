@@ -20,7 +20,8 @@ impl Graphic {
         Self {
             transform: Mat4::identity()
                 .scaled_3d(Extent3::new(rect.extent().w, rect.extent().h, 1.0))
-                .translated_2d(rect.position()),
+                .translated_2d(rect.position())
+                .translated_3d(Vec3::new(0.0, 0.0, 0.5)),
             color,
             corner_radii: Vec4::zero(),
         }

@@ -60,13 +60,15 @@ impl<S: AsRef<str>> Reifiable<UIContext> for TextItem<S> {
         let renderer = &mut resources.renderers.text_renderer;
         let mut buffer = Buffer::new(&mut renderer.font_system, Metrics::new(16.0, 20.0));
 
+        let default_attributes = &Attrs::new()
+            .family(Family::Name("Anima Sans"))
+            .weight(Weight::MEDIUM);
+
         buffer.set_text(
             &mut renderer.font_system,
             self.text.as_ref(),
             // TODO: Allow composing this...
-            &Attrs::new()
-                .family(Family::Name("Work Sans"))
-                .weight(Weight::NORMAL),
+            default_attributes,
             Shaping::Advanced,
         );
         buffer.set_size(&mut renderer.font_system, Some(self.rect.w), Some(self.rect.h));

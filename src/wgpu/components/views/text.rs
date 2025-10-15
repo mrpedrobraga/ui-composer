@@ -60,7 +60,7 @@ impl<AsStr: AsRef<str> + Send + Clone> LayoutItem for TextLayoutItem<AsStr> {
         Text (
             parent_hints.rect,
             self.text.clone(),
-            self.own_color.unwrap_or(Rgb::white()), // TODO: Use the current foreground colour!
+            self.own_color.unwrap_or(Rgb::black()), // TODO: Use the current foreground colour!
         )
     }
 }

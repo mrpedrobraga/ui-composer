@@ -3,7 +3,7 @@
 
 use crate::wgpu::backend::WgpuResources;
 use crate::wgpu::pipeline::{RendererBuffers, WgpuRenderers};
-use crate::wgpu::render_target::{RenderWgpu, RenderTarget};
+use crate::wgpu::render_target::{RenderBuildingBlock, RenderTarget};
 use vek::Extent2;
 
 /// Color data that can be used by quads or materials to create advanced graphics.
@@ -63,7 +63,7 @@ impl RenderTarget for ImageRenderTarget {
         self.image.resize(gpu_resources, new_size)
     }
 
-    fn draw<'a, R: RenderWgpu>(
+    fn draw<'a, R: RenderBuildingBlock>(
         &mut self,
         content: &mut R,
         gpu_resources: &mut WgpuResources,
@@ -89,10 +89,10 @@ impl RenderTarget for ImageRenderTarget {
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: 0.015,
-                        g: 0.015,
-                        b: 0.015,
-                        a: 1.0,
+                        r: 1.0,
+                        g: 1.0,
+                        b: 1.0,
+                        a: 0.0,
                     }),
                     store: wgpu::StoreOp::Store,
                 },

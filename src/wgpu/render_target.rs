@@ -17,7 +17,7 @@ pub trait RenderTarget {
     fn resize(&mut self, gpu_resources: &WgpuResources, new_size: Extent2<u32>);
 
     /// Returns a reference to the render target's texture;
-    fn draw<R: RenderWgpu>(
+    fn draw<R: RenderBuildingBlock>(
         &mut self,
         content: &mut R,
         gpu_resources: &mut WgpuResources,
@@ -30,14 +30,14 @@ pub trait RenderTarget {
 }
 
 /// Trait that describes an item that can be rendered with this pipeline.
-pub trait RenderWgpu: BuildingBlock<UIContext> + RenderGraphic + RenderText {}
-impl<A> RenderWgpu for A where A: BuildingBlock<UIContext> + RenderGraphic + RenderText {}
-/// Trait that describes an item that can be reified into a [RenderWgpu] primitive.
-pub trait RenderDescriptor: RenderGraphicDescriptor<UIContext, Reified: RenderWgpu> {}
+pub trait RenderBuildingBlock: BuildingBlock<UIContext> + RenderGraphic + RenderText {}
+impl<A> RenderBuildingBlock for A where A: BuildingBlock<UIContext> + RenderGraphic + RenderText {}
+/// Trait that describes an item that can be reified into a [RenderBuildingBlock] primitive.
+pub trait Render: RenderGraphicDescriptor<UIContext, Reified: RenderBuildingBlock> {}
 
-impl<A> RenderDescriptor for A
+impl<A> Render for A
 where
     A: Reifiable<UIContext> + RenderGraphicDescriptor<UIContext>,
-    <A as Reifiable<UIContext>>::Reified: RenderWgpu,
+    <A as Reifiable<UIContext>>::Reified: RenderBuildingBlock,
 {
 }

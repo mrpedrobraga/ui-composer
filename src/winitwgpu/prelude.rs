@@ -1,5 +1,5 @@
 use crate::layout::LayoutItem;
-use crate::wgpu::render_target::RenderDescriptor;
+use crate::wgpu::render_target::Render;
 
-pub trait UI: LayoutItem<Content: RenderDescriptor> {}
-impl<T> UI for T where T: LayoutItem<Content: RenderDescriptor> {}
+pub trait UI: LayoutItem<Content: Render + Send> {}
+impl<T> UI for T where T: LayoutItem<Content: Render + Send> {}

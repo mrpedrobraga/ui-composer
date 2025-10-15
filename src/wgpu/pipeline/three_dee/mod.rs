@@ -3,7 +3,7 @@
 //! Nothing is implemented yet, of course.
 
 use crate::wgpu::backend::WgpuResources;
-use crate::wgpu::render_target::RenderWgpu;
+use crate::wgpu::render_target::RenderBuildingBlock;
 use {
     super::{WgpuRenderer, RendererBuffers, WgpuRenderers},
     vek::Extent2,
@@ -19,7 +19,7 @@ pub struct ThreeDeeRenderer {
 }
 
 impl WgpuRenderer for ThreeDeeRenderer {
-    fn draw<R: RenderWgpu>(
+    fn draw<R: RenderBuildingBlock>(
         gpu_resources: &mut WgpuResources,
         pipelines: &mut WgpuRenderers,
         render_target_size: Extent2<f32>,

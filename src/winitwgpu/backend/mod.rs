@@ -35,7 +35,7 @@ pub mod implementations;
 /// These nodes are used for creating windows and processes and rendering contexts.
 ///
 /// TODO: Delete this and use [BuildingBlock] instead.
-#[diagnostic::on_unimplemented(message = "This value is not a proper node descriptor.")]
+#[diagnostic::on_unimplemented(message = "This value is not an app Node.")]
 pub trait Node: Send {
     /// The type this node descriptor generates when reified.
     type Reified: NodeRe;
