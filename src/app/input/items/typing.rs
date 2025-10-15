@@ -1,6 +1,6 @@
 use crate::app::building_blocks::BuildingBlock;
 use crate::app::input::{ButtonState, InputItem, KeyEvent, KeyboardEvent};
-use crate::prelude::Event;
+use crate::app::input::Event;
 use crate::state::process::Pollable;
 use futures_signals::signal::Mutable;
 

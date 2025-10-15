@@ -9,11 +9,11 @@ use {
             building_blocks::BuildingBlock,
             input::{ButtonState, MouseButton},
         },
-        prelude::CursorEvent,
     },
     futures_signals::signal::Mutable,
     vek::Rect,
 };
+use crate::app::input::CursorEvent;
 
 #[derive(Default, Debug, Copy, Clone, PartialEq)]
 pub enum DragState {

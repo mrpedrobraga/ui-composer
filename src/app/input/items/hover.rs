@@ -2,10 +2,11 @@
 use crate::state::process::Pollable;
 use {
     super::super::{Event, InputItem},
-    crate::{app::building_blocks::BuildingBlock, prelude::CursorEvent},
+    crate::{app::building_blocks::BuildingBlock},
     futures_signals::signal::Mutable,
     vek::Rect,
 };
+use crate::app::input::CursorEvent;
 
 /// An Interactor that handles a user hovering over it with a cursor.
 pub struct Hover {

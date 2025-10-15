@@ -17,7 +17,7 @@
 //! Window(())
 //! // Composing layout items to create reactive layouts.
 //! Center(WithSize(..., Button(...))
-//! // Composing graphic/text/input primitives to create components.
+//! // Composing graphic/text/input primitives to create standard.
 //! items!(Hover(...), Graphic(...), Text(...))
 //! ```
 //!
@@ -34,7 +34,7 @@
 ///
 /// This trait exists because [BuildingBlock]s might require references
 /// to runtime resources (buffers and stuff) that the user does not
-/// have access when building their components.
+/// have access when building their standard.
 pub trait Reifiable<Context> {
     type Reified: BuildingBlock<Context>;
 

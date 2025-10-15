@@ -1,4 +1,4 @@
-use ui_composer::prelude::*;
+use ui_composer::standard::prelude::*;
 
 fn main() {
     UIComposer::run(());

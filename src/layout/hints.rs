@@ -1,8 +1,8 @@
 //! # Hints
 //!
-//! When making your apps, you'll likely be putting components together.
+//! When making your apps, you'll likely be putting standard together.
 //!
-//! Thing is, you'll be combining components like Buttons, Labels, etc., with layout,
+//! Thing is, you'll be combining standard like Buttons, Labels, etc., with layout,
 //! and, well, how is the Button supposed to know what size to be, given that this information
 //! is only available at runtime and inside the layout engine?
 //!

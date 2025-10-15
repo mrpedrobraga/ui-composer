@@ -19,14 +19,14 @@
 //! ```rust
 //! # #![allow(non_snake_case)]
 //! # use ui_composer::app::building_blocks::Reifiable;//!
-//! # use ui_composer::backends::wgpu::pipeline::text::Text;
+//! # use ui_composer::standard::backends::wgpu::pipeline::text::Text;
 //! # use vek::Rgb;
-//! # use ui_composer::backends::wgpu::pipeline::UIContext;
+//! # use ui_composer::standard::backends::wgpu::pipeline::UIContext;
 //! # use ui_composer::layout::hints::ParentHints;
 //!
 //! // Like this.
 //! // 'text' here is like a "prop" of your component. It's readily available
-//! // for you to compose with other components.
+//! // for you to compose with other standard.
 //! fn MyText<F, R>(text: String) -> F
 //!     where
 //!         F: Fn(ParentHints) -> R,
@@ -63,7 +63,6 @@
 //! Some utility functions for calculating layouts are in the [`flow`] module.
 
 use crate::app::building_blocks::Reifiable;
-use crate::prelude::process::SignalReactItem;
 pub use flow::CoordinateSystemProvider;
 use hints::{ChildHints, ParentHints};
 use std::marker::PhantomData;
@@ -71,6 +70,7 @@ use {
     futures_signals::signal::{Signal, SignalExt},
     vek::{Extent2, Rect},
 };
+use crate::state::process::SignalReactItem;
 
 pub mod flow;
 pub mod hints;
@@ -125,10 +125,10 @@ pub trait LayoutItem: Send {
 /// A quite interesting auxiliary trait that
 /// describes layout items that have size characteristics
 /// that might be of interest to the user while they are writing
-/// components in their app.
+/// standard in their app.
 ///
 /// You see, it's common for you to write `impl UI` as the return type
-/// of components instead of concrete type... but that might result in loss
+/// of standard instead of concrete type... but that might result in loss
 /// of functionality for types that have them.
 ///
 /// [`Resizable`] indicates that the item in question can have sizing characteristics

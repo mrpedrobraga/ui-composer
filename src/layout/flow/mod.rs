@@ -14,7 +14,7 @@
 //! This is the one you probably want. If you want to lay items "first" to "last", use this.
 //!
 //! Containers will lay the items in the order that characters flow in the current locale.
-//! In `en_US`, horizontal layout lay left to right, and vertical components lay top to bottom.
+//! In `en_US`, horizontal layout lay left to right, and vertical standard lay top to bottom.
 //!
 //! There's also the idea of "Axis" and "Cross-Axis." The axis is the direction that the characters flow,
 //! the cross-axis is the direction in which the text grows when it wraps.

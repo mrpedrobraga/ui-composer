@@ -1,4 +1,4 @@
-use crate::{geometry::Vector, prelude::Slot};
+use crate::{geometry::Vector, state::Slot};
 use core::{fmt::Debug, future::Future};
 use futures_time::{
     task,

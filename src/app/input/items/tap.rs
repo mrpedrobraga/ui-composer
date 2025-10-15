@@ -7,11 +7,12 @@ use {
             building_blocks::BuildingBlock,
             input::{ButtonState, MouseButton},
         },
-        prelude::{CursorEvent, Effect},
         state::Mutable,
     },
     vek::{Rect, Vec2},
 };
+use crate::app::input::CursorEvent;
+use crate::state::Effect;
 
 /// An Interactor that handles a user hovering over it with a cursor.
 pub struct Tap<A: Effect> {

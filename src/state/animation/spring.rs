@@ -1,14 +1,11 @@
-use crate::prelude::{
-    animation::{AnimationFrameParams, Poll, RealTimeStream},
-    *,
-};
 use crate::state::process::FutureAwaitItem;
 use cgmath::BaseFloat;
 use core::{
     future::Future,
     ops::{Add, Div, Mul},
 };
-use futures_signals::signal::Signal;
+use futures_signals::signal::{Mutable, Signal, SignalExt};
+use crate::state::animation::{AnimationFrameParams, Poll, RealTimeStream};
 
 #[derive(Default)]
 /// A [`super::RealTimeStream`] that simulates Hooke's law

@@ -1,4 +1,4 @@
-use crate::prelude::process::SignalReactItem;
+use crate::state::process::SignalReactItem;
 use core::task::Poll;
 use futures_signals::signal::{Map, SignalExt};
 use futures_signals::signal::{Mutable, MutableSignal};
