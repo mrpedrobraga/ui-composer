@@ -1,6 +1,6 @@
 //! # TUIBackend
 //!
-//! This module is for rendering UI to the terminal using [crossterm].
+//! This module is for rendering UI to the terminal using [`crossterm`].
 
 use crate::tui::pipeline::Canvas;
 use core::ops::DerefMut;
@@ -22,7 +22,7 @@ use {
     vek::Rect,
 };
 
-use crate::app::backend::NodeReifyResources;
+use crate::app::backend::NodeContext;
 use crate::app::input::DeviceId;
 use crate::prelude::CursorEvent;
 #[cfg(feature = "std")]
@@ -35,14 +35,14 @@ use {
 };
 
 #[pin_project(project=TUIBackendProj)]
-pub struct TUIBackend<N: NodeDescriptor> {
+pub struct TUIBackend<N: Node> {
     #[pin]
     pub node_tree: Arc<Mutex<N::Reified>>,
 }
 
 impl<N> Backend for TUIBackend<N>
 where
-    N: NodeDescriptor,
+    N: Node,
 {
     type Tree = N;
 
@@ -58,7 +58,7 @@ where
     fn poll_processors(
         self: Pin<&mut Self>,
         cx: &mut Context,
-        resources: &mut NodeReifyResources,
+        _resources: &mut NodeContext,
     ) -> Poll<Option<()>> {
         let TUIBackendProj { node_tree, .. } = self.project();
 
@@ -73,7 +73,7 @@ where
 #[cfg(feature = "tui")]
 impl<N> TUIBackend<N>
 where
-    N: NodeDescriptor,
+    N: Node,
 {
     async fn app_loop(mut node_tree: N::Reified) -> std::io::Result<()> {
         let mut stdout = stdout();
@@ -86,7 +86,7 @@ where
             .execute(Clear(ClearType::All))?
             .flush()?;
 
-        //Self::redraw(&node_tree, Rect::new(0, 0, 16, 16), &mut stdout)?;
+        //Self::redraw(&node_tree, &mut stdout, Rect::new(0, 0, 16, 16));
         loop {
             let event = event::read()?;
 
@@ -96,8 +96,9 @@ where
                         break;
                     }
                 }
+                #[allow(unused)]
                 event::Event::Resize(w, h) => {
-                    //Self::redraw(&node_tree, Rect::new(0, 0, w, h), &mut stdout)?;
+                    //Self::redraw(&node_tree, &mut stdout, Rect::new(0, 0, w, h));
                 }
                 event::Event::Mouse(mouse_event) => {
                     if mouse_event.kind == event::MouseEventKind::Moved {
@@ -127,6 +128,7 @@ where
         Ok(())
     }
 
+    #[allow(unused)]
     fn redraw<C>(tree: &N::Reified, canvas: &mut C, rect: Rect<u16, u16>)
     where
         C: Canvas<Pixel = Rgba<u8>>,
@@ -139,14 +141,14 @@ where
 /// These nodes are used for creating windows and processes and rendering contexts.
 ///
 /// In this module there is only one node: "Terminal".
-pub trait NodeDescriptor: Send {
+pub trait Node: Send {
     /// The type this node descriptor generates when reified.
-    type Reified: Node;
+    type Reified: NodeRe;
     fn reify(self) -> Self::Reified;
 }
 
 /// A main node in the app tree.
-pub trait Node: Send {
+pub trait NodeRe: Send {
     fn setup(&mut self);
 
     /// Handles an event and cascades it down its children.

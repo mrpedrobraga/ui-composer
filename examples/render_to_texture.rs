@@ -4,7 +4,7 @@ use ui_composer::Flex;
 use ui_composer::prelude::*;
 use ui_composer::wgpu::components::Label;
 use ui_composer::wgpu::image::Image;
-use ui_composer::wgpu::pipeline::UIReifyResources;
+use ui_composer::wgpu::pipeline::UIContext;
 use ui_composer::wgpu::pipeline::graphics::graphic::Graphic;
 use ui_composer::wgpu::render_target::RenderDescriptor;
 
@@ -29,6 +29,6 @@ fn main() {
 }
 
 fn Square(color: Rgb<f32>) -> impl LayoutItem<Content = impl RenderDescriptor> {
-    ResizableItem::<_, _, UIReifyResources>::new(move |hx| Graphic::from(hx.rect).with_color(color))
+    ResizableItem::<_, _, UIContext>::new(move |hx| Graphic::from(hx.rect).with_color(color))
         .with_minimum_size(Extent2::new(200.0, 100.0))
 }

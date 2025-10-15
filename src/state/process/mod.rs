@@ -1,33 +1,47 @@
-use crate::app::primitives::{PrimitiveDescriptor, Processor};
+use crate::app::building_blocks::Reifiable;
 use crate::layout::{LayoutItem, ParentHints};
 use crate::state::signal_ext::coalesce_polls;
 use core::task::Context;
 use vek::Extent2;
 use {
-    crate::app::{input::Event, primitives::Primitive},
+    crate::app::{input::Event, building_blocks::BuildingBlock},
     core::{future::Future, pin::Pin, task::Poll},
     futures_signals::signal::Signal,
     pin_project::pin_project,
 };
 
+/// A trait representing a [BuildingBlock] or [Node] that _might_
+/// process internal [Future]s or [Signal]s.
+#[must_use = "processors are lazy and do nothing unless polled"]
+pub trait Pollable<Resources>: Send {
+    /// Recursively polls this primitive's inner processes (`Future`s and `Signal`s).
+    fn poll(
+        self: Pin<&mut Self>,
+        #[expect(unused)] cx: &mut Context,
+        #[expect(unused)] resources: &mut Resources,
+    ) -> Poll<Option<()>> {
+        Poll::Ready(Some(()))
+    }
+}
+
 /// UI Item that processes a signal and updates part of the UI tree whenever it changes.
-#[pin_project(project = SignalProcessorProj)]
+#[pin_project(project = SignalReactItemReProj)]
 #[must_use = "Processes are Signals, and therefore do nothing unless polled"]
-pub struct SignalProcessor<Sig, Resources>
+pub struct SignalReactItemRe<Sig, Cx>
 where
     Sig: Signal,
-    Sig::Item: PrimitiveDescriptor<Resources>,
+    Sig::Item: Reifiable<Cx>,
 {
     #[pin]
     signal: Sig,
-    pub held_item: Option<<Sig::Item as PrimitiveDescriptor<Resources>>::Primitive>,
+    pub held_item: Option<<Sig::Item as Reifiable<Cx>>::Reified>,
 }
 
-impl<Sig, Res> Primitive<Res> for SignalProcessor<Sig, Res>
+impl<Sig, Cx> BuildingBlock<Cx> for SignalReactItemRe<Sig, Cx>
 where
     Sig: Signal + Send,
-    Sig::Item: PrimitiveDescriptor<Res>,
-    <Sig::Item as PrimitiveDescriptor<Res>>::Primitive: Processor<Res>,
+    Sig::Item: Reifiable<Cx>,
+    <Sig::Item as Reifiable<Cx>>::Reified: Pollable<Cx>,
 {
     fn handle_event(&mut self, event: Event) -> bool {
         match &mut self.held_item {
@@ -37,14 +51,14 @@ where
     }
 }
 
-impl<Sig, Res> Processor<Res> for SignalProcessor<Sig, Res>
+impl<Sig, Cx> Pollable<Cx> for SignalReactItemRe<Sig, Cx>
 where
     Sig: Signal + Send,
-    Sig::Item: PrimitiveDescriptor<Res>,
-    <Sig::Item as PrimitiveDescriptor<Res>>::Primitive: Processor<Res>,
+    Sig::Item: Reifiable<Cx>,
+    <Sig::Item as Reifiable<Cx>>::Reified: Pollable<Cx>,
 {
-    fn poll(self: Pin<&mut Self>, cx: &mut Context, resources: &mut Res) -> Poll<Option<()>> {
-        let SignalProcessorProj { signal, held_item } = self.project();
+    fn poll(self: Pin<&mut Self>, cx: &mut Context, resources: &mut Cx) -> Poll<Option<()>> {
+        let SignalReactItemReProj { signal, held_item } = self.project();
 
         let signal_poll = signal.poll_change(cx);
 
@@ -71,22 +85,25 @@ where
 /// A wrapper for [Signal] that allows it to interact with UI Composer.
 ///
 /// This wrapper is necessary as a technical limitation.
-pub struct React<Sig>(pub Sig)
+#[allow(non_snake_case)]
+pub fn React<Sig>(signal: Sig) -> SignalReactItem<Sig> where Sig: Signal + Send {
+    SignalReactItem(signal)
+}
+
+pub struct SignalReactItem<Sig>(pub Sig)
 where
     Sig: Signal;
 
-impl<Res, Sig> PrimitiveDescriptor<Res> for React<Sig>
+impl<Cx, Sig> Reifiable<Cx> for SignalReactItem<Sig>
 where
     Sig: Signal + Send,
-    Sig::Item: PrimitiveDescriptor<Res>,
+    Sig::Item: Reifiable<Cx>,
 {
-    type Primitive = SignalProcessor<Sig, Res>;
+    type Reified = SignalReactItemRe<Sig, Cx>;
 
-    fn reify(self, #[expect(unused)] resources: &mut Res) -> Self::Primitive {
-        SignalProcessor {
+    fn reify(self, #[expect(unused)] context: &mut Cx) -> Self::Reified {
+        SignalReactItemRe {
             signal: self.0,
-            // This is initially `None` and it should reify its content when
-            // `poll` is called!
             held_item: None,
         }
     }
@@ -95,19 +112,24 @@ where
 /// A wrapper for [Future] that allows it to interact with UI Composer.
 ///
 /// This wrapper is necessary as a technical limitation.
-pub struct Await<Fut>(pub Fut)
+#[allow(non_snake_case)]
+pub fn Await<Fut>(future: Fut) -> FutureAwaitItem<Fut> where Fut: Future {
+    FutureAwaitItem(future)
+}
+
+pub struct FutureAwaitItem<Fut>(pub Fut)
 where
     Fut: Future;
 
-impl<Fut, Res> PrimitiveDescriptor<Res> for Await<Fut>
+impl<Fut, Res> Reifiable<Res> for FutureAwaitItem<Fut>
 where
     Fut: Future + Send,
-    Fut::Output: PrimitiveDescriptor<Res>,
+    Fut::Output: Reifiable<Res>,
 {
-    type Primitive = FutureProcessor<Fut, Res>;
+    type Reified = FutureAwaitItemRe<Fut, Res>;
 
-    fn reify(self, #[expect(unused)] resources: &mut Res) -> Self::Primitive {
-        FutureProcessor {
+    fn reify(self, #[expect(unused)] context: &mut Res) -> Self::Reified {
+        FutureAwaitItemRe {
             future: self.0,
             // Held item is empty up to the first poll...
             held_item: None,
@@ -116,22 +138,22 @@ where
 }
 
 /// UI Item that processes a signal and updates part of the UI tree whenever it changes.
-#[pin_project(project = FutureProcessorProj)]
+#[pin_project(project = FutureAwaitItemReProj)]
 #[must_use = "Processes are Signals, and therefore do nothing unless polled"]
-pub struct FutureProcessor<Fut, Resources>
+pub struct FutureAwaitItemRe<Fut, Cx>
 where
     Fut: Future,
-    Fut::Output: PrimitiveDescriptor<Resources>,
+    Fut::Output: Reifiable<Cx>,
 {
     #[pin]
     future: Fut,
-    pub held_item: Option<<Fut::Output as PrimitiveDescriptor<Resources>>::Primitive>,
+    pub held_item: Option<<Fut::Output as Reifiable<Cx>>::Reified>,
 }
 
-impl<Fut, Res> Primitive<Res> for FutureProcessor<Fut, Res>
+impl<Fut, Cx> BuildingBlock<Cx> for FutureAwaitItemRe<Fut, Cx>
 where
     Fut: Future + Send,
-    Fut::Output: PrimitiveDescriptor<Res>,
+    Fut::Output: Reifiable<Cx>,
 {
     fn handle_event(&mut self, event: Event) -> bool {
         self.held_item
@@ -141,13 +163,13 @@ where
     }
 }
 
-impl<Fut, Res> Processor<Res> for FutureProcessor<Fut, Res>
+impl<Fut, Cx> Pollable<Cx> for FutureAwaitItemRe<Fut, Cx>
 where
     Fut: Future + Send,
-    Fut::Output: PrimitiveDescriptor<Res>,
+    Fut::Output: Reifiable<Cx>,
 {
-    fn poll(self: Pin<&mut Self>, cx: &mut Context, resources: &mut Res) -> Poll<Option<()>> {
-        let FutureProcessorProj { future, held_item } = self.project();
+    fn poll(self: Pin<&mut Self>, cx: &mut Context, resources: &mut Cx) -> Poll<Option<()>> {
+        let FutureAwaitItemReProj { future, held_item } = self.project();
 
         match held_item {
             Some(held_item) => {
@@ -166,14 +188,14 @@ where
     }
 }
 
-impl<Fut, Res> LayoutItem for FutureProcessor<Fut, Res>
+impl<Fut, Cx> LayoutItem for FutureAwaitItemRe<Fut, Cx>
 where
     Fut: Future + Send,
-    Fut::Output: PrimitiveDescriptor<Res>,
-    <Fut::Output as PrimitiveDescriptor<Res>>::Primitive: LayoutItem,
+    Fut::Output: Reifiable<Cx>,
+    <Fut::Output as Reifiable<Cx>>::Reified: LayoutItem,
 {
     type Content =
-        Option<<<Fut::Output as PrimitiveDescriptor<Res>>::Primitive as LayoutItem>::Content>;
+        Option<<<Fut::Output as Reifiable<Cx>>::Reified as LayoutItem>::Content>;
 
     #[allow(deprecated)]
     fn get_natural_size(&self) -> Extent2<f32> {

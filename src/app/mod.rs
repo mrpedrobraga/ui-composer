@@ -1,8 +1,8 @@
 //! # Applications
 //!
-//! An application is a composition of [primitives::Node]s each which do something.
+//! An application is a composition of [building_blocks::BuildingBlock]s each which do something.
 //!
-//! To create your program, call `UIComposer::run` and give it a root [primitives::Node], like, for example, a [super::winitwgpu::window::WindowNode].
+//! To create your program, call `UIComposer::run` and give it a root [building_blocks::BuildingBlock], like, for example, a [super::winitwgpu::window::WindowNodeRe].
 //!
 //! ```ignore
 //! use ui_composer::prelude::*;
@@ -20,7 +20,7 @@ use backend::Backend;
 pub mod backend;
 pub mod implementations;
 pub mod input;
-pub mod primitives;
+pub mod building_blocks;
 
 /// This struct is the "entry point" of an UI Composer project.
 pub struct UIComposer;
@@ -36,28 +36,28 @@ impl UIComposer {
 
 #[cfg(all(feature = "winit", feature = "wgpu"))]
 mod winit_wgpu {
-    use crate::app::primitives::Processor;
-    use crate::wgpu::backend::WGPUBackend;
-    use crate::wgpu::pipeline::UIReifyResources;
-    use crate::winitwgpu::backend::WithWinit;
+    use crate::state::process::Pollable;
+    use crate::wgpu::backend::WgpuBackend;
+    use crate::wgpu::pipeline::UIContext;
+    use crate::winitwgpu::backend::WinitWgpuBackend;
     use {
         super::{UIComposer, backend::Backend as _},
-        crate::winitwgpu::backend::NodeDescriptor,
+        crate::winitwgpu::backend::Node,
     };
 
     impl UIComposer {
         /// Creates and runs a new app in the default backend for the selected target.
         /// For cross-platform compatibility, this should be called in the main thread,
         /// and only once in your program.
-        pub fn run<N: NodeDescriptor + 'static>(node_tree_descriptor: N) {
-            WithWinit::<WGPUBackend<N>>::run(node_tree_descriptor);
+        pub fn run<N: Node + 'static>(node_tree_descriptor: N) {
+            WinitWgpuBackend::<N>::run(node_tree_descriptor);
         }
 
-        pub fn run2<N: NodeDescriptor + 'static>(node_tree_descriptor: N)
+        pub fn run2<N: Node + 'static>(node_tree_descriptor: N)
         where
-            N::Reified: Processor<UIReifyResources>,
+            N::Reified: Pollable<UIContext>,
         {
-            WGPUBackend::<N>::run(node_tree_descriptor);
+            WgpuBackend::<N>::run(node_tree_descriptor);
         }
     }
 }

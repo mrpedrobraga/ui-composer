@@ -1,9 +1,9 @@
-use crate::app::primitives::PrimitiveDescriptor;
-use crate::wgpu::backend::GPUResources;
-use crate::wgpu::render_target::{Render, RenderTarget};
+use crate::app::building_blocks::Reifiable;
+use crate::wgpu::backend::WgpuResources;
+use crate::wgpu::render_target::{RenderWgpu, RenderTarget};
 use wgpu::{CompareFunction, DepthBiasState, DepthStencilState, StencilState, TextureFormat};
 use {
-    super::{GPURenderer, RendererBuffers, Renderers},
+    super::{WgpuRenderer, RendererBuffers, WgpuRenderers},
     bytemuck::{Pod, Zeroable},
     graphic::Graphic,
     std::{mem::size_of, ops::Deref},
@@ -20,13 +20,13 @@ pub mod implementations;
 
 /// Descriptor for some [RenderGraphic].
 pub trait RenderGraphicDescriptor<Resources>:
-    PrimitiveDescriptor<Resources, Primitive: RenderGraphic>
+    Reifiable<Resources, Reified: RenderGraphic>
 {
     /// Gets the rectangle this primitive occupies, for rendering purposes.
     fn get_render_rect(&self) -> Option<Rect<f32, f32>>;
 }
 
-/// Trait for a [Primitive] that can render graphics using this pipeline.
+/// Trait for a [Reifiable] that can render graphics using this pipeline.
 /// There's no trait bounds on this trait for convenience.
 pub trait RenderGraphic {
     /// The number of quads this primitive pushes to render.
@@ -48,7 +48,7 @@ impl GraphicsPipelineBuffers {
     }
 
     /// Creates new buffers for the UI primitives to be drawn.
-    pub fn new(gpu_resources: &GPUResources, primitive_count: usize) -> Self {
+    pub fn new(gpu_resources: &WgpuResources, primitive_count: usize) -> Self {
         Self {
             instance_buffer_cpu: vec![Graphic::default(); primitive_count],
             instance_buffer: gpu_resources.device.create_buffer(&wgpu::BufferDescriptor {
@@ -68,7 +68,7 @@ impl GraphicsPipelineBuffers {
         self.instance_buffer.slice(..)
     }
 
-    pub fn write_to_gpu(&mut self, gpu_resources: &GPUResources) {
+    pub fn write_to_gpu(&mut self, gpu_resources: &WgpuResources) {
         gpu_resources.queue.write_buffer(
             &self.instance_buffer,
             0,
@@ -76,7 +76,7 @@ impl GraphicsPipelineBuffers {
         );
     }
 
-    pub fn extend<I>(&mut self, gpu_resources: &GPUResources, new_elements: I)
+    pub fn extend<I>(&mut self, gpu_resources: &WgpuResources, new_elements: I)
     where
         I: Iterator<Item = Graphic>,
     {
@@ -94,14 +94,14 @@ pub struct OrchestraRenderer {
     pub(crate) uniform_bind_group: wgpu::BindGroup,
 }
 
-impl GPURenderer for OrchestraRenderer {
-    fn draw<'draw, R: Render>(
-        gpu_resources: &mut GPUResources,
-        renderers: &mut Renderers,
+impl WgpuRenderer for OrchestraRenderer {
+    fn draw<R: RenderWgpu>(
+        gpu_resources: &mut WgpuResources,
+        renderers: &mut WgpuRenderers,
         render_target_size: Extent2<f32>,
         texture: &Texture,
         render_pass: &mut RenderPass,
-        ui_tree: &'draw R,
+        ui_tree: &R,
         render_buffers: &mut RendererBuffers,
     ) {
         let _ = texture;

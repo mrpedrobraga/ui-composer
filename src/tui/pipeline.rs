@@ -9,16 +9,16 @@
 //! The render can update the stdout partially, by rendering only an AABB. This is useful for huge screens,
 //! but, really, terminals don't really have a lot of pixels.
 
-use crate::app::primitives::Processor;
+use crate::state::process::Pollable;
 use vek::Vec2;
 use {
-    crate::app::{input::Event, primitives::Primitive},
+    crate::app::{input::Event, building_blocks::BuildingBlock},
     ndarray::Array2,
     vek::Rgba,
 };
 
 /// A trait that marks a trait as renderable with this pipeline.
-pub trait Render {
+pub trait RenderTui {
     fn draw<C>(&self, canvas: &mut C, rect: vek::Rect<u16, u16>)
     where
         C: Canvas<Pixel = Rgba<u8>>;
@@ -47,15 +47,15 @@ impl Graphic {
     }
 }
 
-impl<Res> Primitive<Res> for Graphic {
+impl<Cx> BuildingBlock<Cx> for Graphic {
     fn handle_event(&mut self, _event: Event) -> bool {
         false
     }
 }
 
-impl<Res> Processor<Res> for Graphic {}
+impl<Cx> Pollable<Cx> for Graphic {}
 
-impl Render for Graphic {
+impl RenderTui for Graphic {
     fn draw<C>(&self, canvas: &mut C, _rect: vek::Rect<u16, u16>)
     where
         C: Canvas<Pixel = Rgba<u8>>,

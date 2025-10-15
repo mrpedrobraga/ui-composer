@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 use crate::items_internal as items;
 use crate::prelude::items::Tap;
-use crate::state::process::React;
+use crate::state::process::SignalReactItem;
 use crate::wgpu::pipeline::graphics::graphic::Graphic;
 use crate::wgpu::render_target::RenderDescriptor;
 use crate::{
@@ -38,7 +38,7 @@ where
             .signal()
             .map(move |anim_factor| G::describe_render(rect, anim_factor, parent_hints));
 
-        items!(tap, React(spring_animation), React(spring_square))
+        items!(tap, SignalReactItem(spring_animation), SignalReactItem(spring_square))
     };
 
     ResizableItem::new(factory)

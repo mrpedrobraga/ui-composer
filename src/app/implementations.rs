@@ -1,42 +1,43 @@
-use crate::app::primitives::{PrimitiveDescriptor, Processor};
+use crate::app::building_blocks::Reifiable;
 use {
-    super::{input::Event, primitives::Primitive},
+    super::{input::Event, building_blocks::BuildingBlock},
     crate::state::signal_ext::coalesce_polls,
     core::{
         pin::Pin,
-        task::{Context, Poll},
+        task::{Context as TaskContext, Poll},
     },
 };
+use crate::state::process::Pollable;
 
-impl<Res> PrimitiveDescriptor<Res> for () {
-    type Primitive = ();
+impl<Cx> Reifiable<Cx> for () {
+    type Reified = ();
 
     #[expect(unused)]
-    fn reify(self, resources: &mut Res) -> Self::Primitive {
-        /* return unit */
+    fn reify(self, context: &mut Cx) -> Self::Reified {
+        ()
     }
 }
 
-impl<Res> Primitive<Res> for () {
+impl<Cx> BuildingBlock<Cx> for () {
     fn handle_event(&mut self, _event: Event) -> bool {
         false
     }
 }
 
-impl<Res> Processor<Res> for () {}
+impl<Cx> Pollable<Cx> for () {}
 
-impl<Res, T> PrimitiveDescriptor<Res> for Option<T>
+impl<Cx, T> Reifiable<Cx> for Option<T>
 where
-    T: PrimitiveDescriptor<Res>,
+    T: Reifiable<Cx>,
 {
-    type Primitive = Option<T::Primitive>;
+    type Reified = Option<T::Reified>;
 
-    fn reify(self, resources: &mut Res) -> Self::Primitive {
-        self.map(|v| v.reify(resources))
+    fn reify(self, context: &mut Cx) -> Self::Reified {
+        self.map(|v| v.reify(context))
     }
 }
 
-impl<Res, A: Send + Primitive<Res>> Primitive<Res> for Option<A> {
+impl<Cx, A: Send + BuildingBlock<Cx>> BuildingBlock<Cx> for Option<A> {
     fn handle_event(&mut self, event: Event) -> bool {
         self.as_mut()
             .map(|inner| inner.handle_event(event))
@@ -44,31 +45,31 @@ impl<Res, A: Send + Primitive<Res>> Primitive<Res> for Option<A> {
     }
 }
 
-impl<Res, A: Send + Processor<Res>> Processor<Res> for Option<A> {
-    fn poll(self: Pin<&mut Self>, cx: &mut Context, resources: &mut Res) -> Poll<Option<()>> {
+impl<Cx, A: Send + Pollable<Cx>> Pollable<Cx> for Option<A> {
+    fn poll(self: Pin<&mut Self>, task_context: &mut TaskContext, context: &mut Cx) -> Poll<Option<()>> {
         // TODO: Maybe I shouldn't return Some(()) in the option by default?
         self.as_pin_mut()
-            .map(|inner| inner.poll(cx, resources))
+            .map(|inner| inner.poll(task_context, context))
             .unwrap_or(Poll::Ready(Some(())))
     }
 }
 
-impl<Res, T, E> PrimitiveDescriptor<Res> for Result<T, E>
+impl<Cx, T, E> Reifiable<Cx> for Result<T, E>
 where
-    T: PrimitiveDescriptor<Res>,
-    E: PrimitiveDescriptor<Res>,
+    T: Reifiable<Cx>,
+    E: Reifiable<Cx>,
 {
-    type Primitive = Result<T::Primitive, E::Primitive>;
+    type Reified = Result<T::Reified, E::Reified>;
 
-    fn reify(self, resources: &mut Res) -> Self::Primitive {
+    fn reify(self, context: &mut Cx) -> Self::Reified {
         match self {
-            Ok(v) => Ok(PrimitiveDescriptor::reify(v, resources)),
-            Err(e) => Err(PrimitiveDescriptor::reify(e, resources)),
+            Ok(v) => Ok(Reifiable::reify(v, context)),
+            Err(e) => Err(Reifiable::reify(e, context)),
         }
     }
 }
 
-impl<Res, T: Send + Primitive<Res>, E: Send + Primitive<Res>> Primitive<Res> for Result<T, E> {
+impl<Cx, T: Send + BuildingBlock<Cx>, E: Send + BuildingBlock<Cx>> BuildingBlock<Cx> for Result<T, E> {
     fn handle_event(&mut self, event: Event) -> bool {
         match self {
             Ok(v) => v.handle_event(event),
@@ -77,63 +78,63 @@ impl<Res, T: Send + Primitive<Res>, E: Send + Primitive<Res>> Primitive<Res> for
     }
 }
 
-impl<Res, T, E> Processor<Res> for Result<T, E>
+impl<Cx, T, E> Pollable<Cx> for Result<T, E>
 where
-    T: Send + Processor<Res>,
-    E: Send + Processor<Res>,
+    T: Send + Pollable<Cx>,
+    E: Send + Pollable<Cx>,
 {
-    fn poll(self: Pin<&mut Self>, cx: &mut Context, resources: &mut Res) -> Poll<Option<()>> {
+    fn poll(self: Pin<&mut Self>, task_context: &mut TaskContext, context: &mut Cx) -> Poll<Option<()>> {
         // TODO: I don't understand pin, is this safe chat??
         unsafe {
             match self.get_unchecked_mut() {
-                Ok(t) => Pin::new_unchecked(t).poll(cx, resources),
-                Err(e) => Pin::new_unchecked(e).poll(cx, resources),
+                Ok(t) => Pin::new_unchecked(t).poll(task_context, context),
+                Err(e) => Pin::new_unchecked(e).poll(task_context, context),
             }
         }
     }
 }
 
 #[cfg(feature = "std")]
-impl<Res, A> PrimitiveDescriptor<Res> for Box<A>
+impl<Cx, A> Reifiable<Cx> for Box<A>
 where
-    A: PrimitiveDescriptor<Res>,
+    A: Reifiable<Cx>,
 {
-    type Primitive = A::Primitive;
+    type Reified = A::Reified;
 
-    fn reify(self, resources: &mut Res) -> Self::Primitive {
-        (*self).reify(resources)
+    fn reify(self, context: &mut Cx) -> Self::Reified {
+        (*self).reify(context)
     }
 }
 
 #[cfg(feature = "std")]
-impl<Res, A: Send + Primitive<Res>> Primitive<Res> for Box<A> {
+impl<Cx, A: Send + BuildingBlock<Cx>> BuildingBlock<Cx> for Box<A> {
     fn handle_event(&mut self, event: Event) -> bool {
         self.as_mut().handle_event(event)
     }
 }
 
 #[cfg(feature = "std")]
-impl<Res, A: Send + Processor<Res>> Processor<Res> for Box<A> {
-    fn poll(mut self: Pin<&mut Self>, cx: &mut Context, resources: &mut Res) -> Poll<Option<()>> {
+impl<Cx, A: Send + Pollable<Cx>> Pollable<Cx> for Box<A> {
+    fn poll(mut self: Pin<&mut Self>, task_context: &mut TaskContext, context: &mut Cx) -> Poll<Option<()>> {
         // TODO: Why is this unsafe?
         let inner = unsafe { self.as_mut().map_unchecked_mut(|v| &mut **v) };
-        inner.poll(cx, resources)
+        inner.poll(task_context, context)
     }
 }
 
-impl<Res, A, B> PrimitiveDescriptor<Res> for (A, B)
+impl<Cx, A, B> Reifiable<Cx> for (A, B)
 where
-    A: PrimitiveDescriptor<Res>,
-    B: PrimitiveDescriptor<Res>,
+    A: Reifiable<Cx>,
+    B: Reifiable<Cx>,
 {
-    type Primitive = (A::Primitive, B::Primitive);
+    type Reified = (A::Reified, B::Reified);
 
-    fn reify(self, resources: &mut Res) -> Self::Primitive {
-        (self.0.reify(resources), self.1.reify(resources))
+    fn reify(self, context: &mut Cx) -> Self::Reified {
+        (self.0.reify(context), self.1.reify(context))
     }
 }
 
-impl<Res, A: Send + Primitive<Res>, B: Send + Primitive<Res>> Primitive<Res> for (A, B) {
+impl<Cx, A: Send + BuildingBlock<Cx>, B: Send + BuildingBlock<Cx>> BuildingBlock<Cx> for (A, B) {
     fn handle_event(&mut self, event: Event) -> bool {
         let a_handled = self.0.handle_event(event.clone());
         let b_handled = self.1.handle_event(event);
@@ -142,8 +143,8 @@ impl<Res, A: Send + Primitive<Res>, B: Send + Primitive<Res>> Primitive<Res> for
     }
 }
 
-impl<Res, A: Send + Primitive<Res>, B: Send + Primitive<Res>> Processor<Res> for (A, B) {
-    fn poll(self: Pin<&mut Self>, cx: &mut Context, resources: &mut Res) -> Poll<Option<()>> {
+impl<Cx, A: Send + BuildingBlock<Cx>, B: Send + BuildingBlock<Cx>> Pollable<Cx> for (A, B) {
+    fn poll(self: Pin<&mut Self>, task_context: &mut TaskContext, context: &mut Cx) -> Poll<Option<()>> {
         let (pinned_a, pinned_b) = {
             let mut_ref = unsafe { self.get_unchecked_mut() };
             let (a, b) = mut_ref;
@@ -154,32 +155,32 @@ impl<Res, A: Send + Primitive<Res>, B: Send + Primitive<Res>> Processor<Res> for
             (a, b)
         };
 
-        let poll_a = pinned_a.poll(cx, resources);
-        let poll_b = pinned_b.poll(cx, resources);
+        let poll_a = pinned_a.poll(task_context, context);
+        let poll_b = pinned_b.poll(task_context, context);
 
         coalesce_polls(poll_a, poll_b)
     }
 }
 
-impl<Res, A, const N: usize> PrimitiveDescriptor<Res> for [A; N]
+impl<Cx, A, const N: usize> Reifiable<Cx> for [A; N]
 where
-    A: PrimitiveDescriptor<Res>,
+    A: Reifiable<Cx>,
 {
-    type Primitive = [A::Primitive; N];
+    type Reified = [A::Reified; N];
 
-    fn reify(self, _resources: &mut Res) -> Self::Primitive {
+    fn reify(self, _resources: &mut Cx) -> Self::Reified {
         todo!()
     }
 }
 
-impl<Res, A: Send + Primitive<Res>, const N: usize> Primitive<Res> for [A; N] {
+impl<Cx, A: Send + BuildingBlock<Cx>, const N: usize> BuildingBlock<Cx> for [A; N] {
     fn handle_event(&mut self, _event: Event) -> bool {
         todo!("Handle the event, broadcasting to all children...")
     }
 }
 
-impl<Res, A: Send + Primitive<Res>, const N: usize> Processor<Res> for [A; N] {
-    fn poll(self: Pin<&mut Self>, _cx: &mut Context, _resources: &mut Res) -> Poll<Option<()>> {
+impl<Cx, A: Send + BuildingBlock<Cx>, const N: usize> Pollable<Cx> for [A; N] {
+    fn poll(self: Pin<&mut Self>, _cx: &mut TaskContext, _resources: &mut Cx) -> Poll<Option<()>> {
         todo!("Poll all children and coalesce their polls, too.")
     }
 }

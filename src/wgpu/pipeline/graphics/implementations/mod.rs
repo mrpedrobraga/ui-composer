@@ -1,16 +1,16 @@
-use crate::app::primitives::PrimitiveDescriptor;
+use crate::app::building_blocks::Reifiable;
 use crate::prelude::items::Typing;
-use crate::prelude::process::React;
-use crate::state::process::Await;
-use crate::wgpu::pipeline::UIReifyResources;
-use crate::wgpu::pipeline::text::{Text, TextItemRe};
+use crate::prelude::process::SignalReactItem;
+use crate::state::process::FutureAwaitItem;
+use crate::wgpu::pipeline::UIContext;
+use crate::wgpu::pipeline::text::{TextItem, TextItemRe};
 use {
     super::{RenderGraphic, RenderGraphicDescriptor, graphic::Graphic},
     crate::{
         prelude::items::{Drag, Hover, Tap},
         state::{
             Effect,
-            process::{FutureProcessor, SignalProcessor},
+            process::{FutureAwaitItemRe, SignalReactItemRe},
         },
     },
     std::future::Future,
@@ -18,10 +18,10 @@ use {
 use {futures_signals::signal::Signal, vek::Rect};
 //MARK: Graphics
 
-impl<Res> PrimitiveDescriptor<Res> for Graphic {
-    type Primitive = Graphic;
+impl<Res> Reifiable<Res> for Graphic {
+    type Reified = Graphic;
 
-    fn reify(self, #[expect(unused)] resources: &mut Res) -> Self::Primitive {
+    fn reify(self, #[expect(unused)] resources: &mut Res) -> Self::Reified {
         self
     }
 }
@@ -44,9 +44,9 @@ impl RenderGraphic for Graphic {
 
 //MARK: Text
 
-impl<S: AsRef<str>> RenderGraphicDescriptor<UIReifyResources> for Text<S> {
+impl<S: AsRef<str>> RenderGraphicDescriptor<UIContext> for TextItem<S> {
     fn get_render_rect(&self) -> Option<vek::Rect<f32, f32>> {
-        Some(self.0)
+        Some(self.rect)
     }
 }
 
@@ -219,7 +219,7 @@ pub const fn max(a: usize, b: usize) -> usize {
 }
 
 //MARK: React
-impl<S, Res> RenderGraphicDescriptor<Res> for React<S>
+impl<S, Res> RenderGraphicDescriptor<Res> for SignalReactItem<S>
 where
     S: Signal + Send,
     S::Item: RenderGraphicDescriptor<Res>,
@@ -229,12 +229,12 @@ where
     }
 }
 
-impl<S, T, Res> RenderGraphic for SignalProcessor<S, Res>
+impl<S, T, Res> RenderGraphic for SignalReactItemRe<S, Res>
 where
     S: Signal<Item = T>,
     T: RenderGraphicDescriptor<Res>,
 {
-    const QUAD_COUNT: usize = <S::Item as PrimitiveDescriptor<Res>>::Primitive::QUAD_COUNT;
+    const QUAD_COUNT: usize = <S::Item as Reifiable<Res>>::Reified::QUAD_COUNT;
 
     fn write_quads(&self, quad_buffer: &mut [Graphic]) {
         match &self.held_item {
@@ -245,36 +245,36 @@ where
 }
 
 //MARK: FutureProcessor
-impl<Res, Fut> PrimitiveDescriptor<Res> for FutureProcessor<Fut, Res>
+impl<Res, Fut> Reifiable<Res> for FutureAwaitItemRe<Fut, Res>
 where
     Fut: Future,
-    Fut::Output: PrimitiveDescriptor<Res>,
+    Fut::Output: Reifiable<Res>,
 {
-    type Primitive = <Fut::Output as PrimitiveDescriptor<Res>>::Primitive;
+    type Reified = <Fut::Output as Reifiable<Res>>::Reified;
 
-    fn reify(self, #[expect(unused)] resources: &mut Res) -> Self::Primitive {
+    fn reify(self, #[expect(unused)] resources: &mut Res) -> Self::Reified {
         // Of course, by default,
         todo!()
     }
 }
 
-impl<Fut, Res> RenderGraphicDescriptor<Res> for Await<Fut>
+impl<Fut, Res> RenderGraphicDescriptor<Res> for FutureAwaitItem<Fut>
 where
     Fut: Future + Send,
-    Fut::Output: PrimitiveDescriptor<Res>,
-    <Fut::Output as PrimitiveDescriptor<Res>>::Primitive: RenderGraphic,
+    Fut::Output: Reifiable<Res>,
+    <Fut::Output as Reifiable<Res>>::Reified: RenderGraphic,
 {
     fn get_render_rect(&self) -> Option<vek::Rect<f32, f32>> {
         None
     }
 }
-impl<Fut, Res> RenderGraphic for FutureProcessor<Fut, Res>
+impl<Fut, Res> RenderGraphic for FutureAwaitItemRe<Fut, Res>
 where
     Fut: Future,
-    Fut::Output: PrimitiveDescriptor<Res>,
-    <Fut::Output as PrimitiveDescriptor<Res>>::Primitive: RenderGraphic,
+    Fut::Output: Reifiable<Res>,
+    <Fut::Output as Reifiable<Res>>::Reified: RenderGraphic,
 {
-    const QUAD_COUNT: usize = <Fut::Output as PrimitiveDescriptor<Res>>::Primitive::QUAD_COUNT;
+    const QUAD_COUNT: usize = <Fut::Output as Reifiable<Res>>::Reified::QUAD_COUNT;
 
     fn write_quads(&self, quad_buffer: &mut [Graphic]) {
         if let Some(item) = &self.held_item {
@@ -287,9 +287,9 @@ where
 
 macro_rules! impl_render_graphic_nop {
     ($name:ident) => {
-        impl<Res> PrimitiveDescriptor<Res> for $name {
-            type Primitive = Self;
-            fn reify(self, #[expect(unused)] resources: &mut Res) -> Self::Primitive {
+        impl<Res> Reifiable<Res> for $name {
+            type Reified = Self;
+            fn reify(self, #[expect(unused)] resources: &mut Res) -> Self::Reified {
                 self
             }
         }
@@ -314,13 +314,13 @@ impl_render_graphic_nop!(Hover);
 impl_render_graphic_nop!(Drag);
 impl_render_graphic_nop!(Typing);
 
-impl<A, Res> PrimitiveDescriptor<Res> for Tap<A>
+impl<A, Res> Reifiable<Res> for Tap<A>
 where
     A: Effect,
 {
-    type Primitive = Self;
+    type Reified = Self;
 
-    fn reify(self, #[expect(unused)] resources: &mut Res) -> Self::Primitive {
+    fn reify(self, #[expect(unused)] resources: &mut Res) -> Self::Reified {
         self
     }
 }

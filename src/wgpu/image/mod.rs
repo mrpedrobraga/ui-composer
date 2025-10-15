@@ -1,12 +1,12 @@
-use crate::app::primitives::{Primitive, Processor};
-use crate::wgpu::backend::GPUResources;
+use crate::app::building_blocks::BuildingBlock;
+use crate::wgpu::backend::WgpuResources;
 use crate::wgpu::pipeline::graphics::RenderGraphic;
-use crate::wgpu::pipeline::text::TextPipelineBuffers;
+use crate::wgpu::pipeline::text::TextPipelineResources;
 use crate::wgpu::pipeline::{
-    RendererBuffers, Renderers, UIReifyResources, graphics::GraphicsPipelineBuffers,
+    graphics::GraphicsPipelineBuffers, RendererBuffers, UIContext, WgpuRenderers,
 };
-use crate::wgpu::render_target::{Render, RenderDescriptor, RenderTarget};
-use crate::winitwgpu::backend::Node;
+use crate::wgpu::render_target::{RenderDescriptor, RenderTarget, RenderWgpu};
+use crate::winitwgpu::backend::NodeRe;
 use image::{ImageBuffer, Rgba};
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -18,18 +18,19 @@ use {
     super::texture::ImageRenderTarget,
     crate::{
         prelude::{flow::CartesianFlowDirection, *},
-        winitwgpu::backend::NodeDescriptor,
+        winitwgpu::backend::Node,
     },
     pin_project::pin_project,
     winit::event::WindowEvent,
 };
+use crate::state::process::Pollable;
 
 #[allow(non_snake_case)]
-pub fn Image<A>(rect: Rect<f32, f32>, mut item: A) -> ImageNodeDescriptor<A::Content>
+pub fn Image<A>(rect: Rect<f32, f32>, mut item: A) -> ImageNode<A::Content>
 where
     A: LayoutItem + 'static,
 {
-    ImageNodeDescriptor {
+    ImageNode {
         rect,
         content: item.lay(ParentHints {
             rect,
@@ -41,37 +42,37 @@ where
     }
 }
 
-pub struct ImageNodeDescriptor<A> {
+pub struct ImageNode<A> {
     rect: Rect<f32, f32>,
     content: A,
 }
 
-impl<A> NodeDescriptor for ImageNodeDescriptor<A>
+impl<A> Node for ImageNode<A>
 where
     A: RenderDescriptor + Send + 'static,
 {
-    type Reified = ImageNode<A::Primitive>;
+    type Reified = ImageNodeRe<A::Reified>;
 
     fn reify(
         self,
         _event_loop: &winit::event_loop::ActiveEventLoop,
-        gpu_resources: &GPUResources,
-        renderers: Renderers,
+        gpu_resources: &WgpuResources,
+        renderers: WgpuRenderers,
     ) -> Self::Reified {
         // TODO: Maybe store this?
-        let mut reify_resources = UIReifyResources { renderers };
+        let mut reify_resources = UIContext { renderers };
         let content = self.content.reify(&mut reify_resources);
 
-        ImageNode {
+        ImageNodeRe {
             rect: self.rect,
             content,
             render_target: ImageRenderTarget::new(gpu_resources, self.rect.extent()),
             render_buffers: RendererBuffers {
                 graphics_render_buffers: GraphicsPipelineBuffers::new(
                     gpu_resources,
-                    A::Primitive::QUAD_COUNT,
+                    A::Reified::QUAD_COUNT,
                 ),
-                _text_render_buffers: TextPipelineBuffers::new(
+                _text_render_buffers: TextPipelineResources::new(
                     gpu_resources,
                     &mut reify_resources.renderers.text_renderer,
                 ),
@@ -81,7 +82,7 @@ where
 }
 
 #[pin_project(project = ImageNodeProj)]
-pub struct ImageNode<A: Render> {
+pub struct ImageNodeRe<A: RenderWgpu> {
     #[pin]
     content: A,
     rect: Rect<f32, f32>,
@@ -90,27 +91,27 @@ pub struct ImageNode<A: Render> {
 }
 
 /* Use a different implementation of "Node" for Image Node that's detached from winit!  */
-impl<Res, A> Primitive<Res> for ImageNode<A>
+impl<Res, A> BuildingBlock<Res> for ImageNodeRe<A>
 where
-    A: Render,
+    A: RenderWgpu,
 {
     fn handle_event(&mut self, event: Event) -> bool {
         self.content.handle_event(event)
     }
 }
 
-impl<A> Node for ImageNode<A>
+impl<A> NodeRe for ImageNodeRe<A>
 where
-    A: Render,
+    A: RenderWgpu,
 {
-    fn setup(&mut self, _gpu_resources: &GPUResources) {
+    fn setup(&mut self, _gpu_resources: &WgpuResources) {
         /* Do nothing */
         println!("Image node was asked to be set up!");
     }
 
     fn handle_window_event(
         &mut self,
-        _gpu_resources: &mut GPUResources,
+        _gpu_resources: &mut WgpuResources,
         _window_id: winit::window::WindowId,
         _event: WindowEvent,
     ) {
@@ -118,9 +119,9 @@ where
     }
 }
 
-impl<A, Res> Processor<Res> for ImageNode<A>
+impl<A, Res> Pollable<Res> for ImageNodeRe<A>
 where
-    A: Render,
+    A: RenderWgpu,
 {
     fn poll(self: Pin<&mut Self>, _cx: &mut Context, _resources: &mut Res) -> Poll<Option<()>> {
         let ImageNodeProj { .. } = self.project();
@@ -138,12 +139,12 @@ where
     }
 }
 
-impl<A> ImageNode<A>
+impl<A> ImageNodeRe<A>
 where
-    A: Render,
+    A: RenderWgpu,
 {
     #[allow(unused)]
-    fn render(&mut self, gpu_resources: &mut GPUResources, pipelines: &mut Renderers) {
+    fn render(&mut self, gpu_resources: &mut WgpuResources, pipelines: &mut WgpuRenderers) {
         println!("Image Render Requested");
 
         let size_bytes = 4 * 8 * self.rect.w as u64 * self.rect.h as u64;

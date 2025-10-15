@@ -1,6 +1,6 @@
-use crate::app::primitives::Processor;
+use crate::state::process::Pollable;
 use {
-    crate::app::{input::Event, primitives::Primitive},
+    crate::app::{input::Event, building_blocks::BuildingBlock},
     bytemuck::{Pod, Zeroable},
     vek::{Extent3, Mat4, Rect, Rgb, Vec3, Vec4, num_traits::AsPrimitive},
 };
@@ -77,10 +77,10 @@ where
     }
 }
 
-impl<Res> Primitive<Res> for Graphic {
+impl<Res> BuildingBlock<Res> for Graphic {
     fn handle_event(&mut self, _event: Event) -> bool {
         false
     }
 }
 
-impl<Res> Processor<Res> for Graphic {}
+impl<Res> Pollable<Res> for Graphic {}

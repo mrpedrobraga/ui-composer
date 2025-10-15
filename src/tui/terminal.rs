@@ -4,8 +4,8 @@ use core::task::{Context, Poll};
 use vek::Rgba;
 use {
     super::{
-        backend::{Node, NodeDescriptor},
-        pipeline::Render,
+        backend::{NodeRe, Node},
+        pipeline::RenderTui,
     },
     crate::prelude::{Event, LayoutItem},
     vek::Vec2,
@@ -15,7 +15,7 @@ use {
 pub fn Terminal<A>(item: A) -> TerminalNodeDescriptor<A>
 where
     A: LayoutItem,
-    A::Content: Render,
+    A::Content: RenderTui,
 {
     TerminalNodeDescriptor { item }
 }
@@ -25,7 +25,7 @@ pub struct TerminalNodeDescriptor<N> {
     item: N,
 }
 
-impl<N: LayoutItem + Send + Sync> NodeDescriptor for TerminalNodeDescriptor<N> {
+impl<N: LayoutItem + Send + Sync> Node for TerminalNodeDescriptor<N> {
     type Reified = TerminalNode<N>;
 
     fn reify(self) -> Self::Reified {
@@ -38,7 +38,7 @@ pub struct TerminalNode<N> {
     item: N,
 }
 
-impl<N: LayoutItem + Send + Sync> Node for TerminalNode<N> {
+impl<N: LayoutItem + Send + Sync> NodeRe for TerminalNode<N> {
     fn setup(&mut self) {
         // Nothing yet!
     }

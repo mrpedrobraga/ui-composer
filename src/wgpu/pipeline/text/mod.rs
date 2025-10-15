@@ -1,11 +1,11 @@
-use crate::wgpu::backend::GPUResources;
-use crate::wgpu::render_target::{Render, RenderTarget};
+use crate::wgpu::backend::WgpuResources;
+use crate::wgpu::render_target::{RenderWgpu, RenderTarget};
 use glyphon::Buffer;
 use wgpu::{CompareFunction, DepthStencilState};
 use {
-    super::{GPURenderer, RendererBuffers, Renderers},
+    super::{WgpuRenderer, RendererBuffers, WgpuRenderers},
     glyphon::{
-        Cache, FontSystem, Resolution, SwashCache, TextAtlas, TextBounds, TextRenderer, Viewport,
+        Cache, FontSystem, Resolution, SwashCache, TextAtlas, TextBounds, TextRenderer as GTextRenderer, Viewport,
     },
     vek::{Extent2, Rect, Rgb},
     wgpu::{ColorTargetState, MultisampleState, RenderPass, Texture, TextureFormat},
@@ -20,9 +20,18 @@ pub trait RenderText {
     fn push_text<'a>(&'a self, bounds: TextBounds, container: &mut Vec<glyphon::TextArea<'a>>);
 }
 
-pub struct Text<S>(pub Rect<f32, f32>, pub S, pub Rgb<f32>)
-where
-    S: AsRef<str>;
+#[allow(non_snake_case)]
+/// A primitive that renders some coloured text inside a rectangle.
+pub fn Text<AsStr: AsRef<str>>(rect: Rect<f32, f32>, text: AsStr, color: Rgb<f32>) -> TextItem<AsStr> {
+    TextItem {
+        rect, text, color
+    }
+}
+
+pub struct TextItem<AsStr>
+{
+    pub rect: Rect<f32, f32>, pub text: AsStr, pub color: Rgb<f32>
+}
 
 pub struct TextItemRe {
     pub rect: Rect<f32, f32>,
@@ -30,20 +39,20 @@ pub struct TextItemRe {
     pub color: Rgb<f32>,
 }
 
-pub struct TextPipelineBuffers {}
+pub struct TextPipelineResources {}
 
-impl TextPipelineBuffers {
+impl TextPipelineResources {
     pub fn new(
-        _gpu_resources: &GPUResources,
-        #[expect(unused)] renderer: &mut GlyphonTextRenderer,
+        _gpu_resources: &WgpuResources,
+        #[expect(unused)] renderer: &mut TextRenderer,
     ) -> Self {
         Self {}
     }
 }
 
 /// The pipeline for rendering text.
-pub struct GlyphonTextRenderer {
-    text_renderer: TextRenderer,
+pub struct TextRenderer {
+    text_renderer: GTextRenderer,
     font_system: FontSystem,
     viewport: Viewport,
     atlas: TextAtlas,
@@ -51,17 +60,17 @@ pub struct GlyphonTextRenderer {
     swash_cache: SwashCache,
 }
 
-impl GPURenderer for GlyphonTextRenderer {
+impl WgpuRenderer for TextRenderer {
     fn draw<R>(
-        gpu_resources: &mut GPUResources,
-        pipelines: &mut Renderers,
+        gpu_resources: &mut WgpuResources,
+        pipelines: &mut WgpuRenderers,
         render_target_size: Extent2<f32>,
         texture: &Texture,
         render_pass: &mut RenderPass,
         ui_tree: &R,
         _render_buffers: &mut RendererBuffers,
     ) where
-        R: Render,
+        R: RenderWgpu,
     {
         let this = &mut pipelines.text_renderer;
 
@@ -107,7 +116,7 @@ impl GPURenderer for GlyphonTextRenderer {
     }
 }
 
-impl GlyphonTextRenderer {
+impl TextRenderer {
     pub fn singleton<'a, Target>(
         adapter: &'a wgpu::Adapter,
         device: &'a wgpu::Device,
@@ -134,7 +143,7 @@ impl GlyphonTextRenderer {
 
         let mut atlas =
             glyphon::TextAtlas::new(device, queue, &cache, TextureFormat::Bgra8UnormSrgb);
-        let text_renderer = TextRenderer::new(
+        let text_renderer = GTextRenderer::new(
             &mut atlas,
             device,
             MultisampleState::default(),

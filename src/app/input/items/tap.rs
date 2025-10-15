@@ -1,11 +1,11 @@
 #![allow(unused)]
-use crate::app::primitives::Processor;
+use crate::state::process::Pollable;
 use {
     super::super::{Event, InputItem},
     crate::{
         app::{
             input::{ButtonState, MouseButton},
-            primitives::Primitive,
+            building_blocks::BuildingBlock,
         },
         prelude::{CursorEvent, Effect},
         state::Mutable,
@@ -39,7 +39,7 @@ where
 
 impl<A> InputItem for Tap<A> where A: Effect + Send {}
 
-impl<A, Res> Primitive<Res> for Tap<A>
+impl<A, Res> BuildingBlock<Res> for Tap<A>
 where
     A: Effect + Send + Sync,
 {
@@ -66,4 +66,4 @@ where
     }
 }
 
-impl<A, Res> Processor<Res> for Tap<A> where A: Effect + Send + Sync {}
+impl<A, Res> Pollable<Res> for Tap<A> where A: Effect + Send + Sync {}

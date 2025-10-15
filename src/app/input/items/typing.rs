@@ -1,7 +1,8 @@
 use crate::app::input::{ButtonState, InputItem, KeyEvent, KeyboardEvent};
-use crate::app::primitives::{Primitive, Processor};
+use crate::app::building_blocks::BuildingBlock;
 use crate::prelude::Event;
 use futures_signals::signal::Mutable;
+use crate::state::process::Pollable;
 
 /// Input item that receives key events...
 #[derive(Clone)]
@@ -17,7 +18,7 @@ impl Typing {
 
 impl InputItem for Typing {}
 
-impl<Res> Primitive<Res> for Typing {
+impl<Res> BuildingBlock<Res> for Typing {
     fn handle_event(&mut self, event: Event) -> bool {
         if let Event::Keyboard {
             event:
@@ -41,4 +42,4 @@ impl<Res> Primitive<Res> for Typing {
     }
 }
 
-impl<Res> Processor<Res> for Typing {}
+impl<Res> Pollable<Res> for Typing {}

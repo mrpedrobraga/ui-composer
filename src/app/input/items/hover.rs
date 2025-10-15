@@ -1,8 +1,8 @@
 #![allow(unused)]
-use crate::app::primitives::Processor;
+use crate::state::process::Pollable;
 use {
     super::super::{Event, InputItem},
-    crate::{app::primitives::Primitive, prelude::CursorEvent},
+    crate::{app::building_blocks::BuildingBlock, prelude::CursorEvent},
     futures_signals::signal::Mutable,
     vek::Rect,
 };
@@ -24,7 +24,7 @@ impl Hover {
 
 impl InputItem for Hover {}
 
-impl<Res> Primitive<Res> for Hover {
+impl<Res> BuildingBlock<Res> for Hover {
     fn handle_event(&mut self, event: Event) -> bool {
         match event {
             Event::Cursor { id, event } => match event {
@@ -45,4 +45,4 @@ impl<Res> Primitive<Res> for Hover {
     }
 }
 
-impl<Res> Processor<Res> for Hover {}
+impl<Res> Pollable<Res> for Hover {}

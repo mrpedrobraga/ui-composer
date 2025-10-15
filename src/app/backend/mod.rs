@@ -21,7 +21,7 @@ pub trait Backend {
     fn poll_processors(
         self: Pin<&mut Self>,
         cx: &mut Context,
-        resources: &mut NodeReifyResources,
+        resources: &mut NodeContext,
     ) -> Poll<Option<()>> {
         Poll::Ready(None)
     }
@@ -55,8 +55,8 @@ impl<B: Backend> Signal for BackendProcessExecutor<B> {
         let backend = backend.deref_mut();
         let backend = unsafe { Pin::new_unchecked(backend) };
 
-        backend.poll_processors(cx, &mut NodeReifyResources {})
+        backend.poll_processors(cx, &mut NodeContext {})
     }
 }
 
-pub struct NodeReifyResources {}
+pub struct NodeContext {}

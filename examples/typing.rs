@@ -1,6 +1,6 @@
 use ui_composer::Flex2;
 use ui_composer::prelude::items::Typing;
-use ui_composer::prelude::process::React;
+use ui_composer::prelude::process::SignalReactItem;
 use ui_composer::prelude::*;
 use ui_composer::wgpu::components::*;
 use ui_composer::winitwgpu::prelude::*;
@@ -29,7 +29,7 @@ fn TextEdit(state: Mutable<String>) -> impl UI {
 
         let typing = Typing::new(ts);
 
-        React(sig.map(move |text| (typing.clone(), Label(text).lay(hints))))
+        SignalReactItem(sig.map(move |text| (typing.clone(), Label(text).lay(hints))))
     })
     .with_minimum_size(Extent2::new(100.0, 200.0))
 }

@@ -4,7 +4,7 @@ use futures::FutureExt as _;
 use futures_time::future::FutureExt as _;
 use futures_time::time::Duration;
 use serde::Deserialize;
-use ui_composer::prelude::process::Await;
+use ui_composer::prelude::process::FutureAwaitItem;
 use ui_composer::prelude::*;
 use ui_composer::wgpu::components::Label;
 use ui_composer::wgpu::render_target::RenderDescriptor;
@@ -35,7 +35,7 @@ fn App() -> impl LayoutItem<Content = impl RenderDescriptor> {
             .delay(Duration::from_secs(1))
             .map(move |person| PersonView(person).lay(hints));
 
-        Await(ui_fut)
+        FutureAwaitItem(ui_fut)
     })
     .with_minimum_size(Extent2::new(200.0, 200.0))
 }

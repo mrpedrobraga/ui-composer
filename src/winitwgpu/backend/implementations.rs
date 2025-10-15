@@ -1,46 +1,46 @@
-use super::{Node, NodeDescriptor};
-use crate::wgpu::backend::GPUResources;
-use crate::wgpu::pipeline::Renderers;
+use super::{NodeRe, Node};
+use crate::wgpu::backend::WgpuResources;
+use crate::wgpu::pipeline::WgpuRenderers;
 use winit::event::WindowEvent;
 use winit::event_loop::ActiveEventLoop;
 use winit::window::WindowId;
 
-impl NodeDescriptor for () {
+impl Node for () {
     type Reified = ();
 
     fn reify(
         self,
         _event_loop: &ActiveEventLoop,
-        _gpu_resources: &GPUResources,
-        _renderers: Renderers,
+        _gpu_resources: &WgpuResources,
+        _renderers: WgpuRenderers,
     ) -> Self::Reified {
     }
 }
 
-impl Node for () {
-    fn setup(&mut self, _gpu_resources: &GPUResources) {}
+impl NodeRe for () {
+    fn setup(&mut self, _gpu_resources: &WgpuResources) {}
 
     fn handle_window_event(
         &mut self,
-        _gpu_resources: &mut GPUResources,
+        _gpu_resources: &mut WgpuResources,
         _window_id: WindowId,
         _event: WindowEvent,
     ) {
     }
 }
 
-impl<A, B> NodeDescriptor for (A, B)
+impl<A, B> Node for (A, B)
 where
-    A: NodeDescriptor,
-    B: NodeDescriptor,
+    A: Node,
+    B: Node,
 {
     type Reified = (A::Reified, B::Reified);
 
     fn reify(
         self,
         _event_loop: &ActiveEventLoop,
-        _gpu_resources: &GPUResources,
-        _renderers: Renderers,
+        _gpu_resources: &WgpuResources,
+        _renderers: WgpuRenderers,
     ) -> Self::Reified {
         todo!("Figure out what to do with tuples of nodes...");
         // (
@@ -50,19 +50,19 @@ where
     }
 }
 
-impl<A, B> Node for (A, B)
+impl<A, B> NodeRe for (A, B)
 where
-    A: Node,
-    B: Node,
+    A: NodeRe,
+    B: NodeRe,
 {
-    fn setup(&mut self, gpu_resources: &GPUResources) {
+    fn setup(&mut self, gpu_resources: &WgpuResources) {
         self.0.setup(gpu_resources);
         self.1.setup(gpu_resources);
     }
 
     fn handle_window_event(
         &mut self,
-        gpu_resources: &mut GPUResources,
+        gpu_resources: &mut WgpuResources,
         window_id: WindowId,
         event: WindowEvent,
     ) {

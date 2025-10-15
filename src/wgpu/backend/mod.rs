@@ -1,7 +1,7 @@
-use crate::app::backend::NodeReifyResources;
-use crate::app::primitives::Processor;
+use crate::app::backend::NodeContext;
+use crate::state::process::Pollable;
 use crate::prelude::Backend;
-use crate::winitwgpu::backend::NodeDescriptor;
+use crate::winitwgpu::backend::Node;
 use pin_project::pin_project;
 use std::ops::DerefMut;
 use std::pin::Pin;
@@ -10,28 +10,28 @@ use std::task::{Context, Poll};
 
 /// A backend that can render our application to the GPU as well as forward interactive events to the app.
 #[pin_project(project=WGPUBackendProj)]
-pub struct WGPUBackend<A>
+pub struct WgpuBackend<A>
 where
-    A: NodeDescriptor,
+    A: Node,
 {
     /// The node of the UI tree containing the entirety of the app, UI and behaviour.
     #[pin]
     pub tree: Arc<Mutex<A::Reified>>,
-    pub gpu_resources: GPUResources,
+    pub gpu_resources: WgpuResources,
 }
 
 /// The collection of resources the GPU backends use to
 /// interact with the GPU.
-pub struct GPUResources {
+pub struct WgpuResources {
     pub instance: wgpu::Instance,
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
     pub adapter: wgpu::Adapter,
 }
 
-impl<A> Backend for WGPUBackend<A>
+impl<A> Backend for WgpuBackend<A>
 where
-    A: NodeDescriptor<Reified: Processor<NodeReifyResources>>,
+    A: Node<Reified: Pollable<NodeContext>>,
 {
     type Tree = A;
 
@@ -42,7 +42,7 @@ where
     fn poll_processors(
         self: Pin<&mut Self>,
         cx: &mut Context,
-        resources: &mut NodeReifyResources,
+        resources: &mut NodeContext,
     ) -> Poll<Option<()>> {
         let mut tree = self.tree.lock().unwrap();
         let tree = tree.deref_mut();

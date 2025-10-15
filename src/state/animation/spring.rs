@@ -2,7 +2,7 @@ use crate::prelude::{
     animation::{AnimationFrameParams, Poll, RealTimeStream},
     *,
 };
-use crate::state::process::Await;
+use crate::state::process::FutureAwaitItem;
 use cgmath::BaseFloat;
 use core::{
     future::Future,
@@ -43,7 +43,7 @@ where
         state: Mutable<T>,
         value_if: T,
         value_else: T,
-    ) -> impl Signal<Item = Await<impl Future<Output = ()>>>
+    ) -> impl Signal<Item = FutureAwaitItem<impl Future<Output = ()>>>
     where
         S: Signal<Item = bool>,
     {
@@ -54,7 +54,7 @@ where
                 20.0,
                 0.75,
             );
-            Await(spring.animate_value(state.clone()))
+            FutureAwaitItem(spring.animate_value(state.clone()))
         })
     }
 }

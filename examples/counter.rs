@@ -1,6 +1,6 @@
 use ui_composer::Flex2;
 use ui_composer::prelude::*;
-use ui_composer::state::process::React;
+use ui_composer::state::process::SignalReactItem;
 use ui_composer::wgpu::components::{Button, Label};
 use ui_composer::winitwgpu::prelude::UI;
 

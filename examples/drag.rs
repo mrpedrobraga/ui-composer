@@ -4,9 +4,9 @@ use futures_signals::map_ref;
 use ui_composer::app::input::items::Drag;
 use ui_composer::items;
 use ui_composer::prelude::items::DragState;
-use ui_composer::prelude::process::React;
+use ui_composer::prelude::process::SignalReactItem;
 use ui_composer::prelude::*;
-use ui_composer::wgpu::pipeline::UIReifyResources;
+use ui_composer::wgpu::pipeline::UIContext;
 use ui_composer::wgpu::pipeline::graphics::graphic::Graphic;
 use ui_composer::wgpu::render_target::RenderDescriptor;
 
@@ -41,7 +41,7 @@ fn Drag() -> impl LayoutItem<Content = impl RenderDescriptor> {
         let mouse_position = mouse_position.clone();
         let offset_state = offset_state.clone();
 
-        React(map_ref! {
+        SignalReactItem(map_ref! {
             let offset = offset_state.signal(),
             let drag = drag_state.signal() => {
                 let dis_rect = parent.rect.translated(*offset);
@@ -67,6 +67,6 @@ fn Drag() -> impl LayoutItem<Content = impl RenderDescriptor> {
         })
     };
 
-    ResizableItem::<_, _, UIReifyResources>::new(factory)
+    ResizableItem::<_, _, UIContext>::new(factory)
         .with_minimum_size(Extent2::new(10.0, 32.0))
 }

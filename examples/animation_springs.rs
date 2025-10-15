@@ -1,9 +1,9 @@
 #![allow(non_snake_case)]
 
 use ui_composer::layout::{LayoutItem, ParentHints, Resizable, ResizableItem};
-use ui_composer::prelude::process::Await;
-use ui_composer::state::process::React;
-use ui_composer::wgpu::pipeline::{graphics::graphic::Graphic, text::Text};
+use ui_composer::prelude::process::FutureAwaitItem;
+use ui_composer::state::process::SignalReactItem;
+use ui_composer::wgpu::pipeline::{graphics::graphic::Graphic, text::TextItem};
 use ui_composer::wgpu::render_target::RenderDescriptor;
 use vek::Vec3;
 use {
@@ -75,7 +75,7 @@ fn SmoothSquare(
             async {}
         });
 
-        items!(React(animation), React(animation2), Await(f))
+        items!(SignalReactItem(animation), SignalReactItem(animation2), FutureAwaitItem(f))
     };
 
     ResizableItem::new(factory).with_minimum_size(Extent2::new(100.0, 100.0))
@@ -122,6 +122,6 @@ fn hover_square(
             animation_factor_pct
         )),
         hover_rect_graphic,
-        Text(rect, name.to_string(), Rgb::new(0.0, 0.0, 0.0))
+        TextItem(rect, name.to_string(), Rgb::new(0.0, 0.0, 0.0))
     }
 }

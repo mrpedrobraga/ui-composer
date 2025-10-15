@@ -1,5 +1,5 @@
-use crate::app::primitives::PrimitiveDescriptor;
-use crate::prelude::process::React;
+use crate::app::building_blocks::Reifiable;
+use crate::prelude::process::SignalReactItem;
 pub use flow::CoordinateSystemProvider;
 use std::marker::PhantomData;
 use {
@@ -82,12 +82,12 @@ pub trait LayoutItem: Send {
         mut self,
         size_signal: S,
         parent_hints: ParentHints,
-    ) -> React<impl Signal<Item = Self::Content>>
+    ) -> SignalReactItem<impl Signal<Item = Self::Content>>
     where
         S: Signal<Item = Extent2<f32>> + Send,
         Self: Sized + Send,
     {
-        React(size_signal.map(move |new_size| {
+        SignalReactItem(size_signal.map(move |new_size| {
             self.lay(ParentHints {
                 rect: Rect::new(0.0, 0.0, new_size.w, new_size.h),
                 ..parent_hints
@@ -113,7 +113,7 @@ pub trait Resizable: LayoutItem {
 impl<F, T, Res> ResizableItem<F, T, Res>
 where
     F: FnMut(ParentHints) -> T + Send,
-    T: PrimitiveDescriptor<Res>,
+    T: Reifiable<Res>,
 {
     /// Creates a new resizable [`LayoutItem`] that redraws using this factory function.
     pub fn new(factory: F) -> Self {

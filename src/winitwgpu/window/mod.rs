@@ -1,27 +1,27 @@
-use crate::app::backend::NodeReifyResources;
-use crate::app::primitives::{Primitive, Processor};
+use crate::app::backend::NodeContext;
+use crate::app::building_blocks::BuildingBlock;
 use crate::layout::ParentHints;
 use crate::prelude::Event;
-use crate::prelude::process::React;
-use crate::wgpu::backend::GPUResources;
+use crate::prelude::process::SignalReactItem;
+use crate::wgpu::backend::WgpuResources;
 use crate::wgpu::pipeline::graphics::RenderGraphic;
 use crate::wgpu::pipeline::{
-    GPURenderer,
     graphics::OrchestraRenderer,
-    text::{GlyphonTextRenderer, TextPipelineBuffers},
+    text::{TextPipelineResources, TextRenderer},
+    WgpuRenderer,
 };
 use crate::wgpu::pipeline::{
-    RendererBuffers, Renderers, UIReifyResources, graphics::GraphicsPipelineBuffers,
+    graphics::GraphicsPipelineBuffers, RendererBuffers, UIContext, WgpuRenderers,
 };
-use crate::wgpu::render_target::{Render, RenderDescriptor, RenderTarget};
+use crate::wgpu::render_target::{RenderDescriptor, RenderTarget, RenderWgpu};
 use wgpu::{
     Color, LoadOp, Operations, RenderPassColorAttachment, RenderPassDepthStencilAttachment,
     RenderPassDescriptor, StoreOp, TextureDescriptor, TextureDimension, TextureUsages,
 };
 use {
-    super::backend::{Node, NodeDescriptor},
+    super::backend::{Node, NodeRe},
     crate::{
-        prelude::{LayoutItem, flow::CartesianFlowDirection},
+        prelude::{flow::CartesianFlowDirection, LayoutItem},
         state::Mutable,
     },
     futures_signals::signal::{MutableSignalCloned, Signal, SignalExt},
@@ -41,17 +41,18 @@ use {
         window::{Window, WindowId},
     },
 };
+use crate::state::process::Pollable;
 
 mod conversion;
 
 //MARK: Window Node Descriptor!
 /// A node that describes the existence of a new window in the UI tree.
-pub struct WindowNodeDescriptor<A> {
+pub struct WindowNode<A> {
     state: WindowNodeState,
     content: A,
 }
 
-impl<A> WindowNodeDescriptor<A> {
+impl<A> WindowNode<A> {
     /// Consumes this window node and returns a new one with the set title.
     pub fn with_title(self, title: String) -> Self {
         let title = Mutable::new(title);
@@ -89,18 +90,18 @@ impl<A> WindowNodeDescriptor<A> {
     }
 }
 
-impl<A> NodeDescriptor for WindowNodeDescriptor<A>
+impl<A> Node for WindowNode<A>
 where
     A: RenderDescriptor + Send + 'static,
 {
-    type Reified = WindowNode<A::Primitive>;
+    type Reified = WindowNodeRe<A::Reified>;
 
     /// Transforms a WindowNode, which merely describes a window, into an active node in an engine tree.
     fn reify(
         self,
         event_loop: &ActiveEventLoop,
-        gpu_resources: &GPUResources,
-        mut renderers: Renderers,
+        gpu_resources: &WgpuResources,
+        mut renderers: WgpuRenderers,
     ) -> Self::Reified {
         let window_default_size = self.state.size.get();
 
@@ -125,18 +126,18 @@ where
         let render_buffers = RendererBuffers {
             graphics_render_buffers: GraphicsPipelineBuffers::new(
                 gpu_resources,
-                A::Primitive::QUAD_COUNT,
+                A::Reified::QUAD_COUNT,
             ),
-            _text_render_buffers: TextPipelineBuffers::new(
+            _text_render_buffers: TextPipelineResources::new(
                 gpu_resources,
                 &mut renderers.text_renderer,
             ),
         };
 
-        let mut reify_resources = UIReifyResources { renderers };
+        let mut reify_resources = UIContext { renderers };
         let content = self.content.reify(&mut reify_resources);
 
-        WindowNode {
+        WindowNodeRe {
             content,
             state: self.state,
             render_buffers,
@@ -154,7 +155,7 @@ where
 // MARK: Fn Constructor!
 /// Describes a new window with its contents and its own state.
 #[allow(non_snake_case)]
-pub fn Window<A>(mut item: A) -> WindowNodeDescriptor<React<impl Signal<Item = A::Content>>>
+pub fn Window<A>(mut item: A) -> WindowNode<SignalReactItem<impl Signal<Item = A::Content>>>
 where
     A: LayoutItem + Send + Sync,
     A::Content: RenderDescriptor,
@@ -183,9 +184,9 @@ where
         })
     });
 
-    WindowNodeDescriptor {
+    WindowNode {
         state,
-        content: React(item),
+        content: SignalReactItem(item),
     }
 }
 
@@ -221,33 +222,33 @@ impl WindowNodeState {
 //MARK: Window Node!
 
 #[pin_project(project = WindowNodeProj)]
-pub struct WindowNode<R> {
+pub struct WindowNodeRe<Item> {
     #[pin]
     state: WindowNodeState,
     window: Arc<Window>,
-    content: R,
+    content: Item,
     render_buffers: RendererBuffers,
     render_target: WindowRenderTarget,
-    reify_resources: UIReifyResources,
+    reify_resources: UIContext,
 }
 
-impl<A> Primitive<NodeReifyResources> for WindowNode<A>
+impl<Item> BuildingBlock<NodeContext> for WindowNodeRe<Item>
 where
-    A: Primitive<UIReifyResources>,
+    Item: BuildingBlock<UIContext>,
 {
     fn handle_event(&mut self, event: Event) -> bool {
         self.content.handle_event(event)
     }
 }
 
-impl<A> Processor<NodeReifyResources> for WindowNode<A>
+impl<Item> Pollable<NodeContext> for WindowNodeRe<Item>
 where
-    A: Processor<UIReifyResources>,
+    Item: Pollable<UIContext>,
 {
     fn poll(
         self: Pin<&mut Self>,
         cx: &mut Context,
-        #[expect(unused)] resources: &mut NodeReifyResources,
+        #[expect(unused)] resources: &mut NodeContext,
     ) -> Poll<Option<()>> {
         // TODO: Figure out what do to with the result of this poll (as it might introduce a need for redrawing!!!);
 
@@ -275,15 +276,15 @@ where
     }
 }
 
-impl<R> Node for WindowNode<R>
+impl<Item> NodeRe for WindowNodeRe<Item>
 where
-    R: Render,
+    Item: RenderWgpu,
 {
-    fn setup(&mut self, _gpu_resources: &GPUResources) {}
+    fn setup(&mut self, _gpu_resources: &WgpuResources) {}
 
     fn handle_window_event(
         &mut self,
-        gpu_resources: &mut GPUResources,
+        gpu_resources: &mut WgpuResources,
         window_id: WindowId,
         event: WindowEvent,
     ) {
@@ -320,11 +321,11 @@ where
     }
 }
 
-impl<R> WindowNode<R>
+impl<Item> WindowNodeRe<Item>
 where
-    R: Render,
+    Item: RenderWgpu,
 {
-    fn redraw(&mut self, gpu_resources: &mut GPUResources) {
+    fn redraw(&mut self, gpu_resources: &mut WgpuResources) {
         self.render_target.draw(
             &mut self.content,
             gpu_resources,
@@ -344,7 +345,7 @@ pub struct WindowRenderTarget {
 }
 
 impl WindowRenderTarget {
-    pub fn new(gpu_resources: &GPUResources, target: Arc<Window>, size: Extent2<u32>) -> Self {
+    pub fn new(gpu_resources: &WgpuResources, target: Arc<Window>, size: Extent2<u32>) -> Self {
         let surface = gpu_resources.instance.create_surface(target).unwrap();
         let surface_config = surface
             .get_default_config(&gpu_resources.adapter, size.w, size.h)
@@ -360,7 +361,7 @@ impl WindowRenderTarget {
         }
     }
 
-    fn create_depth_texture(gpu_resources: &GPUResources, size: Extent2<u32>) -> wgpu::Texture {
+    fn create_depth_texture(gpu_resources: &WgpuResources, size: Extent2<u32>) -> wgpu::Texture {
         gpu_resources.device.create_texture(&TextureDescriptor {
             // TODO: Use better labels everywhere (possibly identifying this window).
             label: Some("Window depth texture"),
@@ -382,7 +383,7 @@ impl WindowRenderTarget {
 }
 
 impl RenderTarget for WindowRenderTarget {
-    fn resize(&mut self, gpu_resources: &GPUResources, new_size: Extent2<u32>) {
+    fn resize(&mut self, gpu_resources: &WgpuResources, new_size: Extent2<u32>) {
         self.surface_config = self
             .surface
             .get_default_config(&gpu_resources.adapter, new_size.w, new_size.h)
@@ -393,11 +394,11 @@ impl RenderTarget for WindowRenderTarget {
         self.size = new_size;
     }
 
-    fn draw<'a, R: Render>(
+    fn draw<'a, R: RenderWgpu>(
         &mut self,
         content: &mut R,
-        gpu_resources: &mut GPUResources,
-        pipelines: &mut Renderers,
+        gpu_resources: &mut WgpuResources,
+        pipelines: &mut WgpuRenderers,
         render_buffers: &mut RendererBuffers,
     ) {
         let texture = self
@@ -457,7 +458,7 @@ impl RenderTarget for WindowRenderTarget {
             render_buffers,
         );
 
-        GlyphonTextRenderer::draw(
+        TextRenderer::draw(
             gpu_resources,
             pipelines,
             self.size.as_(),

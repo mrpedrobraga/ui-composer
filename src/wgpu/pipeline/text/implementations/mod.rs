@@ -1,34 +1,35 @@
-use crate::app::primitives::{PrimitiveDescriptor, Processor};
+use crate::app::building_blocks::Reifiable;
 use crate::prelude::items::Typing;
-use crate::wgpu::pipeline::UIReifyResources;
+use crate::wgpu::pipeline::UIContext;
 use crate::wgpu::pipeline::graphics::graphic::Graphic;
 use crate::wgpu::pipeline::text::TextItemRe;
 use glyphon::{Attrs, Buffer, Family, Metrics, Shaping, Weight, Wrap};
 use {
-    super::{RenderText, Text},
+    super::{RenderText, TextItem},
     crate::{
-        app::{input::Event, primitives::Primitive},
+        app::{input::Event, building_blocks::BuildingBlock},
         prelude::items::{Drag, Hover, Tap},
         state::{
+            process::{FutureAwaitItemRe, SignalReactItemRe},
             Effect,
-            process::{FutureProcessor, SignalProcessor},
         },
     },
     futures_signals::signal::Signal,
     glyphon::{Color, TextArea, TextBounds},
     std::future::Future,
 };
+use crate::state::process::Pollable;
 //MARK: Text
 
-impl<S: AsRef<str> + Send, Res> Primitive<Res> for Text<S> {
+impl<S: AsRef<str> + Send, Res> BuildingBlock<Res> for TextItem<S> {
     fn handle_event(&mut self, _event: Event) -> bool {
         false
     }
 }
 
-impl<Res> Processor<Res> for TextItemRe {}
+impl<Res> Pollable<Res> for TextItemRe {}
 
-impl<Res> Primitive<Res> for TextItemRe {
+impl<Res> BuildingBlock<Res> for TextItemRe {
     fn handle_event(&mut self, #[expect(unused)] event: Event) -> bool {
         false
     }
@@ -52,37 +53,37 @@ impl RenderText for TextItemRe {
     }
 }
 
-impl<S: AsRef<str>> PrimitiveDescriptor<UIReifyResources> for Text<S> {
-    type Primitive = TextItemRe;
+impl<S: AsRef<str>> Reifiable<UIContext> for TextItem<S> {
+    type Reified = TextItemRe;
 
-    fn reify(self, resources: &mut UIReifyResources) -> Self::Primitive {
+    fn reify(self, resources: &mut UIContext) -> Self::Reified {
         let renderer = &mut resources.renderers.text_renderer;
         let mut buffer = Buffer::new(&mut renderer.font_system, Metrics::new(16.0, 20.0));
 
         buffer.set_text(
             &mut renderer.font_system,
-            self.1.as_ref(),
+            self.text.as_ref(),
             // TODO: Allow composing this...
             &Attrs::new()
                 .family(Family::Name("Work Sans"))
                 .weight(Weight::NORMAL),
             Shaping::Advanced,
         );
-        buffer.set_size(&mut renderer.font_system, Some(self.0.w), Some(self.0.h));
+        buffer.set_size(&mut renderer.font_system, Some(self.rect.w), Some(self.rect.h));
         // TODO: Perhaps add another primitive that won't wrap?
         buffer.set_wrap(&mut renderer.font_system, Wrap::Word);
         // TODO: This should be configurable, too.
         buffer.shape_until_scroll(&mut renderer.font_system, false);
 
         TextItemRe {
-            rect: self.0,
+            rect: self.rect,
             buffer,
-            color: self.2,
+            color: self.color,
         }
     }
 }
 
-impl<S: AsRef<str> + Send, Res> Processor<Res> for Text<S> {}
+impl<S: AsRef<str> + Send, Res> Pollable<Res> for TextItem<S> {}
 //MARK: Graphics
 
 impl RenderText for Graphic {
@@ -131,10 +132,10 @@ where
 
 //MARK: SignalProcessor
 
-impl<Sig, Res> RenderText for SignalProcessor<Sig, Res>
+impl<Sig, Res> RenderText for SignalReactItemRe<Sig, Res>
 where
     Sig: Signal,
-    Sig::Item: PrimitiveDescriptor<Res, Primitive: RenderText>,
+    Sig::Item: Reifiable<Res, Reified: RenderText>,
 {
     fn push_text<'a>(&'a self, bounds: TextBounds, container: &mut Vec<TextArea<'a>>) {
         match &self.held_item {
@@ -146,10 +147,10 @@ where
 
 // MARK: FutureProcessor
 
-impl<Fut, Res> RenderText for FutureProcessor<Fut, Res>
+impl<Fut, Res> RenderText for FutureAwaitItemRe<Fut, Res>
 where
     Fut: Future,
-    Fut::Output: PrimitiveDescriptor<Res, Primitive: RenderText>,
+    Fut::Output: Reifiable<Res, Reified: RenderText>,
 {
     fn push_text<'a>(
         &'a self,

@@ -1,4 +1,4 @@
-use crate::prelude::process::React;
+use crate::prelude::process::SignalReactItem;
 use core::task::Poll;
 use futures_signals::signal::{Map, SignalExt};
 use futures_signals::signal::{Mutable, MutableSignal};
@@ -39,7 +39,7 @@ pub trait MutableExt {
 impl<Item> MutableExt for Mutable<Item> {
     type Item = Item;
     type Output<F, U>
-        = React<Map<MutableSignal<Item>, F>>
+        = SignalReactItem<Map<MutableSignal<Item>, F>>
     where
         F: FnMut(Self::Item) -> U,
         Self::Item: Copy;
@@ -49,6 +49,6 @@ impl<Item> MutableExt for Mutable<Item> {
         F: FnMut(Self::Item) -> U,
         Self::Item: Copy,
     {
-        React(self.signal().map(predicate))
+        SignalReactItem(self.signal().map(predicate))
     }
 }

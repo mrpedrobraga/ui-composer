@@ -2,7 +2,7 @@
 use futures_signals::signal::{Mutable, SignalExt};
 use vek::Rgb;
 
-use crate::prelude::process::React;
+use crate::prelude::process::SignalReactItem;
 use crate::wgpu::pipeline::graphics::graphic::Graphic;
 use crate::wgpu::render_target::RenderDescriptor;
 use crate::{
@@ -14,15 +14,13 @@ use crate::{
 };
 
 /// A simple button which you can click!
-pub fn Button<'a, L, Fx>(
-    mut label: L,
-    effect: Fx,
-) -> impl LayoutItem<Content = impl RenderDescriptor>
+pub fn Button<L, Fx>(mut label: L, effect: Fx) -> impl LayoutItem<Content = impl RenderDescriptor>
 where
     L: LayoutItem + Clone + Send + Sync + 'static,
     L::Content: RenderDescriptor,
     Fx: Effect + Clone + Send + Sync,
 {
+    #[allow(deprecated)]
     let minimum_size = label.get_minimum_size();
     let mouse_position = Mutable::new(None);
     let is_hovered_state = Mutable::new(false);
@@ -34,7 +32,7 @@ where
         items!(
             tap,
             hover,
-            React(is_hovered_state.signal().map(move |is_hovered| {
+            SignalReactItem(is_hovered_state.signal().map(move |is_hovered| {
                 if is_hovered {
                     items!(Graphic::from(parent_hints.rect).with_color(Rgb::new(0.6, 0.6, 0.6)),)
                 } else {

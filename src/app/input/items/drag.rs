@@ -1,13 +1,13 @@
 #![allow(unused)]
 
-use crate::app::primitives::Processor;
+use crate::state::process::Pollable;
 use vek::Vec2;
 use {
     super::super::{Event, InputItem},
     crate::{
         app::{
             input::{ButtonState, MouseButton},
-            primitives::Primitive,
+            building_blocks::BuildingBlock,
         },
         prelude::CursorEvent,
     },
@@ -53,7 +53,7 @@ impl Drag {
 
 impl InputItem for Drag {}
 
-impl<Res> Primitive<Res> for Drag {
+impl<Res> BuildingBlock<Res> for Drag {
     fn handle_event(&mut self, event: Event) -> bool {
         if let Event::Cursor { id, event } = event {
             match (event, self.drag_state.get()) {
@@ -111,4 +111,4 @@ impl<Res> Primitive<Res> for Drag {
     }
 }
 
-impl<Res> Processor<Res> for Drag {}
+impl<Res> Pollable<Res> for Drag {}

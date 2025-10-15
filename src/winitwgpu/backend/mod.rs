@@ -1,10 +1,10 @@
 //! A Backend that uses Winit to create Windowing and WGPU to render to the window.
 
-use crate::app::backend::NodeReifyResources;
-use crate::app::primitives::{Primitive, Processor};
-use crate::wgpu::backend::{GPUResources, WGPUBackend};
+use crate::app::backend::NodeContext;
+use crate::app::building_blocks::BuildingBlock;
+use crate::wgpu::backend::{WgpuBackend, WgpuResources};
 use crate::wgpu::pipeline::graphics::OrchestraRenderer;
-use crate::wgpu::pipeline::{Renderers, UIReifyResources, text::GlyphonTextRenderer};
+use crate::wgpu::pipeline::{text::TextRenderer, UIContext, WgpuRenderers};
 use pin_project::pin_project;
 use std::sync::Mutex;
 use winit::event::{DeviceEvent, DeviceId};
@@ -27,55 +27,56 @@ use {
         window::{WindowAttributes, WindowId},
     },
 };
+use crate::state::process::Pollable;
 
 pub mod implementations;
 
 /// Trait that represents a descriptor main node of the app tree.
 /// These nodes are used for creating windows and processes and rendering contexts.
 ///
-/// TODO: Delete this and use [Primitive] instead.
+/// TODO: Delete this and use [BuildingBlock] instead.
 #[diagnostic::on_unimplemented(message = "This value is not a proper node descriptor.")]
-pub trait NodeDescriptor: Send {
+pub trait Node: Send {
     /// The type this node descriptor generates when reified.
-    type Reified: Node;
+    type Reified: NodeRe;
     fn reify(
         self,
         event_loop: &ActiveEventLoop,
-        gpu_resources: &GPUResources,
-        renderers: Renderers,
+        gpu_resources: &WgpuResources,
+        renderers: WgpuRenderers,
     ) -> Self::Reified;
 }
 
 /// A main node in the app tree.
-pub trait Node: Primitive<NodeReifyResources> {
-    fn setup(&mut self, gpu_resources: &GPUResources);
+pub trait NodeRe: BuildingBlock<NodeContext> {
+    fn setup(&mut self, gpu_resources: &WgpuResources);
 
     /// Handles an event and cascades it down its children.
     fn handle_window_event(
         &mut self,
-        gpu_resources: &mut GPUResources,
+        gpu_resources: &mut WgpuResources,
         window_id: WindowId,
         event: WindowEvent,
     );
 }
 
 #[expect(type_alias_bounds)]
-type SharedWWBackend<A: NodeDescriptor<Reified: Processor<UIReifyResources>>> =
-    Arc<Mutex<WithWinit<WGPUBackend<A>>>>;
+type SharedWWBackend<A: Node<Reified: Pollable<UIContext>>> =
+    Arc<Mutex<WinitWgpuBackend<A>>>;
 
 /// The [`ApplicationHandler`] that sits between [`winit`]
 /// and UI Composer.
-pub struct WinitWGPUApplicationHandler<A: NodeDescriptor> {
+pub struct WinitWGPUApplicationHandler<A: Node> {
     tree_descriptor: Option<A>,
     backend: Option<SharedWWBackend<A>>,
 }
 
 #[pin_project(project=WithWinitProj)]
-pub struct WithWinit<A>(A);
+pub struct WinitWgpuBackend<A: Node>(WgpuBackend<A>);
 
-impl<A> Backend for WithWinit<WGPUBackend<A>>
+impl<A> Backend for WinitWgpuBackend<A>
 where
-    A: NodeDescriptor<Reified: Processor<NodeReifyResources>> + 'static,
+    A: Node<Reified: Pollable<NodeContext>> + 'static,
 {
     type Tree = A;
 
@@ -94,7 +95,7 @@ where
     fn poll_processors(
         self: Pin<&mut Self>,
         cx: &mut Context,
-        resources: &mut NodeReifyResources,
+        resources: &mut NodeContext,
     ) -> Poll<Option<()>> {
         let WithWinitProj(backend) = self.project();
 
@@ -108,12 +109,12 @@ where
 
 impl<A> ApplicationHandler for WinitWGPUApplicationHandler<A>
 where
-    A: NodeDescriptor + Send + 'static,
+    A: Node + Send + 'static,
 {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         if self.backend.is_none() {
             let (backend, processor) =
-                futures::executor::block_on(WithWinit::<WGPUBackend<_>>::create(
+                futures::executor::block_on(WinitWgpuBackend::<_>::create(
                     event_loop,
                     self.tree_descriptor
                         .take()
@@ -156,7 +157,7 @@ where
     }
 }
 
-impl<A: NodeDescriptor> WGPUBackend<A> {
+impl<A: Node> WgpuBackend<A> {
     // Little hack to get a "dummy" texture format.
     // This should go unused hopefully!
     #[allow(unused)]
@@ -186,9 +187,9 @@ impl<A: NodeDescriptor> WGPUBackend<A> {
     }
 }
 
-impl<A> WithWinit<WGPUBackend<A>>
+impl<A> WinitWgpuBackend<A>
 where
-    A: NodeDescriptor<Reified: Processor<NodeReifyResources>> + 'static,
+    A: Node<Reified: Pollable<NodeContext>> + 'static,
 {
     async fn create(
         event_loop: &ActiveEventLoop,
@@ -240,19 +241,19 @@ where
             render_target_formats,
         );
 
-        let text_pipeline = GlyphonTextRenderer::singleton::<WindowRenderTarget>(
+        let text_pipeline = TextRenderer::singleton::<WindowRenderTarget>(
             &adapter,
             &device,
             &queue,
             render_target_formats,
         );
 
-        let renderers = Renderers {
+        let renderers = WgpuRenderers {
             graphics_renderer: graphics_pipeline,
             text_renderer: text_pipeline,
         };
 
-        let gpu_resources = GPUResources {
+        let gpu_resources = WgpuResources {
             instance,
             device,
             queue,
@@ -261,14 +262,14 @@ where
 
         let tree = tree_descriptor.reify(event_loop, &gpu_resources, renderers);
 
-        let backend = WGPUBackend {
+        let backend = WgpuBackend {
             tree: Arc::new(Mutex::new(tree)),
             gpu_resources,
         };
 
         // This render engine will be shared between your application (so that it can receive OS events)
         // and a reactor processor in another thread (so that it can process its own `Future`s and `Signal`s)
-        let backend = Arc::new(Mutex::new(WithWinit(backend)));
+        let backend = Arc::new(Mutex::new(WinitWgpuBackend(backend)));
 
         // TODO: Process the render engine's processors and reactors on another thread.
         // It needs not be an other thread, just a different execution context.

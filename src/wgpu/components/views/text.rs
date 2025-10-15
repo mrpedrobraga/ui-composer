@@ -1,9 +1,10 @@
 #![allow(non_snake_case)]
 
-use crate::app::primitives::{Primitive, Processor};
+use crate::app::building_blocks::BuildingBlock;
 use crate::prelude::{Event, LayoutItem, ParentHints};
-use crate::wgpu::pipeline::text::Text;
+use crate::wgpu::pipeline::text::{Text, TextItem};
 use vek::Rgb;
+use crate::state::process::Pollable;
 
 /// A simple label that visualises a String!
 ///
@@ -23,17 +24,17 @@ where
 }
 
 #[derive(Clone)]
-pub struct TextLayoutItem<S>
+pub struct TextLayoutItem<AsStr>
 where
-    S: AsRef<str>,
+    AsStr: AsRef<str>,
 {
-    text: S,
+    text: AsStr,
     own_color: Option<Rgb<f32>>,
 }
 
-impl<S> TextLayoutItem<S>
+impl<AsStr> TextLayoutItem<AsStr>
 where
-    S: AsRef<str>,
+    AsStr: AsRef<str>,
 {
     /// Returns this [TextLayoutItem], with a different colour.
     pub fn with_color(self, new_color: Rgb<f32>) -> Self {
@@ -44,8 +45,8 @@ where
     }
 }
 
-impl<S: AsRef<str> + Send + Clone> LayoutItem for TextLayoutItem<S> {
-    type Content = Text<S>;
+impl<AsStr: AsRef<str> + Send + Clone> LayoutItem for TextLayoutItem<AsStr> {
+    type Content = TextItem<AsStr>;
 
     fn get_natural_size(&self) -> vek::Extent2<f32> {
         vek::Extent2::new(120.0, 32.0)
@@ -56,7 +57,7 @@ impl<S: AsRef<str> + Send + Clone> LayoutItem for TextLayoutItem<S> {
     }
 
     fn lay(&mut self, parent_hints: ParentHints) -> Self::Content {
-        Text(
+        Text (
             parent_hints.rect,
             self.text.clone(),
             self.own_color.unwrap_or(Rgb::white()), // TODO: Use the current foreground colour!
@@ -64,9 +65,9 @@ impl<S: AsRef<str> + Send + Clone> LayoutItem for TextLayoutItem<S> {
     }
 }
 
-impl<S: AsRef<str> + Send, Res> Processor<Res> for TextLayoutItem<S> {}
+impl<S: AsRef<str> + Send, Res> Pollable<Res> for TextLayoutItem<S> {}
 
-impl<S: AsRef<str> + Send, Res> Primitive<Res> for TextLayoutItem<S> {
+impl<S: AsRef<str> + Send, Res> BuildingBlock<Res> for TextLayoutItem<S> {
     fn handle_event(&mut self, _: Event) -> bool {
         // Event was not handled
         false
