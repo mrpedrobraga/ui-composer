@@ -1,4 +1,4 @@
-use crate::app::building_blocks::Reifiable;
+use crate::app::building_blocks::reify::Reify;
 use crate::standard::backends::wgpu::pipeline::UIContext;
 use crate::standard::backends::wgpu::pipeline::text::{TextItem, TextItemRe};
 use crate::state::process::{FutureAwaitItem, SignalReactItem};
@@ -16,10 +16,10 @@ use {futures_signals::signal::Signal, vek::Rect};
 use crate::standard::prelude::{Drag, Hover, Tap, Typing};
 //MARK: Graphics
 
-impl<Res> Reifiable<Res> for Graphic {
-    type Reified = Graphic;
+impl<Res> Reify<Res> for Graphic {
+    type Output = Graphic;
 
-    fn reify(self, #[expect(unused)] resources: &mut Res) -> Self::Reified {
+    fn reify(self, #[expect(unused)] resources: &mut Res) -> Self::Output {
         self
     }
 }
@@ -232,7 +232,7 @@ where
     S: Signal<Item = T>,
     T: RenderGraphicDescriptor<Res>,
 {
-    const QUAD_COUNT: usize = <S::Item as Reifiable<Res>>::Reified::QUAD_COUNT;
+    const QUAD_COUNT: usize = <S::Item as Reify<Res>>::Output::QUAD_COUNT;
 
     fn write_quads(&self, quad_buffer: &mut [Graphic]) {
         match &self.held_item {
@@ -243,14 +243,14 @@ where
 }
 
 //MARK: FutureProcessor
-impl<Res, Fut> Reifiable<Res> for FutureAwaitItemRe<Fut, Res>
+impl<Res, Fut> Reify<Res> for FutureAwaitItemRe<Fut, Res>
 where
     Fut: Future,
-    Fut::Output: Reifiable<Res>,
+    Fut::Output: Reify<Res>,
 {
-    type Reified = <Fut::Output as Reifiable<Res>>::Reified;
+    type Output = <Fut::Output as Reify<Res>>::Output;
 
-    fn reify(self, #[expect(unused)] resources: &mut Res) -> Self::Reified {
+    fn reify(self, #[expect(unused)] resources: &mut Res) -> Self::Output {
         // Of course, by default,
         todo!()
     }
@@ -259,8 +259,8 @@ where
 impl<Fut, Res> RenderGraphicDescriptor<Res> for FutureAwaitItem<Fut>
 where
     Fut: Future + Send,
-    Fut::Output: Reifiable<Res>,
-    <Fut::Output as Reifiable<Res>>::Reified: RenderGraphic,
+    Fut::Output: Reify<Res>,
+    <Fut::Output as Reify<Res>>::Output: RenderGraphic,
 {
     fn get_render_rect(&self) -> Option<vek::Rect<f32, f32>> {
         None
@@ -269,10 +269,10 @@ where
 impl<Fut, Res> RenderGraphic for FutureAwaitItemRe<Fut, Res>
 where
     Fut: Future,
-    Fut::Output: Reifiable<Res>,
-    <Fut::Output as Reifiable<Res>>::Reified: RenderGraphic,
+    Fut::Output: Reify<Res>,
+    <Fut::Output as Reify<Res>>::Output: RenderGraphic,
 {
-    const QUAD_COUNT: usize = <Fut::Output as Reifiable<Res>>::Reified::QUAD_COUNT;
+    const QUAD_COUNT: usize = <Fut::Output as Reify<Res>>::Output::QUAD_COUNT;
 
     fn write_quads(&self, quad_buffer: &mut [Graphic]) {
         if let Some(item) = &self.held_item {
@@ -285,9 +285,9 @@ where
 
 macro_rules! impl_render_graphic_nop {
     ($name:ident) => {
-        impl<Res> Reifiable<Res> for $name {
-            type Reified = Self;
-            fn reify(self, #[expect(unused)] resources: &mut Res) -> Self::Reified {
+        impl<Res> Reify<Res> for $name {
+            type Output = Self;
+            fn reify(self, #[expect(unused)] resources: &mut Res) -> Self::Output {
                 self
             }
         }
@@ -312,13 +312,13 @@ impl_render_graphic_nop!(Hover);
 impl_render_graphic_nop!(Drag);
 impl_render_graphic_nop!(Typing);
 
-impl<A, Res> Reifiable<Res> for Tap<A>
+impl<A, Res> Reify<Res> for Tap<A>
 where
     A: Effect,
 {
-    type Reified = Self;
+    type Output = Self;
 
-    fn reify(self, #[expect(unused)] resources: &mut Res) -> Self::Reified {
+    fn reify(self, #[expect(unused)] resources: &mut Res) -> Self::Output {
         self
     }
 }

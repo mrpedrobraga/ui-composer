@@ -3,15 +3,15 @@ use crate::app::building_blocks::BuildingBlock;
 use crate::standard::backends::wgpu::backend::WgpuResources;
 use crate::standard::backends::wgpu::pipeline::graphics::RenderGraphic;
 use crate::standard::backends::wgpu::pipeline::{
-    RendererBuffers, UIContext, WgpuRenderers, graphics::GraphicsPipelineBuffers,
+    graphics::GraphicsPipelineBuffers, RendererBuffers, UIContext, WgpuRenderers,
 };
 use crate::standard::backends::wgpu::pipeline::{
-    WgpuRenderer,
     graphics::OrchestraRenderer,
     text::{TextPipelineResources, TextRenderer},
+    WgpuRenderer,
 };
 use crate::standard::backends::wgpu::render_target::{Render, RenderBuildingBlock, RenderTarget};
-use crate::layout::hints::ParentHints;
+use crate::geometry::layout::hints::ParentHints;
 use crate::app::input::Event;
 use crate::state::process::SignalReactItem;
 use crate::state::process::Pollable;
@@ -21,10 +21,7 @@ use wgpu::{
 };
 use {
     super::backend::{Node, NodeRe},
-    crate::{
-        layout::{LayoutItem, flow::CartesianFlowDirection},
-        state::Mutable,
-    },
+    crate::state::Mutable,
     futures_signals::signal::{MutableSignalCloned, Signal, SignalExt},
     pin_project::pin_project,
     std::{
@@ -42,6 +39,7 @@ use {
         window::{Window, WindowId},
     },
 };
+use crate::geometry::layout::{flow::CartesianFlowDirection, LayoutItem};
 
 mod conversion;
 
@@ -94,7 +92,7 @@ impl<A> Node for WindowNode<A>
 where
     A: Render + Send + 'static,
 {
-    type Reified = WindowNodeRe<A::Reified>;
+    type Output = WindowNodeRe<A::Output>;
 
     /// Transforms a WindowNode, which merely describes a window, into an active node in an engine tree.
     fn reify(
@@ -102,7 +100,7 @@ where
         event_loop: &ActiveEventLoop,
         gpu_resources: &WgpuResources,
         mut renderers: WgpuRenderers,
-    ) -> Self::Reified {
+    ) -> Self::Output {
         let mut window_default_size = self.state.size.get();
 
         window_default_size.w = window_default_size.w.max(1.0);
@@ -129,7 +127,7 @@ where
         let render_buffers = RendererBuffers {
             graphics_render_buffers: GraphicsPipelineBuffers::new(
                 gpu_resources,
-                A::Reified::QUAD_COUNT,
+                A::Output::QUAD_COUNT,
             ),
             _text_render_buffers: TextPipelineResources::new(
                 gpu_resources,

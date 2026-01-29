@@ -1,4 +1,4 @@
-use crate::app::building_blocks::Reifiable;
+use crate::app::building_blocks::reify::Reify;
 use crate::standard::backends::wgpu::pipeline::UIContext;
 use crate::standard::backends::wgpu::pipeline::graphics::graphic::Graphic;
 use crate::standard::backends::wgpu::pipeline::text::TextItemRe;
@@ -52,10 +52,10 @@ impl RenderText for TextItemRe {
     }
 }
 
-impl<S: AsRef<str>> Reifiable<UIContext> for TextItem<S> {
-    type Reified = TextItemRe;
+impl<S: AsRef<str>> Reify<UIContext> for TextItem<S> {
+    type Output = TextItemRe;
 
-    fn reify(self, resources: &mut UIContext) -> Self::Reified {
+    fn reify(self, resources: &mut UIContext) -> Self::Output {
         let renderer = &mut resources.renderers.text_renderer;
         let mut buffer = Buffer::new(&mut renderer.font_system, Metrics::new(20.0, 20.0));
 
@@ -140,7 +140,7 @@ where
 impl<Sig, Res> RenderText for SignalReactItemRe<Sig, Res>
 where
     Sig: Signal,
-    Sig::Item: Reifiable<Res, Reified: RenderText>,
+    Sig::Item: Reify<Res, Output: RenderText>,
 {
     fn push_text<'a>(&'a self, bounds: TextBounds, container: &mut Vec<TextArea<'a>>) {
         match &self.held_item {
@@ -155,7 +155,7 @@ where
 impl<Fut, Res> RenderText for FutureAwaitItemRe<Fut, Res>
 where
     Fut: Future,
-    Fut::Output: Reifiable<Res, Reified: RenderText>,
+    Fut::Output: Reify<Res, Output: RenderText>,
 {
     fn push_text<'a>(
         &'a self,

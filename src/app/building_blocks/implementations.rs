@@ -1,22 +1,12 @@
-use crate::app::building_blocks::Reifiable;
 use crate::state::process::Pollable;
 use {
-    super::{BuildingBlock, super::input::Event},
-    crate::state::signal_ext::coalesce_polls,
+    super::{super::input::Event, BuildingBlock},
+    crate::state::signal_ext::any_of,
     core::{
         pin::Pin,
         task::{Context as TaskContext, Poll},
     },
 };
-
-impl<Cx> Reifiable<Cx> for () {
-    type Reified = ();
-
-    #[expect(unused)]
-    fn reify(self, context: &mut Cx) -> Self::Reified {
-        ()
-    }
-}
 
 impl<Cx> BuildingBlock<Cx> for () {
     fn handle_event(&mut self, _event: Event) -> bool {
@@ -25,17 +15,6 @@ impl<Cx> BuildingBlock<Cx> for () {
 }
 
 impl<Cx> Pollable<Cx> for () {}
-
-impl<Cx, T> Reifiable<Cx> for Option<T>
-where
-    T: Reifiable<Cx>,
-{
-    type Reified = Option<T::Reified>;
-
-    fn reify(self, context: &mut Cx) -> Self::Reified {
-        self.map(|v| v.reify(context))
-    }
-}
 
 impl<Cx, A: Send + BuildingBlock<Cx>> BuildingBlock<Cx> for Option<A> {
     fn handle_event(&mut self, event: Event) -> bool {
@@ -55,21 +34,6 @@ impl<Cx, A: Send + Pollable<Cx>> Pollable<Cx> for Option<A> {
         self.as_pin_mut()
             .map(|inner| inner.poll(task_context, context))
             .unwrap_or(Poll::Ready(Some(())))
-    }
-}
-
-impl<Cx, T, E> Reifiable<Cx> for Result<T, E>
-where
-    T: Reifiable<Cx>,
-    E: Reifiable<Cx>,
-{
-    type Reified = Result<T::Reified, E::Reified>;
-
-    fn reify(self, context: &mut Cx) -> Self::Reified {
-        match self {
-            Ok(v) => Ok(Reifiable::reify(v, context)),
-            Err(e) => Err(Reifiable::reify(e, context)),
-        }
     }
 }
 
@@ -105,18 +69,6 @@ where
 }
 
 #[cfg(feature = "std")]
-impl<Cx, A> Reifiable<Cx> for Box<A>
-where
-    A: Reifiable<Cx>,
-{
-    type Reified = A::Reified;
-
-    fn reify(self, context: &mut Cx) -> Self::Reified {
-        (*self).reify(context)
-    }
-}
-
-#[cfg(feature = "std")]
 impl<Cx, A: Send + BuildingBlock<Cx>> BuildingBlock<Cx> for Box<A> {
     fn handle_event(&mut self, event: Event) -> bool {
         self.as_mut().handle_event(event)
@@ -133,18 +85,6 @@ impl<Cx, A: Send + Pollable<Cx>> Pollable<Cx> for Box<A> {
         // TODO: Why is this unsafe?
         let inner = unsafe { self.as_mut().map_unchecked_mut(|v| &mut **v) };
         inner.poll(task_context, context)
-    }
-}
-
-impl<Cx, A, B> Reifiable<Cx> for (A, B)
-where
-    A: Reifiable<Cx>,
-    B: Reifiable<Cx>,
-{
-    type Reified = (A::Reified, B::Reified);
-
-    fn reify(self, context: &mut Cx) -> Self::Reified {
-        (self.0.reify(context), self.1.reify(context))
     }
 }
 
@@ -176,18 +116,7 @@ impl<Cx, A: Send + BuildingBlock<Cx>, B: Send + BuildingBlock<Cx>> Pollable<Cx> 
         let poll_a = pinned_a.poll(task_context, context);
         let poll_b = pinned_b.poll(task_context, context);
 
-        coalesce_polls(poll_a, poll_b)
-    }
-}
-
-impl<Cx, A, const N: usize> Reifiable<Cx> for [A; N]
-where
-    A: Reifiable<Cx>,
-{
-    type Reified = [A::Reified; N];
-
-    fn reify(self, _resources: &mut Cx) -> Self::Reified {
-        todo!()
+        any_of(poll_a, poll_b)
     }
 }
 

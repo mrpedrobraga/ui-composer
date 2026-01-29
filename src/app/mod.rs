@@ -20,7 +20,7 @@
 //! ## Backend-generic apps
 //!
 //! The [`Reifiable`] trait has a generic parameter `Context` — this means that you can implement
-//! the trait several times for the same type... which means the same application can be reified
+//! the trait several times for the same type... which means the same application can be Output
 //! by two or more distinct backends.
 //!
 //! For example, you could have the same application run on the GPU, or in the CPU with multiple threads,
@@ -30,7 +30,4 @@
 pub mod backend;
 pub mod building_blocks;
 pub mod input;
-
-use backend::Backend;
-use building_blocks::{BuildingBlock, Reifiable};
 

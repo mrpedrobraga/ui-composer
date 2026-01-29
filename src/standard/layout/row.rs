@@ -1,8 +1,6 @@
-use crate::layout::hints::ParentHints;
-use {
-    crate::layout::LayoutItem,
-    vek::{Extent2, Rect},
-};
+use crate::geometry::layout::hints::ParentHints;
+use vek::{Extent2, Rect};
+use crate::geometry::layout::LayoutItem;
 
 /// A horizontal, writing order stack of items.
 ///

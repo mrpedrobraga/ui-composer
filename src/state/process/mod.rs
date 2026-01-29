@@ -1,7 +1,7 @@
-use crate::app::building_blocks::Reifiable;
-use crate::layout::LayoutItem;
-use crate::layout::hints::ParentHints;
-use crate::state::signal_ext::coalesce_polls;
+use crate::app::building_blocks::reify::Reify;
+use crate::geometry::layout::LayoutItem;
+use crate::geometry::layout::hints::ParentHints;
+use crate::state::signal_ext::any_of;
 use core::task::Context;
 use vek::Extent2;
 use {
@@ -31,18 +31,18 @@ pub trait Pollable<Resources>: Send {
 pub struct SignalReactItemRe<Sig, Cx>
 where
     Sig: Signal,
-    Sig::Item: Reifiable<Cx>,
+    Sig::Item: Reify<Cx>,
 {
     #[pin]
     signal: Sig,
-    pub held_item: Option<<Sig::Item as Reifiable<Cx>>::Reified>,
+    pub held_item: Option<<Sig::Item as Reify<Cx>>::Output>,
 }
 
 impl<Sig, Cx> BuildingBlock<Cx> for SignalReactItemRe<Sig, Cx>
 where
     Sig: Signal + Send,
-    Sig::Item: Reifiable<Cx>,
-    <Sig::Item as Reifiable<Cx>>::Reified: Pollable<Cx>,
+    Sig::Item: Reify<Cx>,
+    <Sig::Item as Reify<Cx>>::Output: Pollable<Cx>,
 {
     fn handle_event(&mut self, event: Event) -> bool {
         match &mut self.held_item {
@@ -55,8 +55,8 @@ where
 impl<Sig, Cx> Pollable<Cx> for SignalReactItemRe<Sig, Cx>
 where
     Sig: Signal + Send,
-    Sig::Item: Reifiable<Cx>,
-    <Sig::Item as Reifiable<Cx>>::Reified: Pollable<Cx>,
+    Sig::Item: Reify<Cx>,
+    <Sig::Item as Reify<Cx>>::Output: Pollable<Cx>,
 {
     fn poll(self: Pin<&mut Self>, cx: &mut Context, resources: &mut Cx) -> Poll<Option<()>> {
         let SignalReactItemReProj { signal, held_item } = self.project();
@@ -79,7 +79,7 @@ where
             Poll::Pending
         };
 
-        coalesce_polls(signal_poll, inner_poll)
+        any_of(signal_poll, inner_poll)
     }
 }
 
@@ -98,14 +98,14 @@ pub struct SignalReactItem<Sig>(pub Sig)
 where
     Sig: Signal;
 
-impl<Cx, Sig> Reifiable<Cx> for SignalReactItem<Sig>
+impl<Cx, Sig> Reify<Cx> for SignalReactItem<Sig>
 where
     Sig: Signal + Send,
-    Sig::Item: Reifiable<Cx>,
+    Sig::Item: Reify<Cx>,
 {
-    type Reified = SignalReactItemRe<Sig, Cx>;
+    type Output = SignalReactItemRe<Sig, Cx>;
 
-    fn reify(self, #[expect(unused)] context: &mut Cx) -> Self::Reified {
+    fn reify(self, #[expect(unused)] context: &mut Cx) -> Self::Output {
         SignalReactItemRe {
             signal: self.0,
             held_item: None,
@@ -116,10 +116,10 @@ where
 impl<Sig, Cx> LayoutItem for SignalReactItemRe<Sig, Cx>
 where
     Sig: Signal + Send,
-    Sig::Item: Reifiable<Cx>,
-    <Sig::Item as Reifiable<Cx>>::Reified: LayoutItem,
+    Sig::Item: Reify<Cx>,
+    <Sig::Item as Reify<Cx>>::Output: LayoutItem,
 {
-    type Content = Option<<<Sig::Item as Reifiable<Cx>>::Reified as LayoutItem>::Content>;
+    type Content = Option<<<Sig::Item as Reify<Cx>>::Output as LayoutItem>::Content>;
 
     #[allow(deprecated)]
     fn get_natural_size(&self) -> Extent2<f32> {
@@ -159,14 +159,14 @@ pub struct FutureAwaitItem<Fut>(pub Fut)
 where
     Fut: Future;
 
-impl<Fut, Res> Reifiable<Res> for FutureAwaitItem<Fut>
+impl<Fut, Res> Reify<Res> for FutureAwaitItem<Fut>
 where
     Fut: Future + Send,
-    Fut::Output: Reifiable<Res>,
+    Fut::Output: Reify<Res>,
 {
-    type Reified = FutureAwaitItemRe<Fut, Res>;
+    type Output = FutureAwaitItemRe<Fut, Res>;
 
-    fn reify(self, #[expect(unused)] context: &mut Res) -> Self::Reified {
+    fn reify(self, #[expect(unused)] context: &mut Res) -> Self::Output {
         FutureAwaitItemRe {
             future: self.0,
             // Held item is empty up to the first poll...
@@ -181,17 +181,17 @@ where
 pub struct FutureAwaitItemRe<Fut, Cx>
 where
     Fut: Future,
-    Fut::Output: Reifiable<Cx>,
+    Fut::Output: Reify<Cx>,
 {
     #[pin]
     future: Fut,
-    pub held_item: Option<<Fut::Output as Reifiable<Cx>>::Reified>,
+    pub held_item: Option<<Fut::Output as Reify<Cx>>::Output>,
 }
 
 impl<Fut, Cx> BuildingBlock<Cx> for FutureAwaitItemRe<Fut, Cx>
 where
     Fut: Future + Send,
-    Fut::Output: Reifiable<Cx>,
+    Fut::Output: Reify<Cx>,
 {
     fn handle_event(&mut self, event: Event) -> bool {
         self.held_item
@@ -204,7 +204,7 @@ where
 impl<Fut, Cx> Pollable<Cx> for FutureAwaitItemRe<Fut, Cx>
 where
     Fut: Future + Send,
-    Fut::Output: Reifiable<Cx>,
+    Fut::Output: Reify<Cx>,
 {
     fn poll(self: Pin<&mut Self>, cx: &mut Context, resources: &mut Cx) -> Poll<Option<()>> {
         let FutureAwaitItemReProj { future, held_item } = self.project();
@@ -229,10 +229,10 @@ where
 impl<Fut, Cx> LayoutItem for FutureAwaitItemRe<Fut, Cx>
 where
     Fut: Future + Send,
-    Fut::Output: Reifiable<Cx>,
-    <Fut::Output as Reifiable<Cx>>::Reified: LayoutItem,
+    Fut::Output: Reify<Cx>,
+    <Fut::Output as Reify<Cx>>::Output: LayoutItem,
 {
-    type Content = Option<<<Fut::Output as Reifiable<Cx>>::Reified as LayoutItem>::Content>;
+    type Content = Option<<<Fut::Output as Reify<Cx>>::Output as LayoutItem>::Content>;
 
     #[allow(deprecated)]
     fn get_natural_size(&self) -> Extent2<f32> {

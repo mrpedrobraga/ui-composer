@@ -15,7 +15,7 @@ pub use crate::app::input::*;
 
 // MARK: Geometry and Layout
 pub use crate::geometry::*;
-pub use crate::layout::*;
+pub use crate::geometry::layout::*;
 
 // MARK: State
 pub use crate::state::*;
@@ -60,7 +60,7 @@ mod winit_wgpu {
 
         pub fn run2<N: Node + 'static>(node_tree_descriptor: N)
         where
-            N::Reified: Pollable<UIContext>,
+            N::Output: Pollable<UIContext>,
         {
             WgpuBackend::<N>::run(node_tree_descriptor);
         }

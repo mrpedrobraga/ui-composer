@@ -6,14 +6,14 @@ use winit::event_loop::ActiveEventLoop;
 use winit::window::WindowId;
 
 impl Node for () {
-    type Reified = ();
+    type Output = ();
 
     fn reify(
         self,
         _event_loop: &ActiveEventLoop,
         _gpu_resources: &WgpuResources,
         _renderers: WgpuRenderers,
-    ) -> Self::Reified {
+    ) -> Self::Output {
     }
 }
 
@@ -34,14 +34,14 @@ where
     A: Node,
     B: Node,
 {
-    type Reified = (A::Reified, B::Reified);
+    type Output = (A::Output, B::Output);
 
     fn reify(
         self,
         _event_loop: &ActiveEventLoop,
         _gpu_resources: &WgpuResources,
         _renderers: WgpuRenderers,
-    ) -> Self::Reified {
+    ) -> Self::Output {
         todo!("Figure out what to do with tuples of nodes...");
         // (
         //     self.0.reify(event_loop, gpu_resources, renderers),

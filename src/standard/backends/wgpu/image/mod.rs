@@ -7,7 +7,7 @@ use crate::standard::backends::wgpu::pipeline::{
 };
 use crate::standard::backends::wgpu::render_target::{Render, RenderBuildingBlock, RenderTarget};
 use crate::standard::backends::winitwgpu::backend::{Node, NodeRe};
-use crate::layout::hints::ParentHints;
+use crate::geometry::layout::hints::ParentHints;
 use crate::state::process::Pollable;
 use image::{ImageBuffer, Rgba};
 use std::pin::Pin;
@@ -23,8 +23,8 @@ use {
     winit::event::WindowEvent,
 };
 use crate::app::input::Event;
-use crate::layout::flow::CartesianFlowDirection;
-use crate::layout::LayoutItem;
+use crate::geometry::layout::flow::CartesianFlowDirection;
+use crate::geometry::layout::LayoutItem;
 
 #[allow(non_snake_case)]
 pub fn Image<A>(rect: Rect<f32, f32>, mut item: A) -> ImageNode<A::Content>
@@ -52,14 +52,14 @@ impl<Item> Node for ImageNode<Item>
 where
     Item: Render + Send + 'static,
 {
-    type Reified = ImageNodeRe<Item::Reified>;
+    type Output = ImageNodeRe<Item::Output>;
 
     fn reify(
         self,
         _event_loop: &winit::event_loop::ActiveEventLoop,
         gpu_resources: &WgpuResources,
         renderers: WgpuRenderers,
-    ) -> Self::Reified {
+    ) -> Self::Output {
         // TODO: Maybe store this?
         let mut reify_resources = UIContext { renderers };
         let content = self.content.reify(&mut reify_resources);
@@ -71,7 +71,7 @@ where
             render_buffers: RendererBuffers {
                 graphics_render_buffers: GraphicsPipelineBuffers::new(
                     gpu_resources,
-                    Item::Reified::QUAD_COUNT,
+                    Item::Output::QUAD_COUNT,
                 ),
                 _text_render_buffers: TextPipelineResources::new(
                     gpu_resources,

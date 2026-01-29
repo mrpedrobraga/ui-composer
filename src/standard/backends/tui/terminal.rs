@@ -7,10 +7,10 @@ use {
         backend::{Node, NodeRe},
         pipeline::RenderTui,
     },
-    crate::app::input::{Event},
-    crate::layout::LayoutItem,
+    crate::app::input::Event,
     vek::Vec2,
 };
+use crate::geometry::layout::LayoutItem;
 
 #[allow(non_snake_case)]
 pub fn Terminal<A>(item: A) -> TerminalNodeDescriptor<A>
@@ -27,9 +27,9 @@ pub struct TerminalNodeDescriptor<N> {
 }
 
 impl<N: LayoutItem + Send + Sync> Node for TerminalNodeDescriptor<N> {
-    type Reified = TerminalNode<N>;
+    type Output = TerminalNode<N>;
 
-    fn reify(self) -> Self::Reified {
+    fn reify(self) -> Self::Output {
         TerminalNode { item: self.item }
     }
 }

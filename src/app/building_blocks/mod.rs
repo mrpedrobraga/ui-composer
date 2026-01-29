@@ -22,7 +22,7 @@
 //! ```
 //!
 //! The descriptors are composed together, usually with functions,
-//! then they are _reified_ into Primitives.
+//! then they are _Output_ into Primitives.
 //!
 //! [Signal]s themselves are primitives and have the ability
 //! to replace parts of the "functionality tree" on the fly.
@@ -30,23 +30,11 @@
 //! This functionality is what powers, for example, [LayoutItem]'s ability to
 //! re-render its items on demand.
 
-/// A trait for a value that describes a [BuildingBlock].
-///
-/// This trait exists because [BuildingBlock]s might require references
-/// to runtime resources (buffers and stuff) that the user does not
-/// have access when building their standard.
-pub trait Reifiable<Context> {
-    type Reified: BuildingBlock<Context>;
-
-    /// Yields the [BuildingBlock] this descriptor describes.
-    fn reify(self, context: &mut Context) -> Self::Reified;
-}
-
-use super::input::Event;
 use crate::state::process::Pollable;
-#[allow(unused)]
-use {super::super::layout::LayoutItem, futures_signals::signal::Signal};
+use super::input::Event;
 
+pub mod emit;
+pub mod reify;
 pub mod implementations;
 
 pub trait BuildingBlock<Resources>: Pollable<Resources> + Send {

@@ -1,5 +1,6 @@
-use crate::layout::hints::ParentHints;
-use {crate::layout::LayoutItem, vek::Extent2};
+use crate::geometry::layout::hints::ParentHints;
+use vek::Extent2;
+use crate::geometry::layout::LayoutItem;
 
 /// A container that scales its single item to a bigger size.
 /// You **can not** make the minimum size _lower_ than the original, however.

@@ -1,6 +1,6 @@
 //! A render target is something that graphics, text, etc., can be rendered to.
 
-use crate::app::building_blocks::Reifiable;
+use crate::app::building_blocks::reify::Reify;
 use crate::standard::backends::wgpu::backend::WgpuResources;
 use crate::standard::backends::wgpu::pipeline::graphics::RenderGraphicDescriptor;
 use crate::standard::backends::wgpu::pipeline::{RendererBuffers, UIContext, WgpuRenderers};
@@ -32,12 +32,12 @@ pub trait RenderTarget {
 /// Trait that describes an item that can be rendered with this pipeline.
 pub trait RenderBuildingBlock: BuildingBlock<UIContext> + RenderGraphic + RenderText {}
 impl<A> RenderBuildingBlock for A where A: BuildingBlock<UIContext> + RenderGraphic + RenderText {}
-/// Trait that describes an item that can be reified into a [RenderBuildingBlock] primitive.
-pub trait Render: RenderGraphicDescriptor<UIContext, Reified: RenderBuildingBlock> {}
+/// Trait that describes an item that can be Output into a [RenderBuildingBlock] primitive.
+pub trait Render: RenderGraphicDescriptor<UIContext, Output: RenderBuildingBlock> {}
 
 impl<A> Render for A
 where
-    A: Reifiable<UIContext> + RenderGraphicDescriptor<UIContext>,
-    <A as Reifiable<UIContext>>::Reified: RenderBuildingBlock,
+    A: Reify<UIContext> + RenderGraphicDescriptor<UIContext>,
+    <A as Reify<UIContext>>::Output: RenderBuildingBlock,
 {
 }

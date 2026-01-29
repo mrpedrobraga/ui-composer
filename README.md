@@ -14,7 +14,7 @@ Add `ui-composer` as a git dependency from this repository. ~~In the future, you
 to `cargo add ui-composer`.~~
 
 ```rust
-use ui_composer::{prelude::*, std::*};
+use ui_composer::{prelude::*, standard::*};
 
 fn main() {
     UIComposer::run(Window(Label("Hello, World!")))

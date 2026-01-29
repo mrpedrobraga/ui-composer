@@ -6,8 +6,6 @@ use core::{
 use futures_signals::signal::Signal;
 use pin_project::pin_project;
 
-pub mod example;
-
 /// The layer of the application that stands between the app and the outside world.
 pub trait Backend {
     /// The type of the Node tree this Backend executes.

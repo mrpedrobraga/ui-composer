@@ -2,9 +2,9 @@
 
 use crate::app::building_blocks::BuildingBlock;
 use crate::standard::backends::wgpu::pipeline::text::{Text, TextItem};
-use crate::layout::hints::ParentHints;
+use crate::geometry::layout::hints::ParentHints;
 use crate::app::input::Event;
-use crate::layout::LayoutItem;
+use crate::geometry::layout::LayoutItem;
 use crate::state::process::Pollable;
 use vek::Rgb;
 

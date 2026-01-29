@@ -34,8 +34,7 @@ At the moment it supports:
 No-std is planned but not yet available.
 */
 
-use standard::backends;
-use standard::backends::{tui, winitwgpu};
+pub use standard::backends;
 
 /// Module for the app "orchestration" functionality of UI composer,
 /// as it pertains to generic user interface.
@@ -46,9 +45,6 @@ pub mod app;
 
 /// Module for graphical mathematics utilities.
 pub mod geometry;
-
-/// Module for layout functions and utilities.
-pub mod layout;
 
 /// Module for state management.
 pub mod state;

@@ -37,14 +37,14 @@ pub mod implementations;
 /// TODO: Delete this and use [BuildingBlock] instead.
 #[diagnostic::on_unimplemented(message = "This value is not an app Node.")]
 pub trait Node: Send {
-    /// The type this node descriptor generates when reified.
-    type Reified: NodeRe;
+    /// The type this node descriptor generates when Output.
+    type Output: NodeRe;
     fn reify(
         self,
         event_loop: &ActiveEventLoop,
         gpu_resources: &WgpuResources,
         renderers: WgpuRenderers,
-    ) -> Self::Reified;
+    ) -> Self::Output;
 }
 
 /// A main node in the app tree.
@@ -61,7 +61,7 @@ pub trait NodeRe: BuildingBlock<AppContext> {
 }
 
 #[expect(type_alias_bounds)]
-type SharedWWBackend<A: Node<Reified: Pollable<UIContext>>> = Arc<Mutex<WinitWgpuBackend<A>>>;
+type SharedWWBackend<A: Node<Output: Pollable<UIContext>>> = Arc<Mutex<WinitWgpuBackend<A>>>;
 
 /// The [`ApplicationHandler`] that sits between [`winit`]
 /// and UI Composer.
@@ -75,7 +75,7 @@ pub struct WinitWgpuBackend<A: Node>(WgpuBackend<A>);
 
 impl<A> Backend for WinitWgpuBackend<A>
 where
-    A: Node<Reified: Pollable<AppContext>> + 'static,
+    A: Node<Output: Pollable<AppContext>> + 'static,
 {
     type Tree = A;
 
@@ -187,7 +187,7 @@ impl<A: Node> WgpuBackend<A> {
 
 impl<A> WinitWgpuBackend<A>
 where
-    A: Node<Reified: Pollable<AppContext>> + 'static,
+    A: Node<Output: Pollable<AppContext>> + 'static,
 {
     async fn create(
         event_loop: &ActiveEventLoop,

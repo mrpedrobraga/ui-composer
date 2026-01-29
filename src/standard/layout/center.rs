@@ -1,8 +1,6 @@
-use crate::layout::hints::ParentHints;
-use {
-    crate::layout::LayoutItem,
-    vek::{Extent2, Rect},
-};
+use crate::geometry::layout::hints::ParentHints;
+use vek::{Extent2, Rect};
+use crate::geometry::layout::LayoutItem;
 
 /// A container that, as it is reshaped, keeps its item at its natural size and centered in the available space.
 pub fn Center<A>(item: A) -> CenterContainer<A>

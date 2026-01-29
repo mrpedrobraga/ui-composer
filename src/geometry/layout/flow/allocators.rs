@@ -4,7 +4,6 @@
 //! These functions are supposed to be incredibly optimised for inlining and
 //! no_std environments.
 
-use crate::geometry::num_traits::{Float, NumCast, Zero};
 use arrayvec::ArrayVec;
 use cgmath::BaseFloat;
 use vek::{Extent2, Rect, Vec2};

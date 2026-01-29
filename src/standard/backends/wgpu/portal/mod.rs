@@ -2,8 +2,8 @@
 use vek::{Extent2, Rgb};
 
 use crate::standard::backends::wgpu::pipeline::graphics::graphic::Graphic;
-use crate::layout::LayoutItem;
-use crate::layout::hints::ParentHints;
+use crate::geometry::layout::LayoutItem;
+use crate::geometry::layout::hints::ParentHints;
 
 /// A node that describes the existence of a Portal in the UI tree.
 ///

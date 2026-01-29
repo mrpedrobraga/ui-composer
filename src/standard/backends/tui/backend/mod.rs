@@ -38,7 +38,7 @@ use {
 #[pin_project(project=TUIBackendProj)]
 pub struct TUIBackend<N: Node> {
     #[pin]
-    pub node_tree: Arc<Mutex<N::Reified>>,
+    pub node_tree: Arc<Mutex<N::Output>>,
 }
 
 impl<N> Backend for TUIBackend<N>
@@ -76,7 +76,7 @@ impl<N> TUIBackend<N>
 where
     N: Node,
 {
-    async fn app_loop(mut node_tree: N::Reified) -> std::io::Result<()> {
+    async fn app_loop(mut node_tree: N::Output) -> std::io::Result<()> {
         let mut stdout = stdout();
         stdout
             .execute(EnableMouseCapture)?
@@ -130,7 +130,7 @@ where
     }
 
     #[allow(unused)]
-    fn redraw<C>(tree: &N::Reified, canvas: &mut C, rect: Rect<u16, u16>)
+    fn redraw<C>(tree: &N::Output, canvas: &mut C, rect: Rect<u16, u16>)
     where
         C: Canvas<Pixel = Rgba<u8>>,
     {
@@ -143,9 +143,9 @@ where
 ///
 /// In this module there is only one node: "Terminal".
 pub trait Node: Send {
-    /// The type this node descriptor generates when reified.
-    type Reified: NodeRe;
-    fn reify(self) -> Self::Reified;
+    /// The type this node descriptor generates when Output.
+    type Output: NodeRe;
+    fn reify(self) -> Self::Output;
 }
 
 /// A main node in the app tree.

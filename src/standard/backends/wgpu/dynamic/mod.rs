@@ -1,4 +1,4 @@
-use crate::app::building_blocks::Reifiable;
+use crate::app::building_blocks::reify::Reify;
 use crate::standard::backends::wgpu::pipeline::RendererBuffers;
 use crate::standard::backends::wgpu::pipeline::graphics::{
     RenderGraphic, RenderGraphicDescriptor, graphic::Graphic,
@@ -42,14 +42,14 @@ where
     }
 }
 
-impl<Res, Sig> Reifiable<Res> for VecItemsDescriptor<Sig>
+impl<Res, Sig> Reify<Res> for VecItemsDescriptor<Sig>
 where
     Sig: SignalVec + Send,
     Sig::Item: BuildingBlock<Res>,
 {
-    type Reified = VecItem<Sig>;
+    type Output = VecItem<Sig>;
 
-    fn reify(self, _resources: &mut Res) -> Self::Reified {
+    fn reify(self, _resources: &mut Res) -> Self::Output {
         todo!()
     }
 }

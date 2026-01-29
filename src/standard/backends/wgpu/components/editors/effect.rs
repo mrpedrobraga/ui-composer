@@ -3,12 +3,12 @@ use futures_signals::signal::{Mutable, SignalExt};
 use vek::Rgb;
 
 use crate::standard::backends::wgpu::pipeline::graphics::graphic::Graphic;
-use crate::layout::hints::ParentHints;
+use crate::geometry::layout::hints::ParentHints;
 use crate::state::process::React;
 use crate::{
     items_internal as items,
 };
-use crate::layout::{ItemBox, Resizable};
+use crate::geometry::layout::{ItemBox, Resizable};
 use crate::standard::backends::winitwgpu::prelude::UI;
 use crate::standard::prelude::{Hover, Tap};
 use crate::state::Effect;

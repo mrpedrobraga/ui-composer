@@ -1,4 +1,4 @@
-use crate::app::building_blocks::Reifiable;
+use crate::app::building_blocks::reify::Reify;
 use crate::standard::backends::wgpu::backend::WgpuResources;
 use crate::standard::backends::wgpu::render_target::{RenderBuildingBlock, RenderTarget};
 use wgpu::{CompareFunction, DepthBiasState, DepthStencilState, StencilState, TextureFormat};
@@ -19,12 +19,12 @@ pub mod graphic;
 pub mod implementations;
 
 /// Descriptor for some [RenderGraphic].
-pub trait RenderGraphicDescriptor<Resources>: Reifiable<Resources, Reified: RenderGraphic> {
+pub trait RenderGraphicDescriptor<Resources>: Reify<Resources, Output: RenderGraphic> {
     /// Gets the rectangle this primitive occupies, for rendering purposes.
     fn get_render_rect(&self) -> Option<Rect<f32, f32>>;
 }
 
-/// Trait for a [Reifiable] that can render graphics using this pipeline.
+/// Trait for a [Reify] that can render graphics using this pipeline.
 /// There's no trait bounds on this trait for convenience.
 pub trait RenderGraphic {
     /// The number of quads this primitive pushes to render.

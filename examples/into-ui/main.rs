@@ -1,6 +1,5 @@
-use ui_composer::standard::prelude::UIComposer;
-use ui_composer::standard::backends::wgpu::components::{Label, TextLayoutItem};
-use ui_composer::prelude::Window;
+use ui_composer::standard::backends::wgpu::components::*;
+use ui_composer::standard::prelude::*;
 
 fn main() {
     UIComposer::run(Window(

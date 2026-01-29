@@ -7,22 +7,22 @@
 //!
 //! ## LayoutItem
 //!
-//! In UI Composer, you draw graphics by producing [`Reifiable`]. Technically speaking,
+//! In UI Composer, you draw graphics by producing [`Reify`]. Technically speaking,
 //! you can do anything with them — as you can place your graphics anywhere... But if
 //! you write a function that produces primitives yourself, you don't have access to
 //! internal variables that might be helpful for laying out (window size, hierarchy, theme, etc.),
 //! what we call "parent hints";
 //!
 //! What you can do though is create a higher order function: a function that returns a closure
-//! which in turn produces [`Reifiable`]s, those which can depend on internal data.
+//! which in turn produces [`Reify`]s, those which can depend on internal data.
 //!
 //! ```rust
 //! # #![allow(non_snake_case)]
-//! # use ui_composer::app::building_blocks::Reifiable;//!
+//! # use ui_composer::app::building_blocks::reify::Reify;//!
 //! # use ui_composer::standard::backends::wgpu::pipeline::text::Text;
 //! # use vek::Rgb;
 //! # use ui_composer::standard::backends::wgpu::pipeline::UIContext;
-//! # use ui_composer::layout::hints::ParentHints;
+//! # use ui_composer::geometry::layout::hints::ParentHints;
 //!
 //! // Like this.
 //! // 'text' here is like a "prop" of your component. It's readily available
@@ -30,7 +30,7 @@
 //! fn MyText<F, R>(text: String) -> F
 //!     where
 //!         F: Fn(ParentHints) -> R,
-//!         R: Reifiable<UIContext> {
+//!         R: Reify<UIContext> {
 //!
 //!     // hints is some internal context that's only gonna be available later.
 //!     |hints| {
@@ -62,7 +62,7 @@
 //!
 //! Some utility functions for calculating layouts are in the [`flow`] module.
 
-use crate::app::building_blocks::Reifiable;
+use crate::app::building_blocks::reify::Reify;
 pub use flow::CoordinateSystemProvider;
 use hints::{ChildHints, ParentHints};
 use std::marker::PhantomData;
@@ -76,7 +76,7 @@ pub mod flow;
 pub mod hints;
 pub mod implementations;
 
-/// The closure-like trait that produces [`Reifiable`]s.
+/// The closure-like trait that produces [`Reify`]s.
 #[diagnostic::on_unimplemented(
     message = "{Self} is not a `LayoutItem` thus can not be used...",
     label = "...in this context...",
@@ -152,7 +152,7 @@ where
 impl<F, Items, Res> ItemBox<F, Items, Res>
 where
     F: FnMut(ParentHints) -> Items + Send,
-    Items: Reifiable<Res>,
+    Items: Reify<Res>,
 {
     /// Creates a new resizable [`LayoutItem`] that redraws using this factory function.
     pub fn new(factory: F) -> Self {

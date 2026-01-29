@@ -16,7 +16,7 @@ where
 {
     /// The node of the UI tree containing the entirety of the app, UI and behaviour.
     #[pin]
-    pub tree: Arc<Mutex<A::Reified>>,
+    pub tree: Arc<Mutex<A::Output>>,
     pub gpu_resources: WgpuResources,
 }
 
@@ -31,7 +31,7 @@ pub struct WgpuResources {
 
 impl<A> Backend for WgpuBackend<A>
 where
-    A: Node<Reified: Pollable<AppContext>>,
+    A: Node<Output: Pollable<AppContext>>,
 {
     type Tree = A;
 

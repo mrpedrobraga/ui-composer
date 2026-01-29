@@ -30,7 +30,7 @@
 //! This should be your last resort — it's absolute flow. Use it only for things that absolutely
 //! require things to be shown the same way for everybody. Compasses, drawings, etc.
 
-use crate::layout::hints::ParentHints;
+use crate::geometry::layout::hints::ParentHints;
 use cgmath::{BaseFloat, Matrix4};
 use vek::{Mat3, Vec2};
 

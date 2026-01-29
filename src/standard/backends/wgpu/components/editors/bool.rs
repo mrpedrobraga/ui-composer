@@ -2,7 +2,7 @@
 use crate::standard::backends::wgpu::pipeline::graphics::graphic::Graphic;
 use crate::standard::backends::wgpu::render_target::Render;
 use crate::items_internal as items;
-use crate::layout::hints::ParentHints;
+use crate::geometry::layout::hints::ParentHints;
 use crate::state::process::SignalReactItem;
 use crate::{
     state::animation::spring::Spring,
@@ -10,7 +10,7 @@ use crate::{
 use futures_signals::signal::{Mutable, SignalExt};
 use vek::{Extent2, Lerp, Rect, Rgb, Vec4};
 use crate::geometry::RectExt;
-use crate::layout::{ItemBox, LayoutItem, Resizable};
+use crate::geometry::layout::{ItemBox, LayoutItem, Resizable};
 use crate::standard::backends::winitwgpu::prelude::UI;
 use crate::standard::prelude::Tap;
 

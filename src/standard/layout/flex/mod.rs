@@ -1,10 +1,10 @@
-use crate::layout::flow::CartesianFlowDirection::{
+use crate::geometry::layout::flow::CartesianFlowDirection::{
     BottomToTop, LeftToRight, RightToLeft, TopToBottom,
 };
-use crate::layout::flow::allocators::weighted_division_with_minima;
-use crate::layout::hints::ParentHints;
-use crate::layout::flow::{CartesianFlowDirection, FlowDirection, WritingFlowDirection};
-use crate::layout::{CoordinateSystemProvider, LayoutItem};
+use crate::geometry::layout::flow::allocators::weighted_division_with_minima;
+use crate::geometry::layout::hints::ParentHints;
+use crate::geometry::layout::flow::{CartesianFlowDirection, FlowDirection, WritingFlowDirection};
+use crate::geometry::layout::{CoordinateSystemProvider, LayoutItem};
 use arrayvec::ArrayVec;
 use core::iter::{Chain, Once, once};
 use vek::{Extent2, Rect};
