@@ -1,5 +1,5 @@
 use crate::app::backend::AppContext;
-use crate::standard::runners::winitwgpu::runner::Node;
+use crate::standard::runners::winitwgpu::runner::Element;
 use crate::app::backend::Runner;
 use crate::state::process::Pollable;
 use pin_project::pin_project;
@@ -12,7 +12,7 @@ use std::task::{Context, Poll};
 #[pin_project(project=WGPUBackendProj)]
 pub struct WgpuBackend<A>
 where
-    A: Node,
+    A: Element,
 {
     /// The node of the UI tree containing the entirety of the app, UI and behaviour.
     #[pin]
@@ -31,7 +31,7 @@ pub struct WgpuResources {
 
 impl<A> Runner for WgpuBackend<A>
 where
-    A: Node<Output: Pollable<AppContext>>,
+    A: Element<Output: Pollable<AppContext>>,
 {
     type App = A;
 

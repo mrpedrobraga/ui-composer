@@ -5,7 +5,7 @@ use crate::standard::runners::wgpu::pipeline::{
     RendererBuffers, UIContext, WgpuRenderers, graphics::GraphicsPipelineBuffers,
 };
 use crate::standard::runners::wgpu::render_target::{Render, RenderBuildingBlock, RenderTarget};
-use crate::standard::runners::winitwgpu::runner::{Node, NodeRe};
+use crate::standard::runners::winitwgpu::runner::{Element, RuntimeElement};
 use crate::geometry::layout::hints::ParentHints;
 use crate::state::process::Pollable;
 use image::{ImageBuffer, Rgba};
@@ -48,7 +48,7 @@ pub struct ImageNode<Item> {
     content: Item,
 }
 
-impl<Item> Node for ImageNode<Item>
+impl<Item> Element for ImageNode<Item>
 where
     Item: Render + Send + 'static,
 {
@@ -101,7 +101,7 @@ where
     }
 }
 
-impl<A> NodeRe for ImageNodeRe<A>
+impl<A> RuntimeElement for ImageNodeRe<A>
 where
     A: RenderBuildingBlock,
 {

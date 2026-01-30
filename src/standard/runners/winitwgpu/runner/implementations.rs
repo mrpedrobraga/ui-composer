@@ -1,4 +1,4 @@
-use super::{Node, NodeRe};
+use super::{Element, RuntimeElement};
 use crate::standard::runners::wgpu::backend::WgpuResources;
 use crate::standard::runners::wgpu::pipeline::WgpuRenderers;
 use winit::event::WindowEvent;
@@ -7,7 +7,7 @@ use winit::window::WindowId;
 use crate::app::backend::AppContext;
 use crate::state::process::Pollable;
 
-impl Node for () {
+impl Element for () {
     type Output = ();
 
     fn reify(
@@ -19,7 +19,7 @@ impl Node for () {
     }
 }
 
-impl NodeRe for () {
+impl RuntimeElement for () {
     fn setup(&mut self, _gpu_resources: &WgpuResources) {}
 
     fn handle_window_event(
@@ -31,10 +31,10 @@ impl NodeRe for () {
     }
 }
 
-impl<A, B> Node for (A, B)
+impl<A, B> Element for (A, B)
 where
-    A: Node,
-    B: Node,
+    A: Element,
+    B: Element,
 {
     type Output = (A::Output, B::Output);
 
@@ -52,10 +52,10 @@ where
     }
 }
 
-impl<A, B> NodeRe for (A, B)
+impl<A, B> RuntimeElement for (A, B)
 where
-    A: NodeRe + Pollable<AppContext>,
-    B: NodeRe + Pollable<AppContext>,
+    A: RuntimeElement + Pollable<AppContext>,
+    B: RuntimeElement + Pollable<AppContext>,
 {
     fn setup(&mut self, gpu_resources: &WgpuResources) {
         self.0.setup(gpu_resources);

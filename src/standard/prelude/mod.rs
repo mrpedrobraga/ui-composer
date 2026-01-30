@@ -46,7 +46,7 @@ mod winit_wgpu {
     use crate::app::backend::Runner as _;
     use crate::standard::runners::wgpu::backend::WgpuBackend;
     use crate::standard::runners::wgpu::pipeline::UIContext;
-    use crate::standard::runners::winitwgpu::runner::{Node, WinitWgpuRunner};
+    use crate::standard::runners::winitwgpu::runner::{Element, WinitWgpuRunner};
     use crate::standard::prelude::UIComposer;
     use crate::state::process::Pollable;
 
@@ -54,11 +54,11 @@ mod winit_wgpu {
         /// Creates and runs a new app in the default runner for the selected target.
         /// For cross-platform compatibility, this should be called in the main thread,
         /// and only once in your program.
-        pub fn run<N: Node + 'static>(node_tree_descriptor: N) {
+        pub fn run<N: Element + 'static>(node_tree_descriptor: N) {
             WinitWgpuRunner::<N>::run(node_tree_descriptor);
         }
 
-        pub fn run2<N: Node + 'static>(node_tree_descriptor: N)
+        pub fn run2<N: Element + 'static>(node_tree_descriptor: N)
         where
             N::Output: Pollable<UIContext>,
         {

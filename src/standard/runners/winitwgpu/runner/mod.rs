@@ -3,15 +3,16 @@
 use crate::app::backend::AppContext;
 use crate::standard::runners::wgpu::backend::{WgpuBackend, WgpuResources};
 use crate::standard::runners::wgpu::pipeline::graphics::OrchestraRenderer;
-use crate::standard::runners::wgpu::pipeline::{UIContext, WgpuRenderers, text::TextRenderer};
+use crate::standard::runners::wgpu::pipeline::{text::TextRenderer, UIContext, WgpuRenderers};
 use crate::state::process::Pollable;
 use pin_project::pin_project;
 use std::sync::Mutex;
+use wgpu::{Adapter, Device, Queue};
 use winit::event::{DeviceEvent, DeviceId};
 use winit::event_loop::{ControlFlow, EventLoop};
 use {
     super::window::WindowRenderTarget,
-    crate::app::backend::{Runner, futures::AsyncExecutor},
+    crate::app::backend::{futures::AsyncExecutor, Runner},
     futures_signals::signal::{SignalExt, SignalFuture},
     std::{
         ops::DerefMut,
@@ -24,27 +25,57 @@ use {
         application::ApplicationHandler,
         event::WindowEvent,
         event_loop::ActiveEventLoop,
-        window::{WindowAttributes, WindowId},
+        window::WindowId,
     },
 };
 
 pub mod implementations;
 
-
 #[pin_project(project=WithWinitProj)]
-pub struct WinitWgpuRunner<A: Node>(WgpuBackend<A>);
+pub struct WinitWgpuRunner<A: Element>(WgpuBackend<A>);
 
 /// The [`ApplicationHandler`] that sits between [`winit`]
 /// and UI Composer.
-pub struct WinitWGPUApplicationHandler<A: Node> {
+pub struct WinitWGPUApplicationHandler<A: Element> {
     tree_descriptor: Option<A>,
     backend: Option<SharedWWBackend<A>>,
 }
 
+/// Trait that represents a descriptor main node of the app tree.
+/// These nodes are used for creating windows and processes and rendering contexts.
+///
+/// TODO: Delete this and use [BuildingBlock] instead.
+#[diagnostic::on_unimplemented(message = "This value is not an app Node.")]
+pub trait Element: Send {
+    /// The type this node descriptor generates when Output.
+    type Output: RuntimeElement;
+    fn reify(
+        self,
+        event_loop: &ActiveEventLoop,
+        gpu_resources: &WgpuResources,
+        renderers: WgpuRenderers,
+    ) -> Self::Output;
+}
+
+/// A main node in the app tree.
+pub trait RuntimeElement: Pollable<AppContext> {
+    fn setup(&mut self, gpu_resources: &WgpuResources);
+
+    /// Handles an event and cascades it down its children.
+    fn handle_window_event(
+        &mut self,
+        gpu_resources: &mut WgpuResources,
+        window_id: WindowId,
+        event: WindowEvent,
+    );
+}
+
+#[expect(type_alias_bounds)]
+type SharedWWBackend<A: Element<Output: Pollable<UIContext>>> = Arc<Mutex<WinitWgpuRunner<A>>>;
 
 impl<A> Runner for WinitWgpuRunner<A>
 where
-    A: Node<Output: Pollable<AppContext>> + 'static,
+    A: Element<Output: Pollable<AppContext>> + 'static,
 {
     type App = A;
 
@@ -77,11 +108,11 @@ where
 
 impl<A> ApplicationHandler for WinitWGPUApplicationHandler<A>
 where
-    A: Node + Send + 'static,
+    A: Element + Send + 'static,
 {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         if self.backend.is_none() {
-            let (backend, processor) = futures::executor::block_on(WinitWgpuRunner::<_>::create(
+            let (backend, processor) = futures::executor::block_on(create_winit_runner(
                 event_loop,
                 self.tree_descriptor
                     .take()
@@ -97,8 +128,13 @@ where
         }
 
         if let Some(backend) = &mut self.backend {
-            let mut backend = backend.lock().unwrap();
-            backend.handle_resumed();
+            let backend = backend.lock().unwrap();
+            backend
+                .0
+                .tree
+                .lock()
+                .unwrap()
+                .setup(&backend.0.gpu_resources);
         }
     }
 
@@ -109,8 +145,12 @@ where
         event: WindowEvent,
     ) {
         if let Some(backend) = &mut self.backend {
-            let mut backend = backend.lock().unwrap();
-            backend.handle_window_event(window_id, event);
+            let backend = &mut backend.lock().unwrap().0;
+            backend.tree.lock().unwrap().handle_window_event(
+                &mut backend.gpu_resources,
+                window_id,
+                event,
+            )
         }
     }
 
@@ -124,173 +164,112 @@ where
     }
 }
 
-impl<A: Node> WgpuBackend<A> {
-    // Little hack to get a "dummy" texture format.
-    // This should go unused hopefully!
-    #[allow(unused)]
-    fn get_dummy_texture_format(
-        event_loop: &ActiveEventLoop,
-        instance: &wgpu::Instance,
-        device: &wgpu::Device,
-        adapter: &wgpu::Adapter,
-    ) -> TextureFormat {
-        let dummy_window = event_loop
-            .create_window(WindowAttributes::default())
-            .expect("Failure to create dummy window");
-        let dummy_surface = instance
-            .create_surface(dummy_window)
-            .expect("Failure to get dummy window surface.");
-        dummy_surface.configure(
-            device,
-            &dummy_surface
-                .get_default_config(adapter, 20, 20)
-                .expect("No valid config between this surface and the adapter."),
-        );
-        let dummy_texture = dummy_surface
-            .get_current_texture()
-            .expect("Failure to get dummy texture.");
-
-        dummy_texture.texture.format()
-    }
-}
-
-impl<A> WinitWgpuRunner<A>
+async fn create_winit_runner<A>(
+    event_loop: &ActiveEventLoop,
+    tree_descriptor: A,
+) -> (
+    Arc<Mutex<WinitWgpuRunner<A>>>,
+    SignalFuture<AsyncExecutor<WinitWgpuRunner<A>>>,
+)
 where
-    A: Node<Output: Pollable<AppContext>> + 'static,
+    A: Element<Output: Pollable<AppContext>> + 'static,
 {
-    async fn create(
-        event_loop: &ActiveEventLoop,
-        tree_descriptor: A,
-    ) -> (Arc<Mutex<Self>>, SignalFuture<AsyncExecutor<Self>>) {
-        let instance = wgpu::Instance::default();
-        let adapter = instance
-            .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::default(),
-                force_fallback_adapter: false,
-                compatible_surface: None,
-            })
-            .await
-            .unwrap();
+    let gpu_resources = create_gpu_resources().await;
+    let renderers = create_renderers(&gpu_resources.adapter, &gpu_resources.device, &gpu_resources.queue);
+    let tree = tree_descriptor.reify(event_loop, &gpu_resources, renderers);
 
-        let (device, queue) = adapter
-            .request_device(&wgpu::DeviceDescriptor {
-                label: None,
-                required_features: wgpu::Features::empty(),
-                required_limits: wgpu::Limits::downlevel_webgl2_defaults()
-                    .using_resolution(adapter.limits()),
-                memory_hints: MemoryHints::default(),
-                // TODO: Add something here in debug mode.
-                trace: Default::default(),
-            })
-            .await
-            .unwrap();
+    let backend = WgpuBackend {
+        tree: Arc::new(Mutex::new(tree)),
+        gpu_resources,
+    };
 
-        // TODO: Get the texture format from a render target and not guess it.
-        let dummy_format = TextureFormat::Bgra8UnormSrgb; //;get_dummy_texture_format(event_loop, &instance, &device, &adapter);
+    create_backend_effect_executors(backend)
+}
 
-        let render_target_formats = &[Some(wgpu::ColorTargetState {
-            format: dummy_format,
-            blend: Some(wgpu::BlendState {
-                color: wgpu::BlendComponent {
-                    src_factor: wgpu::BlendFactor::SrcAlpha,
-                    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                    operation: wgpu::BlendOperation::Add,
-                },
-                alpha: wgpu::BlendComponent::OVER,
-            }),
-            write_mask: wgpu::ColorWrites::ALL,
-        })];
+async fn create_gpu_resources() -> WgpuResources {
+    let instance = wgpu::Instance::default();
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::default(),
+            force_fallback_adapter: false,
+            compatible_surface: None,
+        })
+        .await
+        .unwrap();
 
-        let graphics_pipeline = OrchestraRenderer::singleton::<WindowRenderTarget>(
-            &adapter,
-            &device,
-            &queue,
-            render_target_formats,
-        );
+    let (device, queue) = adapter
+        .request_device(&wgpu::DeviceDescriptor {
+            label: None,
+            required_features: wgpu::Features::empty(),
+            required_limits: wgpu::Limits::downlevel_webgl2_defaults()
+                .using_resolution(adapter.limits()),
+            memory_hints: MemoryHints::default(),
+            // TODO: Add something here in debug mode.
+            trace: Default::default(),
+        })
+        .await
+        .unwrap();
 
-        let text_pipeline = TextRenderer::singleton::<WindowRenderTarget>(
-            &adapter,
-            &device,
-            &queue,
-            render_target_formats,
-        );
-
-        let renderers = WgpuRenderers {
-            graphics_renderer: graphics_pipeline,
-            text_renderer: text_pipeline,
-        };
-
-        let gpu_resources = WgpuResources {
-            instance,
-            device,
-            queue,
-            adapter,
-        };
-
-        let tree = tree_descriptor.reify(event_loop, &gpu_resources, renderers);
-
-        let backend = WgpuBackend {
-            tree: Arc::new(Mutex::new(tree)),
-            gpu_resources,
-        };
-
-        // This render engine will be shared between your application (so that it can receive OS events)
-        // and a reactor processor in another thread (so that it can process its own `Future`s and `Signal`s)
-        let backend = Arc::new(Mutex::new(WinitWgpuRunner(backend)));
-
-        // TODO: Process the render engine's processors and reactors on another thread.
-        // It needs not be an other thread, just a different execution context.
-        let backend_clone = backend.clone();
-
-        let backend_processor = AsyncExecutor::new(backend_clone).to_future();
-
-        // I should perhaps return a (RenderEngine, impl Future) here!
-        // The problem of course is that winit does not play well with async Rust yet :-(
-        (backend, backend_processor)
-    }
-
-    fn handle_resumed(&mut self) {
-        self.0.tree.lock().unwrap().setup(&self.0.gpu_resources);
-    }
-
-    /// Forwards window events for the engine tree to process.
-    fn handle_window_event(&mut self, window_id: WindowId, event: WindowEvent) {
-        self.0
-            .tree
-            .lock()
-            .unwrap()
-            .handle_window_event(&mut self.0.gpu_resources, window_id, event)
+    WgpuResources {
+        instance,
+        device,
+        queue,
+        adapter,
     }
 }
 
-/// Trait that represents a descriptor main node of the app tree.
-/// These nodes are used for creating windows and processes and rendering contexts.
-///
-/// TODO: Delete this and use [BuildingBlock] instead.
-#[diagnostic::on_unimplemented(message = "This value is not an app Node.")]
-pub trait Node: Send {
-    /// The type this node descriptor generates when Output.
-    type Output: NodeRe;
-    fn reify(
-        self,
-        event_loop: &ActiveEventLoop,
-        gpu_resources: &WgpuResources,
-        renderers: WgpuRenderers,
-    ) -> Self::Output;
-}
+fn create_renderers(adapter: &Adapter, device: &Device, queue: &Queue) -> WgpuRenderers {
+    // TODO: Get this from a render target, do not guess it.
+    let dummy_format = TextureFormat::Bgra8UnormSrgb; //;get_dummy_texture_format(event_loop, &instance, &device, &adapter);
 
-/// A main node in the app tree.
-pub trait NodeRe: Pollable<AppContext> {
-    fn setup(&mut self, gpu_resources: &WgpuResources);
+    let render_target_formats = &[Some(wgpu::ColorTargetState {
+        format: dummy_format,
+        blend: Some(wgpu::BlendState {
+            color: wgpu::BlendComponent {
+                src_factor: wgpu::BlendFactor::SrcAlpha,
+                dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                operation: wgpu::BlendOperation::Add,
+            },
+            alpha: wgpu::BlendComponent::OVER,
+        }),
+        write_mask: wgpu::ColorWrites::ALL,
+    })];
 
-    /// Handles an event and cascades it down its children.
-    fn handle_window_event(
-        &mut self,
-        gpu_resources: &mut WgpuResources,
-        window_id: WindowId,
-        event: WindowEvent,
+    let graphics_pipeline = OrchestraRenderer::singleton::<WindowRenderTarget>(
+        &adapter,
+        &device,
+        &queue,
+        render_target_formats,
     );
+
+    let text_pipeline = TextRenderer::singleton::<WindowRenderTarget>(
+        &adapter,
+        &device,
+        &queue,
+        render_target_formats,
+    );
+
+    WgpuRenderers {
+        graphics_renderer: graphics_pipeline,
+        text_renderer: text_pipeline,
+    }
 }
 
-#[expect(type_alias_bounds)]
-type SharedWWBackend<A: Node<Output: Pollable<UIContext>>> = Arc<Mutex<WinitWgpuRunner<A>>>;
+fn create_backend_effect_executors<A>(backend: WgpuBackend<A>) -> (Arc<Mutex<WinitWgpuRunner<A>>>, SignalFuture<AsyncExecutor<WinitWgpuRunner<A>>>)
+where
+    A: Element<Output: Pollable<AppContext>> + 'static
+{
+    // This render engine will be shared between your application (so that it can receive OS events)
+    // and a reactor processor in another thread (so that it can process its own `Future`s and `Signal`s)
+    let backend = Arc::new(Mutex::new(WinitWgpuRunner(backend)));
+
+    // TODO: Process the render engine's processors and reactors on another thread.
+    // It needs not be an other thread, just a different execution context.
+    let backend_clone = backend.clone();
+
+    let backend_processor = AsyncExecutor::new(backend_clone).to_future();
+
+    // I should perhaps return a (RenderEngine, impl Future) here!
+    // The problem of course is that winit does not play well with async Rust yet :-(
+    (backend, backend_processor)
+}
