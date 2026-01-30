@@ -1,3 +1,8 @@
+//! # Animation
+//!
+//! An animation is a coordinated, continuous and long-lived effect.
+//! Animation is to Effect what Stream is to Future.
+
 use crate::{geometry::Vector, state::Slot};
 use core::{fmt::Debug, future::Future};
 use futures_time::{
@@ -7,17 +12,16 @@ use futures_time::{
 
 pub mod spring;
 
-/// An alternative of [`Stream`] which is lossy
-/// for trying to keep up with an implicit flow of time.
-pub trait RealTimeStream {
+/// A lossy [`Stream`] which attempts to keep up with the flow of time.
+pub trait Animation {
     type Item;
 
     /// Processes an animation tick,
     /// indicating, to the stream, that some time passed.
-    fn process_tick(
+    fn process(
         &mut self,
         initial_value: Self::Item,
-        frame_params: AnimationFrameParams,
+        frame_params: AnimationFrame,
     ) -> Poll<Self::Item>
     where
         Self::Item: Copy;
@@ -25,7 +29,7 @@ pub trait RealTimeStream {
     /// Returns a new stream composed of _this_ stream and [`other`] chained together.
     fn chain<B>(self, other: B) -> Chain<Self, B>
     where
-        B: RealTimeStream<Item = Self::Item>,
+        B: Animation<Item = Self::Item>,
         Self: Sized,
     {
         Chain {
@@ -40,7 +44,7 @@ pub trait RealTimeStream {
         self,
         target_value: Self::Item,
         duration: Duration,
-    ) -> Chain<Self, LinearInterpolateStream<Self::Item>>
+    ) -> Chain<Self, LinearInterpolate<Self::Item>>
     where
         Self: Sized,
         Self::Item: Vector,
@@ -57,7 +61,7 @@ pub trait RealTimeStream {
         ForEach { inner: self, f }
     }
 
-    /// Consumes this [RealTimeStream] and produces a future that completes
+    /// Consumes this [Animation] and produces a future that completes
     /// when the animation is finished.
     fn animate_from<F>(mut self, mut f: F, initial_value: Self::Item) -> impl Future<Output = ()>
     where
@@ -70,7 +74,7 @@ pub trait RealTimeStream {
         async move {
             loop {
                 let delta = last_frame.elapsed().into();
-                let poll = self.process_tick(initial_value, AnimationFrameParams { start, delta });
+                let poll = self.process(initial_value, AnimationFrame { start, delta });
 
                 match poll {
                     Poll::Ongoing(frame) => {
@@ -113,7 +117,7 @@ pub trait RealTimeStream {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct AnimationFrameParams {
+pub struct AnimationFrame {
     /// Time since the beginning of the stream.
     pub start: Instant,
     /// Time since the last frame.
@@ -126,36 +130,36 @@ pub enum Poll<TItem> {
     Finished(TItem),
 }
 
-pub struct Chain<A: RealTimeStream, B: RealTimeStream> {
+pub struct Chain<A: Animation, B: Animation> {
     stream_a: A,
     stream_b: B,
     stream_a_finished: Option<(A::Item, Instant)>,
 }
 
-impl<TItem: Copy, A, B> RealTimeStream for Chain<A, B>
+impl<TItem: Copy, A, B> Animation for Chain<A, B>
 where
-    A: RealTimeStream<Item = TItem>,
-    B: RealTimeStream<Item = TItem>,
+    A: Animation<Item = TItem>,
+    B: Animation<Item = TItem>,
 {
     type Item = TItem;
 
-    fn process_tick(
+    fn process(
         &mut self,
         initial_value: Self::Item,
-        frame_params: AnimationFrameParams,
+        frame_params: AnimationFrame,
     ) -> Poll<Self::Item> {
         match &self.stream_a_finished {
             None => {
-                let poll = self.stream_a.process_tick(initial_value, frame_params);
+                let poll = self.stream_a.process(initial_value, frame_params);
 
                 match poll {
                     Poll::Ongoing(frame) => Poll::Ongoing(frame),
                     Poll::Finished(frame) => {
                         let stream_a_end = Instant::now();
                         self.stream_a_finished = Some((frame, stream_a_end));
-                        self.stream_b.process_tick(
+                        self.stream_b.process(
                             frame,
-                            AnimationFrameParams {
+                            AnimationFrame {
                                 start: stream_a_end,
                                 ..frame_params
                             },
@@ -163,9 +167,9 @@ where
                     }
                 }
             }
-            Some((last_a_frame, stream_a_end)) => self.stream_b.process_tick(
+            Some((last_a_frame, stream_a_end)) => self.stream_b.process(
                 *last_a_frame,
-                AnimationFrameParams {
+                AnimationFrame {
                     start: *stream_a_end,
                     ..frame_params
                 },
@@ -174,27 +178,27 @@ where
     }
 }
 
-pub struct ForEach<A: RealTimeStream, F: FnMut(&A::Item)> {
+pub struct ForEach<A: Animation, F: FnMut(&A::Item)> {
     inner: A,
     f: F,
 }
 
-impl<A, F> RealTimeStream for ForEach<A, F>
+impl<A, F> Animation for ForEach<A, F>
 where
-    A: RealTimeStream,
+    A: Animation,
     F: FnMut(&A::Item),
 {
     type Item = A::Item;
 
-    fn process_tick(
+    fn process(
         &mut self,
         initial_value: Self::Item,
-        frame_params: AnimationFrameParams,
+        frame_params: AnimationFrame,
     ) -> Poll<Self::Item>
     where
         Self::Item: Copy,
     {
-        let poll = self.inner.process_tick(initial_value, frame_params);
+        let poll = self.inner.process(initial_value, frame_params);
 
         match &poll {
             Poll::Ongoing(a) => (self.f)(a),
@@ -206,18 +210,20 @@ where
 }
 
 /// Assigns the animated value to this value immediately.
-pub fn set<TItem>(value: TItem) -> SetStream<TItem> {
-    SetStream(value)
+pub fn assign<Item>(value: Item) -> Assign<Item> {
+    Assign(value)
 }
-/// See [set].
-pub struct SetStream<TItem>(TItem);
-impl<TItem> RealTimeStream for SetStream<TItem> {
-    type Item = TItem;
 
-    fn process_tick(
+/// See [assign].
+pub struct Assign<Item>(Item);
+
+impl<Item> Animation for Assign<Item> {
+    type Item = Item;
+
+    fn process(
         &mut self,
         _initial_value: Self::Item,
-        _frame_params: AnimationFrameParams,
+        _frame_params: AnimationFrame,
     ) -> Poll<Self::Item>
     where
         Self::Item: Copy,
@@ -227,23 +233,23 @@ impl<TItem> RealTimeStream for SetStream<TItem> {
 }
 
 /// Interpolates the initial value to a destination value in a certain time.
-pub fn lerp<TItem: Vector>(to: TItem, duration: Duration) -> LinearInterpolateStream<TItem> {
-    LinearInterpolateStream { to, duration }
+pub fn lerp<Item: Vector>(to: Item, duration: Duration) -> LinearInterpolate<Item> {
+    LinearInterpolate { to, duration }
 }
 
 /// See [lerp].
-pub struct LinearInterpolateStream<TItem: Vector> {
-    to: TItem,
+pub struct LinearInterpolate<Item: Vector> {
+    to: Item,
     duration: Duration,
 }
 
-impl<TItem: Vector> RealTimeStream for LinearInterpolateStream<TItem> {
-    type Item = TItem;
+impl<Item: Vector> Animation for LinearInterpolate<Item> {
+    type Item = Item;
 
-    fn process_tick(
+    fn process(
         &mut self,
         initial_value: Self::Item,
-        frame_params: AnimationFrameParams,
+        frame_params: AnimationFrame,
     ) -> Poll<Self::Item>
     where
         Self::Item: Copy,
@@ -262,7 +268,7 @@ impl<TItem: Vector> RealTimeStream for LinearInterpolateStream<TItem> {
 /// Moves towards the target value with a scalar speed.
 /// Unlike [lerp], this animation does not have a defined duration,
 /// instead, it takes longer the further away the value is from the target.
-pub fn move_toward<TItem: Vector>(target: TItem, speed: TItem) -> MoveToward<TItem> {
+pub fn move_toward<Item: Vector>(target: Item, speed: Item) -> MoveToward<Item> {
     MoveToward {
         current_value: None,
         target,
@@ -271,19 +277,19 @@ pub fn move_toward<TItem: Vector>(target: TItem, speed: TItem) -> MoveToward<TIt
 }
 
 /// See [move_toward].
-pub struct MoveToward<TItem: Vector> {
-    current_value: Option<TItem>,
-    target: TItem,
-    speed: TItem,
+pub struct MoveToward<Item: Vector> {
+    current_value: Option<Item>,
+    target: Item,
+    speed: Item,
 }
 
-impl<TItem: Vector + Copy> RealTimeStream for MoveToward<TItem> {
-    type Item = TItem;
+impl<Item: Vector + Copy> Animation for MoveToward<Item> {
+    type Item = Item;
 
-    fn process_tick(
+    fn process(
         &mut self,
         initial_value: Self::Item,
-        frame_params: AnimationFrameParams,
+        frame_params: AnimationFrame,
     ) -> Poll<Self::Item> {
         if let Some(current_value) = self.current_value {
             let vector = self.target - current_value;

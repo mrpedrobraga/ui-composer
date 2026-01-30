@@ -1,10 +1,10 @@
-use crate::geometry::layout::flow::CartesianFlowDirection::{
+use crate::geometry::layout::flow::CartesianFlow::{
     BottomToTop, LeftToRight, RightToLeft, TopToBottom,
 };
 use crate::geometry::layout::flow::allocators::weighted_division_with_minima;
 use crate::geometry::layout::hints::ParentHints;
-use crate::geometry::layout::flow::{CartesianFlowDirection, FlowDirection, WritingFlowDirection};
-use crate::geometry::layout::{CoordinateSystemProvider, LayoutItem};
+use crate::geometry::layout::flow::{CartesianFlow, Flow, WritingFlow};
+use crate::geometry::layout::{CoordinateSystem, LayoutItem};
 use arrayvec::ArrayVec;
 use core::iter::{Chain, Once, once};
 use vek::{Extent2, Rect};
@@ -18,19 +18,19 @@ where
 {
     FlexContainer {
         items,
-        flow_direction: FlowDirection::Writing(WritingFlowDirection::WritingAxisForward),
+        flow_direction: Flow::Writing(WritingFlow::WritingAxisForward),
     }
 }
 
 /// The struct created by [Flex].
 pub struct FlexContainer<const SIZE: usize, TItems: FlexItemList> {
     items: TItems,
-    flow_direction: FlowDirection,
+    flow_direction: Flow,
 }
 
 impl<const SIZE: usize, TItems: FlexItemList> FlexContainer<SIZE, TItems> {
     #[inline(always)]
-    pub fn with_flow(self, flow_direction: FlowDirection) -> Self {
+    pub fn with_flow(self, flow_direction: Flow) -> Self {
         Self {
             flow_direction,
             ..self
@@ -38,11 +38,11 @@ impl<const SIZE: usize, TItems: FlexItemList> FlexContainer<SIZE, TItems> {
     }
 
     #[inline(always)]
-    /// Adapts this container to lay its items by [WritingFlowDirection::WritingCrossAxisForward]
+    /// Adapts this container to lay its items by [WritingFlow::WritingCrossAxisForward]
     /// (in `en_US`, that's top to bottom).
     pub fn with_vertical_flow(self) -> Self {
         Self {
-            flow_direction: FlowDirection::Writing(WritingFlowDirection::WritingCrossAxisForward),
+            flow_direction: Flow::Writing(WritingFlow::WritingCrossAxisForward),
             ..self
         }
     }
@@ -60,10 +60,10 @@ where
         // TODO: Receive the parent hints from... well, the parent.
         let flow_direction = self.flow_direction.as_cartesian(&ParentHints {
             rect: Rect::new(0.0, 0.0, 0.0, 0.0),
-            current_flow_direction: CartesianFlowDirection::LeftToRight,
-            current_cross_flow_direction: CartesianFlowDirection::TopToBottom,
-            current_writing_flow_direction: CartesianFlowDirection::LeftToRight,
-            current_writing_cross_flow_direction: CartesianFlowDirection::TopToBottom,
+            current_flow_direction: CartesianFlow::LeftToRight,
+            current_cross_flow_direction: CartesianFlow::TopToBottom,
+            current_writing_flow_direction: CartesianFlow::LeftToRight,
+            current_writing_cross_flow_direction: CartesianFlow::TopToBottom,
         });
 
         match flow_direction {
@@ -83,10 +83,10 @@ where
         // TODO: Receive the parent hints from... well, the parent.
         let flow_direction = self.flow_direction.as_cartesian(&ParentHints {
             rect: Rect::new(0.0, 0.0, 0.0, 0.0),
-            current_flow_direction: CartesianFlowDirection::LeftToRight,
-            current_cross_flow_direction: CartesianFlowDirection::TopToBottom,
-            current_writing_flow_direction: CartesianFlowDirection::LeftToRight,
-            current_writing_cross_flow_direction: CartesianFlowDirection::TopToBottom,
+            current_flow_direction: CartesianFlow::LeftToRight,
+            current_cross_flow_direction: CartesianFlow::TopToBottom,
+            current_writing_flow_direction: CartesianFlow::LeftToRight,
+            current_writing_cross_flow_direction: CartesianFlow::TopToBottom,
         });
 
         match flow_direction {
@@ -108,7 +108,7 @@ where
             .collect::<ArrayVec<_, SIZE>>();
         let weights = self.items.weights().collect::<ArrayVec<_, SIZE>>();
 
-        use CartesianFlowDirection::*;
+        use CartesianFlow::*;
         let parent_size = match flow_direction {
             LeftToRight | RightToLeft => parent_hints.rect.w,
             TopToBottom | BottomToTop => parent_hints.rect.h,
@@ -128,14 +128,14 @@ where
 
 fn lay_sizes<S>(
     container: ParentHints,
-    flow_direction: CartesianFlowDirection,
+    flow_direction: CartesianFlow,
     sizes: S,
 ) -> impl Iterator<Item = ParentHints>
 where
     S: Iterator<Item = f32>,
 {
     sizes.scan(0.0, move |offset_from_start, current_element_size| {
-        use CartesianFlowDirection::*;
+        use CartesianFlow::*;
 
         let item_hints = match flow_direction {
             LeftToRight => ParentHints {
@@ -194,7 +194,7 @@ pub trait FlexItemList {
     fn get_natural_sizes(&self) -> impl Iterator<Item = Extent2<f32>>;
     fn get_minimum_sizes(&self) -> impl Iterator<Item = Extent2<f32>>;
     fn weights(&self) -> Self::Weights;
-    fn minima(&self, flow_direction: CartesianFlowDirection) -> Self::Weights;
+    fn minima(&self, flow_direction: CartesianFlow) -> Self::Weights;
     fn lay<I>(&mut self, hx: I) -> Self::Content
     where
         I: Iterator<Item = ParentHints>;
@@ -221,8 +221,8 @@ where
         once(self.1)
     }
 
-    fn minima(&self, flow_direction: CartesianFlowDirection) -> Once<f32> {
-        use CartesianFlowDirection::*;
+    fn minima(&self, flow_direction: CartesianFlow) -> Once<f32> {
+        use CartesianFlow::*;
 
         match flow_direction {
             LeftToRight | RightToLeft => once(self.0.get_minimum_size().w),
@@ -259,7 +259,7 @@ where
         self.0.weights().chain(self.1.weights())
     }
 
-    fn minima(&self, flow_direction: CartesianFlowDirection) -> Self::Weights {
+    fn minima(&self, flow_direction: CartesianFlow) -> Self::Weights {
         Iterator::chain(self.0.minima(flow_direction), self.1.minima(flow_direction))
     }
 

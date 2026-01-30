@@ -39,7 +39,7 @@ use {
         window::{Window, WindowId},
     },
 };
-use crate::geometry::layout::{flow::CartesianFlowDirection, LayoutItem};
+use crate::geometry::layout::{flow::CartesianFlow, LayoutItem};
 
 mod conversion;
 
@@ -178,10 +178,10 @@ where
             rect: Rect::new(0.0, 0.0, window_size.w, window_size.h),
             // TODO: Allow configuring this from the locale/user settings,
             // possibly turning them into signals!
-            current_flow_direction: CartesianFlowDirection::LeftToRight,
-            current_cross_flow_direction: CartesianFlowDirection::TopToBottom,
-            current_writing_flow_direction: CartesianFlowDirection::LeftToRight,
-            current_writing_cross_flow_direction: CartesianFlowDirection::TopToBottom,
+            current_flow_direction: CartesianFlow::LeftToRight,
+            current_cross_flow_direction: CartesianFlow::TopToBottom,
+            current_writing_flow_direction: CartesianFlow::LeftToRight,
+            current_writing_cross_flow_direction: CartesianFlow::TopToBottom,
         })
     });
 

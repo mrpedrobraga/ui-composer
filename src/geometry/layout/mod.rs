@@ -63,7 +63,7 @@
 //! Some utility functions for calculating layouts are in the [`flow`] module.
 
 use crate::app::building_blocks::reify::Reify;
-pub use flow::CoordinateSystemProvider;
+pub use flow::CoordinateSystem;
 use hints::{ChildHints, ParentHints};
 use std::marker::PhantomData;
 use {

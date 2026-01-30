@@ -8,16 +8,14 @@ use {
     super::{RenderText, TextItem},
     crate::{
         app::{building_blocks::BuildingBlock, input::Event},
-        state::{
-            Effect,
-            process::{FutureAwaitItemRe, SignalReactItemRe},
-        },
+        state::process::{FutureAwaitItemRe, SignalReactItemRe},
     },
     futures_signals::signal::Signal,
     glyphon::{Color, TextArea, TextBounds},
     std::future::Future,
 };
 use crate::standard::prelude::{Drag, Hover, Tap, Typing};
+use crate::state::effect::Effect;
 //MARK: Text
 
 impl<S: AsRef<str> + Send, Res> BuildingBlock<Res> for TextItem<S> {

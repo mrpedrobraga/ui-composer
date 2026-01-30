@@ -23,7 +23,7 @@ use {
     winit::event::WindowEvent,
 };
 use crate::app::input::Event;
-use crate::geometry::layout::flow::CartesianFlowDirection;
+use crate::geometry::layout::flow::CartesianFlow;
 use crate::geometry::layout::LayoutItem;
 
 #[allow(non_snake_case)]
@@ -35,10 +35,10 @@ where
         rect,
         content: item.lay(ParentHints {
             rect,
-            current_flow_direction: CartesianFlowDirection::LeftToRight,
-            current_cross_flow_direction: CartesianFlowDirection::TopToBottom,
-            current_writing_flow_direction: CartesianFlowDirection::LeftToRight,
-            current_writing_cross_flow_direction: CartesianFlowDirection::TopToBottom,
+            current_flow_direction: CartesianFlow::LeftToRight,
+            current_cross_flow_direction: CartesianFlow::TopToBottom,
+            current_writing_flow_direction: CartesianFlow::LeftToRight,
+            current_writing_cross_flow_direction: CartesianFlow::TopToBottom,
         }),
     }
 }

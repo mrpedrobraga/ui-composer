@@ -3,17 +3,13 @@ use crate::standard::backends::wgpu::pipeline::UIContext;
 use crate::standard::backends::wgpu::pipeline::text::{TextItem, TextItemRe};
 use crate::state::process::{FutureAwaitItem, SignalReactItem};
 use {
-    super::{RenderGraphic, RenderGraphicDescriptor, graphic::Graphic},
-    crate::{
-        state::{
-            Effect,
-            process::{FutureAwaitItemRe, SignalReactItemRe},
-        },
-    },
+    super::{graphic::Graphic, RenderGraphic, RenderGraphicDescriptor},
+    crate::state::process::{FutureAwaitItemRe, SignalReactItemRe},
     std::future::Future,
 };
 use {futures_signals::signal::Signal, vek::Rect};
 use crate::standard::prelude::{Drag, Hover, Tap, Typing};
+use crate::state::effect::Effect;
 //MARK: Graphics
 
 impl<Res> Reify<Res> for Graphic {

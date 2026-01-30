@@ -4,15 +4,13 @@ use crate::standard::backends::wgpu::render_target::Render;
 use crate::items_internal as items;
 use crate::geometry::layout::hints::ParentHints;
 use crate::state::process::SignalReactItem;
-use crate::{
-    state::animation::spring::Spring,
-};
 use futures_signals::signal::{Mutable, SignalExt};
 use vek::{Extent2, Lerp, Rect, Rgb, Vec4};
 use crate::geometry::RectExt;
-use crate::geometry::layout::{ItemBox, LayoutItem, Resizable};
+use crate::geometry::layout::{ItemBox, Resizable};
 use crate::standard::backends::winitwgpu::prelude::UI;
 use crate::standard::prelude::Tap;
+use crate::state::effect::animation::spring::Spring;
 
 pub trait BoolEditGraphics {
     fn describe_render(

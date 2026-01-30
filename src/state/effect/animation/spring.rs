@@ -5,10 +5,11 @@ use core::{
     ops::{Add, Div, Mul},
 };
 use futures_signals::signal::{Mutable, Signal, SignalExt};
-use crate::state::animation::{AnimationFrameParams, Poll, RealTimeStream};
+use crate::geometry::Vector;
+use crate::state::effect::animation::{AnimationFrame, Poll, Animation};
 
 #[derive(Default)]
-/// A [`super::RealTimeStream`] that simulates Hooke's law
+/// A [`super::Animation`] that simulates Hooke's law
 /// forcing a vector value towards the `equilibrium` point
 /// as if it were tied to that point by a string.
 pub struct Spring<T> {
@@ -21,7 +22,7 @@ pub struct Spring<T> {
 
 impl<T> Spring<T>
 where
-    T: Default + Vector + Send + Sync + 'static,
+    T: Default + Vector + BaseFloat + Send + Sync + 'static,
     f32: Mul<T, Output = T>,
 {
     pub fn new(equilibrium: T, stiffness: f32, damping: f32, mass: f32) -> Self {
@@ -56,37 +57,18 @@ where
     }
 }
 
-pub trait Vector:
-    Copy
-    + BaseFloat
-    + Add<Self, Output = Self>
-    + Div<f32, Output = Self>
-    + Mul<f32, Output = Self>
-    + Sized
-{
-}
 
-impl<T> Vector for T where
-    T: Copy
-        + BaseFloat
-        + Add<Self, Output = Self>
-        + Div<f32, Output = Self>
-        + Mul<f32, Output = Self>
-        + Sized
-{
-}
-
-impl<T: BaseFloat> RealTimeStream for Spring<T>
+impl<T: BaseFloat> Animation for Spring<T>
 where
     f32: Mul<T, Output = T>,
     T: Copy + Vector,
 {
     type Item = T;
 
-    fn process_tick(
+    fn process(
         &mut self,
         initial_value: Self::Item,
-        frame_params: AnimationFrameParams,
+        frame_params: AnimationFrame,
     ) -> Poll<Self::Item> {
         let delta_time = frame_params.delta.as_secs_f32();
 
@@ -95,7 +77,7 @@ where
             let spring_force = -self.stiffness * (*current_value - self.equilibrium);
             let damping_force = -self.damping * *current_velocity;
             let total_force = spring_force + damping_force;
-            let current_acceleration = total_force / self.mass;
+            let current_acceleration = total_force * (1.0 / self.mass);
 
             let next_value = *current_value
                 + delta_time * (*current_velocity)
@@ -105,7 +87,7 @@ where
             let damping_force_new =
                 -self.damping * (*current_velocity + delta_time * current_acceleration);
             let total_force_new = spring_force_new + damping_force_new;
-            let next_acceleration = total_force_new / self.mass;
+            let next_acceleration = total_force_new * (1.0 / self.mass);
 
             let next_velocity = *current_velocity
                 + 0.5f32 * (delta_time * (current_acceleration + next_acceleration));

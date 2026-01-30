@@ -1,4 +1,4 @@
-pub mod animation;
+pub mod effect;
 pub mod process;
 pub mod signal_ext;
 
@@ -10,12 +10,14 @@ pub use futures_signals::signal_vec::MutableVec;
 pub use futures_signals::signal_vec::SignalVecExt;
 pub use futures_signals::signal::Signal;
 pub use futures_signals::signal_vec::SignalVec;
+use crate::state::effect::Effect;
 
 #[diagnostic::on_unimplemented(
     message = "`{Self}` is not a container with interior mutability.",
     label = "This item is not a `Slot`!",
     note = "`Mutable<A>` is a Slot, and can do reactivity on top!"
 )]
+/// Trait that describes a slot in which you can read the current value or replace it.
 pub trait Slot {
     type Item;
     fn put(&self, value: Self::Item);
@@ -41,49 +43,32 @@ pub trait State: Slot {
     }
 }
 
-impl<A> State for Mutable<A> {}
+pub mod implementations {
+    use futures_signals::signal::Mutable;
+    use crate::state::{Slot, State};
 
-impl<A> Slot for Mutable<A> {
-    type Item = A;
+    impl<A> State for Mutable<A> {}
 
-    fn put(&self, value: Self::Item) {
-        self.set(value);
-    }
+    impl<A> Slot for Mutable<A> {
+        type Item = A;
 
-    fn take(&self) -> Self::Item
-    where
-        Self::Item: Copy,
-    {
-        self.get()
-    }
+        fn put(&self, value: Self::Item) {
+            self.set(value);
+        }
 
-    fn modify<F>(&self, mut predicate: F)
-    where
-        F: FnMut(&mut Self::Item),
-    {
-        let mut lock = self.lock_mut();
-        predicate(&mut *lock);
-    }
-}
+        fn take(&self) -> Self::Item
+        where
+            Self::Item: Copy,
+        {
+            self.get()
+        }
 
-/// Trait that describes an effect — a modification to an environment.
-#[must_use = "effects are lazy and do nothing unless applied"]
-pub trait Effect: Clone + Send + Sync {
-    /// Applies the effect.
-    fn apply(&mut self);
-}
-
-impl<F> Effect for F
-where
-    F: FnMut() + Clone + Send + Sync,
-{
-    fn apply(&mut self) {
-        (self)()
-    }
-}
-
-impl Effect for Mutable<Option<()>> {
-    fn apply(&mut self) {
-        self.set(Some(()))
+        fn modify<F>(&self, mut predicate: F)
+        where
+            F: FnMut(&mut Self::Item),
+        {
+            let mut lock = self.lock_mut();
+            predicate(&mut *lock);
+        }
     }
 }

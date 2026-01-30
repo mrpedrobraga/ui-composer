@@ -11,7 +11,7 @@ use crate::{
 use crate::geometry::layout::{ItemBox, Resizable};
 use crate::standard::backends::winitwgpu::prelude::UI;
 use crate::standard::prelude::{Hover, Tap};
-use crate::state::Effect;
+use crate::state::effect::Effect;
 
 /// A simple button which you can click!
 pub fn Button<L, Fx>(mut label: L, effect: Fx) -> impl UI

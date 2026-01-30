@@ -24,18 +24,18 @@
 //! 2. Perform layout calculations;
 //! 3. Generate parent hints, likely in order, while calling [`LayoutItem::lay`] on them.;
 //!
-use crate::geometry::layout::CoordinateSystemProvider;
-use crate::geometry::layout::flow::CartesianFlowDirection;
+use crate::geometry::layout::CoordinateSystem;
+use crate::geometry::layout::flow::CartesianFlow;
 use vek::{Extent2, Mat3, Rect, Vec2};
 
 /// The parent hints struct.
 #[derive(Debug, Clone, Copy)]
 pub struct ParentHints {
     pub rect: Rect<f32, f32>,
-    pub current_flow_direction: CartesianFlowDirection,
-    pub current_cross_flow_direction: CartesianFlowDirection,
-    pub current_writing_flow_direction: CartesianFlowDirection,
-    pub current_writing_cross_flow_direction: CartesianFlowDirection,
+    pub current_flow_direction: CartesianFlow,
+    pub current_cross_flow_direction: CartesianFlow,
+    pub current_writing_flow_direction: CartesianFlow,
+    pub current_writing_cross_flow_direction: CartesianFlow,
 }
 
 /// The child hints struct.
