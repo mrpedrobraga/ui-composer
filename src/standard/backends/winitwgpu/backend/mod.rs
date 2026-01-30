@@ -31,37 +31,9 @@ use {
 
 pub mod implementations;
 
-/// Trait that represents a descriptor main node of the app tree.
-/// These nodes are used for creating windows and processes and rendering contexts.
-///
-/// TODO: Delete this and use [BuildingBlock] instead.
-#[diagnostic::on_unimplemented(message = "This value is not an app Node.")]
-pub trait Node: Send {
-    /// The type this node descriptor generates when Output.
-    type Output: NodeRe;
-    fn reify(
-        self,
-        event_loop: &ActiveEventLoop,
-        gpu_resources: &WgpuResources,
-        renderers: WgpuRenderers,
-    ) -> Self::Output;
-}
 
-/// A main node in the app tree.
-pub trait NodeRe: BuildingBlock<AppContext> {
-    fn setup(&mut self, gpu_resources: &WgpuResources);
-
-    /// Handles an event and cascades it down its children.
-    fn handle_window_event(
-        &mut self,
-        gpu_resources: &mut WgpuResources,
-        window_id: WindowId,
-        event: WindowEvent,
-    );
-}
-
-#[expect(type_alias_bounds)]
-type SharedWWBackend<A: Node<Output: Pollable<UIContext>>> = Arc<Mutex<WinitWgpuBackend<A>>>;
+#[pin_project(project=WithWinitProj)]
+pub struct WinitWgpuBackend<A: Node>(WgpuBackend<A>);
 
 /// The [`ApplicationHandler`] that sits between [`winit`]
 /// and UI Composer.
@@ -70,8 +42,6 @@ pub struct WinitWGPUApplicationHandler<A: Node> {
     backend: Option<SharedWWBackend<A>>,
 }
 
-#[pin_project(project=WithWinitProj)]
-pub struct WinitWgpuBackend<A: Node>(WgpuBackend<A>);
 
 impl<A> Backend for WinitWgpuBackend<A>
 where
@@ -293,3 +263,35 @@ where
             .handle_window_event(&mut self.0.gpu_resources, window_id, event)
     }
 }
+
+/// Trait that represents a descriptor main node of the app tree.
+/// These nodes are used for creating windows and processes and rendering contexts.
+///
+/// TODO: Delete this and use [BuildingBlock] instead.
+#[diagnostic::on_unimplemented(message = "This value is not an app Node.")]
+pub trait Node: Send {
+    /// The type this node descriptor generates when Output.
+    type Output: NodeRe;
+    fn reify(
+        self,
+        event_loop: &ActiveEventLoop,
+        gpu_resources: &WgpuResources,
+        renderers: WgpuRenderers,
+    ) -> Self::Output;
+}
+
+/// A main node in the app tree.
+pub trait NodeRe: BuildingBlock<AppContext> {
+    fn setup(&mut self, gpu_resources: &WgpuResources);
+
+    /// Handles an event and cascades it down its children.
+    fn handle_window_event(
+        &mut self,
+        gpu_resources: &mut WgpuResources,
+        window_id: WindowId,
+        event: WindowEvent,
+    );
+}
+
+#[expect(type_alias_bounds)]
+type SharedWWBackend<A: Node<Output: Pollable<UIContext>>> = Arc<Mutex<WinitWgpuBackend<A>>>;
