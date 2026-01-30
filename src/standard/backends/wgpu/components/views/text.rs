@@ -6,7 +6,7 @@ use crate::app::input::Event;
 use crate::geometry::layout::LayoutItem;
 use crate::state::process::Pollable;
 use vek::Rgb;
-use crate::app::composition::algebra::{Bubble, Monoid};
+use crate::app::composition::algebra::{Bubble, Empty};
 
 /// A simple label that visualises a String!
 ///
@@ -71,6 +71,6 @@ impl<S: AsRef<str> + Send, Res> Pollable<Res> for TextLayoutItem<S> {}
 
 impl<S: AsRef<str> + Send> Bubble<Event, bool> for TextLayoutItem<S> {
     fn bubble(&mut self, #[expect(unused)] event: &mut Event) -> bool {
-        Monoid::empty()
+        Empty::empty()
     }
 }

@@ -1,16 +1,14 @@
-//! Geometry API for quickly laying out items in space.
+//! # Geometry
 //!
-//! It uses much of [`vek`] for basic vector implementations,
-//! [`cgmath`] for numeric types, but has its own trait extensions
-//! and implementations.
+//! Mathematical utilities for laying out things in space.
 
-pub mod rect_ext;
+pub mod extensions;
 
 /// Module for layout functions and utilities.
 pub mod layout;
 
 pub use cgmath::BaseNum;
-pub use rect_ext::RectExt;
+pub use extensions::RectExt;
 pub use vek::*;
 
 use core::ops::{Add, Mul, Sub};

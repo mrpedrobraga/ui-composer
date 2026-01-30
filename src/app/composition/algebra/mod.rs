@@ -30,7 +30,10 @@ pub trait Semigroup {
 }
 
 /// A [`Semigroup`] that also has an identity (null) element.
-pub trait Monoid: Semigroup {
+pub trait Empty {
     /// Returns the identity element.
     fn empty() -> Self;
 }
+
+pub trait Monoid: Semigroup + Empty {}
+impl<T> Monoid for T where T: Semigroup + Empty {}

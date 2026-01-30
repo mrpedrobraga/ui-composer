@@ -1,16 +1,30 @@
+//! # State
+//!
+//! This module defines the concept of "state" used by apps.
+//! In UI Composer apps are immutable, but your app can still "talk" about the concept of state
+//! by having those as first-class values.
+//!
+//! States are values which describe/hold a state. Effects are any change in state.
+//! Whereas applications are effect-free, they can still create effects and bubble them up
+//! for a [`app::backend::Runner`] to run.
+//!
+//! States are _very_ useful for building UI since many `impl State<impl UI>: UI`.
+//! That is, UI derived from some state will re-render every time that state changes.
+//! This drives ALL redrawing and layout in UI Composer.
+
 pub mod effect;
 pub mod process;
-pub mod signal_ext;
+pub mod extensions;
 
+use crate::state::effect::Effect;
 pub use futures_signals::signal::Mutable;
+pub use futures_signals::signal::Signal;
 pub use futures_signals::signal::SignalExt;
 pub use futures_signals::signal_map::MutableBTreeMap;
 pub use futures_signals::signal_map::SignalMapExt;
 pub use futures_signals::signal_vec::MutableVec;
-pub use futures_signals::signal_vec::SignalVecExt;
-pub use futures_signals::signal::Signal;
 pub use futures_signals::signal_vec::SignalVec;
-use crate::state::effect::Effect;
+pub use futures_signals::signal_vec::SignalVecExt;
 
 #[diagnostic::on_unimplemented(
     message = "`{Self}` is not a container with interior mutability.",
@@ -44,8 +58,8 @@ pub trait State: Slot {
 }
 
 pub mod implementations {
-    use futures_signals::signal::Mutable;
     use crate::state::{Slot, State};
+    use futures_signals::signal::Mutable;
 
     impl<A> State for Mutable<A> {}
 

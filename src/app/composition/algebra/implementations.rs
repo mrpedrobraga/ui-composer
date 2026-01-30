@@ -1,4 +1,4 @@
-use crate::app::composition::algebra::{Bubble, Gather, Monoid, Semigroup};
+use crate::app::composition::algebra::{Bubble, Gather, Empty, Semigroup};
 use std::task::Poll;
 use std::task::Poll::Pending;
 /* Combine */
@@ -9,42 +9,22 @@ impl Semigroup for bool {
     }
 }
 
-impl Monoid for bool {
+impl Empty for bool {
     fn empty() -> Self {
         false
     }
 }
 
-impl Semigroup for Poll<Option<()>> {
-    /// If any of the values are Poll::Ready(Some(())), the result will be Poll::Ready(Some(()));
-    /// If not and any of the values are Poll::Pending, the result will be Poll::Pending;
-    /// Otherwise (if both values are Poll::Ready(None)), the result will be Poll::Ready(None);
-    fn combine(self, other: Self) -> Self {
-        use std::task::Poll::*;
-
-        match (self, other) {
-            (Ready(Some(())), _) | (_, Ready(Some(()))) => Ready(Some(())),
-            (Pending, _) | (_, Pending) => Pending,
-            _ => Ready(None),
-        }
-    }
-}
-
-impl Monoid for Poll<Option<()>> {
-    fn empty() -> Self {
-        Poll::Ready(None)
-    }
-}
-
 pub mod bubble {
-    use super::{Bubble, Monoid, Semigroup};
+    use crate::app::composition::algebra::Monoid;
+    use super::{Bubble, Empty, Semigroup};
 
     impl<Down, Up> Bubble<Down, Up> for ()
     where
-        Up: Monoid,
+        Up: Empty,
     {
         fn bubble(&mut self, #[allow(unused)] cx: &mut Down) -> Up {
-            Monoid::empty()
+            Empty::empty()
         }
     }
 
@@ -67,7 +47,7 @@ pub mod bubble {
         Up: Monoid,
     {
         fn bubble(&mut self, cx: &mut Down) -> Up {
-            self.into_iter().fold(Monoid::empty(), |acc, el| {
+            self.into_iter().fold(Empty::empty(), |acc, el| {
                 Semigroup::combine(acc, el.bubble(cx))
             })
         }
@@ -76,7 +56,7 @@ pub mod bubble {
     impl<A, Down, Up> Bubble<Down, Up> for Option<A>
     where
         A: Bubble<Down, Up>,
-        Up: Monoid,
+        Up: Empty,
     {
         fn bubble(&mut self, cx: &mut Down) -> Up {
             match self {
@@ -90,7 +70,7 @@ pub mod bubble {
     where
         T: Bubble<Down, Up>,
         E: Bubble<Down, Up>,
-        Up: Monoid,
+        Up: Empty,
     {
         fn bubble(&mut self, cx: &mut Down) -> Up {
             match self {

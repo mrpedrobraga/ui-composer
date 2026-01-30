@@ -4,7 +4,7 @@ use {
     bytemuck::{Pod, Zeroable},
     vek::{Extent3, Mat4, Rect, Rgb, Vec3, Vec4, num_traits::AsPrimitive},
 };
-use crate::app::composition::algebra::{Bubble, Monoid};
+use crate::app::composition::algebra::{Bubble, Empty};
 
 /// A small fragment of graphics that can be sent to the GPU and rendered.
 /// You can compose several primitives to make more impressive graphics.
@@ -81,7 +81,7 @@ where
 
 impl Bubble<Event, bool> for Graphic {
     fn bubble(&mut self, #[expect(unused)] event: &mut Event) -> bool {
-        Monoid::empty()
+        Empty::empty()
     }
 }
 

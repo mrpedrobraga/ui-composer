@@ -1,3 +1,6 @@
+//! # Extensions
+//!
+//! Extension traits to make working with some foreign types a little bit more ergonomic.
 use super::BaseNum;
 use super::{Extent2, Extent3, Rect, Vec2, Vec3};
 

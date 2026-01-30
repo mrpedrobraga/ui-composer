@@ -1,4 +1,4 @@
-use crate::app::composition::algebra::{Bubble, Monoid};
+use crate::app::composition::algebra::{Bubble, Empty};
 use crate::app::composition::reify::Reify;
 use crate::standard::backends::wgpu::pipeline::graphics::graphic::Graphic;
 use crate::standard::backends::wgpu::pipeline::text::TextItemRe;
@@ -21,7 +21,7 @@ use {
 
 impl<S: AsRef<str> + Send> Bubble<Event, bool> for TextItem<S> {
     fn bubble(&mut self, #[expect(unused)] event: &mut Event) -> bool {
-        Monoid::empty()
+        Empty::empty()
     }
 }
 
@@ -29,7 +29,7 @@ impl<Res> Pollable<Res> for TextItemRe {}
 
 impl Bubble<Event, bool> for TextItemRe {
     fn bubble(&mut self, #[expect(unused)] event: &mut Event) -> bool {
-        Monoid::empty()
+        Empty::empty()
     }
 }
 

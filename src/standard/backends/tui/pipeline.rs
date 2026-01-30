@@ -12,7 +12,7 @@
 use crate::state::process::Pollable;
 use vek::Vec2;
 use {crate::app::input::Event, ndarray::Array2, vek::Rgba};
-use crate::app::composition::algebra::{Bubble, Monoid};
+use crate::app::composition::algebra::{Bubble, Empty};
 
 /// A trait that marks a trait as renderable with this pipeline.
 pub trait RenderTui {
@@ -46,7 +46,7 @@ impl Graphic {
 
 impl Bubble<Event, bool> for Graphic {
     fn bubble(&mut self, #[expect(unused)] event: &mut Event) -> bool {
-        Monoid::empty()
+        Empty::empty()
     }
 }
 
