@@ -1,31 +1,64 @@
 //! # Applications
 //!
-//! This module has two concepts: [`BuildingBlock`]s and [`Backend`], as well as some utilities.
+//! This module contains two complementary parts: UI and runners.
 //!
-//! When you are writing an application with UI Composer, you will work with [`Reifiable`]s:
-//! those are types that *describe* parts of your application, but don't actually *do* anything.
+//! ## UI
 //!
-//! The [`Window`] item shown here produces something that describes a winit window but
-//! doesn't actually have any references to any operating system resources.
+//! An application is defined by composing building blocks using functions. For example:
 //!
 //! ```rust
-//! # use ui_composer::prelude::*;
-//! Window(())
+//! # use ui_composer::backends::wgpu::components::{Button, Label};
+//! # use ui_composer::standard::Column;
+//! Column(
+//!     Label("Click The Button"),
+//!     Button("The Button", || println!("I was clicked!"))
+//! )
 //! ```
 //!
-//! When you pass your app description to a [`Backend`], it will be [`Reifiable::reify`]ed into
-//! types that do have access to system resources (for example, `Window` here will get a handle
-//! to a winit window).
+//! The components here are functional in the [functional programming](https://en.wikipedia.org/wiki/Functional_programming) sense.
+//! They are _pure_ which gives you a few superpowers:
 //!
-//! ## Backend-generic apps
+//! 1. **Referential Transparency** - the compiler can inline and optimize your app without worrying whether anything will break. Additionally, the same application can run in multiple runners, like in the GPU or in the terminal.
+//! 2. **Tidiness** - your application layout can not change based on outside influence and, thus, you won't worry about glitches of the sort.
 //!
-//! The [`Reifiable`] trait has a generic parameter `Context` — this means that you can implement
-//! the trait several times for the same type... which means the same application can be Output
-//! by two or more distinct backends.
+//! This does leave a question in the air: if the application is immutable, how can it react to
+//! user events, operating system events, window resizing, asynchronous callbacks, etc?
 //!
-//! For example, you could have the same application run on the GPU, or in the CPU with multiple threads,
-//! or in a CPU single-threaded, or in the terminal, or in the web, etc, though not all [`Reifiable`]s
-//! work with all backends.
+//! ## Runners
+//!
+//! Whereas your application is immutable and can not do side effects, it can still _express_ effectful ideas.
+//! Those are [Algebraic Effects](https://en.wikipedia.org/wiki/Effect_system) which compose naturally as you compose your UI.
+//!
+//! ```rust
+//! # use ui_composer::backends::wgpu::components::{Button, Label};
+//! # use ui_composer::standard::Column;
+//! # use ui_composer::prelude::*;
+//! UIComposer::run( // a runner
+//!     Column(
+//!         Label("Click The Button"),
+//!         Button("The Button", || println!("I was clicked!"))
+//!     )
+//! )
+//! ```
+//!
+//! In the example above, whenever a user event, for example a mouse click, happens,
+//! it will be shown to `Column`, which will show it to `Label` and `Button`.
+//!
+//! It's interesting to note that the runner has _no idea_ of what components it's running.
+//!
+//! Button will handle that by triggering the effect described in its
+//! second parameter and print `"I was clicked"`.
+//!
+//! Something similar happens for drawing, where the runner bubbles down a draw request
+//! and the leaves bubble up a response.
+//!
+//! ### Cross-platform
+//!
+//! Decoupling the app from rendering and side effects allows the same app to be run by different runners,
+//! including runners for different platforms.
+//!
+//! This means you could run your app in a cross-platform runner like `WinitWgpuRunner`...
+//! Or on a web-specific `HTMLCanvasRunner`. The sky is the limit.
 
 pub mod backend;
 pub mod building_blocks;

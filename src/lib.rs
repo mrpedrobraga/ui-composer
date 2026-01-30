@@ -5,10 +5,11 @@
 
 Rust-based library for modern, native user interface rendering.
 
-It makes extensive use of signals, such that even things like layout changes
-make use of them.
+Define your application by composing building blocks, then run them in different environments.
 
 ## Getting started
+
+Add the library to your crate with `cargo add ui-composer`.
 
 After adding the library, you should be able to create a simple Window like this:
 
@@ -16,39 +17,33 @@ After adding the library, you should be able to create a simple Window like this
 * use ui_composer::standard::prelude::*;
 *
 * fn main() {
-*     UIComposer::run(Window(()));
+*   UIComposer::run(
+*       Window(())
+*   );
 * }
-* ```
+```
 
-This library does support several backends, depending on what features you have enabled.
-At the moment it supports:
-
-- PC, Android, Web
-    - [winitwgpu]
-    - [backends::wgpu]
-- Terminal
-    - [tui]
+> [!INFO] Not on crates.io
+> While this library isn't on crates.io yet, you can add it with
+> `cargo add --git https://github.com/mrpedrobraga/ui-composer.git ui-composer`.
 
 ## No-std
 
-No-std is planned but not yet available.
+No-std is not yet available.
 */
 
-pub use standard::backends;
-
-/// Module for the app "orchestration" functionality of UI composer,
-/// as it pertains to generic user interface.
-///
-/// Apps, Graphical Backends, input and traits for things that can be
-/// "composed" together to create apps.
+/// Module for composition and execution of declarative programs.
 pub mod app;
 
-/// Module for graphical mathematics utilities.
+/// Module for mathematics related to visual arrangements of things.
 pub mod geometry;
 
-/// Module for state management.
+/// Module for state definition and management.
 pub mod state;
 
-/// Module for optional builtin standard.Might move this to a sub-crate, too.
+/// Module for optional builtin standard. Might move this to a sub-crate, too.
 /// `ui-composer-standard` has a nice ring to it, no?
 pub mod standard;
+
+
+pub use standard::backends;

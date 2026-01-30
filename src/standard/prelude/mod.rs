@@ -9,7 +9,7 @@
 //! ```
 
 // MARK: App
-pub use crate::app::backend::Backend;
+pub use crate::app::backend::Runner;
 pub use crate::app::input::items::*;
 pub use crate::app::input::*;
 
@@ -36,14 +36,14 @@ impl UIComposer {
     /// Creates and runs a new app in a given backend.
     /// For cross-platform compatibility, this should be called in the main thread,
     /// and only once in your program.
-    pub fn run_custom<CustomBackend: Backend>(node_tree_descriptor: CustomBackend::Tree) {
+    pub fn run_custom<CustomBackend: Runner>(node_tree_descriptor: CustomBackend::UI) {
         CustomBackend::run(node_tree_descriptor);
     }
 }
 
 #[cfg(all(feature = "winit", feature = "wgpu"))]
 mod winit_wgpu {
-    use crate::app::backend::Backend as _;
+    use crate::app::backend::Runner as _;
     use crate::standard::backends::wgpu::backend::WgpuBackend;
     use crate::standard::backends::wgpu::pipeline::UIContext;
     use crate::standard::backends::winitwgpu::backend::{Node, WinitWgpuBackend};

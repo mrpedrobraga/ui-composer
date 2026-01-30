@@ -1,6 +1,6 @@
 use crate::app::backend::AppContext;
 use crate::standard::backends::winitwgpu::backend::Node;
-use crate::app::backend::Backend;
+use crate::app::backend::Runner;
 use crate::state::process::Pollable;
 use pin_project::pin_project;
 use std::ops::DerefMut;
@@ -29,17 +29,17 @@ pub struct WgpuResources {
     pub adapter: wgpu::Adapter,
 }
 
-impl<A> Backend for WgpuBackend<A>
+impl<A> Runner for WgpuBackend<A>
 where
     A: Node<Output: Pollable<AppContext>>,
 {
-    type Tree = A;
+    type UI = A;
 
-    fn run(_node_tree: Self::Tree) {
+    fn run(_node_tree: Self::UI) {
         unimplemented!()
     }
 
-    fn poll_processors(
+    fn process(
         self: Pin<&mut Self>,
         cx: &mut Context,
         resources: &mut AppContext,

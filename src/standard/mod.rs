@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 
-mod layout;
 /// Module for optional builtin backends. Might move each backend to a sub-crate.
 /// `ui-composer-winit` and `ui-composer-tui` and `ui-composer-embedded`.
 pub mod backends;
@@ -8,8 +7,10 @@ pub mod backends;
 #[rust_analyzer::completions(ignore_flyimport)]
 pub mod prelude;
 
+pub mod components;
+
 #[doc(inline)]
-pub use layout::*;
+pub use components::layout::*;
 
 #[macro_export]
 macro_rules! items_internal {

@@ -10,7 +10,6 @@
 //! it emits the same amount of primitives every time.
 
 use std::mem::MaybeUninit;
-use image::Primitive;
 
 /// The main trait of this module, marks that this type can emit `Self::COUNT` instances of a `Primitive`.
 pub trait Emit<Primitive> {

@@ -15,7 +15,7 @@ use crossterm::terminal::{Clear, ClearType, DisableLineWrap, EnableLineWrap};
 use spin::Mutex;
 use vek::{Rgba, Vec2};
 use {
-    crate::app::{backend::Backend, input::Event},
+    crate::app::{backend::Runner, input::Event},
     crossterm::terminal::{disable_raw_mode, enable_raw_mode},
     futures::FutureExt,
     pin_project::pin_project,
@@ -41,13 +41,13 @@ pub struct TUIBackend<N: Node> {
     pub node_tree: Arc<Mutex<N::Output>>,
 }
 
-impl<N> Backend for TUIBackend<N>
+impl<N> Runner for TUIBackend<N>
 where
     N: Node,
 {
-    type Tree = N;
+    type UI = N;
 
-    fn run(node_tree: Self::Tree) {
+    fn run(node_tree: Self::UI) {
         enable_raw_mode().expect("Couldn't enable raw mode");
 
         let node_tree = node_tree.reify();
@@ -56,7 +56,7 @@ where
         disable_raw_mode().expect("Couldn't disable raw mode.")
     }
 
-    fn poll_processors(
+    fn process(
         self: Pin<&mut Self>,
         cx: &mut Context,
         _resources: &mut AppContext,

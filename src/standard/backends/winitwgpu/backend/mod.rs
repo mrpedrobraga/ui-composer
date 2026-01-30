@@ -12,7 +12,7 @@ use winit::event::{DeviceEvent, DeviceId};
 use winit::event_loop::{ControlFlow, EventLoop};
 use {
     super::window::WindowRenderTarget,
-    crate::app::backend::{Backend, BackendProcessExecutor},
+    crate::app::backend::{Runner, EffectExecutor},
     futures_signals::signal::{SignalExt, SignalFuture},
     std::{
         ops::DerefMut,
@@ -43,14 +43,14 @@ pub struct WinitWGPUApplicationHandler<A: Node> {
 }
 
 
-impl<A> Backend for WinitWgpuBackend<A>
+impl<A> Runner for WinitWgpuBackend<A>
 where
     A: Node<Output: Pollable<AppContext>> + 'static,
 {
-    type Tree = A;
+    type UI = A;
 
     /// This function *must* be called on the main thread, because of winit.
-    fn run(node_tree: Self::Tree) {
+    fn run(node_tree: Self::UI) {
         let event_loop = EventLoop::builder().build().unwrap();
         event_loop.set_control_flow(ControlFlow::Wait);
         event_loop
@@ -61,7 +61,7 @@ where
             .unwrap();
     }
 
-    fn poll_processors(
+    fn process(
         self: Pin<&mut Self>,
         cx: &mut Context,
         resources: &mut AppContext,
@@ -162,7 +162,7 @@ where
     async fn create(
         event_loop: &ActiveEventLoop,
         tree_descriptor: A,
-    ) -> (Arc<Mutex<Self>>, SignalFuture<BackendProcessExecutor<Self>>) {
+    ) -> (Arc<Mutex<Self>>, SignalFuture<EffectExecutor<Self>>) {
         let instance = wgpu::Instance::default();
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -243,7 +243,7 @@ where
         // It needs not be an other thread, just a different execution context.
         let backend_clone = backend.clone();
 
-        let backend_processor = BackendProcessExecutor::new(backend_clone).to_future();
+        let backend_processor = EffectExecutor::new(backend_clone).to_future();
 
         // I should perhaps return a (RenderEngine, impl Future) here!
         // The problem of course is that winit does not play well with async Rust yet :-(
