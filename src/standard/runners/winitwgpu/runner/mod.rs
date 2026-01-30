@@ -32,7 +32,7 @@ pub mod implementations;
 
 
 #[pin_project(project=WithWinitProj)]
-pub struct WinitWgpuBackend<A: Node>(WgpuBackend<A>);
+pub struct WinitWgpuRunner<A: Node>(WgpuBackend<A>);
 
 /// The [`ApplicationHandler`] that sits between [`winit`]
 /// and UI Composer.
@@ -42,7 +42,7 @@ pub struct WinitWGPUApplicationHandler<A: Node> {
 }
 
 
-impl<A> Runner for WinitWgpuBackend<A>
+impl<A> Runner for WinitWgpuRunner<A>
 where
     A: Node<Output: Pollable<AppContext>> + 'static,
 {
@@ -81,7 +81,7 @@ where
 {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         if self.backend.is_none() {
-            let (backend, processor) = futures::executor::block_on(WinitWgpuBackend::<_>::create(
+            let (backend, processor) = futures::executor::block_on(WinitWgpuRunner::<_>::create(
                 event_loop,
                 self.tree_descriptor
                     .take()
@@ -154,7 +154,7 @@ impl<A: Node> WgpuBackend<A> {
     }
 }
 
-impl<A> WinitWgpuBackend<A>
+impl<A> WinitWgpuRunner<A>
 where
     A: Node<Output: Pollable<AppContext>> + 'static,
 {
@@ -236,7 +236,7 @@ where
 
         // This render engine will be shared between your application (so that it can receive OS events)
         // and a reactor processor in another thread (so that it can process its own `Future`s and `Signal`s)
-        let backend = Arc::new(Mutex::new(WinitWgpuBackend(backend)));
+        let backend = Arc::new(Mutex::new(WinitWgpuRunner(backend)));
 
         // TODO: Process the render engine's processors and reactors on another thread.
         // It needs not be an other thread, just a different execution context.
@@ -293,4 +293,4 @@ pub trait NodeRe: Pollable<AppContext> {
 }
 
 #[expect(type_alias_bounds)]
-type SharedWWBackend<A: Node<Output: Pollable<UIContext>>> = Arc<Mutex<WinitWgpuBackend<A>>>;
+type SharedWWBackend<A: Node<Output: Pollable<UIContext>>> = Arc<Mutex<WinitWgpuRunner<A>>>;

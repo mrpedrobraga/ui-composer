@@ -20,7 +20,7 @@ use wgpu::{
     RenderPassDescriptor, StoreOp, TextureDescriptor, TextureDimension, TextureUsages,
 };
 use {
-    super::backend::{Node, NodeRe},
+    super::runner::{Node, NodeRe},
     crate::state::Mutable,
     futures_signals::signal::{MutableSignalCloned, Signal, SignalExt},
     pin_project::pin_project,

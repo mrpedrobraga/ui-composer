@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-/// Module for optional builtin runners. Might move each backend to a sub-crate.
+/// Module for optional builtin runners. Might move each runner to a sub-crate.
 /// `ui-composer-winit` and `ui-composer-tui` and `ui-composer-embedded`.
 pub mod runners;
 #[doc(hidden)]

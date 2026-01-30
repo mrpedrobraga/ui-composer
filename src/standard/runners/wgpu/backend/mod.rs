@@ -1,5 +1,5 @@
 use crate::app::backend::AppContext;
-use crate::standard::runners::winitwgpu::backend::Node;
+use crate::standard::runners::winitwgpu::runner::Node;
 use crate::app::backend::Runner;
 use crate::state::process::Pollable;
 use pin_project::pin_project;
@@ -8,7 +8,7 @@ use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll};
 
-/// A backend that can render our application to the GPU as well as forward interactive events to the app.
+/// A runner that can render our application to the GPU as well as forward interactive events to the app.
 #[pin_project(project=WGPUBackendProj)]
 pub struct WgpuBackend<A>
 where

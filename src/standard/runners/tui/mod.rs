@@ -37,13 +37,9 @@ where
     type App = App;
 
     fn run(app: Self::App) {
-        enable_raw_mode().expect("Couldn't enable raw mode");
-
         let runtime_app = app.reify();
         // TODO: Reflect on whether this should be blocking. That's most likely the case.
         async_std::task::block_on(Self::app_loop(runtime_app).map(|r| r.unwrap()));
-
-        disable_raw_mode().expect("Couldn't disable raw mode.")
     }
 
     fn process(

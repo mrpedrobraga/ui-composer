@@ -33,7 +33,7 @@ pub use crate::standard::runners::winitwgpu::window::{Window, WindowAttributes};
 pub struct UIComposer;
 
 impl UIComposer {
-    /// Creates and runs a new app in a given backend.
+    /// Creates and runs a new app in a given runner.
     /// For cross-platform compatibility, this should be called in the main thread,
     /// and only once in your program.
     pub fn run_custom<CustomBackend: Runner>(node_tree_descriptor: CustomBackend::App) {
@@ -46,16 +46,16 @@ mod winit_wgpu {
     use crate::app::backend::Runner as _;
     use crate::standard::runners::wgpu::backend::WgpuBackend;
     use crate::standard::runners::wgpu::pipeline::UIContext;
-    use crate::standard::runners::winitwgpu::backend::{Node, WinitWgpuBackend};
+    use crate::standard::runners::winitwgpu::runner::{Node, WinitWgpuRunner};
     use crate::standard::prelude::UIComposer;
     use crate::state::process::Pollable;
 
     impl UIComposer {
-        /// Creates and runs a new app in the default backend for the selected target.
+        /// Creates and runs a new app in the default runner for the selected target.
         /// For cross-platform compatibility, this should be called in the main thread,
         /// and only once in your program.
         pub fn run<N: Node + 'static>(node_tree_descriptor: N) {
-            WinitWgpuBackend::<N>::run(node_tree_descriptor);
+            WinitWgpuRunner::<N>::run(node_tree_descriptor);
         }
 
         pub fn run2<N: Node + 'static>(node_tree_descriptor: N)

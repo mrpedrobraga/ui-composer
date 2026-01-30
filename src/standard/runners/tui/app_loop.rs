@@ -11,7 +11,7 @@ use crossterm::style::{
     style, Color, PrintStyledContent, ResetColor,
     StyledContent, Stylize,
 };
-use crossterm::terminal::{Clear, ClearType, DisableLineWrap, EnableLineWrap};
+use crossterm::terminal::{disable_raw_mode, enable_raw_mode, Clear, ClearType, DisableLineWrap, EnableLineWrap};
 use crossterm::{event, ExecutableCommand};
 use std::io::{stdout, Stdout, Write};
 use vek::{Rect, Rgba, Vec2};
@@ -21,6 +21,8 @@ where
     N: Element,
 {
     pub(crate) async fn app_loop(mut node_tree: N::Output) -> std::io::Result<()> {
+        enable_raw_mode().expect("Couldn't enable raw mode");
+
         let mut stdout = stdout();
         stdout
             .execute(EnableMouseCapture)?
@@ -71,6 +73,8 @@ where
             .execute(DisableMouseCapture)?
             .execute(Clear(ClearType::All))?
             .flush()?;
+
+        disable_raw_mode().expect("Couldn't disable raw mode.");
 
         Ok(())
     }
