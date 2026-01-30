@@ -9,28 +9,29 @@
 //! A type `T` can be "statically allocated" to a stack of primitives if it is "Sized", that is,
 //! it emits the same amount of primitives every time.
 
-use std::mem::MaybeUninit;
-
 /// The main trait of this module, marks that this type can emit `Self::COUNT` instances of a `Primitive`.
-pub trait Gather<Primitive> {
-    /// How many `Primitive`s this type emits.
+pub trait Gather {
+    type Item;
+    type Iter: Iterator<Item = Self::Item>;
     const COUNT: usize;
-
-    /// Emits `Self::COUNT` primitives to a slice of `Self::COUNT` length.
-    fn emit(&self, alloc: &[MaybeUninit<Primitive>]);
+    fn gather(&self) -> Self::Iter;
 }
 
 pub mod implementations {
-    use std::mem::MaybeUninit;
-    use super::Gather;
+    use super::{Gather};
 
-    impl<A, B, Primitive> Gather<Primitive> for (A, B) where A: Gather<Primitive>, B: Gather<Primitive> {
+    impl<A, B> Gather for (A, B)
+    where
+        A: Gather,
+        B: Gather<Item = A::Item>,
+    {
+        type Item = A::Item;
+        type Iter = std::iter::Chain<A::Iter, B::Iter>;
+
         const COUNT: usize = A::COUNT + B::COUNT;
 
-        fn emit(&self, alloc: &[MaybeUninit<Primitive>]) {
-            let (left, right) = alloc.split_at(A::COUNT);
-            self.0.emit(left);
-            self.1.emit(right);
+        fn gather(&self) -> Self::Iter {
+            self.0.gather().chain(self.1.gather())
         }
     }
 }
