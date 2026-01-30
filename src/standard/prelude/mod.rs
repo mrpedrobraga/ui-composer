@@ -27,7 +27,7 @@ pub mod macros;
 pub use crate::standard::*;
 
 #[cfg(all(feature = "winit", feature = "wgpu"))]
-pub use crate::standard::backends::winitwgpu::window::{Window, WindowAttributes};
+pub use crate::standard::runners::winitwgpu::window::{Window, WindowAttributes};
 
 /// This struct is the "entry point" of a UI Composer project.
 pub struct UIComposer;
@@ -36,7 +36,7 @@ impl UIComposer {
     /// Creates and runs a new app in a given backend.
     /// For cross-platform compatibility, this should be called in the main thread,
     /// and only once in your program.
-    pub fn run_custom<CustomBackend: Runner>(node_tree_descriptor: CustomBackend::UI) {
+    pub fn run_custom<CustomBackend: Runner>(node_tree_descriptor: CustomBackend::App) {
         CustomBackend::run(node_tree_descriptor);
     }
 }
@@ -44,9 +44,9 @@ impl UIComposer {
 #[cfg(all(feature = "winit", feature = "wgpu"))]
 mod winit_wgpu {
     use crate::app::backend::Runner as _;
-    use crate::standard::backends::wgpu::backend::WgpuBackend;
-    use crate::standard::backends::wgpu::pipeline::UIContext;
-    use crate::standard::backends::winitwgpu::backend::{Node, WinitWgpuBackend};
+    use crate::standard::runners::wgpu::backend::WgpuBackend;
+    use crate::standard::runners::wgpu::pipeline::UIContext;
+    use crate::standard::runners::winitwgpu::backend::{Node, WinitWgpuBackend};
     use crate::standard::prelude::UIComposer;
     use crate::state::process::Pollable;
 

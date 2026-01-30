@@ -1,4 +1,4 @@
-use ui_composer::standard::backends::wgpu::components::*;
+use ui_composer::standard::runners::wgpu::components::*;
 use ui_composer::standard::prelude::*;
 
 fn main() {

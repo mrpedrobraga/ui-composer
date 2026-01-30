@@ -19,9 +19,9 @@ pub mod futures;
 /// An application runner. It bubbles down Affects and bubble up Effects,
 /// effectively allowing the pure, immutable application to perform IO.
 pub trait Runner {
-    type UI;
+    type App;
 
-    fn run(ui: Self::UI);
+    fn run(ui: Self::App);
 
     /// Polls the UI as a [`Future`].
     #[allow(unused_variables)]

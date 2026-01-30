@@ -7,7 +7,7 @@
 //! An application is defined by composing building blocks using functions. For example:
 //!
 //! ```rust
-//! # use ui_composer::backends::wgpu::components::{Button, Label};
+//! # use ui_composer::runners::wgpu::components::{Button, Label};
 //! # use ui_composer::standard::Column;
 //! Column(
 //!     Label("Click The Button"),
@@ -30,7 +30,7 @@
 //! Those are [Algebraic Effects](https://en.wikipedia.org/wiki/Effect_system) which compose naturally as you compose your UI.
 //!
 //! ```rust
-//! # use ui_composer::backends::wgpu::components::{Button, Label};
+//! # use ui_composer::runners::wgpu::components::{Button, Label};
 //! # use ui_composer::standard::Column;
 //! # use ui_composer::prelude::*;
 //! UIComposer::run( // a runner

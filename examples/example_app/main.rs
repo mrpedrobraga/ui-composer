@@ -1,10 +1,10 @@
 #![allow(non_snake_case)]
 
 use ui_composer::Flex;
-use ui_composer::standard::backends::wgpu::components::*;
-use ui_composer::standard::backends::wgpu::pipeline::graphics::graphic::Graphic;
-use ui_composer::standard::backends::wgpu::pipeline::text::Text;
-use ui_composer::standard::backends::winitwgpu::prelude::*;
+use ui_composer::standard::runners::wgpu::components::*;
+use ui_composer::standard::runners::wgpu::pipeline::graphics::graphic::Graphic;
+use ui_composer::standard::runners::wgpu::pipeline::text::Text;
+use ui_composer::standard::runners::winitwgpu::prelude::*;
 use ui_composer::standard::prelude::items::*;
 use ui_composer::standard::prelude::process::React;
 use ui_composer::standard::prelude::*;
