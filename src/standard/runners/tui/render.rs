@@ -9,10 +9,10 @@
 //! The render can update the stdout partially, by rendering only an AABB. This is useful for huge screens,
 //! but, really, terminals don't really have a lot of pixels.
 
+use std::io::Stdout;
 use futures_signals::signal::Signal;
 use crate::state::process::{Pollable, SignalReactItemRe};
 use vek::{Rect, Vec2};
-use wgpu::hal::DynCommandEncoder;
 use {crate::app::input::Event, ndarray::Array2, vek::Rgba};
 use crate::app::composition::algebra::{Bubble, Empty};
 use crate::app::composition::reify::Reify;
@@ -60,11 +60,11 @@ impl RenderTui for Graphic {
     where
         C: Canvas<Pixel = Rgba<u8>>,
     {
-        let my_rect: vek::Aabr<u32> = self.rect.as_().into_aabr();
+        let aabr: vek::Aabr<u32> = self.rect.as_().into_aabr();
 
         let color: Rgba<u8> = (self.color * 255.0).as_();
-        for y in my_rect.min.y..my_rect.max.y {
-            for x in my_rect.min.x..my_rect.max.x {
+        for y in aabr.min.y..aabr.max.y {
+            for x in aabr.min.x..aabr.max.x {
                 canvas.put_pixel(Vec2::new(x, y), color);
             }
         }
@@ -76,7 +76,9 @@ impl<S, Cx> RenderTui for SignalReactItemRe<S, Cx> where S: Signal<Item: Reify<C
     where
         C: Canvas<Pixel=Rgba<u8>>,
     {
-        RenderTui::draw(self.held_item.as_ref().expect("Wasn't holding anything..."), canvas, rect);
+        if let Some(item) = self.held_item.as_ref() {
+            RenderTui::draw(item, canvas, rect);
+        }
     }
 }
 

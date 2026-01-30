@@ -10,7 +10,7 @@ fn main() {
 
 fn App() -> impl TUI {
     ItemBox::new(|_hx| Graphic {
-        rect: Rect::new(3.0, 3.0, 10.0, 10.0),
+        rect: Rect::new(0.0, 0.0, 3.0, 3.0),
         color: Rgba::cyan(),
     })
 }

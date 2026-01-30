@@ -25,23 +25,23 @@ use std::task::{Context, Poll};
 use vek::{Rect, Rgba};
 
 #[pin_project(project=TUIBackendProj)]
-pub struct TUIRunner<N: Node> {
+pub struct TUIRunner<N: Element> {
     #[pin]
     pub app: Arc<Mutex<N::Output>>,
 }
 
 impl<App> Runner for TUIRunner<App>
 where
-    App: Node,
+    App: Element,
 {
     type App = App;
 
     fn run(app: Self::App) {
         enable_raw_mode().expect("Couldn't enable raw mode");
 
-        let node_tree = app.reify();
+        let runtime_app = app.reify();
         // TODO: Reflect on whether this should be blocking. That's most likely the case.
-        async_std::task::block_on(Self::app_loop(node_tree).map(|r| r.unwrap()));
+        async_std::task::block_on(Self::app_loop(runtime_app).map(|r| r.unwrap()));
 
         disable_raw_mode().expect("Couldn't disable raw mode.")
     }
@@ -61,12 +61,12 @@ where
     }
 }
 
-pub trait Node: Send {
-    type Output: NodeRe;
+pub trait Element: Send {
+    type Output: RuntimeElement;
     fn reify(self) -> Self::Output;
 }
 
-pub trait NodeRe: Send + Bubble<Event, bool> + Pollable<()> {
+pub trait RuntimeElement: Send + Bubble<Event, bool> + Pollable<()> {
     fn setup(&mut self);
     fn draw<C>(&self, canvas: &mut C, rect: Rect<u16, u16>)
     where

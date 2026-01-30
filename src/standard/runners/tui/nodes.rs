@@ -4,7 +4,7 @@ use crate::geometry::layout::flow::CartesianFlow;
 use crate::geometry::layout::hints::ParentHints;
 use crate::geometry::layout::LayoutItem;
 use crate::standard::runners::tui::render::Canvas;
-use crate::standard::runners::tui::{Node, NodeRe};
+use crate::standard::runners::tui::{Element, RuntimeElement};
 use crate::state::process::{Pollable, SignalReactItem};
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -14,14 +14,23 @@ use vek::{Extent2, Rect, Rgba};
 use {crate::app::input::Event, vek::Vec2};
 use crate::runners::tui::render::RenderTui;
 
-/// An auto trait that simplifies description of a type that can be a building block in TUI.
-pub trait TUI: LayoutItem<Content: Reify<(), Output: RenderTui + Pollable<()> + Bubble<Event, bool>>> {}
-impl<T> TUI for T where T: LayoutItem<Content: Reify<(), Output: RenderTui + Pollable<()> + Bubble<Event, bool>>> {}
+/// Trait alias that represents anything that can be laid out to get UI.
+pub trait TUI: LayoutItem<Content: Reify<(), Output: UIFragment>> {}
+impl<T> TUI for T where T: LayoutItem<Content: Reify<(), Output: UIFragment>> {}
+
+/// Trait alias that represents anything that can:
+/// 1. Render;
+/// 2. Be polled for reactivity;
+/// 3. Handle events;
+///
+/// TODO: Maybe unify all of these???
+pub trait UIFragment: RenderTui + Pollable<()> + Bubble<Event, bool> {}
+impl<T> UIFragment for T where T: RenderTui + Pollable<()> + Bubble<Event, bool> {}
 
 #[allow(non_snake_case)]
-pub fn Terminal<UI>(mut ui: UI) -> TerminalNode<SignalReactItem<impl Signal<Item = UI::Content>>>
+pub fn Terminal<TUI>(mut ui: TUI) -> TerminalNode<SignalReactItem<impl Signal<Item = TUI::Content>>>
 where
-    UI: LayoutItem,
+    TUI: LayoutItem,
 {
     let state = TerminalNodeState {
         size: Default::default(),
@@ -56,7 +65,7 @@ pub struct TerminalNodeState {
     pub mouse_position: Mutable<Option<Vec2<f32>>>,
 }
 
-impl<UI> Node for TerminalNode<UI>
+impl<UI> Element for TerminalNode<UI>
 where
     UI: Reify<(), Output: Sized + RenderTui + Bubble<Event, bool> + Pollable<()>>
         + Send,
@@ -91,9 +100,9 @@ where
     }
 }
 
-impl<UI> NodeRe for TerminalNodeRe<UI>
+impl<UI> RuntimeElement for TerminalNodeRe<UI>
 where
-    UI: RenderTui + Pollable<()> + Bubble<Event, bool>,
+    UI: UIFragment,
 {
     fn setup(&mut self) {}
 
@@ -101,29 +110,12 @@ where
     where
         C: Canvas<Pixel = Rgba<u8>>,
     {
-        // Clear canvas
-
         let item_size = Extent2::new(100.0, 100.0);
         let texture_size = Into::<Vec2<f32>>::into(rect.extent().as_());
         let item_position = (texture_size - Into::<Vec2<f32>>::into(item_size)) / 2.0;
 
         let item_rect = vek::Rect::from((item_position, item_size)).as_();
-        let item_aabr: vek::Aabr<u16> = item_rect.into();
 
         self.ui.draw(canvas, item_rect);
-
-        let color: vek::Rgba<u8> = vek::Rgba {
-            r: 0x77,
-            g: 0x3a,
-            b: 0xf4,
-            a: 0xff,
-        };
-        for y in item_aabr.min.y..item_aabr.max.y {
-            for x in item_aabr.min.x..item_aabr.max.x {
-                canvas.put_pixel(Vec2::new(x as u32, y as u32), color);
-            }
-        }
-
-        // Flush canvas to framebuffer, possibly!
     }
 }
