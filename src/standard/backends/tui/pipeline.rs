@@ -11,11 +11,8 @@
 
 use crate::state::process::Pollable;
 use vek::Vec2;
-use {
-    crate::app::{building_blocks::BuildingBlock, input::Event},
-    ndarray::Array2,
-    vek::Rgba,
-};
+use {crate::app::input::Event, ndarray::Array2, vek::Rgba};
+use crate::app::composition::algebra::{Bubble, Monoid};
 
 /// A trait that marks a trait as renderable with this pipeline.
 pub trait RenderTui {
@@ -47,9 +44,9 @@ impl Graphic {
     }
 }
 
-impl<Cx> BuildingBlock<Cx> for Graphic {
-    fn handle_event(&mut self, _event: Event) -> bool {
-        false
+impl Bubble<Event, bool> for Graphic {
+    fn bubble(&mut self, #[expect(unused)] event: &mut Event) -> bool {
+        Monoid::empty()
     }
 }
 

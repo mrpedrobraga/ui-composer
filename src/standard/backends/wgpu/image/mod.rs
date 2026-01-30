@@ -1,4 +1,3 @@
-use crate::app::building_blocks::BuildingBlock;
 use crate::standard::backends::wgpu::backend::WgpuResources;
 use crate::standard::backends::wgpu::pipeline::graphics::RenderGraphic;
 use crate::standard::backends::wgpu::pipeline::text::TextPipelineResources;
@@ -22,6 +21,7 @@ use {
     pin_project::pin_project,
     winit::event::WindowEvent,
 };
+use crate::app::composition::algebra::Bubble;
 use crate::app::input::Event;
 use crate::geometry::layout::flow::CartesianFlow;
 use crate::geometry::layout::LayoutItem;
@@ -92,12 +92,12 @@ pub struct ImageNodeRe<A: RenderBuildingBlock> {
 }
 
 /* Use a different implementation of "Node" for Image Node that's detached from winit!  */
-impl<Res, A> BuildingBlock<Res> for ImageNodeRe<A>
+impl<A> Bubble<Event, bool> for ImageNodeRe<A>
 where
     A: RenderBuildingBlock,
 {
-    fn handle_event(&mut self, event: Event) -> bool {
-        self.content.handle_event(event)
+    fn bubble(&mut self, event: &mut Event) -> bool {
+        self.content.bubble(event)
     }
 }
 

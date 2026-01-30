@@ -1,16 +1,14 @@
-use crate::app::building_blocks::reify::Reify;
-use crate::standard::backends::wgpu::pipeline::RendererBuffers;
+use crate::app::composition::reify::Reify;
 use crate::standard::backends::wgpu::pipeline::graphics::{
-    RenderGraphic, RenderGraphicDescriptor, graphic::Graphic,
+    graphic::Graphic, RenderGraphic, RenderGraphicDescriptor,
 };
+use crate::standard::backends::wgpu::pipeline::RendererBuffers;
 use crate::state::process::Pollable;
 use futures_signals::signal_vec::SignalVec;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use {
-    crate::{app::building_blocks::BuildingBlock, app::input::Event},
-    vek::Rect,
-};
+use {crate::app::input::Event, vek::Rect};
+use crate::app::composition::algebra::Bubble;
 // TODO: Move this out of `wgpu`...
 // Vec Items should still be barred behind `alloc`,
 // but it shouldn't be inherently bound to the gpu!
@@ -45,7 +43,6 @@ where
 impl<Res, Sig> Reify<Res> for VecItemsDescriptor<Sig>
 where
     Sig: SignalVec + Send,
-    Sig::Item: BuildingBlock<Res>,
 {
     type Output = VecItem<Sig>;
 
@@ -57,7 +54,6 @@ where
 impl<Res, Sig> RenderGraphicDescriptor<Res> for VecItemsDescriptor<Sig>
 where
     Sig: SignalVec + Send,
-    Sig::Item: BuildingBlock<Res>,
 {
     fn get_render_rect(&self) -> Option<Rect<f32, f32>> {
         Some(self.rect)
@@ -80,19 +76,18 @@ where
 impl<Sig, Res> Pollable<Res> for VecItem<Sig>
 where
     Sig: SignalVec + Send,
-    Sig::Item: BuildingBlock<Res>,
 {
     fn poll(self: Pin<&mut Self>, _cx: &mut Context, _resources: &mut Res) -> Poll<Option<()>> {
         todo!("Poll the items inside, like any other collection does...")
     }
 }
 
-impl<Res, Sig> BuildingBlock<Res> for VecItem<Sig>
+impl<Sig> Bubble<Event, bool> for VecItem<Sig>
 where
     Sig: SignalVec + Send,
-    Sig::Item: BuildingBlock<Res>,
+    Sig::Item: Bubble<Event, bool>
 {
-    fn handle_event(&mut self, _event: Event) -> bool {
+    fn bubble(&mut self, event: &mut Event) -> bool {
         todo!("Broadcast event to children...")
     }
 }

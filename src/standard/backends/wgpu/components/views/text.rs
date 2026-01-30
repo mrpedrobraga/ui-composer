@@ -1,12 +1,12 @@
 #![allow(non_snake_case)]
 
-use crate::app::building_blocks::BuildingBlock;
 use crate::standard::backends::wgpu::pipeline::text::{Text, TextItem};
 use crate::geometry::layout::hints::ParentHints;
 use crate::app::input::Event;
 use crate::geometry::layout::LayoutItem;
 use crate::state::process::Pollable;
 use vek::Rgb;
+use crate::app::composition::algebra::{Bubble, Monoid};
 
 /// A simple label that visualises a String!
 ///
@@ -69,9 +69,8 @@ impl<AsStr: AsRef<str> + Send + Clone> LayoutItem for TextLayoutItem<AsStr> {
 
 impl<S: AsRef<str> + Send, Res> Pollable<Res> for TextLayoutItem<S> {}
 
-impl<S: AsRef<str> + Send, Res> BuildingBlock<Res> for TextLayoutItem<S> {
-    fn handle_event(&mut self, _: Event) -> bool {
-        // Event was not handled
-        false
+impl<S: AsRef<str> + Send> Bubble<Event, bool> for TextLayoutItem<S> {
+    fn bubble(&mut self, #[expect(unused)] event: &mut Event) -> bool {
+        Monoid::empty()
     }
 }

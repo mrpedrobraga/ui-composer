@@ -1,19 +1,15 @@
 #![allow(unused)]
 
+use crate::app::composition::algebra::Bubble;
+use crate::app::input::CursorEvent;
 use crate::state::process::Pollable;
 use vek::Vec2;
 use {
     super::super::{Event, InputItem},
-    crate::{
-        app::{
-            building_blocks::BuildingBlock,
-            input::{ButtonState, MouseButton},
-        },
-    },
+    crate::app::input::{ButtonState, MouseButton},
     futures_signals::signal::Mutable,
     vek::Rect,
 };
-use crate::app::input::CursorEvent;
 
 #[derive(Default, Debug, Copy, Clone, PartialEq)]
 pub enum DragState {
@@ -53,34 +49,34 @@ impl Drag {
 
 impl InputItem for Drag {}
 
-impl<Res> BuildingBlock<Res> for Drag {
-    fn handle_event(&mut self, event: Event) -> bool {
+impl Bubble<Event, bool> for Drag {
+    fn bubble(&mut self, event: &mut Event) -> bool {
         if let Event::Cursor { id, event } = event {
             match (event, self.drag_state.get()) {
                 (CursorEvent::Moved { position }, DragState::None) => {
-                    self.mouse_position.set(position);
-                    if self.rect.contains_point(position) {
+                    self.mouse_position.set(*position);
+                    if self.rect.contains_point(*position) {
                         self.drag_state.set(DragState::Hovering);
                     }
                     true
                 }
                 (CursorEvent::Moved { position }, DragState::Hovering) => {
-                    self.mouse_position.set(position);
-                    if !self.rect.contains_point(position) {
+                    self.mouse_position.set(*position);
+                    if !self.rect.contains_point(*position) {
                         self.drag_state.set(DragState::None);
                     }
                     false
                 }
                 (CursorEvent::Moved { position }, DragState::Dragging) => {
-                    if self.rect.contains_point(position) {
-                        let delta = position - self.mouse_position.get();
+                    if self.rect.contains_point(*position) {
+                        let delta = *position - self.mouse_position.get();
                         *self.displacement.lock_mut() += delta;
                     } else {
                         // If the mouse leaves the drag area, drag stops.
                         // maybe this shouldn't be here.
                         self.drag_state.set(DragState::None);
                     }
-                    self.mouse_position.set(position);
+                    self.mouse_position.set(*position);
                     true
                 }
                 (CursorEvent::Exited, DragState::Dragging | DragState::Hovering) => {

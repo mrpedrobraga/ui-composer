@@ -61,7 +61,7 @@
 //! Or on a web-specific `HTMLCanvasRunner`. The sky is the limit.
 
 pub mod backend;
-pub mod building_blocks;
+pub mod composition;
 
 /// User events are one of the things that can be bubbled down an application.
 pub mod input;

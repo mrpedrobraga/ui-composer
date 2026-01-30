@@ -1,9 +1,10 @@
 use crate::state::process::Pollable;
 use {
-    crate::app::{building_blocks::BuildingBlock, input::Event},
+    crate::app::{input::Event},
     bytemuck::{Pod, Zeroable},
     vek::{Extent3, Mat4, Rect, Rgb, Vec3, Vec4, num_traits::AsPrimitive},
 };
+use crate::app::composition::algebra::{Bubble, Monoid};
 
 /// A small fragment of graphics that can be sent to the GPU and rendered.
 /// You can compose several primitives to make more impressive graphics.
@@ -78,9 +79,9 @@ where
     }
 }
 
-impl<Res> BuildingBlock<Res> for Graphic {
-    fn handle_event(&mut self, _event: Event) -> bool {
-        false
+impl Bubble<Event, bool> for Graphic {
+    fn bubble(&mut self, #[expect(unused)] event: &mut Event) -> bool {
+        Monoid::empty()
     }
 }
 

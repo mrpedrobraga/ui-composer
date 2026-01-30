@@ -18,7 +18,7 @@
 //!
 //! ```rust
 //! # #![allow(non_snake_case)]
-//! # use ui_composer::app::building_blocks::reify::Reify;//!
+//! # use ui_composer::app::composition::reify::Reify;//!
 //! # use ui_composer::standard::backends::wgpu::pipeline::text::Text;
 //! # use vek::Rgb;
 //! # use ui_composer::standard::backends::wgpu::pipeline::UIContext;
@@ -62,7 +62,7 @@
 //!
 //! Some utility functions for calculating layouts are in the [`flow`] module.
 
-use crate::app::building_blocks::reify::Reify;
+use crate::app::composition::reify::Reify;
 pub use flow::CoordinateSystem;
 use hints::{ChildHints, ParentHints};
 use std::marker::PhantomData;

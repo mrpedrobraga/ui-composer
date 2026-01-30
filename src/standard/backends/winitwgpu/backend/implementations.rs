@@ -4,6 +4,8 @@ use crate::standard::backends::wgpu::pipeline::WgpuRenderers;
 use winit::event::WindowEvent;
 use winit::event_loop::ActiveEventLoop;
 use winit::window::WindowId;
+use crate::app::backend::AppContext;
+use crate::state::process::Pollable;
 
 impl Node for () {
     type Output = ();
@@ -52,8 +54,8 @@ where
 
 impl<A, B> NodeRe for (A, B)
 where
-    A: NodeRe,
-    B: NodeRe,
+    A: NodeRe + Pollable<AppContext>,
+    B: NodeRe + Pollable<AppContext>,
 {
     fn setup(&mut self, gpu_resources: &WgpuResources) {
         self.0.setup(gpu_resources);

@@ -1,5 +1,7 @@
 use crate::app::backend::AppContext;
-use crate::app::building_blocks::BuildingBlock;
+use crate::app::input::Event;
+use crate::geometry::layout::hints::ParentHints;
+use crate::geometry::layout::{flow::CartesianFlow, LayoutItem};
 use crate::standard::backends::wgpu::backend::WgpuResources;
 use crate::standard::backends::wgpu::pipeline::graphics::RenderGraphic;
 use crate::standard::backends::wgpu::pipeline::{
@@ -11,10 +13,8 @@ use crate::standard::backends::wgpu::pipeline::{
     WgpuRenderer,
 };
 use crate::standard::backends::wgpu::render_target::{Render, RenderBuildingBlock, RenderTarget};
-use crate::geometry::layout::hints::ParentHints;
-use crate::app::input::Event;
-use crate::state::process::SignalReactItem;
 use crate::state::process::Pollable;
+use crate::state::process::SignalReactItem;
 use wgpu::{
     Color, LoadOp, Operations, RenderPassColorAttachment, RenderPassDepthStencilAttachment,
     RenderPassDescriptor, StoreOp, TextureDescriptor, TextureDimension, TextureUsages,
@@ -39,7 +39,7 @@ use {
         window::{Window, WindowId},
     },
 };
-use crate::geometry::layout::{flow::CartesianFlow, LayoutItem};
+use crate::app::composition::algebra::Bubble;
 
 mod conversion;
 
@@ -233,12 +233,12 @@ pub struct WindowNodeRe<Item> {
     reify_resources: UIContext,
 }
 
-impl<Item> BuildingBlock<AppContext> for WindowNodeRe<Item>
+impl<Item> Bubble<Event, bool> for WindowNodeRe<Item>
 where
-    Item: BuildingBlock<UIContext>,
+    Item: Bubble<Event, bool>,
 {
-    fn handle_event(&mut self, event: Event) -> bool {
-        self.content.handle_event(event)
+    fn bubble(&mut self, event: &mut Event) -> bool {
+        self.content.bubble(event)
     }
 }
 
@@ -316,8 +316,8 @@ where
             }
         }
 
-        if let Ok(app_event) = event.try_into() {
-            self.handle_event(app_event);
+        if let Ok(mut app_event) = event.try_into() {
+            self.bubble(&mut app_event);
         }
     }
 }

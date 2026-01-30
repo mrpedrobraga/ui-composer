@@ -1,4 +1,4 @@
-use crate::app::building_blocks::reify::Reify;
+use crate::app::composition::reify::Reify;
 use crate::standard::backends::wgpu::backend::WgpuResources;
 use crate::standard::backends::wgpu::render_target::{RenderBuildingBlock, RenderTarget};
 use wgpu::{CompareFunction, DepthBiasState, DepthStencilState, StencilState, TextureFormat};

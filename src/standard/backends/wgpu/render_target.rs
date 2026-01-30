@@ -1,15 +1,17 @@
 //! A render target is something that graphics, text, etc., can be rendered to.
 
-use crate::app::building_blocks::reify::Reify;
+use crate::app::composition::reify::Reify;
 use crate::standard::backends::wgpu::backend::WgpuResources;
 use crate::standard::backends::wgpu::pipeline::graphics::RenderGraphicDescriptor;
 use crate::standard::backends::wgpu::pipeline::{RendererBuffers, UIContext, WgpuRenderers};
 use {
     super::pipeline::{graphics::RenderGraphic, text::RenderText},
-    crate::app::building_blocks::BuildingBlock,
     vek::Extent2,
     wgpu::TextureFormat,
 };
+use crate::app::composition::algebra::Bubble;
+use crate::app::input::Event;
+use crate::state::process::Pollable;
 
 /// Trait that describes the target of a render operation with this pipeline.
 pub trait RenderTarget {
@@ -30,8 +32,8 @@ pub trait RenderTarget {
 }
 
 /// Trait that describes an item that can be rendered with this pipeline.
-pub trait RenderBuildingBlock: BuildingBlock<UIContext> + RenderGraphic + RenderText {}
-impl<A> RenderBuildingBlock for A where A: BuildingBlock<UIContext> + RenderGraphic + RenderText {}
+pub trait RenderBuildingBlock: Bubble<Event, bool> + Pollable<UIContext> + RenderGraphic + RenderText {}
+impl<A> RenderBuildingBlock for A where A: Bubble<Event, bool> + Pollable<UIContext> + RenderGraphic + RenderText {}
 /// Trait that describes an item that can be Output into a [RenderBuildingBlock] primitive.
 pub trait Render: RenderGraphicDescriptor<UIContext, Output: RenderBuildingBlock> {}
 

@@ -1,7 +1,6 @@
 //! A Backend that uses Winit to create Windowing and WGPU to render to the window.
 
 use crate::app::backend::AppContext;
-use crate::app::building_blocks::BuildingBlock;
 use crate::standard::backends::wgpu::backend::{WgpuBackend, WgpuResources};
 use crate::standard::backends::wgpu::pipeline::graphics::OrchestraRenderer;
 use crate::standard::backends::wgpu::pipeline::{UIContext, WgpuRenderers, text::TextRenderer};
@@ -281,7 +280,7 @@ pub trait Node: Send {
 }
 
 /// A main node in the app tree.
-pub trait NodeRe: BuildingBlock<AppContext> {
+pub trait NodeRe: Pollable<AppContext> {
     fn setup(&mut self, gpu_resources: &WgpuResources);
 
     /// Handles an event and cascades it down its children.

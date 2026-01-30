@@ -1,12 +1,12 @@
 #![allow(unused)]
+use crate::app::composition::algebra::Bubble;
+use crate::app::input::CursorEvent;
 use crate::state::process::Pollable;
 use {
     super::super::{Event, InputItem},
-    crate::{app::building_blocks::BuildingBlock},
     futures_signals::signal::Mutable,
     vek::Rect,
 };
-use crate::app::input::CursorEvent;
 
 /// An Interactor that handles a user hovering over it with a cursor.
 pub struct Hover {
@@ -25,12 +25,12 @@ impl Hover {
 
 impl InputItem for Hover {}
 
-impl<Res> BuildingBlock<Res> for Hover {
-    fn handle_event(&mut self, event: Event) -> bool {
+impl Bubble<Event, bool> for Hover {
+    fn bubble(&mut self, event: &mut Event) -> bool {
         match event {
             Event::Cursor { id, event } => match event {
                 CursorEvent::Moved { position } => {
-                    let rect_contains_point = self.rect.contains_point(position);
+                    let rect_contains_point = self.rect.contains_point(*position);
                     self.is_hovered_state
                         .set_if(rect_contains_point, |a, b| a != b);
                     true

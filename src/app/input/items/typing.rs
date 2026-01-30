@@ -1,8 +1,8 @@
-use crate::app::building_blocks::BuildingBlock;
 use crate::app::input::{ButtonState, InputItem, KeyEvent, KeyboardEvent};
 use crate::app::input::Event;
 use crate::state::process::Pollable;
 use futures_signals::signal::Mutable;
+use crate::app::composition::algebra::Bubble;
 
 /// Input item that receives key events...
 #[derive(Clone)]
@@ -18,8 +18,8 @@ impl Typing {
 
 impl InputItem for Typing {}
 
-impl<Res> BuildingBlock<Res> for Typing {
-    fn handle_event(&mut self, event: Event) -> bool {
+impl Bubble<Event, bool> for Typing {
+    fn bubble(&mut self, event: &mut Event) -> bool {
         if let Event::Keyboard {
             event:
                 KeyboardEvent::Key(KeyEvent {

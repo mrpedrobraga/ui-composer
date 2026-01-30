@@ -1,34 +1,35 @@
-use crate::app::building_blocks::reify::Reify;
-use crate::standard::backends::wgpu::pipeline::UIContext;
+use crate::app::composition::algebra::{Bubble, Monoid};
+use crate::app::composition::reify::Reify;
 use crate::standard::backends::wgpu::pipeline::graphics::graphic::Graphic;
 use crate::standard::backends::wgpu::pipeline::text::TextItemRe;
+use crate::standard::backends::wgpu::pipeline::UIContext;
+use crate::standard::prelude::{Drag, Hover, Tap, Typing};
+use crate::state::effect::Effect;
 use crate::state::process::Pollable;
 use glyphon::{Attrs, Buffer, Family, Metrics, Shaping, Weight, Wrap};
 use {
     super::{RenderText, TextItem},
     crate::{
-        app::{building_blocks::BuildingBlock, input::Event},
+        app::input::Event,
         state::process::{FutureAwaitItemRe, SignalReactItemRe},
     },
     futures_signals::signal::Signal,
     glyphon::{Color, TextArea, TextBounds},
     std::future::Future,
 };
-use crate::standard::prelude::{Drag, Hover, Tap, Typing};
-use crate::state::effect::Effect;
 //MARK: Text
 
-impl<S: AsRef<str> + Send, Res> BuildingBlock<Res> for TextItem<S> {
-    fn handle_event(&mut self, _event: Event) -> bool {
-        false
+impl<S: AsRef<str> + Send> Bubble<Event, bool> for TextItem<S> {
+    fn bubble(&mut self, #[expect(unused)] event: &mut Event) -> bool {
+        Monoid::empty()
     }
 }
 
 impl<Res> Pollable<Res> for TextItemRe {}
 
-impl<Res> BuildingBlock<Res> for TextItemRe {
-    fn handle_event(&mut self, #[expect(unused)] event: Event) -> bool {
-        false
+impl Bubble<Event, bool> for TextItemRe {
+    fn bubble(&mut self, #[expect(unused)] event: &mut Event) -> bool {
+        Monoid::empty()
     }
 }
 

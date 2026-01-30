@@ -1,18 +1,16 @@
 #![allow(unused)]
+use crate::app::composition::algebra::Bubble;
+use crate::app::input::CursorEvent;
+use crate::state::effect::Effect;
 use crate::state::process::Pollable;
 use {
     super::super::{Event, InputItem},
     crate::{
-        app::{
-            building_blocks::BuildingBlock,
-            input::{ButtonState, MouseButton},
-        },
+        app::input::{ButtonState, MouseButton},
         state::Mutable,
     },
     vek::{Rect, Vec2},
 };
-use crate::app::input::CursorEvent;
-use crate::state::effect::Effect;
 
 /// An Interactor that handles a user hovering over it with a cursor.
 pub struct Tap<A: Effect> {
@@ -40,15 +38,15 @@ where
 
 impl<A> InputItem for Tap<A> where A: Effect + Send {}
 
-impl<A, Res> BuildingBlock<Res> for Tap<A>
+impl<A> Bubble<Event, bool> for Tap<A>
 where
     A: Effect + Send + Sync,
 {
-    fn handle_event(&mut self, event: Event) -> bool {
+    fn bubble(&mut self, event: &mut Event) -> bool {
         match event {
             Event::Cursor { id: _, event } => match event {
                 CursorEvent::Moved { position } => {
-                    self.mouse_position_state.set(Some(position));
+                    self.mouse_position_state.set(Some(*position));
                     false
                 }
                 CursorEvent::Button(MouseButton::Left, ButtonState::Pressed)

@@ -1,11 +1,11 @@
-use crate::app::building_blocks::reify::Reify;
-use crate::geometry::layout::LayoutItem;
+use crate::app::composition::algebra::{Bubble, Semigroup};
+use crate::app::composition::reify::Reify;
 use crate::geometry::layout::hints::ParentHints;
-use crate::state::signal_ext::any_of;
+use crate::geometry::layout::LayoutItem;
 use core::task::Context;
 use vek::Extent2;
 use {
-    crate::app::{building_blocks::BuildingBlock, input::Event},
+    crate::app::input::Event,
     core::{future::Future, pin::Pin, task::Poll},
     futures_signals::signal::Signal,
     pin_project::pin_project,
@@ -38,15 +38,15 @@ where
     pub held_item: Option<<Sig::Item as Reify<Cx>>::Output>,
 }
 
-impl<Sig, Cx> BuildingBlock<Cx> for SignalReactItemRe<Sig, Cx>
+impl<Sig, Cx> Bubble<Event, bool> for SignalReactItemRe<Sig, Cx>
 where
     Sig: Signal + Send,
     Sig::Item: Reify<Cx>,
-    <Sig::Item as Reify<Cx>>::Output: Pollable<Cx>,
+    <Sig::Item as Reify<Cx>>::Output: Bubble<Event, bool>,
 {
-    fn handle_event(&mut self, event: Event) -> bool {
+    fn bubble(&mut self, event: &mut Event) -> bool {
         match &mut self.held_item {
-            Some(item) => item.handle_event(event),
+            Some(item) => item.bubble(event),
             None => false, //panic!("Reactor was asked to handle event without being polled first."),
         }
     }
@@ -79,7 +79,7 @@ where
             Poll::Pending
         };
 
-        any_of(signal_poll, inner_poll)
+        Semigroup::combine(signal_poll, inner_poll)
     }
 }
 
@@ -188,15 +188,15 @@ where
     pub held_item: Option<<Fut::Output as Reify<Cx>>::Output>,
 }
 
-impl<Fut, Cx> BuildingBlock<Cx> for FutureAwaitItemRe<Fut, Cx>
+impl<Fut, Cx> Bubble<Event, bool> for FutureAwaitItemRe<Fut, Cx>
 where
     Fut: Future + Send,
-    Fut::Output: Reify<Cx>,
+    Fut::Output: Reify<Cx, Output: Bubble<Event, bool>>,
 {
-    fn handle_event(&mut self, event: Event) -> bool {
+    fn bubble(&mut self, event: &mut Event) -> bool {
         self.held_item
             .as_mut()
-            .map(|item| item.handle_event(event))
+            .map(|item| item.bubble(event))
             .unwrap_or(false)
     }
 }
@@ -204,7 +204,7 @@ where
 impl<Fut, Cx> Pollable<Cx> for FutureAwaitItemRe<Fut, Cx>
 where
     Fut: Future + Send,
-    Fut::Output: Reify<Cx>,
+    Fut::Output: Reify<Cx, Output: Pollable<Cx>>,
 {
     fn poll(self: Pin<&mut Self>, cx: &mut Context, resources: &mut Cx) -> Poll<Option<()>> {
         let FutureAwaitItemReProj { future, held_item } = self.project();
