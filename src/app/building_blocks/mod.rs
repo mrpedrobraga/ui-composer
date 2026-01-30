@@ -33,7 +33,9 @@
 use crate::state::process::Pollable;
 use super::input::Event;
 
-pub mod emit;
+pub mod gather;
+pub mod propagate;
+
 pub mod reify;
 pub mod implementations;
 
