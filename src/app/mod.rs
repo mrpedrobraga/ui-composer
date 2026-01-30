@@ -44,13 +44,13 @@
 //! In the example above, whenever a user event, for example a mouse click, happens,
 //! it will be shown to `Column`, which will show it to `Label` and `Button`.
 //!
-//! It's interesting to note that the runner has _no idea_ of what components it's running.
+//! > It's interesting to note that the runner has _no idea_ of the existence of `Label` and `Button`.
 //!
 //! Button will handle that by triggering the effect described in its
 //! second parameter and print `"I was clicked"`.
 //!
 //! Something similar happens for drawing, where the runner bubbles down a draw request
-//! and the leaves bubble up a response.
+//! and the components bubble up responses.
 //!
 //! ### Cross-platform
 //!
@@ -62,5 +62,7 @@
 
 pub mod backend;
 pub mod building_blocks;
+
+/// User events are one of the things that can be bubbled down an application.
 pub mod input;
 

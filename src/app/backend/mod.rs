@@ -11,22 +11,19 @@
 //! all the way to the root, which is a [`Runner`]. Then, effects will be executed.
 
 use core::{
-    ops::DerefMut as _,
     pin::Pin,
     task::{Context, Poll},
 };
-use futures_signals::signal::Signal;
-use pin_project::pin_project;
+pub mod futures;
 
-/// The layer of the application that stands between the app and the outside world.
+/// An application runner. It bubbles down Affects and bubble up Effects,
+/// effectively allowing the pure, immutable application to perform IO.
 pub trait Runner {
-    /// The type of the Node tree this Backend executes.
     type UI;
 
-    /// Blocking function that runs the application.
     fn run(ui: Self::UI);
 
-    /// Polls the `Futures` and `Signals` from the node tree.
+    /// Polls the UI as a [`Future`].
     #[allow(unused_variables)]
     fn process(
         self: Pin<&mut Self>,
@@ -37,36 +34,5 @@ pub trait Runner {
     }
 }
 
-#[cfg(feature = "std")]
-type Own<A> = std::sync::Arc<std::sync::Mutex<A>>;
-#[cfg(not(feature = "std"))]
-type Own<A> = spin::Mutex<A>;
-
-/// A futures-based construct that polls the engine's processes.
-#[pin_project(project=EffectExecutorProj)]
-pub struct EffectExecutor<A: Runner> {
-    #[pin]
-    runner: Own<A>,
-}
-
-impl<A: Runner> EffectExecutor<A> {
-    pub fn new(runner: Own<A>) -> Self {
-        EffectExecutor { runner }
-    }
-}
-
-impl<A: Runner> Signal for EffectExecutor<A> {
-    type Item = ();
-
-    fn poll_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
-        let EffectExecutorProj { runner } = self.project();
-
-        let mut runner = runner.lock().unwrap();
-        let runner = runner.deref_mut();
-        let runner = unsafe { Pin::new_unchecked(runner) };
-
-        runner.process(cx, &mut AppContext {})
-    }
-}
-
+/// Additional context for processing an app in a Runner.
 pub struct AppContext {}
