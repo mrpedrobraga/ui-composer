@@ -20,7 +20,7 @@ use wgpu::{
     RenderPassDescriptor, StoreOp, TextureDescriptor, TextureDimension, TextureUsages,
 };
 use {
-    super::runner::{Element, RuntimeElement},
+    super::runner::{EReify, Element},
     crate::state::Mutable,
     futures_signals::signal::{MutableSignalCloned, Signal, SignalExt},
     pin_project::pin_project,
@@ -88,7 +88,7 @@ impl<Item> WindowNode<Item> {
     }
 }
 
-impl<A> Element for WindowNode<A>
+impl<A> EReify for WindowNode<A>
 where
     A: Render + Send + 'static,
 {
@@ -277,7 +277,7 @@ where
     }
 }
 
-impl<Item> RuntimeElement for WindowNodeRe<Item>
+impl<Item> Element for WindowNodeRe<Item>
 where
     Item: RenderBuildingBlock,
 {

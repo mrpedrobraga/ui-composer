@@ -25,14 +25,14 @@ use std::task::{Context, Poll};
 use vek::{Rect, Rgba};
 
 #[pin_project(project=TUIBackendProj)]
-pub struct TUIRunner<N: Element> {
+pub struct TUIRunner<N: EReify> {
     #[pin]
     pub app: Arc<Mutex<N::Output>>,
 }
 
 impl<App> Runner for TUIRunner<App>
 where
-    App: Element,
+    App: EReify,
 {
     type App = App;
 
@@ -57,12 +57,12 @@ where
     }
 }
 
-pub trait Element: Send {
-    type Output: RuntimeElement;
+pub trait EReify: Send {
+    type Output: Element;
     fn reify(self) -> Self::Output;
 }
 
-pub trait RuntimeElement: Send + Bubble<Event, bool> + Pollable<()> {
+pub trait Element: Send + Bubble<Event, bool> + Pollable<()> {
     fn setup(&mut self);
     fn draw<C>(&self, canvas: &mut C, rect: Rect<u16, u16>)
     where

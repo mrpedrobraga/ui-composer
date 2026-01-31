@@ -4,7 +4,7 @@ use crate::geometry::layout::flow::CartesianFlow;
 use crate::geometry::layout::hints::ParentHints;
 use crate::geometry::layout::LayoutItem;
 use crate::standard::runners::tui::render::Canvas;
-use crate::standard::runners::tui::{Element, RuntimeElement};
+use crate::standard::runners::tui::{EReify, Element};
 use crate::state::process::{Pollable, SignalReactItem};
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -65,7 +65,7 @@ pub struct TerminalNodeState {
     pub mouse_position: Mutable<Option<Vec2<f32>>>,
 }
 
-impl<UI> Element for TerminalNode<UI>
+impl<UI> EReify for TerminalNode<UI>
 where
     UI: Reify<(), Output: Sized + RenderTui + Bubble<Event, bool> + Pollable<()>>
         + Send,
@@ -100,7 +100,7 @@ where
     }
 }
 
-impl<UI> RuntimeElement for TerminalNodeRe<UI>
+impl<UI> Element for TerminalNodeRe<UI>
 where
     UI: UIFragment,
 {

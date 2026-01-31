@@ -1,8 +1,8 @@
 use crate::app::composition::algebra::Bubble;
 use crate::app::input::{CursorEvent, DeviceId, Event};
 use crate::runners::tui::render::Canvas;
-use crate::runners::tui::{RuntimeElement, TUIRunner};
-use crate::standard::runners::tui::Element;
+use crate::runners::tui::{Element, TUIRunner};
+use crate::standard::runners::tui::EReify;
 use crossterm::cursor::{Hide, MoveTo, SetCursorStyle, Show};
 use crossterm::event::{
     DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture, KeyCode,
@@ -18,7 +18,7 @@ use vek::{Rect, Rgba, Vec2};
 
 impl<N> TUIRunner<N>
 where
-    N: Element,
+    N: EReify,
 {
     pub(crate) async fn app_loop(mut node_tree: N::Output) -> std::io::Result<()> {
         enable_raw_mode().expect("Couldn't enable raw mode");

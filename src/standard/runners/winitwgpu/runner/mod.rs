@@ -32,11 +32,11 @@ use {
 pub mod implementations;
 
 #[pin_project(project=WithWinitProj)]
-pub struct WinitWgpuRunner<A: Element>(WgpuBackend<A>);
+pub struct WinitWgpuRunner<A: EReify>(WgpuBackend<A>);
 
 /// The [`ApplicationHandler`] that sits between [`winit`]
 /// and UI Composer.
-pub struct WinitWGPUApplicationHandler<A: Element> {
+pub struct WinitWGPUApplicationHandler<A: EReify> {
     tree_descriptor: Option<A>,
     backend: Option<SharedWWBackend<A>>,
 }
@@ -46,9 +46,9 @@ pub struct WinitWGPUApplicationHandler<A: Element> {
 ///
 /// TODO: Delete this and use [BuildingBlock] instead.
 #[diagnostic::on_unimplemented(message = "This value is not an app Node.")]
-pub trait Element: Send {
+pub trait EReify: Send {
     /// The type this node descriptor generates when Output.
-    type Output: RuntimeElement;
+    type Output: Element;
     fn reify(
         self,
         event_loop: &ActiveEventLoop,
@@ -58,7 +58,7 @@ pub trait Element: Send {
 }
 
 /// A main node in the app tree.
-pub trait RuntimeElement: Pollable<AppContext> {
+pub trait Element: Pollable<AppContext> {
     fn setup(&mut self, gpu_resources: &WgpuResources);
 
     /// Handles an event and cascades it down its children.
@@ -71,11 +71,11 @@ pub trait RuntimeElement: Pollable<AppContext> {
 }
 
 #[expect(type_alias_bounds)]
-type SharedWWBackend<A: Element<Output: Pollable<UIContext>>> = Arc<Mutex<WinitWgpuRunner<A>>>;
+type SharedWWBackend<A: EReify<Output: Pollable<UIContext>>> = Arc<Mutex<WinitWgpuRunner<A>>>;
 
 impl<A> Runner for WinitWgpuRunner<A>
 where
-    A: Element<Output: Pollable<AppContext>> + 'static,
+    A: EReify<Output: Pollable<AppContext>> + 'static,
 {
     type App = A;
 
@@ -108,7 +108,7 @@ where
 
 impl<A> ApplicationHandler for WinitWGPUApplicationHandler<A>
 where
-    A: Element + Send + 'static,
+    A: EReify + Send + 'static,
 {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         if self.backend.is_none() {
@@ -172,7 +172,7 @@ async fn create_winit_runner<A>(
     SignalFuture<AsyncExecutor<WinitWgpuRunner<A>>>,
 )
 where
-    A: Element<Output: Pollable<AppContext>> + 'static,
+    A: EReify<Output: Pollable<AppContext>> + 'static,
 {
     let gpu_resources = create_gpu_resources().await;
     let renderers = create_renderers(&gpu_resources.adapter, &gpu_resources.device, &gpu_resources.queue);
@@ -257,7 +257,7 @@ fn create_renderers(adapter: &Adapter, device: &Device, queue: &Queue) -> WgpuRe
 
 fn create_backend_effect_executors<A>(backend: WgpuBackend<A>) -> (Arc<Mutex<WinitWgpuRunner<A>>>, SignalFuture<AsyncExecutor<WinitWgpuRunner<A>>>)
 where
-    A: Element<Output: Pollable<AppContext>> + 'static
+    A: EReify<Output: Pollable<AppContext>> + 'static
 {
     // This render engine will be shared between your application (so that it can receive OS events)
     // and a reactor processor in another thread (so that it can process its own `Future`s and `Signal`s)

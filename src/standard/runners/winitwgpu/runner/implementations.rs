@@ -1,4 +1,4 @@
-use super::{Element, RuntimeElement};
+use super::{EReify, Element};
 use crate::standard::runners::wgpu::backend::WgpuResources;
 use crate::standard::runners::wgpu::pipeline::WgpuRenderers;
 use winit::event::WindowEvent;
@@ -7,7 +7,7 @@ use winit::window::WindowId;
 use crate::app::backend::AppContext;
 use crate::state::process::Pollable;
 
-impl Element for () {
+impl EReify for () {
     type Output = ();
 
     fn reify(
@@ -19,7 +19,7 @@ impl Element for () {
     }
 }
 
-impl RuntimeElement for () {
+impl Element for () {
     fn setup(&mut self, _gpu_resources: &WgpuResources) {}
 
     fn handle_window_event(
@@ -31,10 +31,10 @@ impl RuntimeElement for () {
     }
 }
 
-impl<A, B> Element for (A, B)
+impl<A, B> EReify for (A, B)
 where
-    A: Element,
-    B: Element,
+    A: EReify,
+    B: EReify,
 {
     type Output = (A::Output, B::Output);
 
@@ -52,10 +52,10 @@ where
     }
 }
 
-impl<A, B> RuntimeElement for (A, B)
+impl<A, B> Element for (A, B)
 where
-    A: RuntimeElement + Pollable<AppContext>,
-    B: RuntimeElement + Pollable<AppContext>,
+    A: Element + Pollable<AppContext>,
+    B: Element + Pollable<AppContext>,
 {
     fn setup(&mut self, gpu_resources: &WgpuResources) {
         self.0.setup(gpu_resources);
