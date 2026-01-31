@@ -19,6 +19,13 @@ pub trait Gather<Context, Item> {
     fn gather(&mut self, cx: &mut Context, acc: &mut [MaybeUninit<Item>]);
 }
 
+#[cfg(feature = "specialization")]
+impl<T, Down, Up> Bubble<Down, Up> for T where Up: Empty {
+    default fn bubble(&mut self, cx: &mut Down) -> Up {
+        Up::empty()
+    }
+}
+
 /// Trait for "combining" two things into one thing.
 ///
 /// The trait assumes that `combine` is associative,

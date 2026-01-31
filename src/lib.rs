@@ -1,3 +1,4 @@
+#![cfg_attr(feature = "specialization", feature(specialization))]
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::needless_doctest_main)]
 /*!
