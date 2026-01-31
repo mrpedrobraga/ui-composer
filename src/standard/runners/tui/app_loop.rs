@@ -1,24 +1,23 @@
 use crate::app::composition::algebra::Bubble;
+use crate::app::composition::reify::Reify;
 use crate::app::input::{CursorEvent, DeviceId, Event};
 use crate::runners::tui::render::Canvas;
 use crate::runners::tui::{Element, TUIRunner};
-use crate::standard::runners::tui::EReify;
 use crossterm::cursor::{Hide, MoveTo, SetCursorStyle, Show};
 use crossterm::event::{
     DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture, KeyCode,
 };
-use crossterm::style::{
-    style, Color, PrintStyledContent, ResetColor,
-    StyledContent, Stylize,
+use crossterm::style::{style, Color, PrintStyledContent, ResetColor, StyledContent, Stylize};
+use crossterm::terminal::{
+    disable_raw_mode, enable_raw_mode, Clear, ClearType, DisableLineWrap, EnableLineWrap,
 };
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode, Clear, ClearType, DisableLineWrap, EnableLineWrap};
 use crossterm::{event, ExecutableCommand};
 use std::io::{stdout, Stdout, Write};
 use vek::{Rect, Rgba, Vec2};
 
 impl<N> TUIRunner<N>
 where
-    N: EReify,
+    N: Send + Reify<(), Output: Element + Sized>,
 {
     pub(crate) async fn app_loop(mut node_tree: N::Output) -> std::io::Result<()> {
         enable_raw_mode().expect("Couldn't enable raw mode");
@@ -90,9 +89,7 @@ impl Canvas for Stdout {
             b: pixel.b,
         };
 
-        let styled_pixel: StyledContent<char> = style('█')
-            .with(color) // foreground
-            .on(color); // background
+        let styled_pixel: StyledContent<char> = style('█').with(color).on(color);
 
         let _ = self
             .execute(MoveTo(position.x as u16, position.y as u16))

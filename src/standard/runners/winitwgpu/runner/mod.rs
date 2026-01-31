@@ -22,9 +22,7 @@ use {
     },
     wgpu::{MemoryHints, TextureFormat},
     winit::{
-        application::ApplicationHandler,
-        event::WindowEvent,
-        event_loop::ActiveEventLoop,
+        application::ApplicationHandler, event::WindowEvent, event_loop::ActiveEventLoop,
         window::WindowId,
     },
 };
@@ -175,7 +173,11 @@ where
     A: EReify<Output: Pollable<AppContext>> + 'static,
 {
     let gpu_resources = create_gpu_resources().await;
-    let renderers = create_renderers(&gpu_resources.adapter, &gpu_resources.device, &gpu_resources.queue);
+    let renderers = create_renderers(
+        &gpu_resources.adapter,
+        &gpu_resources.device,
+        &gpu_resources.queue,
+    );
     let tree = tree_descriptor.reify(event_loop, &gpu_resources, renderers);
 
     let backend = WgpuBackend {
@@ -255,9 +257,14 @@ fn create_renderers(adapter: &Adapter, device: &Device, queue: &Queue) -> WgpuRe
     }
 }
 
-fn create_backend_effect_executors<A>(backend: WgpuBackend<A>) -> (Arc<Mutex<WinitWgpuRunner<A>>>, SignalFuture<AsyncExecutor<WinitWgpuRunner<A>>>)
+fn create_backend_effect_executors<A>(
+    backend: WgpuBackend<A>,
+) -> (
+    Arc<Mutex<WinitWgpuRunner<A>>>,
+    SignalFuture<AsyncExecutor<WinitWgpuRunner<A>>>,
+)
 where
-    A: EReify<Output: Pollable<AppContext>> + 'static
+    A: EReify<Output: Pollable<AppContext>> + 'static,
 {
     // This render engine will be shared between your application (so that it can receive OS events)
     // and a reactor processor in another thread (so that it can process its own `Future`s and `Signal`s)

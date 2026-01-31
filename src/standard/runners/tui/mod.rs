@@ -14,7 +14,6 @@ use crate::app::composition::algebra::Bubble;
 use crate::app::input::Event;
 use crate::runners::tui::render::Canvas;
 use crate::state::process::Pollable;
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use futures::FutureExt;
 use pin_project::pin_project;
 use spin::Mutex;
@@ -23,22 +22,22 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 use vek::{Rect, Rgba};
+use crate::app::composition::reify::Reify;
 
 #[pin_project(project=TUIBackendProj)]
-pub struct TUIRunner<N: EReify> {
+pub struct TUIRunner<N> where N: Send + Reify<(), Output: Element> {
     #[pin]
     pub app: Arc<Mutex<N::Output>>,
 }
 
 impl<App> Runner for TUIRunner<App>
 where
-    App: EReify,
+    App: Send + Reify<(), Output: Element>,
 {
     type App = App;
 
     fn run(app: Self::App) {
-        let runtime_app = app.reify();
-        // TODO: Reflect on whether this should be blocking. That's most likely the case.
+        let runtime_app = app.reify(&mut ());
         async_std::task::block_on(Self::app_loop(runtime_app).map(|r| r.unwrap()));
     }
 
@@ -55,11 +54,6 @@ where
 
         app.poll(cx, &mut ())
     }
-}
-
-pub trait EReify: Send {
-    type Output: Element;
-    fn reify(self) -> Self::Output;
 }
 
 pub trait Element: Send + Bubble<Event, bool> + Pollable<()> {
