@@ -13,6 +13,7 @@ use crossterm::terminal::{
 };
 use crossterm::{event, ExecutableCommand};
 use std::io::{stdout, Stdout, Write};
+use futures::pin_mut;
 use vek::{Rect, Rgba, Vec2};
 
 impl<N> TUIRunner<N>
@@ -33,9 +34,10 @@ where
             .flush()?;
 
         node_tree.draw(&mut stdout, Rect::new(0, 0, 16, 16));
-        loop {
-            let event = event::read()?;
 
+        loop {
+            /* Affects */
+            let event = event::read()?;
             match event {
                 event::Event::Key(key_event) => {
                     if let KeyCode::Char('q') = key_event.code {

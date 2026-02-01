@@ -16,12 +16,12 @@ use crate::runners::tui::render::Canvas;
 use crate::state::process::Pollable;
 use futures::FutureExt;
 use pin_project::pin_project;
-use spin::Mutex;
 use std::ops::DerefMut;
 use std::pin::Pin;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll};
 use vek::{Rect, Rgba};
+use crate::app::backend::futures::AsyncExecutor;
 use crate::app::composition::reify::Reify;
 
 #[pin_project(project=TUIBackendProj)]
@@ -38,6 +38,14 @@ where
 
     fn run(app: Self::App) {
         let runtime_app = app.reify(&mut ());
+        //let runtime_app = Arc::new(Mutex::new(runtime_app));
+
+        /* Spawn a new thread that polls the signals... Not sure how ideal this is... */
+        /*let executor = AsyncExecutor::new(runtime_app.clone());
+        let _join_handle = std::thread::spawn(|| {
+            futures::executor::block_on(executor);
+        });*/
+
         async_std::task::block_on(Self::app_loop(runtime_app).map(|r| r.unwrap()));
     }
 
