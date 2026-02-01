@@ -119,7 +119,7 @@ where
 
             // TODO: Allow the ui to make the window close.
             let _join_handle = std::thread::spawn(|| {
-                futures::executor::block_on(processor);
+                futures::executor::block_on(processor.to_future());
             });
 
             self.backend = Some(backend)
@@ -167,7 +167,7 @@ async fn create_winit_runner<A>(
     tree_descriptor: A,
 ) -> (
     Arc<Mutex<WinitWgpuRunner<A>>>,
-    SignalFuture<AsyncExecutor<WinitWgpuRunner<A>>>,
+    AsyncExecutor<WinitWgpuRunner<A>>,
 )
 where
     A: EReify<Output: Pollable<AppContext>> + 'static,
@@ -261,7 +261,7 @@ fn create_backend_effect_executors<A>(
     backend: WgpuBackend<A>,
 ) -> (
     Arc<Mutex<WinitWgpuRunner<A>>>,
-    SignalFuture<AsyncExecutor<WinitWgpuRunner<A>>>,
+    AsyncExecutor<WinitWgpuRunner<A>>,
 )
 where
     A: EReify<Output: Pollable<AppContext>> + 'static,
@@ -274,7 +274,7 @@ where
     // It needs not be an other thread, just a different execution context.
     let backend_clone = backend.clone();
 
-    let backend_processor = AsyncExecutor::new(backend_clone).to_future();
+    let backend_processor = AsyncExecutor::new(backend_clone);
 
     // I should perhaps return a (RenderEngine, impl Future) here!
     // The problem of course is that winit does not play well with async Rust yet :-(

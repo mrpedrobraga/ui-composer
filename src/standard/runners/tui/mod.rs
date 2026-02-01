@@ -38,7 +38,7 @@ where
 
     fn run(app: Self::App) {
         let runtime_app = app.reify(&mut ());
-        //let runtime_app = Arc::new(Mutex::new(runtime_app));
+        let runtime_app = Arc::new(Mutex::new(runtime_app));
 
         /* Spawn a new thread that polls the signals... Not sure how ideal this is... */
         /*let executor = AsyncExecutor::new(runtime_app.clone());
@@ -46,7 +46,9 @@ where
             futures::executor::block_on(executor);
         });*/
 
-        async_std::task::block_on(Self::app_loop(runtime_app).map(|r| r.unwrap()));
+        Self::grab_terminal().unwrap();
+        async_std::task::block_on(Self::process_events(runtime_app).map(|r| r.unwrap()));
+        Self::release_terminal().unwrap();
     }
 
     fn process(
@@ -56,7 +58,7 @@ where
     ) -> Poll<Option<()>> {
         let TUIBackendProj { app, .. } = self.project();
 
-        let mut app = app.lock();
+        let mut app = app.lock().unwrap();
         let app = DerefMut::deref_mut(&mut app);
         let app = unsafe { Pin::new_unchecked(app) };
 

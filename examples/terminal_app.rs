@@ -1,7 +1,7 @@
 use ui_composer::app::backend::Runner;
 use ui_composer::geometry::layout::ItemBox;
-use ui_composer::runners::tui::nodes::TUI;
-use ui_composer::runners::tui::{Graphic, TUIRunner, Terminal};
+use ui_composer::runners::tui::nodes::{TUI, Terminal};
+use ui_composer::runners::tui::{Graphic, TUIRunner};
 use vek::{Rect, Rgba};
 
 fn main() {

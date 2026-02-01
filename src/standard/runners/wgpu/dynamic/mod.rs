@@ -8,6 +8,7 @@ use crate::state::process::Pollable;
 use futures_signals::signal_vec::{SignalVec, VecDiff};
 use std::pin::Pin;
 use std::task::{Context, Poll};
+use pin_project::pin_project;
 use {crate::app::input::Event, vek::Rect};
 // TODO: Move this out of `wgpu`...
 // Vec Items should still be barred behind `alloc`,
@@ -18,9 +19,11 @@ pub struct VecItemDescriptor<Sig: SignalVec> {
     items: Sig,
 }
 
+#[pin_project(project=VecItemProj)]
 pub struct VecItem<Sig: SignalVec> {
     rect: Rect<f32, f32>,
     // TODO: Use a construct called 'HoldSignalVec' that keeps holding the `<Sig::Item as PrimitiveDescriptor<_>>::Primitive` values.
+    #[pin]
     items: Sig,
     render_buffers: Option<RendererBuffers>,
 }
@@ -76,11 +79,14 @@ where
     Sig: SignalVec + Send,
 {
     fn poll(self: Pin<&mut Self>, cx: &mut Context, _resources: &mut Res) -> Poll<Option<()>> {
-        let signal_poll = self.items.poll_vec_change(cx);
+        let VecItemProj { items, .. } = self.project();
+
+        let signal_poll = items.poll_vec_change(cx);
 
         match signal_poll {
             Poll::Ready(Some(diff)) => {
-                self.apply_diff(diff);
+                VecItem::<Sig>::apply_diff(diff);
+                Poll::Ready(Some(()))
             }
             Poll::Ready(None) => return Poll::Ready(None),
             Poll::Pending => Poll::Pending,

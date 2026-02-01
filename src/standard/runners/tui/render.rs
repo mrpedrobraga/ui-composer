@@ -16,6 +16,7 @@ use vek::{Rect, Vec2};
 use {crate::app::input::Event, ndarray::Array2, vek::Rgba};
 use crate::app::composition::algebra::{Bubble, Empty};
 use crate::app::composition::reify::Reify;
+use crate::runners::tui::app_loop::shaders;
 
 /// A trait that marks a trait as renderable with this pipeline.
 pub trait RenderTui {
@@ -95,6 +96,8 @@ pub trait Canvas {
 
     // Places a single pixel within the frame buffer.
     fn put_pixel(&mut self, position: Vec2<u32>, pixel: Self::Pixel);
+
+    fn full_screen(&mut self, rect: Rect<f32, f32>, shader: impl Fn(Vec2<f32>, f32) -> Rgba<f32>);
 }
 
 struct Framebuffer<P> {
@@ -105,6 +108,10 @@ impl<P> Canvas for Framebuffer<P> {
 
     fn put_pixel(&mut self, position: Vec2<u32>, pixel: P) {
         self.pixels[(position.x as usize, position.y as usize)] = pixel;
+    }
+
+    fn full_screen(&mut self, rect: Rect<f32, f32>, shader: impl Fn(Vec2<f32>, f32) -> Rgba<f32>) {
+        todo!("Handle this.")
     }
 }
 
