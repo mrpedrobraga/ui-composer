@@ -12,7 +12,7 @@ pub trait InputItem {}
 
 pub type EvNum = f32;
 
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum Event {
     /// The user requested that the application closes.
@@ -45,10 +45,10 @@ pub enum Event {
 }
 
 /// Tag struct that identifies a cursor device.
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct DeviceId(pub i32);
 
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum CursorEvent {
     Moved {
@@ -91,7 +91,7 @@ pub enum CursorEvent {
 }
 
 /// The mouse button that an event was about.
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum MouseButton {
     /// The left mouse button, usually associated with activation.
@@ -109,13 +109,13 @@ pub enum MouseButton {
     Other(u16),
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ButtonState {
     Released,
     Pressed,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TouchStage {
     Started,
     Moved,
@@ -123,7 +123,7 @@ pub enum TouchStage {
     Cancelled,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ScrollOffset {
     // Scroll offset in lines.
     Lines(Vec2<EvNum>),
@@ -132,7 +132,7 @@ pub enum ScrollOffset {
 }
 /// Events for dragging files into your application.
 #[cfg(feature = "std")]
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum FileDragAndDropEvent {
     /// The user entered the app holding a file.
     Hovered(PathBuf),
@@ -143,13 +143,13 @@ pub enum FileDragAndDropEvent {
     Cancelled,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ThemeType {
     Dark,
     Light,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg(feature = "std")]
 pub enum ImeEvent {
     /// IME was enabled, and you should get ready to handle IME events such as
@@ -169,12 +169,12 @@ pub enum ImeEvent {
 
 // MARK: Keyboard
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum KeyboardEvent {
     Key(KeyEvent),
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct KeyEvent {
     /// Implicit events (also called synthetic) are emitted in some platforms
     /// for when a window gains or loses focus while a key is down.

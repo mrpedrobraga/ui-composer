@@ -7,13 +7,18 @@ use crossterm::cursor::{Hide, MoveTo, SetCursorStyle, Show};
 use crossterm::event::{
     DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture, KeyCode,
 };
-use crossterm::style::{style, Color, PrintStyledContent, ResetColor, StyledContent, Stylize};
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode, Clear, ClearType, DisableLineWrap, EnableLineWrap, EnterAlternateScreen, LeaveAlternateScreen};
+use crossterm::style::{
+    style, Color, Print, PrintStyledContent, ResetColor, StyledContent, Stylize,
+};
+use crossterm::terminal::{
+    disable_raw_mode, enable_raw_mode, Clear, ClearType, DisableLineWrap, EnableLineWrap,
+    EnterAlternateScreen, LeaveAlternateScreen,
+};
 use crossterm::{event, QueueableCommand};
 use std::io::{stdout, Stdout, Write};
-use std::ops::{DerefMut};
+use std::ops::DerefMut;
 use std::sync::{Arc, Mutex};
-use vek::{Extent2, Rect, Rgba, Vec2, Vec3};
+use vek::{Extent2, Rect, Rgba, Vec2};
 
 pub mod shaders;
 
@@ -51,6 +56,9 @@ where
                 #[allow(unused)]
                 event::Event::Resize(w, h) => {
                     rect.set_extent(Extent2::new(w, h).as_::<f32>());
+
+                    n.bubble(&mut Event::Resized(Extent2::new(w, h).as_()));
+
                     redraw_requested = true;
                 }
                 event::Event::Mouse(mouse_event) => {
@@ -59,9 +67,7 @@ where
 
                         n.bubble(&mut Event::Cursor {
                             id: DeviceId(0),
-                            event: CursorEvent::Moved {
-                                position: mouse,
-                            },
+                            event: CursorEvent::Moved { position: mouse },
                         });
 
                         redraw_requested = true;
@@ -79,11 +85,16 @@ where
         Ok(())
     }
 
-    pub fn redraw<C: Canvas<Pixel = vek::Rgba<u8>>>(element: &mut impl Element, canvas: &mut C, rect: Rect<f32, f32>, mouse: Vec2<f32>) {
-        // element.draw(canvas, rect.as_());
+    pub fn redraw<C: Canvas<Pixel = vek::Rgba<u8>>>(
+        element: &mut impl Element,
+        canvas: &mut C,
+        rect: Rect<f32, f32>,
+        mouse: Vec2<f32>,
+    ) {
+        canvas.clear();
+        element.draw(canvas, rect.as_());
 
-        canvas.full_screen(rect, shaders::image);
-
+        //canvas.quad(rect, shaders::image);
         canvas.put_pixel(mouse.as_(), Rgba::new(255, 255, 255, 0));
     }
 
@@ -138,27 +149,54 @@ impl Canvas for Stdout {
             .and_then(|stdout| stdout.queue(ResetColor));
     }
 
-    fn full_screen(&mut self, rect: Rect<f32, f32>, shader: impl Fn(Vec2<f32>, f32) -> Rgba<f32>) {
-        for y in (0..(rect.h * 2.0) as u32).step_by(2) {
-            let _ = self
-                .queue(MoveTo(0u16, (y/2) as u16));
+    fn rect(&mut self, rect: Rect<f32, f32>, color: Self::Pixel)
+    where
+        Self::Pixel: Clone,
+    {
+        for y in (rect.y as u16..(rect.y + rect.h) as u16) {
+            let _ = self.queue(MoveTo(rect.x as u16, y));
 
-            for x in 0..rect.w as u32 {
-                let uv_top = Vec2::new(x as f32, y as f32 * 0.5) / rect.extent();
-                let top: Self::Pixel = (shader(uv_top, 0.0) * 255.0).as_();
-
-                let uv_bottom = Vec2::new(x as f32, (y + 1) as f32 * 0.5) / rect.extent();
-                let bottom: Self::Pixel = (shader(uv_bottom, 0.0) * 255.0).as_();
-
-                let fg = Color::Rgb { r: top.r, g: top.g, b: top.b };
-                let bg = Color::Rgb { r: bottom.r, g: bottom.g, b: bottom.b };
-
-                let styled_pixel = style('▀').with(fg).on(bg);
-
+            for x in (rect.x as u16..(rect.x + rect.w) as u16) {
+                let color = Color::Rgb {
+                    r: color.r,
+                    g: color.g,
+                    b: color.b,
+                };
+                let styled_pixel = style('▀').with(color).on(color);
                 let _ = self.queue(PrintStyledContent(styled_pixel));
             }
         }
 
+        let _ = self.queue(ResetColor);
+    }
+
+    fn clear(&mut self) {
+        let _ = self.queue(Clear(ClearType::All));
+    }
+
+    fn quad(&mut self, rect: Rect<f32, f32>, shader: impl Fn(Vec2<f32>, f32) -> Rgba<f32>) {
+        for screen_y_offset in 0..rect.h as u32 {
+
+            let screen_y = (rect.y as u32 + screen_y_offset) as u16;
+            let _ = self.queue(MoveTo(rect.x as u16, screen_y));
+
+            for x in 0..rect.w as u32 {
+                let source_y_top = screen_y_offset * 2;
+                let source_y_bottom = source_y_top + 1;
+
+                let uv_top = Vec2::new(x as f32, source_y_top as f32) / Vec2::new(rect.w, rect.h * 2.0);
+                let uv_bottom = Vec2::new(x as f32, source_y_bottom as f32) / Vec2::new(rect.w, rect.h * 2.0);
+
+                let p_top: Self::Pixel = (shader(uv_top, 0.0) * 255.0).as_();
+                let p_bottom: Self::Pixel = (shader(uv_bottom, 0.0) * 255.0).as_();
+
+                let styled_pixel = style('▀')
+                    .with(Color::Rgb { r: p_top.r, g: p_top.g, b: p_top.b })
+                    .on(Color::Rgb { r: p_bottom.r, g: p_bottom.g, b: p_bottom.b });
+
+                let _ = self.queue(PrintStyledContent(styled_pixel));
+            }
+        }
         let _ = self.queue(ResetColor);
     }
 }

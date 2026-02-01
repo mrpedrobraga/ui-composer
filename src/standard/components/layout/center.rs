@@ -1,3 +1,6 @@
+use std::io::stdout;
+use crossterm::cursor::MoveTo;
+use crossterm::style::Print;
 use crate::geometry::layout::hints::ParentHints;
 use vek::{Extent2, Rect};
 use crate::geometry::layout::LayoutItem;
@@ -38,7 +41,7 @@ where
         let item_position = my_rect.position() + (my_rect.extent() - item_size) / 2.0;
 
         let item_rect = Rect::new(item_position.x, item_position.y, item_size.w, item_size.h);
-
+        
         let inner_hints = ParentHints {
             rect: item_rect,
             ..layout_hints

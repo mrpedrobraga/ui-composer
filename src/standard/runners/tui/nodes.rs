@@ -3,8 +3,9 @@ use crate::app::composition::reify::Reify;
 use crate::geometry::layout::flow::CartesianFlow;
 use crate::geometry::layout::hints::ParentHints;
 use crate::geometry::layout::LayoutItem;
+use crate::runners::tui::render::RenderTui;
 use crate::standard::runners::tui::render::Canvas;
-use crate::standard::runners::tui::{Element};
+use crate::standard::runners::tui::Element;
 use crate::state::process::{Pollable, SignalReactItem};
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -12,7 +13,6 @@ use futures_signals::signal::Mutable;
 use futures_signals::signal::{Signal, SignalExt};
 use vek::{Extent2, Rect, Rgba};
 use {crate::app::input::Event, vek::Vec2};
-use crate::runners::tui::render::RenderTui;
 
 /// Trait alias that represents anything that can be laid out to get UI.
 pub trait TUI: LayoutItem<Content: Reify<(), Output: UIFragment>> {}
@@ -67,18 +67,21 @@ pub struct TerminalNodeState {
 
 impl<UI> Reify<()> for TerminalNode<UI>
 where
-    UI: Reify<(), Output: Sized + RenderTui + Bubble<Event, bool> + Pollable<()>>
-        + Send,
+    UI: Reify<(), Output: Sized + RenderTui + Bubble<Event, bool> + Pollable<()>> + Send,
 {
     type Output = TerminalNodeRe<UI::Output>;
 
     fn reify(self, _: &mut ()) -> Self::Output {
-        TerminalNodeRe { ui: self.ui.reify(&mut ()) }
+        TerminalNodeRe {
+            state: self.state,
+            ui: self.ui.reify(&mut ()),
+        }
     }
 }
 
 pub struct TerminalNodeRe<UI> {
-    pub(crate) ui: UI,
+    pub state: TerminalNodeState,
+    pub ui: UI,
 }
 
 impl<UI> Bubble<Event, bool> for TerminalNodeRe<UI>
@@ -86,6 +89,13 @@ where
     UI: Bubble<Event, bool>,
 {
     fn bubble(&mut self, cx: &mut Event) -> bool {
+        match cx {
+            Event::Resized(new_size) => {
+                self.state.size.set(*new_size);
+            },
+            _ => {}
+        };
+
         self.ui.bubble(cx)
     }
 }
@@ -106,16 +116,10 @@ where
 {
     fn setup(&mut self) {}
 
-    fn draw<C>(&self, canvas: &mut C, rect: vek::Rect<u16, u16>)
+    fn draw<C>(&self, canvas: &mut C, rect: Rect<u16, u16>)
     where
         C: Canvas<Pixel = Rgba<u8>>,
     {
-        let item_size = Extent2::new(100.0, 100.0);
-        let texture_size = Into::<Vec2<f32>>::into(rect.extent().as_());
-        let item_position = (texture_size - Into::<Vec2<f32>>::into(item_size)) / 2.0;
-
-        let item_rect = vek::Rect::from((item_position, item_size)).as_();
-
-        self.ui.draw(canvas, item_rect);
+        self.ui.draw(canvas, rect);
     }
 }
