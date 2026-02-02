@@ -167,7 +167,6 @@ impl Canvas for Stdout {
         let y1 = (rect.y + rect.h) as u16 - 1;
 
         for y in y0..=y1 {
-
             for x in x0..=x1 {
                 if x != x0 && x != x1 && y != y0 && y != y1 {
                     //continue;
