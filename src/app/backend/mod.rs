@@ -23,8 +23,13 @@ pub trait Runner {
 
     fn run(ui: Self::App);
 
-    /// Polls the UI as a [`Future`].
+    async fn event_loop(&self);
+
+    async fn react_loop(&self);
+
+    /// Polls the UI as a [`Signal`].
     #[allow(unused_variables)]
+    #[deprecated(note = "The runner itself spawns an executor and, thus, shouldn't itself be a Signal.")]
     fn process(
         self: Pin<&mut Self>,
         cx: &mut Context,

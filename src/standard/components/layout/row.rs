@@ -19,9 +19,9 @@ pub fn Row<A, B>(item_a: A, item_b: B) -> RowContainer<A, B> {
 }
 
 pub struct RowContainer<A, B> {
-    item_a: A,
-    item_b: B,
-    gap: f32,
+    pub item_a: A,
+    pub item_b: B,
+    pub gap: f32,
 }
 
 impl<A, B> LayoutItem for RowContainer<A, B>

@@ -62,7 +62,7 @@ impl GraphicsPipelineBuffers {
         &mut self.instance_buffer_cpu[..]
     }
 
-    pub fn instance_buffer(&mut self) -> wgpu::BufferSlice {
+    pub fn instance_buffer(&mut self) -> wgpu::BufferSlice<'_> {
         self.instance_buffer.slice(..)
     }
 

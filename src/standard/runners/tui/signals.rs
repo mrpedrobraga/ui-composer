@@ -1,12 +1,9 @@
+use super::runner::Own;
+use crate::runners::tui::Element;
 use futures_signals::signal::Signal;
 use pin_project::pin_project;
-use std::ops::DerefMut;
 use std::pin::Pin;
-use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll};
-use crate::runners::tui::Element;
-
-pub type Own<A> = Arc<Mutex<A>>;
 
 /// Has a reference to a runner, serving as an Executor for its [`Future`]s and [`Signal`]s.
 #[pin_project(project=AsyncExecutorProj)]
@@ -27,10 +24,12 @@ impl<A: Element> Signal for AsyncExecutor<A> {
     fn poll_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let AsyncExecutorProj { element } = self.project();
 
-        let mut e = element.lock().unwrap();
-        let e = e.deref_mut();
-        let e = unsafe { Pin::new_unchecked(e) };
-
-        e.poll(cx, &mut ())
+        if let Ok(mut element_borrow) = element.try_borrow_mut() {
+            let pinned_element = unsafe { Pin::new_unchecked(&mut *element_borrow) };
+            pinned_element.poll(cx, &mut ())
+        } else {
+            cx.waker().wake_by_ref();
+            Poll::Pending
+        }
     }
 }

@@ -2,7 +2,13 @@ use std::sync::OnceLock;
 use image::RgbaImage;
 use vek::{Rgba, Vec2, Vec3};
 
-pub fn funky(uv: Vec2<f32>, time: f32) -> Rgba<f32> {
+pub struct PixelShaderInput {
+    pub uv: Vec2<f32>,
+    pub pixelCoord: Vec2<u32>,
+    pub time: f32,
+}
+
+pub fn funky(PixelShaderInput { uv, time, .. }: PixelShaderInput) -> Rgba<f32> {
     // Center the coordinates (-1.0 to 1.0) and adjust for typical terminal aspect ratio
     let p = (uv * 2.0 - Vec2::new(1.0, 1.0));
 
@@ -46,7 +52,7 @@ fn get_image() -> &'static RgbaImage {
     })
 }
 
-pub fn image(uv: Vec2<f32>, time: f32) -> Rgba<f32> {
+pub fn image(PixelShaderInput { uv, .. }: PixelShaderInput) -> Rgba<f32> {
     let img = get_image();
     let (w, h) = img.dimensions();
 

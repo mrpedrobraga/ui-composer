@@ -19,9 +19,9 @@ pub fn Column<A, B>(item_a: A, item_b: B) -> ColumnContainer<A, B> {
 }
 
 pub struct ColumnContainer<A, B> {
-    item_a: A,
-    item_b: B,
-    gap: f32,
+    pub item_a: A,
+    pub item_b: B,
+    pub gap: f32,
 }
 
 impl<A, B> LayoutItem for ColumnContainer<A, B>

@@ -3,6 +3,8 @@ use crate::app::composition::reify::Reify;
 use crate::geometry::layout::hints::ParentHints;
 use crate::geometry::layout::LayoutItem;
 use core::task::Context;
+use std::cell::RefCell;
+use std::rc::Rc;
 use vek::Extent2;
 use {
     crate::app::input::Event,
@@ -21,7 +23,34 @@ pub trait Pollable<Resources>: Send {
         #[expect(unused)] cx: &mut Context,
         #[expect(unused)] resources: &mut Resources,
     ) -> Poll<Option<()>> {
-        Poll::Ready(Some(()))
+        Poll::Ready(None)
+    }
+}
+
+pub trait PollableExt<R>: Pollable<R> {
+    fn once<'a>(&'a mut self, resources: &'a mut R) -> PollOnce<'a, Self, R>
+    where Self: Sized
+    {
+        PollOnce { pollable: self, resources }
+    }
+}
+
+impl<T: Pollable<R>, R> PollableExt<R> for T {}
+
+pub struct PollOnce<'a, P, R> {
+    pollable: &'a mut P,
+    resources: &'a mut R,
+}
+
+impl<'a, P, R> Future for PollOnce<'a, P, R>
+where P: Pollable<R>
+{
+    type Output = Option<()>;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let this = self.get_mut();
+        let pin = unsafe { Pin::new_unchecked(&mut *this.pollable) };
+        pin.poll(cx, this.resources)
     }
 }
 
@@ -79,7 +108,7 @@ where
             Poll::Pending
         };
 
-        Semigroup::combine(signal_poll, inner_poll)
+        signal_poll.combine(inner_poll)
     }
 }
 

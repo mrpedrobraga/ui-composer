@@ -39,6 +39,14 @@ where
         unimplemented!()
     }
 
+    async fn event_loop(&self) {
+        unimplemented!()
+    }
+
+    async fn react_loop(&self) {
+        unimplemented!()
+    }
+
     fn process(
         self: Pin<&mut Self>,
         cx: &mut Context,

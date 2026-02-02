@@ -1,10 +1,13 @@
-use ui_composer::standard::runners::wgpu::components::*;
+use ui_composer::runners::winitwgpu::prelude::UI;
 use ui_composer::standard::prelude::*;
+use ui_composer::standard::runners::wgpu::components::*;
 
 fn main() {
-    UIComposer::run(Window(
-        "Hello, world!".into_default_ui(), // Becomes a `Label`
-    ));
+    UIComposer::run(Window(App().into_default_ui()));
+}
+
+fn App() -> impl IntoDefaultUI {
+    ("Hello, world!", "Also hello!")
 }
 
 /// Trait that represents something that can edit some data.
@@ -25,13 +28,12 @@ where
 }
 /// "Default" version of [IntoUI], where a "canon" editor is chosen
 /// for the data type.
-trait IntoDefaultUI {
-    type DefaultEditor;
+trait IntoDefaultUI: Sized {
+    type DefaultEditor: UI + Sync + Editor<Self>;
 
     fn into_default_ui(self) -> Self::DefaultEditor
     where
         Self: Sized,
-        Self::DefaultEditor: Editor<Self>,
     {
         Self::DefaultEditor::edit(self)
     }
@@ -46,9 +48,55 @@ where
     }
 }
 
-impl<S> IntoDefaultUI for S
+/*impl<S> IntoDefaultUI for S
 where
-    S: AsRef<str>,
+    S: AsRef<str> + Clone + Send + Sync,
 {
     type DefaultEditor = TextLayoutItem<S>;
+}*/
+
+impl IntoDefaultUI for &str
+{
+    type DefaultEditor = TextLayoutItem<Self>;
+}
+
+impl<A, B> Editor<(A, B)> for RowContainer<A::DefaultEditor, B::DefaultEditor> where
+    A: IntoDefaultUI,
+    B: IntoDefaultUI,   {
+    fn edit(data: (A, B)) -> Self {
+        Self {
+            item_a: data.0.into_default_ui(),
+            item_b: data.1.into_default_ui(),
+            gap: 0.0,
+        }
+    }
+}
+
+impl<A, B> IntoDefaultUI for (A, B)
+where
+    A: IntoDefaultUI,
+    B: IntoDefaultUI,
+{
+    type DefaultEditor = RowContainer<A::DefaultEditor, B::DefaultEditor>;
+}
+
+
+impl<A, B> Editor<ColumnContainer<A, B>> for ColumnContainer<A::DefaultEditor, B::DefaultEditor> where
+    A: IntoDefaultUI,
+    B: IntoDefaultUI,   {
+    fn edit(data: ColumnContainer<A, B>) -> Self {
+        Self {
+            item_a: data.item_a.into_default_ui(),
+            item_b: data.item_b.into_default_ui(),
+            gap: data.gap,
+        }
+    }
+}
+
+impl<A, B> IntoDefaultUI for ColumnContainer<A, B>
+where
+    A: IntoDefaultUI,
+    B: IntoDefaultUI,
+{
+    type DefaultEditor = ColumnContainer<A::DefaultEditor, B::DefaultEditor>;
 }

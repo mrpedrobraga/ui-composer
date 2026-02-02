@@ -4,7 +4,8 @@ use crate::app::backend::AppContext;
 use crate::standard::runners::wgpu::backend::{WgpuBackend, WgpuResources};
 use crate::standard::runners::wgpu::pipeline::graphics::OrchestraRenderer;
 use crate::standard::runners::wgpu::pipeline::{text::TextRenderer, UIContext, WgpuRenderers};
-use crate::state::process::Pollable;
+use crate::state::process::{Pollable, PollableExt};
+use async_std::task::yield_now;
 use pin_project::pin_project;
 use std::sync::Mutex;
 use wgpu::{Adapter, Device, Queue};
@@ -13,7 +14,7 @@ use winit::event_loop::{ControlFlow, EventLoop};
 use {
     super::window::WindowRenderTarget,
     crate::app::backend::{futures::AsyncExecutor, Runner},
-    futures_signals::signal::{SignalExt, SignalFuture},
+    futures_signals::signal::SignalExt,
     std::{
         ops::DerefMut,
         pin::Pin,
@@ -87,6 +88,26 @@ where
                 backend: None,
             })
             .unwrap();
+    }
+
+    async fn event_loop(&self) {
+        todo!()
+    }
+
+    async fn react_loop(&self) {
+        loop {
+            let react = {
+                let mut resources = AppContext {};
+                let mut app = self.0.tree.lock().unwrap();
+                app.once(&mut resources).await
+            };
+
+            if react.is_none() { break; }
+            
+            // TODO: Maybe react will be an `Option<T>` and T can be used for stuff!
+            
+            yield_now().await;
+        }
     }
 
     fn process(
