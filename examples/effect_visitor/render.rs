@@ -1,4 +1,4 @@
-use crate::elements::{Blueprint, Element, ElementEffect, DummyEnvironment};
+use ui_composer::app::composition::elements::{Blueprint, Element, ElementEffect, DummyEnvironment};
 use vek::{Extent3, Mat4, Rect, Rgba, Vec3};
 
 #[derive(Copy, Clone, Debug)]
@@ -25,7 +25,7 @@ impl Rectangle {
 impl Blueprint<DummyEnvironment> for Rectangle {
     type Element = Self;
 
-    fn spawn(self, env: &DummyEnvironment) -> Self::Element {
+    fn make(self, env: &DummyEnvironment) -> Self::Element {
         self
     }
 }

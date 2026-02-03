@@ -1,14 +1,14 @@
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use ui_composer::app::composition::algebra::Semigroup;
-use crate::elements::{Blueprint, Element};
+use crate::app::composition::algebra::Semigroup;
+use super::{Blueprint, Element};
 
 /* Unit */
 
 impl <Env> Blueprint<Env> for () {
     type Element = ();
 
-    fn spawn(self, env: &Env) -> Self::Element {
+    fn make(self, env: &Env) -> Self::Element {
         ()
     }
 }
@@ -26,8 +26,8 @@ impl<Env> Element<Env> for () {
 impl<A, B, Env> Blueprint<Env> for (A, B) where A: Blueprint<Env>, B: Blueprint<Env> {
     type Element = (A::Element, B::Element);
 
-    fn spawn(self, env: &Env) -> Self::Element {
-        (self.0.spawn(env), self.1.spawn(env))
+    fn make(self, env: &Env) -> Self::Element {
+        (self.0.make(env), self.1.make(env))
     }
 }
 
@@ -65,8 +65,8 @@ where
 impl<A, Env> Blueprint<Env> for Option<A> where A: Blueprint<Env> {
     type Element = Option<A::Element>;
 
-    fn spawn(self, env: &Env) -> Self::Element {
-        self.map(|x| x.spawn(env))
+    fn make(self, env: &Env) -> Self::Element {
+        self.map(|x| x.make(env))
     }
 }
 

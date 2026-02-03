@@ -1,7 +1,7 @@
 use std::pin::Pin;
 use std::task::{Context, Poll};
 use downcast_rs::{impl_downcast, Downcast};
-use ui_composer::app::composition::algebra::Semigroup;
+use crate::app::composition::algebra::Semigroup;
 
 pub mod implementations;
 
@@ -9,7 +9,7 @@ pub struct DummyEnvironment();
 
 pub trait Blueprint<Environment> {
     type Element: Element<Environment>;
-    fn spawn(self, env: &Environment) -> Self::Element;
+    fn make(self, env: &Environment) -> Self::Element;
 }
 
 pub trait Element<Environment> {

@@ -1,4 +1,4 @@
-use crate::elements::{Blueprint, Element};
+use super::super::elements::{Blueprint, Element};
 use pin_project::pin_project;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -34,7 +34,7 @@ where
     Fut: Future<Output: Blueprint<Env>>, {
     type Element = Self;
 
-    fn spawn(self, _: &Env) -> Self::Element {
+    fn make(self, _: &Env) -> Self::Element {
         self
     }
 }
@@ -59,7 +59,7 @@ where
         match this {
             HoldFutureProj::Pending(fut) => match fut.poll(cx) {
                 Poll::Ready(blueprint) => {
-                    let mut element = blueprint.spawn(env);
+                    let mut element = blueprint.make(env);
                     let _ = unsafe { Pin::new_unchecked(&mut element) }.poll(cx, env);
                     self.set(ReactOnce::Done(element));
                     Poll::Ready(Some(()))

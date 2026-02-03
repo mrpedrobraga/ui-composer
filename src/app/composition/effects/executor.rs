@@ -1,9 +1,8 @@
-use std::any::Any;
 use futures_signals::signal::Signal;
 use pin_project::pin_project;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use crate::elements::{DummyEnvironment, Element, ElementEffect};
+use super::super::elements::{DummyEnvironment, Element, ElementEffect};
 
 /// Has a reference to a runner, serving as an Executor for its [`Future`]s and [`Signal`]s.
 #[pin_project(project=AsyncExecutorProj)]

@@ -1,14 +1,11 @@
 use async_std::task::block_on;
 use chttp::ResponseExt;
 use futures_signals::signal::SignalExt;
-use elements::{Blueprint, DummyEnvironment};
-use crate::executor::DummyExecutor;
-use crate::future::React;
+use ui_composer::app::composition::elements::{Blueprint, DummyEnvironment};
+use ui_composer::app::composition::effects::executor::DummyExecutor;
+use ui_composer::app::composition::effects::future::React;
 
-pub mod elements;
-pub mod future;
 pub mod render;
-pub mod executor;
 
 #[macro_export]
 macro_rules! tuple {
@@ -23,7 +20,7 @@ fn main() {
     let blueprint = async_app();
 
     let env = DummyEnvironment();
-    let element = blueprint.spawn(&env);
+    let element = blueprint.make(&env);
     let e = DummyExecutor { element };
 
     block_on(e.to_future());
