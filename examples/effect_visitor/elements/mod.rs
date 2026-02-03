@@ -1,5 +1,6 @@
 use std::pin::Pin;
 use std::task::{Context, Poll};
+use downcast_rs::{impl_downcast, Downcast};
 use ui_composer::app::composition::algebra::Semigroup;
 
 pub mod implementations;
@@ -30,7 +31,8 @@ pub trait Element<Environment> {
 /// For example, a `Graphic` might imply a rectangle should be drawn at some place on-screen.
 /// Depending on the effect handler, this might result in quad instances being sent to the GPU
 /// or rectangles drawn on the terminal or pixels in a GameBoy screen.
-pub trait ElementEffect {}
+pub trait ElementEffect: Downcast {}
+impl_downcast!(ElementEffect);
 
 impl ElementEffect for () {}
 
