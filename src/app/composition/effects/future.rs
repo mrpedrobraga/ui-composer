@@ -1,16 +1,19 @@
 use super::super::elements::{Blueprint, Element};
 use pin_project::pin_project;
 use std::pin::Pin;
+use std::future::Future;
 use std::task::{Context, Poll};
 
-#[pin_project(project = HoldFutureProj)]
-#[must_use = "HoldFutures do nothing unless polled"]
-pub enum ReactOnce<Fut, Env>
+#[pin_project]
+#[must_use = "ReactOnce does nothing unless polled"]
+pub struct ReactOnce<Fut, Env>
 where
-    Fut: Future<Output: Blueprint<Env>>,
+    Fut: Future,
+    Fut::Output: Blueprint<Env>,
 {
-    Pending(#[pin] Fut),
-    Done(#[pin] <Fut::Output as Blueprint<Env>>::Element),
+    #[pin]
+    future: Fut,
+    element: Option<<Fut::Output as Blueprint<Env>>::Element>,
 }
 
 pub trait React: Future {
@@ -19,19 +22,24 @@ pub trait React: Future {
         Self: Sized,
         <Self as Future>::Output: Blueprint<Env>;
 }
+
 impl<Fut> React for Fut where Fut: Future {
     fn react<Env>(self) -> ReactOnce<Self, Env>
     where
         Self: Sized,
         <Self as Future>::Output: Blueprint<Env>
     {
-        ReactOnce::Pending(self)
+        ReactOnce {
+            future: self,
+            element: None,
+        }
     }
 }
 
 impl<Fut, Env> Blueprint<Env> for ReactOnce<Fut, Env>
 where
-    Fut: Future<Output: Blueprint<Env>>, {
+    Fut: Future,
+    Fut::Output: Blueprint<Env>, {
     type Element = Self;
 
     fn make(self, _: &Env) -> Self::Element {
@@ -41,32 +49,40 @@ where
 
 impl<Fut, Env> Element<Env> for ReactOnce<Fut, Env>
 where
-    Fut: Future<Output: Blueprint<Env>>,
+    Fut: Future,
+    Fut::Output: Blueprint<Env>,
 {
     type Effect =
-        Option<<<<Fut as Future>::Output as Blueprint<Env>>::Element as Element<Env>>::Effect>;
+    Option<<<<Fut as Future>::Output as Blueprint<Env>>::Element as Element<Env>>::Effect>;
 
     fn effect(&self) -> Self::Effect {
-        match self {
-            ReactOnce::Pending(_) => None,
-            ReactOnce::Done(element) => Some(element.effect()),
-        }
+        self.element.as_ref().map(|e| e.effect())
     }
 
-    fn poll(mut self: Pin<&mut Self>, cx: &mut Context, env: &Env) -> Poll<Option<()>> {
-        let this = self.as_mut().project();
+    fn poll(self: Pin<&mut Self>, cx: &mut Context, env: &Env) -> Poll<Option<()>> {
+        let this = self.project();
 
-        match this {
-            HoldFutureProj::Pending(fut) => match fut.poll(cx) {
-                Poll::Ready(blueprint) => {
-                    let mut element = blueprint.make(env);
-                    let _ = unsafe { Pin::new_unchecked(&mut element) }.poll(cx, env);
-                    self.set(ReactOnce::Done(element));
-                    Poll::Ready(Some(()))
-                }
-                Poll::Pending => Poll::Pending,
-            },
-            HoldFutureProj::Done(item) => item.poll(cx, env),
+        if let Some(element) = this.element {
+            // SAFETY: we can pin element here because `self` is pinned
+            // and will remain pinned until the next `poll`, by which `element`
+            // will be dropped and replaced.
+            return unsafe { Pin::new_unchecked(element) }.poll(cx, env);
+        }
+
+        *this.element = None;
+
+        // SAFETY: Because the future is pinned in this struct, its captures are stable.
+        match this.future.poll(cx) {
+            Poll::Ready(blueprint) => {
+                let mut element = blueprint.make(env);
+
+                // Wake up the element.
+                let _ = unsafe { Pin::new_unchecked(&mut element) }.poll(cx, env);
+                *this.element = Some(element);
+
+                Poll::Ready(Some(()))
+            }
+            Poll::Pending => Poll::Pending,
         }
     }
 }

@@ -1,5 +1,6 @@
-use ui_composer::app::composition::elements::{Blueprint, Element, ElementEffect, DummyEnvironment};
+use ui_composer::app::composition::elements::{Blueprint, DummyEnvironment, Element};
 use vek::{Extent3, Mat4, Rect, Rgba, Vec3};
+use ui_composer::app::composition::effects::ElementEffect;
 
 #[derive(Copy, Clone, Debug)]
 pub struct RenderQuad {

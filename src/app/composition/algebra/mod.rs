@@ -3,10 +3,25 @@
 //! This module contains a trait that defines a bidirectional
 //! structural algebra with a fold-unfold operation (bubble).
 
-use std::mem::MaybeUninit;
-
 pub mod implementations;
 
+/// Trait for "combining" two things into one thing.
+pub trait Semigroup {
+    /// Associative function which combines two instances of the semigroup.
+    fn combine(self, other: Self) -> Self;
+}
+
+/// Trait for a type that has an "empty" or "identity" element.
+pub trait Empty {
+    fn empty() -> Self;
+}
+
+/// A [`Semigroup`] that also has an [`Empty`] element.
+pub trait Monoid: Semigroup + Empty {}
+impl<T> Monoid for T where T: Semigroup + Empty {}
+
+/// Type for something that can bubble a value down its structure (anamorphism)
+/// and bubble up a response (catamorphism).
 pub trait Bubble<Down, Up> {
     fn bubble(&mut self, cx: &mut Down) -> Up;
 }
@@ -16,7 +31,7 @@ pub trait Bubble<Down, Up> {
 pub trait Gather<Context, Item> {
     const SIZE: usize;
 
-    fn gather(&mut self, cx: &mut Context, acc: &mut [MaybeUninit<Item>]);
+    fn gather(&mut self, cx: &mut Context, acc: &mut [std::mem::MaybeUninit<Item>]);
 }
 
 #[cfg(feature = "specialization")]
@@ -25,22 +40,3 @@ impl<T, Down, Up> Bubble<Down, Up> for T where Up: Empty {
         Up::empty()
     }
 }
-
-/// Trait for "combining" two things into one thing.
-///
-/// The trait assumes that `combine` is associative,
-/// that is, `combine(a, combine(b, c))` is the same as
-/// `combine(combine(a, b), c)`.
-pub trait Semigroup {
-    /// Combines `self` and `other`.
-    fn combine(self, other: Self) -> Self;
-}
-
-/// A [`Semigroup`] that also has an identity (null) element.
-pub trait Empty {
-    /// Returns the identity element.
-    fn empty() -> Self;
-}
-
-pub trait Monoid: Semigroup + Empty {}
-impl<T> Monoid for T where T: Semigroup + Empty {}

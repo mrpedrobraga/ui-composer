@@ -1,7 +1,17 @@
+//! # Blueprints and Elements
+//!
+//! A [`Blueprint`] describes how to create an [`Element`] in some environment.
+//!
+//! The [`Blueprint`] trait is parametric (it has the `Environment` parameter)
+//! which allows you to implement it multiple times for the same type.
+//! 
+//! For example, if you have a struct `BoxGraphic` you can implement `Blueprint<Desktop> + Blueprint<TUI>`
+//! and determine distinct [`Element`]s it creates when you call `Blueprint::make`
+
 use std::pin::Pin;
 use std::task::{Context, Poll};
 use downcast_rs::{impl_downcast, Downcast};
-use crate::app::composition::algebra::Semigroup;
+use crate::app::composition::effects::ElementEffect;
 
 pub mod implementations;
 
@@ -25,22 +35,3 @@ pub trait Element<Environment> {
         Poll::Ready(None)
     }
 }
-
-/// An effect that some element of a structure might produce.
-///
-/// For example, a `Graphic` might imply a rectangle should be drawn at some place on-screen.
-/// Depending on the effect handler, this might result in quad instances being sent to the GPU
-/// or rectangles drawn on the terminal or pixels in a GameBoy screen.
-pub trait ElementEffect: Downcast {}
-impl_downcast!(ElementEffect);
-
-impl ElementEffect for () {}
-
-impl<A, B> ElementEffect for (A, B)
-where
-    A: ElementEffect,
-    B: ElementEffect,
-{
-}
-
-impl<A> ElementEffect for Option<A> where A: ElementEffect, {}
