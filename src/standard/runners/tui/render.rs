@@ -10,7 +10,7 @@
 //! but, really, terminals don't really have a lot of pixels.
 
 use crate::app::composition::algebra::{Bubble, Empty};
-use crate::app::composition::reify::Reify;
+use crate::app::composition::reify::Emit;
 use crate::state::process::{Pollable, SignalReactItemRe};
 use futures_signals::signal::Signal;
 use vek::{Rect, Vec2};
@@ -71,7 +71,7 @@ impl RenderTui for Graphic {
 
 impl<S, Cx> RenderTui for SignalReactItemRe<S, Cx>
 where
-    S: Signal<Item: Reify<Cx, Output: RenderTui>>,
+    S: Signal<Item: Emit<Cx, Output: RenderTui>>,
 {
     fn draw<C>(&self, canvas: &mut C, rect: Rect<u16, u16>)
     where
@@ -83,7 +83,7 @@ where
     }
 }
 
-impl Reify<()> for Graphic {
+impl Emit<()> for Graphic {
     type Output = Self;
 
     fn reify(self, context: &mut ()) -> Self::Output {

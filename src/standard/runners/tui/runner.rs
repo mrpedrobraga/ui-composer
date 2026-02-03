@@ -1,6 +1,6 @@
 use crate::app::backend::Runner;
 use crate::app::composition::algebra::Bubble;
-use crate::app::composition::reify::Reify;
+use crate::app::composition::reify::Emit;
 use crate::app::input::{CursorEvent, DeviceId, Event};
 use crate::runners::tui::render::Canvas;
 use crate::runners::tui::signals::AsyncExecutor;
@@ -29,7 +29,7 @@ pub type Own<T> = Rc<RefCell<T>>;
 #[pin_project(project=TUIBackendProj)]
 pub struct TUIRunner<N>
 where
-    N: Send + Reify<(), Output: Element>,
+    N: Send + Emit<(), Output: Element>,
 {
     #[pin]
     pub app: Own<N::Output>,
@@ -37,7 +37,7 @@ where
 
 impl<App> Runner for TUIRunner<App>
 where
-    App: Send + Reify<(), Output: Element>,
+    App: Send + Emit<(), Output: Element>,
 {
     type App = App;
 
@@ -71,7 +71,7 @@ where
 
 impl<N> TUIRunner<N>
 where
-    N: Send + Reify<(), Output: Element + Sized>,
+    N: Send + Emit<(), Output: Element + Sized>,
 {
     pub(crate) async fn process_events(&self) -> std::io::Result<()> {
         let mut stdout = stdout();

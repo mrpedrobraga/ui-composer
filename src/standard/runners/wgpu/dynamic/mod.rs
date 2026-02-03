@@ -1,5 +1,5 @@
 use crate::app::composition::algebra::Bubble;
-use crate::app::composition::reify::Reify;
+use crate::app::composition::reify::Emit;
 use crate::standard::runners::wgpu::pipeline::graphics::{
     graphic::Graphic, RenderGraphic, RenderGraphicDescriptor,
 };
@@ -41,7 +41,7 @@ where
     }
 }
 
-impl<Res, Sig> Reify<Res> for VecItemDescriptor<Sig>
+impl<Res, Sig> Emit<Res> for VecItemDescriptor<Sig>
 where
     Sig: SignalVec + Send,
 {

@@ -1,4 +1,4 @@
-use crate::app::composition::reify::Reify;
+use crate::app::composition::reify::Emit;
 use crate::standard::runners::wgpu::pipeline::UIContext;
 use crate::standard::runners::wgpu::pipeline::text::{TextItem, TextItemRe};
 use crate::state::process::{FutureAwaitItem, SignalReactItem};
@@ -12,7 +12,7 @@ use crate::standard::prelude::{Drag, Hover, Tap, Typing};
 use crate::state::effect::Effect;
 //MARK: Graphics
 
-impl<Res> Reify<Res> for Graphic {
+impl<Res> Emit<Res> for Graphic {
     type Output = Graphic;
 
     fn reify(self, #[expect(unused)] resources: &mut Res) -> Self::Output {
@@ -228,7 +228,7 @@ where
     S: Signal<Item = T>,
     T: RenderGraphicDescriptor<Res>,
 {
-    const QUAD_COUNT: usize = <S::Item as Reify<Res>>::Output::QUAD_COUNT;
+    const QUAD_COUNT: usize = <S::Item as Emit<Res>>::Output::QUAD_COUNT;
 
     fn write_quads(&self, quad_buffer: &mut [Graphic]) {
         match &self.held_item {
@@ -239,12 +239,12 @@ where
 }
 
 //MARK: FutureProcessor
-impl<Res, Fut> Reify<Res> for FutureAwaitItemRe<Fut, Res>
+impl<Res, Fut> Emit<Res> for FutureAwaitItemRe<Fut, Res>
 where
     Fut: Future,
-    Fut::Output: Reify<Res>,
+    Fut::Output: Emit<Res>,
 {
-    type Output = <Fut::Output as Reify<Res>>::Output;
+    type Output = <Fut::Output as Emit<Res>>::Output;
 
     fn reify(self, #[expect(unused)] resources: &mut Res) -> Self::Output {
         // Of course, by default,
@@ -255,8 +255,8 @@ where
 impl<Fut, Res> RenderGraphicDescriptor<Res> for FutureAwaitItem<Fut>
 where
     Fut: Future + Send,
-    Fut::Output: Reify<Res>,
-    <Fut::Output as Reify<Res>>::Output: RenderGraphic,
+    Fut::Output: Emit<Res>,
+    <Fut::Output as Emit<Res>>::Output: RenderGraphic,
 {
     fn get_render_rect(&self) -> Option<vek::Rect<f32, f32>> {
         None
@@ -265,10 +265,10 @@ where
 impl<Fut, Res> RenderGraphic for FutureAwaitItemRe<Fut, Res>
 where
     Fut: Future,
-    Fut::Output: Reify<Res>,
-    <Fut::Output as Reify<Res>>::Output: RenderGraphic,
+    Fut::Output: Emit<Res>,
+    <Fut::Output as Emit<Res>>::Output: RenderGraphic,
 {
-    const QUAD_COUNT: usize = <Fut::Output as Reify<Res>>::Output::QUAD_COUNT;
+    const QUAD_COUNT: usize = <Fut::Output as Emit<Res>>::Output::QUAD_COUNT;
 
     fn write_quads(&self, quad_buffer: &mut [Graphic]) {
         if let Some(item) = &self.held_item {
@@ -281,7 +281,7 @@ where
 
 macro_rules! impl_render_graphic_nop {
     ($name:ident) => {
-        impl<Res> Reify<Res> for $name {
+        impl<Res> Emit<Res> for $name {
             type Output = Self;
             fn reify(self, #[expect(unused)] resources: &mut Res) -> Self::Output {
                 self
@@ -308,7 +308,7 @@ impl_render_graphic_nop!(Hover);
 impl_render_graphic_nop!(Drag);
 impl_render_graphic_nop!(Typing);
 
-impl<A, Res> Reify<Res> for Tap<A>
+impl<A, Res> Emit<Res> for Tap<A>
 where
     A: Effect,
 {

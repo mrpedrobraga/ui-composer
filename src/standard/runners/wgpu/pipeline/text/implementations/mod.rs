@@ -1,5 +1,5 @@
 use crate::app::composition::algebra::{Bubble, Empty};
-use crate::app::composition::reify::Reify;
+use crate::app::composition::reify::Emit;
 use crate::standard::runners::wgpu::pipeline::graphics::graphic::Graphic;
 use crate::standard::runners::wgpu::pipeline::text::TextItemRe;
 use crate::standard::runners::wgpu::pipeline::UIContext;
@@ -51,7 +51,7 @@ impl RenderText for TextItemRe {
     }
 }
 
-impl<S: AsRef<str>> Reify<UIContext> for TextItem<S> {
+impl<S: AsRef<str>> Emit<UIContext> for TextItem<S> {
     type Output = TextItemRe;
 
     fn reify(self, resources: &mut UIContext) -> Self::Output {
@@ -139,7 +139,7 @@ where
 impl<Sig, Res> RenderText for SignalReactItemRe<Sig, Res>
 where
     Sig: Signal,
-    Sig::Item: Reify<Res, Output: RenderText>,
+    Sig::Item: Emit<Res, Output: RenderText>,
 {
     fn push_text<'a>(&'a self, bounds: TextBounds, container: &mut Vec<TextArea<'a>>) {
         match &self.held_item {
@@ -154,7 +154,7 @@ where
 impl<Fut, Res> RenderText for FutureAwaitItemRe<Fut, Res>
 where
     Fut: Future,
-    Fut::Output: Reify<Res, Output: RenderText>,
+    Fut::Output: Emit<Res, Output: RenderText>,
 {
     fn push_text<'a>(
         &'a self,

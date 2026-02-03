@@ -1,5 +1,5 @@
 use crate::app::composition::algebra::{Bubble, Semigroup};
-use crate::app::composition::reify::Reify;
+use crate::app::composition::reify::Emit;
 use crate::geometry::layout::hints::ParentHints;
 use crate::geometry::layout::LayoutItem;
 use core::task::Context;
@@ -60,18 +60,18 @@ where P: Pollable<R>
 pub struct SignalReactItemRe<Sig, Cx>
 where
     Sig: Signal,
-    Sig::Item: Reify<Cx>,
+    Sig::Item: Emit<Cx>,
 {
     #[pin]
     signal: Sig,
-    pub held_item: Option<<Sig::Item as Reify<Cx>>::Output>,
+    pub held_item: Option<<Sig::Item as Emit<Cx>>::Output>,
 }
 
 impl<Sig, Cx> Bubble<Event, bool> for SignalReactItemRe<Sig, Cx>
 where
     Sig: Signal + Send,
-    Sig::Item: Reify<Cx>,
-    <Sig::Item as Reify<Cx>>::Output: Bubble<Event, bool>,
+    Sig::Item: Emit<Cx>,
+    <Sig::Item as Emit<Cx>>::Output: Bubble<Event, bool>,
 {
     fn bubble(&mut self, event: &mut Event) -> bool {
         match &mut self.held_item {
@@ -84,8 +84,8 @@ where
 impl<Sig, Cx> Pollable<Cx> for SignalReactItemRe<Sig, Cx>
 where
     Sig: Signal + Send,
-    Sig::Item: Reify<Cx>,
-    <Sig::Item as Reify<Cx>>::Output: Pollable<Cx>,
+    Sig::Item: Emit<Cx>,
+    <Sig::Item as Emit<Cx>>::Output: Pollable<Cx>,
 {
     fn poll(self: Pin<&mut Self>, cx: &mut Context, resources: &mut Cx) -> Poll<Option<()>> {
         let SignalReactItemReProj { signal, held_item } = self.project();
@@ -127,10 +127,10 @@ pub struct SignalReactItem<Sig>(pub Sig)
 where
     Sig: Signal;
 
-impl<Cx, Sig> Reify<Cx> for SignalReactItem<Sig>
+impl<Cx, Sig> Emit<Cx> for SignalReactItem<Sig>
 where
     Sig: Signal + Send,
-    Sig::Item: Reify<Cx>,
+    Sig::Item: Emit<Cx>,
 {
     type Output = SignalReactItemRe<Sig, Cx>;
 
@@ -145,10 +145,10 @@ where
 impl<Sig, Cx> LayoutItem for SignalReactItemRe<Sig, Cx>
 where
     Sig: Signal + Send,
-    Sig::Item: Reify<Cx>,
-    <Sig::Item as Reify<Cx>>::Output: LayoutItem,
+    Sig::Item: Emit<Cx>,
+    <Sig::Item as Emit<Cx>>::Output: LayoutItem,
 {
-    type Content = Option<<<Sig::Item as Reify<Cx>>::Output as LayoutItem>::Content>;
+    type Content = Option<<<Sig::Item as Emit<Cx>>::Output as LayoutItem>::Content>;
 
     #[allow(deprecated)]
     fn get_natural_size(&self) -> Extent2<f32> {
@@ -188,10 +188,10 @@ pub struct FutureAwaitItem<Fut>(pub Fut)
 where
     Fut: Future;
 
-impl<Fut, Res> Reify<Res> for FutureAwaitItem<Fut>
+impl<Fut, Res> Emit<Res> for FutureAwaitItem<Fut>
 where
     Fut: Future + Send,
-    Fut::Output: Reify<Res>,
+    Fut::Output: Emit<Res>,
 {
     type Output = FutureAwaitItemRe<Fut, Res>;
 
@@ -210,17 +210,17 @@ where
 pub struct FutureAwaitItemRe<Fut, Cx>
 where
     Fut: Future,
-    Fut::Output: Reify<Cx>,
+    Fut::Output: Emit<Cx>,
 {
     #[pin]
     future: Fut,
-    pub held_item: Option<<Fut::Output as Reify<Cx>>::Output>,
+    pub held_item: Option<<Fut::Output as Emit<Cx>>::Output>,
 }
 
 impl<Fut, Cx> Bubble<Event, bool> for FutureAwaitItemRe<Fut, Cx>
 where
     Fut: Future + Send,
-    Fut::Output: Reify<Cx, Output: Bubble<Event, bool>>,
+    Fut::Output: Emit<Cx, Output: Bubble<Event, bool>>,
 {
     fn bubble(&mut self, event: &mut Event) -> bool {
         self.held_item
@@ -233,7 +233,7 @@ where
 impl<Fut, Cx> Pollable<Cx> for FutureAwaitItemRe<Fut, Cx>
 where
     Fut: Future + Send,
-    Fut::Output: Reify<Cx, Output: Pollable<Cx>>,
+    Fut::Output: Emit<Cx, Output: Pollable<Cx>>,
 {
     fn poll(self: Pin<&mut Self>, cx: &mut Context, resources: &mut Cx) -> Poll<Option<()>> {
         let FutureAwaitItemReProj { future, held_item } = self.project();
@@ -245,7 +245,8 @@ where
             }
             None => match future.poll(cx) {
                 Poll::Ready(descriptor) => {
-                    let item = descriptor.reify(resources);
+                    let mut item = descriptor.reify(resources);
+                    let _ = unsafe { Pin::new_unchecked(&mut item) }.poll(cx, resources);
                     held_item.replace(item);
                     Poll::Ready(Some(()))
                 }
@@ -258,10 +259,10 @@ where
 impl<Fut, Cx> LayoutItem for FutureAwaitItemRe<Fut, Cx>
 where
     Fut: Future + Send,
-    Fut::Output: Reify<Cx>,
-    <Fut::Output as Reify<Cx>>::Output: LayoutItem,
+    Fut::Output: Emit<Cx>,
+    <Fut::Output as Emit<Cx>>::Output: LayoutItem,
 {
-    type Content = Option<<<Fut::Output as Reify<Cx>>::Output as LayoutItem>::Content>;
+    type Content = Option<<<Fut::Output as Emit<Cx>>::Output as LayoutItem>::Content>;
 
     #[allow(deprecated)]
     fn get_natural_size(&self) -> Extent2<f32> {

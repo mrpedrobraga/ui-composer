@@ -1,5 +1,5 @@
 use crate::app::composition::algebra::Bubble;
-use crate::app::composition::reify::Reify;
+use crate::app::composition::reify::Emit;
 use crate::geometry::layout::flow::CartesianFlow;
 use crate::geometry::layout::hints::ParentHints;
 use crate::geometry::layout::LayoutItem;
@@ -23,8 +23,8 @@ use vek::{Extent2, Rect, Rgba};
 use {crate::app::input::Event, vek::Vec2};
 
 /// Trait alias that represents anything that can be laid out to get UI.
-pub trait TUI: LayoutItem<Content: Reify<(), Output: UIFragment>> {}
-impl<T> TUI for T where T: LayoutItem<Content: Reify<(), Output: UIFragment>> {}
+pub trait TUI: LayoutItem<Content: Emit<(), Output: UIFragment>> {}
+impl<T> TUI for T where T: LayoutItem<Content: Emit<(), Output: UIFragment>> {}
 
 /// Trait alias that represents anything that can:
 /// 1. Render;
@@ -73,9 +73,9 @@ pub struct TerminalNodeState {
     pub mouse_position: Mutable<Option<Vec2<f32>>>,
 }
 
-impl<UI> Reify<()> for TerminalNode<UI>
+impl<UI> Emit<()> for TerminalNode<UI>
 where
-    UI: Reify<(), Output: Sized + RenderTui + Bubble<Event, bool> + Pollable<()>> + Send,
+    UI: Emit<(), Output: Sized + RenderTui + Bubble<Event, bool> + Pollable<()>> + Send,
 {
     type Output = TerminalNodeRe<UI::Output>;
 

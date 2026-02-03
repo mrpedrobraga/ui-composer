@@ -1,4 +1,4 @@
-use crate::app::composition::reify::Reify;
+use crate::app::composition::reify::Emit;
 use crate::standard::runners::wgpu::backend::WgpuResources;
 use crate::standard::runners::wgpu::render_target::{RenderBuildingBlock, RenderTarget};
 use wgpu::{CompareFunction, DepthBiasState, DepthStencilState, StencilState, TextureFormat};
@@ -19,12 +19,12 @@ pub mod graphic;
 pub mod implementations;
 
 /// Descriptor for some [RenderGraphic].
-pub trait RenderGraphicDescriptor<Resources>: Reify<Resources, Output: RenderGraphic> {
+pub trait RenderGraphicDescriptor<Resources>: Emit<Resources, Output: RenderGraphic> {
     /// Gets the rectangle this primitive occupies, for rendering purposes.
     fn get_render_rect(&self) -> Option<Rect<f32, f32>>;
 }
 
-/// Trait for a [Reify] that can render graphics using this pipeline.
+/// Trait for a [Emit] that can render graphics using this pipeline.
 /// There's no trait bounds on this trait for convenience.
 pub trait RenderGraphic {
     /// The number of quads this primitive pushes to render.

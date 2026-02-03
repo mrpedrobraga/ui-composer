@@ -1,9 +1,11 @@
+use std::io::stdout;
 use super::runner::Own;
 use crate::runners::tui::Element;
 use futures_signals::signal::Signal;
 use pin_project::pin_project;
 use std::pin::Pin;
 use std::task::{Context, Poll};
+use vek::Rect;
 
 /// Has a reference to a runner, serving as an Executor for its [`Future`]s and [`Signal`]s.
 #[pin_project(project=AsyncExecutorProj)]

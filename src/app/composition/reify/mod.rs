@@ -1,6 +1,6 @@
 //! # Reify
 //!
-//! [`Reify`]s are structures which describe other structures. They are useful for describing
+//! [`Emit`]s are structures which describe other structures. They are useful for describing
 //! applications in terms of runtime resources you have yet to acquire, like GPU buffers.
 //!
 //! They do something similar to `Reader` monads or closure, allowing you to capture a "Context"
@@ -11,7 +11,7 @@
 pub mod implementations;
 
 /// The main trait of this module.
-pub trait Reify<Context> {
+pub trait Emit<Context> {
     type Output;
     fn reify(self, context: &mut Context) -> Self::Output;
 }

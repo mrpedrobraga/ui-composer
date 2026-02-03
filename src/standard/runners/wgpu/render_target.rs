@@ -1,6 +1,6 @@
 //! A render target is something that graphics, text, etc., can be rendered to.
 
-use crate::app::composition::reify::Reify;
+use crate::app::composition::reify::Emit;
 use crate::standard::runners::wgpu::backend::WgpuResources;
 use crate::standard::runners::wgpu::pipeline::graphics::RenderGraphicDescriptor;
 use crate::standard::runners::wgpu::pipeline::{RendererBuffers, UIContext, WgpuRenderers};
@@ -39,7 +39,7 @@ pub trait Render: RenderGraphicDescriptor<UIContext, Output: RenderBuildingBlock
 
 impl<A> Render for A
 where
-    A: Reify<UIContext> + RenderGraphicDescriptor<UIContext>,
-    <A as Reify<UIContext>>::Output: RenderBuildingBlock,
+    A: Emit<UIContext> + RenderGraphicDescriptor<UIContext>,
+    <A as Emit<UIContext>>::Output: RenderBuildingBlock,
 {
 }

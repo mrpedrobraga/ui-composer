@@ -1,6 +1,6 @@
-use super::Reify;
+use super::Emit;
 
-impl<Cx> Reify<Cx> for () {
+impl<Cx> Emit<Cx> for () {
     type Output = ();
 
     fn reify(self, #[expect(unused)] context: &mut Cx) -> Self::Output {
@@ -8,10 +8,10 @@ impl<Cx> Reify<Cx> for () {
     }
 }
 
-impl<Cx, A, B> Reify<Cx> for (A, B)
+impl<Cx, A, B> Emit<Cx> for (A, B)
 where
-    A: Reify<Cx>,
-    B: Reify<Cx>,
+    A: Emit<Cx>,
+    B: Emit<Cx>,
 {
     type Output = (A::Output, B::Output);
 
@@ -20,9 +20,9 @@ where
     }
 }
 
-impl<Cx, A, const N: usize> Reify<Cx> for [A; N]
+impl<Cx, A, const N: usize> Emit<Cx> for [A; N]
 where
-    A: Reify<Cx>,
+    A: Emit<Cx>,
 {
     type Output = [A::Output; N];
 
@@ -31,9 +31,9 @@ where
     }
 }
 
-impl<Cx, T> Reify<Cx> for Option<T>
+impl<Cx, T> Emit<Cx> for Option<T>
 where
-    T: Reify<Cx>,
+    T: Emit<Cx>,
 {
     type Output = Option<T::Output>;
 
@@ -42,25 +42,25 @@ where
     }
 }
 
-impl<Cx, T, E> Reify<Cx> for Result<T, E>
+impl<Cx, T, E> Emit<Cx> for Result<T, E>
 where
-    T: Reify<Cx>,
-    E: Reify<Cx>,
+    T: Emit<Cx>,
+    E: Emit<Cx>,
 {
     type Output = Result<T::Output, E::Output>;
 
     fn reify(self, context: &mut Cx) -> Self::Output {
         match self {
-            Ok(v) => Ok(Reify::reify(v, context)),
-            Err(e) => Err(Reify::reify(e, context)),
+            Ok(v) => Ok(Emit::reify(v, context)),
+            Err(e) => Err(Emit::reify(e, context)),
         }
     }
 }
 
 #[cfg(feature = "std")]
-impl<Cx, A> Reify<Cx> for Box<A>
+impl<Cx, A> Emit<Cx> for Box<A>
 where
-    A: Reify<Cx>,
+    A: Emit<Cx>,
 {
     type Output = A::Output;
 
