@@ -4,3 +4,4 @@ pub mod tui;
 pub mod wgpu;
 #[cfg(all(feature = "winit", feature = "wgpu"))]
 pub mod winitwgpu;
+mod winit;

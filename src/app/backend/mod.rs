@@ -21,6 +21,7 @@ pub mod futures;
 pub trait Runner {
     type App;
 
+    /// Runs the application on the main thread.
     fn run(ui: Self::App);
 
     #[allow(async_fn_in_trait)]
