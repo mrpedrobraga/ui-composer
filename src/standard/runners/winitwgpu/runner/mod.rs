@@ -229,6 +229,7 @@ async fn create_gpu_resources() -> WgpuResources {
             memory_hints: MemoryHints::default(),
             // TODO: Add something here in debug mode.
             trace: Default::default(),
+            experimental_features: Default::default()
         })
         .await
         .unwrap();
@@ -259,16 +260,16 @@ fn create_renderers(adapter: &Adapter, device: &Device, queue: &Queue) -> WgpuRe
     })];
 
     let graphics_pipeline = OrchestraRenderer::singleton::<WindowRenderTarget>(
-        &adapter,
-        &device,
-        &queue,
+        adapter,
+        device,
+        queue,
         render_target_formats,
     );
 
     let text_pipeline = TextRenderer::singleton::<WindowRenderTarget>(
-        &adapter,
-        &device,
-        &queue,
+        adapter,
+        device,
+        queue,
         render_target_formats,
     );
 

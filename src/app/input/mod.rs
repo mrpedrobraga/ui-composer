@@ -18,7 +18,7 @@ pub enum Event {
     /// The user requested that the application closes.
     CloseRequested,
     /// The user requested that the app is fully or partially redrawn.
-    /// Something that might trigger this event. for example, is resizing.
+    /// Something that might trigger this event. For example, resizing.
     RedrawRequested,
     /// The app became (or ceased to be) completely hidden from view.
     OcclusionStateChanged(bool),

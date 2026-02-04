@@ -23,8 +23,10 @@ pub trait Runner {
 
     fn run(ui: Self::App);
 
+    #[allow(async_fn_in_trait)]
     async fn event_loop(&self);
 
+    #[allow(async_fn_in_trait)]
     async fn react_loop(&self);
 
     /// Polls the UI as a [`Signal`].

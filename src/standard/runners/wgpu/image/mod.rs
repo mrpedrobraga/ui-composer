@@ -204,7 +204,7 @@ where
             });
             gpu_resources
                 .device
-                .poll(PollType::Wait)
+                .poll(PollType::wait_indefinitely())
                 .expect("Couldn't... wait?");
             rx.recv().unwrap().unwrap();
 

@@ -68,6 +68,7 @@ impl<S: AsRef<str>> Emit<UIContext> for TextItem<S> {
             // TODO: Allow composing this...
             default_attributes,
             Shaping::Advanced,
+            None,
         );
         buffer.set_size(
             &mut renderer.font_system,

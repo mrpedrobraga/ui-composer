@@ -1,7 +1,7 @@
 //! # Containers
 //!
 //! Containers are higher-order LayoutItems. You can use standard to compose primitive [LayoutItem]s,
-//! or to alter how they are layed out on your app.
+//! or to alter how they are laid out on your app.
 //!
 //! ## Sizing
 //!

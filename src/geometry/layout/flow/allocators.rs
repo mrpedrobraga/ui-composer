@@ -1,7 +1,7 @@
 //! Module for layout "allocators", types useful for distributing
 //! a container's "real estate" to its children.
 //!
-//! These functions are supposed to be incredibly optimised for inlining and
+//! These functions are supposed to be incredibly optimized for inlining and
 //! no_std environments.
 
 use arrayvec::ArrayVec;

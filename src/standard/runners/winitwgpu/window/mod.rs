@@ -427,6 +427,7 @@ impl RenderTarget for WindowRenderTarget {
             color_attachments: &[Some(RenderPassColorAttachment {
                 view: &color_view,
                 resolve_target: None,
+                depth_slice: None,
                 ops: Operations {
                     load: LoadOp::Clear(Color {
                         r: 1.0,
@@ -447,6 +448,7 @@ impl RenderTarget for WindowRenderTarget {
             }),
             timestamp_writes: None,
             occlusion_query_set: None,
+            multiview_mask: None
         });
 
         OrchestraRenderer::draw(

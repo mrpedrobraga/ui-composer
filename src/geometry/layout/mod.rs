@@ -25,14 +25,14 @@
 //! # use ui_composer::geometry::layout::hints::ParentHints;
 //!
 //! // Like this.
-//! // 'text' here is like a "prop" of your component. It's readily available
+//! // `text` here is like a "prop" of your component. It's readily available
 //! // for you to compose with other standard.
 //! fn MyText<F, R>(text: String) -> F
 //!     where
 //!         F: Fn(ParentHints) -> R,
 //!         R: Emit<UIContext> {
 //!
-//!     // hints is some internal context that's only gonna be available later.
+//!     // hints is some internal context that's only going to be available later.
 //!     |hints| {
 //!         Text(hints.rect, text, Rgb::white())
 //!     }

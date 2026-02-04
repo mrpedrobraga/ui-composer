@@ -73,7 +73,7 @@ impl Bubble<Event, bool> for Drag {
                         *self.displacement.lock_mut() += delta;
                     } else {
                         // If the mouse leaves the drag area, drag stops.
-                        // maybe this shouldn't be here.
+                        // Maybe this shouldn't be here.
                         self.drag_state.set(DragState::None);
                     }
                     self.mouse_position.set(*position);

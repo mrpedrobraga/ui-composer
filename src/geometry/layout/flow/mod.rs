@@ -91,13 +91,13 @@ pub enum RelativeFlow {
 /// comes into play.
 #[derive(Debug, Clone, Copy)]
 pub enum WritingFlow {
-    /// Aligned with writing flow. en-us: →.
+    /// Aligned with writing flow. `en-us`: →.
     WritingAxisForward,
-    /// Opposite of writing flow. en-us: ←.
+    /// Opposite of writing flow. `en-us`: ←.
     WritingAxisBackwards,
-    /// Aligned with writing cross flow. en-us: ↓.
+    /// Aligned with writing cross flow. `en-us`: ↓.
     WritingCrossAxisForward,
-    /// Opposite of writing cross flow. en-us: ↑.
+    /// Opposite of writing cross flow. `en-us`: ↑.
     WritingCrossAxisBackwards,
 }
 

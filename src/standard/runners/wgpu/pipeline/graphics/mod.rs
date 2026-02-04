@@ -185,7 +185,7 @@ impl OrchestraRenderer {
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Standard Render Pipeline Layout"),
             bind_group_layouts: &[&uniform_bind_group_layout],
-            push_constant_ranges: &[],
+            immediate_size: 0,
         });
         let shader = device.create_shader_module(wgpu::include_wgsl!(
             "./orchestra_render_pipeline_shader.wgsl"
@@ -214,7 +214,7 @@ impl OrchestraRenderer {
                 bias: DepthBiasState::default(),
             }),
             multisample: wgpu::MultisampleState::default(),
-            multiview: None,
+            multiview_mask: None,
             cache: None, // TODO: Perhaps have some cache?
         });
 
