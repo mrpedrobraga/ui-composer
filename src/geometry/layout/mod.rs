@@ -72,6 +72,7 @@ use {
     futures_signals::signal::{Signal, SignalExt},
     vek::{Extent2, Rect},
 };
+use crate::app::composition::elements::Blueprint;
 use crate::state::process::{Pollable, SignalReactItem};
 
 pub mod flow;
@@ -142,22 +143,21 @@ pub trait Resizable: LayoutItem {
 
 /// Simple layout item that can be resized by its parent
 /// in whatever way the parent sees fit.
-pub struct ItemBox<F, A, Context>
+pub struct ItemBox<Factory, Item, Env>
 where
-    F: Send + FnMut(ParentHints) -> A,
+    Factory: Send + FnMut(ParentHints) -> Item,
 {
     hints: ChildHints,
-    factory: F,
-    __context: PhantomData<fn() -> Context>,
+    factory: Factory,
+    __context: PhantomData<fn() -> Env>,
 }
 
-impl<F, Items, Res> ItemBox<F, Items, Res>
+impl<Factory, Item, Env> ItemBox<Factory, Item, Env>
 where
-    F: FnMut(ParentHints) -> Items + Send,
-    Items: Emit<Res>,
+    Factory: FnMut(ParentHints) -> Item + Send,
+    Item: Blueprint<Env>,
 {
-    /// Creates a new resizable [`LayoutItem`] that redraws using this factory function.
-    pub fn new(factory: F) -> Self {
+    pub fn new(factory: Factory) -> Self {
         Self {
             hints: ChildHints::default(),
             factory,

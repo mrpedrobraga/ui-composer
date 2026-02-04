@@ -3,8 +3,6 @@ use crate::app::composition::reify::Emit;
 use crate::geometry::layout::hints::ParentHints;
 use crate::geometry::layout::LayoutItem;
 use core::task::Context;
-use std::cell::RefCell;
-use std::rc::Rc;
 use vek::Extent2;
 use {
     crate::app::input::Event,

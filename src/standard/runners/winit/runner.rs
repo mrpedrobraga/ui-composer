@@ -11,9 +11,9 @@ pub struct WinitRunner<AppBlueprint> where AppBlueprint : Blueprint<WinitEnviron
 }
 
 impl<AppBlueprint> Runner for WinitRunner<AppBlueprint> where AppBlueprint : Blueprint<WinitEnvironment> {
-    type App = AppBlueprint::Element;
+    type AppBlueprint = AppBlueprint::Element;
 
-    fn run(ui: Self::App) {
+    fn run(ui: Self::AppBlueprint) {
         todo!()
     }
 

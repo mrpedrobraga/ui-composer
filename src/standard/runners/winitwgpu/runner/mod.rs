@@ -76,10 +76,10 @@ impl<A> Runner for WinitWgpuRunner<A>
 where
     A: EReify<Output: Pollable<AppContext>> + 'static,
 {
-    type App = A;
+    type AppBlueprint = A;
 
     /// This function *must* be called on the main thread, because of winit.
-    fn run(node_tree: Self::App) {
+    fn run(node_tree: Self::AppBlueprint) {
         let event_loop = EventLoop::builder().build().unwrap();
         event_loop.set_control_flow(ControlFlow::Wait);
         event_loop

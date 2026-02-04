@@ -1,10 +1,7 @@
 use crate::app::backend::Runner;
-use crate::app::composition::algebra::Bubble;
-use crate::app::composition::reify::Emit;
-use crate::app::input::{CursorEvent, DeviceId, Event};
-use crate::runners::tui::render::Canvas;
+use crate::app::composition::elements::Blueprint;
+use crate::standard::runners::tui::render::canvas::Canvas;
 use crate::runners::tui::signals::AsyncExecutor;
-use crate::runners::tui::Element;
 use async_std::task::yield_now;
 use crossterm::cursor::{Hide, RestorePosition, SavePosition, SetCursorStyle, Show};
 use crossterm::event::{
@@ -24,29 +21,30 @@ use std::io::{stdout, Write};
 use std::rc::Rc;
 use vek::{Extent2, Rect, Rgba, Vec2};
 
+pub struct TUIEnvironment;
 pub type Own<T> = Rc<RefCell<T>>;
 
 #[pin_project(project=TUIBackendProj)]
-pub struct TUIRunner<N>
+pub struct TUIRunner<AppBlueprint>
 where
-    N: Send + Emit<(), Output: Element>,
+    AppBlueprint: Send + Blueprint<TUIEnvironment>,
 {
     #[pin]
-    pub app: Own<N::Output>,
+    pub app: Own<AppBlueprint::Element>,
 }
 
-impl<App> Runner for TUIRunner<App>
+impl<AppBlueprint> Runner for TUIRunner<AppBlueprint>
 where
-    App: Send + Emit<(), Output: Element>,
+    AppBlueprint: Send + Blueprint<TUIEnvironment>
 {
-    type App = App;
+    type AppBlueprint = AppBlueprint;
 
-    fn run(app: Self::App) {
+    fn run(blueprint: Self::AppBlueprint) {
         Self::grab_terminal().unwrap();
 
-        let app_instance = app.reify(&mut ());
-        let runner = TUIRunner::<App> {
-            app: Rc::new(RefCell::new(app_instance)),
+        let app = blueprint.make(&TUIEnvironment);
+        let runner = TUIRunner::<AppBlueprint> {
+            app: Rc::new(RefCell::new(app)),
         };
 
         // Combine both futures and run them on the current thread
@@ -69,9 +67,9 @@ where
     }
 }
 
-impl<N> TUIRunner<N>
+impl<AppBlueprint> TUIRunner<AppBlueprint>
 where
-    N: Send + Emit<(), Output: Element + Sized>,
+    AppBlueprint: Send + Blueprint<TUIEnvironment>,
 {
     pub(crate) async fn process_events(&self) -> std::io::Result<()> {
         let mut stdout = stdout();
@@ -83,7 +81,7 @@ where
 
         {
             let mut app = self.app.borrow_mut();
-            app.bubble(&mut Event::Resized(rect.extent()));
+            //app.bubble(&mut Event::Resized(rect.extent()));
         }
         // Calling `await` here yields execution back to the executor
         // allowing the other concurrent processes to do layouting.
@@ -94,7 +92,7 @@ where
         let mut event_stream = EventStream::new();
 
         while let Some(Ok(event)) = event_stream.next().await {
-            let mut app = self.app.borrow_mut();
+            let app = self.app.borrow_mut();
 
             match event {
                 event::Event::Key(key_event) => {
@@ -107,7 +105,7 @@ where
                 event::Event::Resize(w, h) => {
                     rect.set_extent(Extent2::new(w, h).as_::<f32>());
 
-                    app.bubble(&mut Event::Resized(Extent2::new(w, h).as_()));
+                    //app.bubble(&mut Event::Resized(Extent2::new(w, h).as_()));
 
                     redraw_requested = true;
                 }
@@ -115,10 +113,10 @@ where
                     if mouse_event.kind == event::MouseEventKind::Moved {
                         mouse = Vec2::new(mouse_event.column, mouse_event.row).as_::<f32>();
 
-                        app.bubble(&mut Event::Cursor {
+                        /*app.bubble(&mut Event::Cursor {
                             id: DeviceId(0),
                             event: CursorEvent::Moved { position: mouse },
-                        });
+                        });*/
 
                         redraw_requested = true;
                     }
@@ -147,7 +145,7 @@ where
         mouse: Vec2<f32>,
     ) {
         let app = self.app.borrow_mut();
-        app.draw(canvas, rect.as_());
+        //app.draw(canvas, rect.as_());
         //canvas.quad(rect, shaders::image);
         canvas.put_pixel(mouse.as_(), Rgba::new(255, 255, 255, 0));
     }
@@ -193,3 +191,4 @@ where
         Ok(())
     }
 }
+

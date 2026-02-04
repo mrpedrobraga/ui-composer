@@ -36,7 +36,7 @@ impl UIComposer {
     /// Creates and runs a new app in a given runner.
     /// For cross-platform compatibility, this should be called in the main thread,
     /// and only once in your program.
-    pub fn run_custom<CustomRunner: Runner>(node_tree_descriptor: CustomRunner::App) {
+    pub fn run_custom<CustomRunner: Runner>(node_tree_descriptor: CustomRunner::AppBlueprint) {
         CustomRunner::run(node_tree_descriptor);
     }
 }

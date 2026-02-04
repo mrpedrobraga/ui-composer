@@ -16,14 +16,13 @@ where
     element: Option<<Fut::Output as Blueprint<Env>>::Element>,
 }
 
-pub trait React: Future {
+pub trait FutureReactExt: Future {
     fn react<Env>(self) -> ReactOnce<Self, Env>
     where
         Self: Sized,
         <Self as Future>::Output: Blueprint<Env>;
 }
-
-impl<Fut> React for Fut where Fut: Future {
+impl<Fut> FutureReactExt for Fut where Fut: Future {
     fn react<Env>(self) -> ReactOnce<Self, Env>
     where
         Self: Sized,
@@ -38,8 +37,7 @@ impl<Fut> React for Fut where Fut: Future {
 
 impl<Fut, Env> Blueprint<Env> for ReactOnce<Fut, Env>
 where
-    Fut: Future,
-    Fut::Output: Blueprint<Env>, {
+    Fut: Future<Output: Blueprint<Env>>, {
     type Element = Self;
 
     fn make(self, _: &Env) -> Self::Element {
@@ -49,8 +47,7 @@ where
 
 impl<Fut, Env> Element<Env> for ReactOnce<Fut, Env>
 where
-    Fut: Future,
-    Fut::Output: Blueprint<Env>,
+    Fut: Future<Output: Blueprint<Env>>,
 {
     type Effect =
     Option<<<<Fut as Future>::Output as Blueprint<Env>>::Element as Element<Env>>::Effect>;
@@ -63,9 +60,7 @@ where
         let this = self.project();
 
         if let Some(element) = this.element {
-            // SAFETY: we can pin element here because `self` is pinned
-            // and will remain pinned until the next `poll`, by which `element`
-            // will be dropped and replaced.
+            // SAFETY: we can pin element here because `self` is pinned.
             return unsafe { Pin::new_unchecked(element) }.poll(cx, env);
         }
 

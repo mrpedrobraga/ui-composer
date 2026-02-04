@@ -33,9 +33,9 @@ impl<A> Runner for WgpuBackend<A>
 where
     A: EReify<Output: Pollable<AppContext>>,
 {
-    type App = A;
+    type AppBlueprint = A;
 
-    fn run(_node_tree: Self::App) {
+    fn run(_node_tree: Self::AppBlueprint) {
         unimplemented!()
     }
 

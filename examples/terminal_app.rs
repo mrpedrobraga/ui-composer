@@ -4,7 +4,6 @@ use ui_composer::runners::tui::nodes::{Terminal, TUI};
 use ui_composer::runners::tui::runner::TUIRunner;
 use ui_composer::runners::tui::Graphic;
 use ui_composer::standard::prelude::UIComposer;
-use ui_composer::standard::{Center, Row};
 use vek::{Extent2, Rgba};
 use ui_composer::Flex;
 

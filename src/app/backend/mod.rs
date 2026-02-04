@@ -19,10 +19,10 @@ pub mod futures;
 /// An application runner. It bubbles down Affects and bubble up Effects,
 /// effectively allowing the pure, immutable application to perform IO.
 pub trait Runner {
-    type App;
+    type AppBlueprint;
 
     /// Runs the application on the main thread.
-    fn run(ui: Self::App);
+    fn run(ui: Self::AppBlueprint);
 
     #[allow(async_fn_in_trait)]
     async fn event_loop(&self);

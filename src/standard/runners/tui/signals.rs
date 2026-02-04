@@ -1,26 +1,25 @@
-use std::io::stdout;
 use super::runner::Own;
-use crate::runners::tui::Element;
+use crate::app::composition::elements::Element;
+use crate::runners::tui::runner::TUIEnvironment;
 use futures_signals::signal::Signal;
 use pin_project::pin_project;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use vek::Rect;
 
 /// Has a reference to a runner, serving as an Executor for its [`Future`]s and [`Signal`]s.
 #[pin_project(project=AsyncExecutorProj)]
-pub struct AsyncExecutor<A: Element> {
+pub struct AsyncExecutor<App: Element<TUIEnvironment>> {
     #[pin]
-    element: Own<A>,
+    element: Own<App>,
 }
 
-impl<A: Element> AsyncExecutor<A> {
-    pub fn new(element: Own<A>) -> Self {
+impl<App: Element<TUIEnvironment>> AsyncExecutor<App> {
+    pub fn new(element: Own<App>) -> Self {
         AsyncExecutor { element }
     }
 }
 
-impl<A: Element> Signal for AsyncExecutor<A> {
+impl<App: Element<TUIEnvironment>> Signal for AsyncExecutor<App> {
     type Item = ();
 
     fn poll_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
@@ -28,7 +27,8 @@ impl<A: Element> Signal for AsyncExecutor<A> {
 
         if let Ok(mut element_borrow) = element.try_borrow_mut() {
             let pinned_element = unsafe { Pin::new_unchecked(&mut *element_borrow) };
-            pinned_element.poll(cx, &mut ())
+            // TODO: Change how this environment is sourced!
+            pinned_element.poll(cx, &TUIEnvironment)
         } else {
             cx.waker().wake_by_ref();
             Poll::Pending

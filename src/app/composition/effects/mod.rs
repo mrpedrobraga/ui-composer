@@ -1,6 +1,7 @@
 use downcast_rs::{impl_downcast, Downcast};
 
 pub mod future;
+pub mod signal;
 pub mod executor;
 
 /// An effect that some element of a structure might produce.

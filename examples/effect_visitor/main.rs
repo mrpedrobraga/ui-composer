@@ -3,7 +3,7 @@ use chttp::ResponseExt;
 use futures_signals::signal::SignalExt;
 use ui_composer::app::composition::elements::{Blueprint, DummyEnvironment};
 use ui_composer::app::composition::effects::executor::DummyExecutor;
-use ui_composer::app::composition::effects::future::React;
+use ui_composer::app::composition::effects::future::FutureReactExt;
 
 pub mod render;
 
