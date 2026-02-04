@@ -14,6 +14,9 @@ use core::{
     pin::Pin,
     task::{Context, Poll},
 };
+use ::futures::Stream;
+use crate::app::input::Event;
+
 pub mod futures;
 
 /// An application runner. It bubbles down Affects and bubble up Effects,
@@ -21,14 +24,19 @@ pub mod futures;
 pub trait Runner {
     type AppBlueprint;
 
-    /// Runs the application on the main thread.
-    fn run(ui: Self::AppBlueprint);
+    /// The entry point of the runner, responsible for setup.
+    /// `UIComposer` will call this method when you call `UIComposer::run_custom<_>`.
+    fn run(ui: Self::AppBlueprint) -> Self;
 
-    #[allow(async_fn_in_trait)]
-    async fn event_loop(&self);
+    /// `UIComposer` will call this method once to generate a stream of events the app
+    /// will receive and react to.
+    fn event_stream(&mut self) -> impl Stream<Item = Event>;
 
-    #[allow(async_fn_in_trait)]
-    async fn react_loop(&self);
+    /// `UIComposer` will call this method whenever the app reacts to anything.
+    ///
+    /// This might be a reaction to an event (like window resizing or a click),
+    /// or a `Future` or a `Signal` that resolved somewhere in your app.
+    fn on_update(&mut self);
 
     /// Polls the UI as a [`Signal`].
     #[allow(unused_variables)]

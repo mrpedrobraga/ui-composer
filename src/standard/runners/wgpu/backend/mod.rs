@@ -7,6 +7,9 @@ use std::ops::DerefMut;
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll};
+use async_std::prelude::Stream;
+use futures::FutureExt;
+use crate::app::input::Event;
 
 /// A runner that can render our application to the GPU as well as forward interactive events to the app.
 #[pin_project(project=WGPUBackendProj)]
@@ -35,16 +38,18 @@ where
 {
     type AppBlueprint = A;
 
-    fn run(_node_tree: Self::AppBlueprint) {
-        unimplemented!()
+    fn run(ui: Self::AppBlueprint) -> Self {
+        todo!()
     }
 
-    async fn event_loop(&self) {
-        unimplemented!()
+    fn event_stream(&mut self) -> impl Stream<Item=Event> {
+        async {
+            Event::CloseRequested
+        }.into_stream()
     }
 
-    async fn react_loop(&self) {
-        unimplemented!()
+    fn on_update(&mut self) {
+        todo!()
     }
 
     fn process(

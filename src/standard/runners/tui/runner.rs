@@ -1,8 +1,10 @@
-use crate::app::runner::Runner;
 use crate::app::composition::elements::Blueprint;
+use crate::app::input::{ButtonState, DeviceId, Event, KeyEvent};
+use crate::app::runner::Runner;
+use crate::runners::tui::render::shaders;
+use crate::standard::prelude::KeyboardEvent;
 use crate::standard::runners::tui::render::canvas::Canvas;
-use crate::runners::tui::signals::AsyncExecutor;
-use async_std::task::yield_now;
+use async_std::prelude::Stream;
 use crossterm::cursor::{Hide, RestorePosition, SavePosition, SetCursorStyle, Show};
 use crossterm::event::{
     DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
@@ -14,12 +16,12 @@ use crossterm::terminal::{
 };
 use crossterm::{event, QueueableCommand};
 use futures::StreamExt;
-use futures_signals::signal::SignalExt;
 use pin_project::pin_project;
+use smol_str::ToSmolStr;
 use std::cell::RefCell;
-use std::io::{stdout, Write};
+use std::io::{stdout, Stdout, Write};
 use std::rc::Rc;
-use vek::{Extent2, Rect, Rgba, Vec2};
+use vek::{Rect, Rgba, Vec2};
 
 pub struct TerminalEnvironment;
 pub type Own<T> = Rc<RefCell<T>>;
@@ -35,35 +37,67 @@ where
 
 impl<AppBlueprint> Runner for TUIRunner<AppBlueprint>
 where
-    AppBlueprint: Send + Blueprint<TerminalEnvironment>
+    AppBlueprint: Send + Blueprint<TerminalEnvironment>,
 {
     type AppBlueprint = AppBlueprint;
 
-    fn run(blueprint: Self::AppBlueprint) {
-        Self::grab_terminal().unwrap();
+    fn run(blueprint: Self::AppBlueprint) -> Self {
+        Self::grab_terminal(&mut stdout()).unwrap();
 
         let app = blueprint.make(&TerminalEnvironment);
         let runner = TUIRunner::<AppBlueprint> {
             app: Rc::new(RefCell::new(app)),
         };
 
-        // Combine both futures and run them on the current thread
-        let _ = futures::executor::block_on(async {
-            let executor_fut = AsyncExecutor::new(runner.app.clone()).to_future();
-            let event_fut = runner.event_loop();
-
-            futures::join!(executor_fut, event_fut)
-        });
-
-        Self::release_terminal().unwrap();
+        runner
     }
 
-    async fn event_loop(&self) {
-        let _ = self.process_events().await;
+    fn event_stream(&mut self) -> impl Stream<Item = Event> {
+        let event_stream = EventStream::new();
+
+        event_stream.filter_map(|event| async {
+            let event = event.ok()?;
+
+            match event {
+                event::Event::Key(key_event) => {
+                    if let KeyCode::Char('q') = key_event.code {
+                        let _ = Self::release_terminal(&mut stdout());
+                        std::process::exit(1);
+                    }
+                    Some(Event::Keyboard {
+                        id: DeviceId(0),
+                        event: KeyboardEvent::Key(KeyEvent {
+                            is_implicit: false,
+                            text_repr: Some(key_event.code.to_smolstr()),
+                            button_state: if key_event.is_press() {
+                                ButtonState::Pressed
+                            } else {
+                                ButtonState::Released
+                            },
+                        }),
+                    })
+                }
+                event::Event::Resize(width, height) => {
+                    self.redraw(
+                        &mut stdout(),
+                        Rect::new(0.0, 0.0, width as f32, height as f32),
+                        Vec2::new(0.0, 0.0),
+                    );
+
+                    None
+                }
+                _ => None,
+            }
+        })
     }
 
-    async fn react_loop(&self) {
-        todo!()
+    fn on_update(&mut self) {
+        // TODO: Drawing should be granular.
+        self.redraw(
+            &mut stdout(),
+            Rect::new(0.0, 0.0, 32.0, 16.0),
+            Vec2::new(1.0, 1.0),
+        );
     }
 }
 
@@ -71,73 +105,6 @@ impl<AppBlueprint> TUIRunner<AppBlueprint>
 where
     AppBlueprint: Send + Blueprint<TerminalEnvironment>,
 {
-    pub(crate) async fn process_events(&self) -> std::io::Result<()> {
-        let mut stdout = stdout();
-
-        let (cols, rows) = crossterm::terminal::size()?;
-        let mut rect: Rect<f32, f32> = Rect::new(0.0, 0.0, cols as f32, rows as f32);
-        let mut mouse: Vec2<f32> = Vec2::new(1.0, 1.0);
-        let mut redraw_requested = false;
-
-        {
-            let mut app = self.app.borrow_mut();
-            //app.bubble(&mut Event::Resized(rect.extent()));
-        }
-        // Calling `await` here yields execution back to the executor
-        // allowing the other concurrent processes to do layouting.
-        yield_now().await;
-        self.redraw(&mut stdout, rect, mouse);
-        let _ = stdout.flush()?;
-
-        let mut event_stream = EventStream::new();
-
-        while let Some(Ok(event)) = event_stream.next().await {
-            let app = self.app.borrow_mut();
-
-            match event {
-                event::Event::Key(key_event) => {
-                    if let KeyCode::Char('q') = key_event.code {
-                        let _ = Self::release_terminal();
-                        std::process::exit(1);
-                    }
-                }
-                #[allow(unused)]
-                event::Event::Resize(w, h) => {
-                    rect.set_extent(Extent2::new(w, h).as_::<f32>());
-
-                    //app.bubble(&mut Event::Resized(Extent2::new(w, h).as_()));
-
-                    redraw_requested = true;
-                }
-                event::Event::Mouse(mouse_event) => {
-                    if mouse_event.kind == event::MouseEventKind::Moved {
-                        mouse = Vec2::new(mouse_event.column, mouse_event.row).as_::<f32>();
-
-                        /*app.bubble(&mut Event::Cursor {
-                            id: DeviceId(0),
-                            event: CursorEvent::Moved { position: mouse },
-                        });*/
-
-                        redraw_requested = true;
-                    }
-                }
-                _ => (),
-            }
-
-            drop(app);
-
-            // TODO: Another concurrent process should be responsible for drawing when dirty.
-            if redraw_requested {
-                self.redraw(&mut stdout, rect, mouse);
-                let _ = stdout.flush()?;
-            }
-
-            yield_now().await;
-        }
-
-        Ok(())
-    }
-
     pub fn redraw<C: Canvas<Pixel = Rgba<u8>>>(
         &self,
         canvas: &mut C,
@@ -146,15 +113,13 @@ where
     ) {
         let app = self.app.borrow_mut();
         //app.draw(canvas, rect.as_());
-        //canvas.quad(rect, shaders::image);
-        canvas.put_pixel(mouse.as_(), Rgba::new(255, 255, 255, 0));
+        canvas.quad(rect, shaders::image);
+        canvas.put_pixel(mouse.as_(), Rgba::new(0, 255, 255, 0));
     }
 
-    pub fn grab_terminal() -> Result<(), std::io::Error> {
+    pub fn grab_terminal(terminal: &mut (impl QueueableCommand + Write)) -> Result<(), std::io::Error> {
         enable_raw_mode().expect("Couldn't enable raw mode");
-
-        let mut stdout = stdout();
-        stdout
+        terminal
             .queue(SavePosition)?
             .queue(EnterAlternateScreen)?
             .queue(EnableMouseCapture)?
@@ -164,20 +129,11 @@ where
             .queue(Hide)?
             .flush()?;
 
-        // TODO: Just think and wonder about how to handle panics, you know?
-        let original_hook = std::panic::take_hook();
-        std::panic::set_hook(Box::new(move |panic_info| {
-            let _ = Self::release_terminal();
-            original_hook(panic_info);
-        }));
-
         Ok(())
     }
 
-    pub fn release_terminal() -> Result<(), std::io::Error> {
-        let mut stdout = stdout();
-
-        stdout
+    pub fn release_terminal(terminal: &mut (impl QueueableCommand + Write)) -> Result<(), std::io::Error> {
+        terminal
             .queue(Show)?
             .queue(DisableBracketedPaste)?
             .queue(SetCursorStyle::DefaultUserShape)?
@@ -191,4 +147,3 @@ where
         Ok(())
     }
 }
-

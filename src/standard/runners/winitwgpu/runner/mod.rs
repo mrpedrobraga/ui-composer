@@ -8,6 +8,8 @@ use crate::state::process::{Pollable, PollableExt};
 use async_std::task::yield_now;
 use pin_project::pin_project;
 use std::sync::Mutex;
+use async_std::prelude::Stream;
+use futures::FutureExt;
 use wgpu::{Adapter, Device, Queue};
 use winit::event::{DeviceEvent, DeviceId};
 use winit::event_loop::{ControlFlow, EventLoop};
@@ -27,10 +29,12 @@ use {
         window::WindowId,
     },
 };
+use crate::app::input::Event;
 
 pub mod implementations;
 
 #[pin_project(project=WithWinitProj)]
+#[deprecated]
 pub struct WinitWgpuRunner<A: EReify>(WgpuBackend<A>);
 
 /// The [`ApplicationHandler`] that sits between [`winit`]
@@ -79,7 +83,7 @@ where
     type AppBlueprint = A;
 
     /// This function *must* be called on the main thread, because of winit.
-    fn run(node_tree: Self::AppBlueprint) {
+    fn run(node_tree: Self::AppBlueprint) -> Self {
         let event_loop = EventLoop::builder().build().unwrap();
         event_loop.set_control_flow(ControlFlow::Wait);
         event_loop
@@ -88,26 +92,18 @@ where
                 backend: None,
             })
             .unwrap();
+
+        panic!("Event loop is done!")
     }
 
-    async fn event_loop(&self) {
-        todo!()
+    fn event_stream(&mut self) -> impl Stream<Item=Event> {
+        async {
+            Event::CloseRequested
+        }.into_stream()
     }
 
-    async fn react_loop(&self) {
-        loop {
-            let react = {
-                let mut resources = AppContext {};
-                let mut app = self.0.tree.lock().unwrap();
-                app.once(&mut resources).await
-            };
-
-            if react.is_none() { break; }
-            
-            // TODO: Maybe react will be an `Option<T>` and T can be used for stuff!
-            
-            yield_now().await;
-        }
+    fn on_update(&mut self) {
+        unimplemented!()
     }
 
     fn process(

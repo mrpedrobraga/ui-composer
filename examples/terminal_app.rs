@@ -9,15 +9,10 @@ use ui_composer::app::composition::elements::Blueprint;
 use ui_composer::Flex;
 
 fn main() {
-    UIComposer::run_custom::<TUIRunner<_>>(AApp())
-}
-
-fn AApp() -> impl Blueprint<TerminalEnvironment> {
-    Terminal(App())
+    UIComposer::run_custom::<TUIRunner<_>>(Terminal(App()))
 }
 
 fn App() -> impl TUI {
-    //Center(
     Flex! { 2;
         [1.0] Flex! { 3;
                 [_] Square(Rgba::red()),
@@ -26,7 +21,6 @@ fn App() -> impl TUI {
             },
         [_] Square(Rgba::yellow()),
     }.with_vertical_flow()
-    //)
 }
 
 fn Square(color: Rgba<f32>) -> impl TUI {

@@ -8,6 +8,8 @@
 //! use ui_composer::standard::prelude::*;
 //! ```
 
+use futures::executor::block_on;
+use futures::join;
 // MARK: App
 pub use crate::app::runner::Runner;
 pub use crate::app::input::items::*;
@@ -37,7 +39,18 @@ impl UIComposer {
     /// For cross-platform compatibility, this should be called in the main thread,
     /// and only once in your program.
     pub fn run_custom<CustomRunner: Runner>(node_tree_descriptor: CustomRunner::AppBlueprint) {
-        CustomRunner::run(node_tree_descriptor);
+        let mut runner = CustomRunner::run(node_tree_descriptor);
+
+        use async_std::stream::StreamExt;
+        println!("Requesting event stream...");
+        let event_stream = runner.event_stream();
+        println!("Event stream arrived.");
+        let event_co = event_stream.for_each(|event| {
+            println!("An event arrived = {:?}", event);
+        });
+        println!("Starting.");
+        block_on(async { join!(event_co) });
+        println!("Done. Cleaning up...");
     }
 }
 

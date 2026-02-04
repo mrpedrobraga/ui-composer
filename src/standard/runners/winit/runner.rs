@@ -1,7 +1,7 @@
 use crate::app::composition::elements::Blueprint;
 use crate::app::input::Event;
 use crate::app::runner::Runner;
-use async_std::prelude::StreamExt;
+use async_std::prelude::Stream;
 use async_std::task::block_on;
 use futures::channel::mpsc;
 use futures::SinkExt;
@@ -11,7 +11,6 @@ use winit::application::ApplicationHandler;
 use winit::dpi::{PhysicalSize, Size};
 use winit::event::WindowEvent;
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
-use winit::platform::wayland::EventLoopBuilderExtWayland;
 use winit::window::{Window, WindowId};
 
 pub struct WinitEnvironment;
@@ -32,8 +31,19 @@ where
 {
     type AppBlueprint = AppBlueprint;
 
-    fn run(_: Self::AppBlueprint) {
+    fn run(app: Self::AppBlueprint) -> Self {
         println!("Running!");
+
+        let env = WinitEnvironment;
+        let app = app.make(&env);
+
+        WinitRunner {
+            app: Arc::new(Mutex::new(app)),
+            __thread_fixed: PhantomData,
+        }
+    }
+
+    fn event_stream(&mut self) -> impl Stream<Item = Event> {
         let (tx, rx) = mpsc::channel(10);
         let mut winit_app_handler = WinitAppHandler {
             sink: tx,
@@ -42,34 +52,20 @@ where
 
         // For cross-platform compatibility, the EventLoop must be created on the main thread, and only once per application.
         let event_loop = EventLoop::builder()
-            .with_any_thread(true)
             .build()
             .expect("Failed to build winit event loop.");
         event_loop.set_control_flow(ControlFlow::Wait);
-
-        std::thread::spawn(move || {
-            block_on(async move {
-                println!("[Event Loop] Listening for winit events.");
-                rx.for_each(|event| {
-                    dbg!(event);
-                })
-                .await;
-                println!("[Event Loop] No longer listening for winit events.")
-            })
-        });
 
         // TODO: Implements this Runner so it works for every platform `winit` supports.
         event_loop
             .run_app(&mut winit_app_handler)
             .expect("Failed to run winit event loop.");
+
+        rx
     }
 
-    async fn event_loop(&self) {
-        todo!()
-    }
-
-    async fn react_loop(&self) {
-        todo!()
+    fn on_update(&mut self) {
+        println!("Something happened?");
     }
 }
 
