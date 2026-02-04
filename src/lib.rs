@@ -46,4 +46,7 @@ pub mod state;
 /// `ui-composer-standard` has a nice ring to it, no?
 pub mod standard;
 
+/// Module for experimental patterns and traits.
+pub mod experimental;
+
 pub use standard::runners;

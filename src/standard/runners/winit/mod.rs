@@ -4,4 +4,6 @@
 //! on many targets using `winit` under the hood.
 
 pub mod runner;
+pub mod window;
 mod winit_uic_conversion;
+pub mod gpu;

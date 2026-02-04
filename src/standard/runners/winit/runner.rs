@@ -7,7 +7,6 @@ use futures::channel::mpsc;
 use futures::SinkExt;
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
-use vek::Extent2;
 use winit::application::ApplicationHandler;
 use winit::dpi::{PhysicalSize, Size};
 use winit::event::WindowEvent;
@@ -84,14 +83,17 @@ impl ApplicationHandler for WinitAppHandler {
 
         let attributes = Window::default_attributes()
             .with_title("My App!".to_string())
-            .with_inner_size(Size::Physical(PhysicalSize { width: 100, height: 100 }))
+            .with_inner_size(Size::Physical(PhysicalSize {
+                width: 100,
+                height: 100,
+            }))
             .with_visible(true);
 
-        self.window = Some(
-            event_loop
-                .create_window(attributes)
-                .expect("Failed to create window!"),
-        );
+        let window = event_loop
+            .create_window(attributes)
+            .expect("Failed to create window!");
+
+        self.window = Some(window);
     }
 
     fn window_event(&mut self, _: &ActiveEventLoop, _: WindowId, event: WindowEvent) {
