@@ -8,16 +8,16 @@
 //! use ui_composer::standard::prelude::*;
 //! ```
 
-use futures::executor::block_on;
-use futures::join;
 // MARK: App
-pub use crate::app::runner::Runner;
 pub use crate::app::input::items::*;
 pub use crate::app::input::*;
+pub use crate::app::runner::Runner;
+use futures::executor::block_on;
+use futures::join;
 
 // MARK: Geometry and Layout
-pub use crate::geometry::*;
 pub use crate::app::composition::layout::*;
+pub use crate::geometry::*;
 
 // MARK: State
 pub use crate::state::*;
@@ -49,7 +49,13 @@ impl UIComposer {
             println!("An event arrived = {:?}", event);
         });
         println!("Starting.");
-        block_on(async { join!(event_co) });
+        std::thread::scope(|s| {
+            s.spawn(|| {
+                block_on(async { join!(event_co) });
+            });
+            runner.main_loop();
+        });
+
         println!("Done. Cleaning up...");
     }
 }
@@ -57,10 +63,10 @@ impl UIComposer {
 #[cfg(all(feature = "winit", feature = "wgpu"))]
 mod winit_wgpu {
     use crate::app::runner::Runner as _;
+    use crate::standard::prelude::UIComposer;
     use crate::standard::runners::wgpu::backend::WgpuBackend;
     use crate::standard::runners::wgpu::pipeline::UIContext;
     use crate::standard::runners::winitwgpu::runner::{EReify, WinitWgpuRunner};
-    use crate::standard::prelude::UIComposer;
     use crate::state::process::Pollable;
 
     impl UIComposer {

@@ -18,13 +18,13 @@ use crossterm::{event, QueueableCommand};
 use futures::StreamExt;
 use pin_project::pin_project;
 use smol_str::ToSmolStr;
-use std::cell::RefCell;
-use std::io::{stdout, Stdout, Write};
-use std::rc::Rc;
+use spin::RwLock;
+use std::io::{stdout, Write};
+use std::sync::{Arc, Mutex};
 use vek::{Rect, Rgba, Vec2};
 
 pub struct TerminalEnvironment;
-pub type Own<T> = Rc<RefCell<T>>;
+pub type Own<T> = Arc<Mutex<T>>;
 
 #[pin_project(project=TUIBackendProj)]
 pub struct TUIRunner<AppBlueprint>
@@ -38,6 +38,7 @@ where
 impl<AppBlueprint> Runner for TUIRunner<AppBlueprint>
 where
     AppBlueprint: Send + Blueprint<TerminalEnvironment>,
+    AppBlueprint::Element: Send,
 {
     type AppBlueprint = AppBlueprint;
 
@@ -46,13 +47,13 @@ where
 
         let app = blueprint.make(&TerminalEnvironment);
         let runner = TUIRunner::<AppBlueprint> {
-            app: Rc::new(RefCell::new(app)),
+            app: Arc::new(Mutex::new(app)),
         };
 
         runner
     }
 
-    fn event_stream(&mut self) -> impl Stream<Item = Event> {
+    fn event_stream(&mut self) -> impl Stream<Item = Event> + Send + Sync + 'static {
         let event_stream = EventStream::new();
 
         event_stream.filter_map(|event| async {
@@ -78,11 +79,11 @@ where
                     })
                 }
                 event::Event::Resize(width, height) => {
-                    self.redraw(
+                    /*self.redraw(
                         &mut stdout(),
                         Rect::new(0.0, 0.0, width as f32, height as f32),
                         Vec2::new(0.0, 0.0),
-                    );
+                    );*/
 
                     None
                 }
@@ -111,13 +112,15 @@ where
         rect: Rect<f32, f32>,
         mouse: Vec2<f32>,
     ) {
-        let app = self.app.borrow_mut();
+        // let app = self.app.borrow();
         //app.draw(canvas, rect.as_());
         canvas.quad(rect, shaders::image);
         canvas.put_pixel(mouse.as_(), Rgba::new(0, 255, 255, 0));
     }
 
-    pub fn grab_terminal(terminal: &mut (impl QueueableCommand + Write)) -> Result<(), std::io::Error> {
+    pub fn grab_terminal(
+        terminal: &mut (impl QueueableCommand + Write),
+    ) -> Result<(), std::io::Error> {
         enable_raw_mode().expect("Couldn't enable raw mode");
         terminal
             .queue(SavePosition)?
@@ -132,7 +135,9 @@ where
         Ok(())
     }
 
-    pub fn release_terminal(terminal: &mut (impl QueueableCommand + Write)) -> Result<(), std::io::Error> {
+    pub fn release_terminal(
+        terminal: &mut (impl QueueableCommand + Write),
+    ) -> Result<(), std::io::Error> {
         terminal
             .queue(Show)?
             .queue(DisableBracketedPaste)?

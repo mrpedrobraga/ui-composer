@@ -42,7 +42,7 @@ where
         todo!()
     }
 
-    fn event_stream(&mut self) -> impl Stream<Item=Event> {
+    fn event_stream(&mut self) -> impl Stream<Item=Event> + 'static {
         async {
             Event::CloseRequested
         }.into_stream()

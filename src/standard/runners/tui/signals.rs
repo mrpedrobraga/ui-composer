@@ -25,7 +25,7 @@ impl<App: Element<TerminalEnvironment>> Signal for AsyncExecutor<App> {
     fn poll_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let AsyncExecutorProj { element } = self.project();
 
-        if let Ok(mut element_borrow) = element.try_borrow_mut() {
+        if let Ok(mut element_borrow) = element.lock() {
             let pinned_element = unsafe { Pin::new_unchecked(&mut *element_borrow) };
             // TODO: Change how this environment is sourced!
             pinned_element.poll(cx, &TerminalEnvironment)

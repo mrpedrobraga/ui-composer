@@ -96,7 +96,7 @@ where
         panic!("Event loop is done!")
     }
 
-    fn event_stream(&mut self) -> impl Stream<Item=Event> {
+    fn event_stream(&mut self) -> impl Stream<Item=Event> + Send + Sync + 'static {
         async {
             Event::CloseRequested
         }.into_stream()

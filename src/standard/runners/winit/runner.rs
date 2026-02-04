@@ -7,6 +7,7 @@ use futures::channel::mpsc;
 use futures::SinkExt;
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
+use futures::channel::mpsc::Sender;
 use winit::application::ApplicationHandler;
 use winit::dpi::{PhysicalSize, Size};
 use winit::event::WindowEvent;
@@ -22,6 +23,7 @@ where
     AppBlueprint: Blueprint<WinitEnvironment>,
 {
     pub app: Share<AppBlueprint::Element>,
+    sink: Option<Sender<Event>>,
     __thread_fixed: PhantomData<*mut ()>,
 }
 
@@ -39,14 +41,24 @@ where
 
         WinitRunner {
             app: Arc::new(Mutex::new(app)),
+            sink: None,
             __thread_fixed: PhantomData,
         }
     }
 
-    fn event_stream(&mut self) -> impl Stream<Item = Event> {
-        let (tx, rx) = mpsc::channel(10);
+    fn event_stream(&mut self) -> impl Stream<Item = Event> + Send + Sync + 'static {
+        let (tx, rx) = mpsc::channel::<Event>(10);
+        self.sink.replace(tx);
+        rx
+    }
+
+    fn on_update(&mut self) {
+        println!("Something happened?");
+    }
+
+    fn main_loop(&mut self) {
         let mut winit_app_handler = WinitAppHandler {
-            sink: tx,
+            sink: self.sink.take().unwrap(),
             window: None,
         };
 
@@ -60,17 +72,11 @@ where
         event_loop
             .run_app(&mut winit_app_handler)
             .expect("Failed to run winit event loop.");
-
-        rx
-    }
-
-    fn on_update(&mut self) {
-        println!("Something happened?");
     }
 }
 
 pub struct WinitAppHandler {
-    sink: mpsc::Sender<Event>,
+    sink: Sender<Event>,
     window: Option<Window>,
 }
 impl ApplicationHandler for WinitAppHandler {
