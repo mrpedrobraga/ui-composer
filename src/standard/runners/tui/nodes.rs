@@ -11,9 +11,7 @@ use futures_signals::signal::Mutable;
 use futures_signals::signal::{Signal, SignalExt};
 use vek::{Extent2, Rect};
 use {crate::app::input::Event, vek::Vec2};
-
-pub trait TUI: LayoutItem<Content: Blueprint<TUIEnvironment>> {}
-impl<T> TUI for T where T: LayoutItem<Content: Blueprint<TUIEnvironment>> {}
+use crate::runners::tui::TUI;
 
 #[allow(non_snake_case)]
 pub fn Terminal<UI>(

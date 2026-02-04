@@ -9,3 +9,8 @@ pub mod signals;
 
 pub use nodes::Terminal;
 pub use render::Graphic;
+use crate::app::composition::UI;
+use crate::runners::tui::runner::TUIEnvironment;
+
+pub trait TUI: UI<TUIEnvironment> {}
+impl<T> TUI for T where T: UI<TUIEnvironment> {}
