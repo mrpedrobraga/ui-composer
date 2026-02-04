@@ -1,5 +1,5 @@
-use crate::geometry::layout::LayoutItem;
-use crate::geometry::layout::hints::ParentHints;
+use crate::app::composition::layout::LayoutItem;
+use crate::app::composition::layout::hints::ParentHints;
 use vek::Extent2;
 
 impl LayoutItem for () {

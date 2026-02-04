@@ -22,7 +22,7 @@
 //! # use ui_composer::standard::runners::wgpu::pipeline::text::Text;
 //! # use vek::Rgb;
 //! # use ui_composer::standard::runners::wgpu::pipeline::UIContext;
-//! # use ui_composer::geometry::layout::hints::ParentHints;
+//! # use ui_composer::app::composition::layout::hints::ParentHints;
 //!
 //! // Like this.
 //! // `text` here is like a "prop" of your component. It's readily available

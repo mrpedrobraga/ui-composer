@@ -1,4 +1,4 @@
-use crate::app::backend::Runner;
+use crate::app::runner::Runner;
 use crate::app::composition::elements::Blueprint;
 use crate::standard::runners::tui::render::canvas::Canvas;
 use crate::runners::tui::signals::AsyncExecutor;

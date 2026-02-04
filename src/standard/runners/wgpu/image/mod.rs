@@ -6,7 +6,7 @@ use crate::standard::runners::wgpu::pipeline::{
 };
 use crate::standard::runners::wgpu::render_target::{Render, RenderBuildingBlock, RenderTarget};
 use crate::standard::runners::winitwgpu::runner::{EReify, Element};
-use crate::geometry::layout::hints::ParentHints;
+use crate::app::composition::layout::hints::ParentHints;
 use crate::state::process::Pollable;
 use image::{ImageBuffer, Rgba};
 use std::pin::Pin;
@@ -24,7 +24,7 @@ use {
 use crate::app::composition::algebra::Bubble;
 use crate::app::input::Event;
 use crate::geometry::flow::CartesianFlow;
-use crate::geometry::layout::LayoutItem;
+use crate::app::composition::layout::LayoutItem;
 
 #[allow(non_snake_case)]
 pub fn Image<A>(rect: Rect<f32, f32>, mut item: A) -> ImageNode<A::Content>

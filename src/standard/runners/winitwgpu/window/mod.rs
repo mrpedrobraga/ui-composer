@@ -1,7 +1,7 @@
-use crate::app::backend::AppContext;
+use crate::app::runner::AppContext;
 use crate::app::input::Event;
-use crate::geometry::layout::hints::ParentHints;
-use crate::geometry::layout::LayoutItem;
+use crate::app::composition::layout::hints::ParentHints;
+use crate::app::composition::layout::LayoutItem;
 use crate::standard::runners::wgpu::backend::WgpuResources;
 use crate::standard::runners::wgpu::pipeline::graphics::RenderGraphic;
 use crate::standard::runners::wgpu::pipeline::{
@@ -41,8 +41,6 @@ use {
 };
 use crate::app::composition::algebra::Bubble;
 use crate::geometry::flow::CartesianFlow;
-
-mod conversion;
 
 //MARK: Window Node Descriptor!
 /// A node that describes the existence of a new window in the UI tree.

@@ -2,9 +2,9 @@ use crate::geometry::flow::CartesianFlow::{
     BottomToTop, LeftToRight, RightToLeft, TopToBottom,
 };
 use crate::geometry::flow::arrangers::weighted_division_with_minima;
-use crate::geometry::layout::hints::ParentHints;
+use crate::app::composition::layout::hints::ParentHints;
 use crate::geometry::flow::{CartesianFlow, Flow, WritingFlow};
-use crate::geometry::layout::{CoordinateSystem, LayoutItem};
+use crate::app::composition::layout::{CoordinateSystem, LayoutItem};
 use arrayvec::ArrayVec;
 use core::iter::{Chain, Once, once};
 use vek::{Extent2, Rect};

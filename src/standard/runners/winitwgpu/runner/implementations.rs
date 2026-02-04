@@ -4,7 +4,7 @@ use crate::standard::runners::wgpu::pipeline::WgpuRenderers;
 use winit::event::WindowEvent;
 use winit::event_loop::ActiveEventLoop;
 use winit::window::WindowId;
-use crate::app::backend::AppContext;
+use crate::app::runner::AppContext;
 use crate::state::process::Pollable;
 
 impl EReify for () {

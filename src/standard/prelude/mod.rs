@@ -9,13 +9,13 @@
 //! ```
 
 // MARK: App
-pub use crate::app::backend::Runner;
+pub use crate::app::runner::Runner;
 pub use crate::app::input::items::*;
 pub use crate::app::input::*;
 
 // MARK: Geometry and Layout
 pub use crate::geometry::*;
-pub use crate::geometry::layout::*;
+pub use crate::app::composition::layout::*;
 
 // MARK: State
 pub use crate::state::*;
@@ -43,7 +43,7 @@ impl UIComposer {
 
 #[cfg(all(feature = "winit", feature = "wgpu"))]
 mod winit_wgpu {
-    use crate::app::backend::Runner as _;
+    use crate::app::runner::Runner as _;
     use crate::standard::runners::wgpu::backend::WgpuBackend;
     use crate::standard::runners::wgpu::pipeline::UIContext;
     use crate::standard::runners::winitwgpu::runner::{EReify, WinitWgpuRunner};

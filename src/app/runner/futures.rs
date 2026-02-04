@@ -15,7 +15,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 use pin_project::pin_project;
 use futures_signals::signal::Signal;
-use crate::app::backend::{AppContext, Runner};
+use crate::app::runner::{AppContext, Runner};
 
 #[cfg(feature = "std")]
 type Own<A> = std::sync::Arc<std::sync::Mutex<A>>;

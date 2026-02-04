@@ -1,7 +1,7 @@
 use crate::app::composition::algebra::{Bubble, Semigroup};
 use crate::app::composition::reify::Emit;
-use crate::geometry::layout::hints::ParentHints;
-use crate::geometry::layout::LayoutItem;
+use crate::app::composition::layout::hints::ParentHints;
+use crate::app::composition::layout::LayoutItem;
 use core::task::Context;
 use vek::Extent2;
 use {

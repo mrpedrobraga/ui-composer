@@ -1,5 +1,5 @@
 #![allow(non_snake_case)]
-use ui_composer::geometry::layout::{ItemBox, Resizable};
+use ui_composer::app::composition::layout::{ItemBox, Resizable};
 use ui_composer::runners::tui::nodes::{Terminal};
 use ui_composer::runners::tui::runner::{TerminalEnvironment, TUIRunner};
 use ui_composer::runners::tui::{Graphic, TUI};

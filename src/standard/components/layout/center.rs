@@ -1,9 +1,9 @@
 use std::io::stdout;
 use crossterm::cursor::MoveTo;
 use crossterm::style::Print;
-use crate::geometry::layout::hints::ParentHints;
+use crate::app::composition::layout::hints::ParentHints;
 use vek::{Extent2, Rect};
-use crate::geometry::layout::LayoutItem;
+use crate::app::composition::layout::LayoutItem;
 
 /// A container that, as it is reshaped, keeps its item at its natural size and centered in the available space.
 pub fn Center<A>(item: A) -> CenterContainer<A>

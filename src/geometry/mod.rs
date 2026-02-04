@@ -4,8 +4,6 @@
 
 pub mod extensions;
 
-/// Module for layout functions and utilities.
-pub mod layout;
 pub mod flow;
 
 pub use cgmath::BaseNum;

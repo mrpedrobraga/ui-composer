@@ -1,4 +1,4 @@
-use ui_composer::app::backend::Runner;
+use ui_composer::app::runner::Runner;
 use ui_composer::app::composition::elements::Blueprint;
 use ui_composer::standard::prelude::UIComposer;
 

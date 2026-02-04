@@ -1,9 +1,9 @@
 #![allow(non_snake_case)]
 
 use crate::standard::runners::wgpu::pipeline::text::{Text, TextItem};
-use crate::geometry::layout::hints::ParentHints;
+use crate::app::composition::layout::hints::ParentHints;
 use crate::app::input::Event;
-use crate::geometry::layout::LayoutItem;
+use crate::app::composition::layout::LayoutItem;
 use crate::state::process::Pollable;
 use vek::Rgb;
 use crate::app::composition::algebra::{Bubble, Empty};

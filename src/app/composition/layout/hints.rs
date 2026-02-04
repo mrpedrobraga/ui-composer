@@ -24,7 +24,7 @@
 //! 2. Perform layout calculations;
 //! 3. Generate parent hints, likely in order, while calling [`LayoutItem::lay`] on them.;
 //!
-use crate::geometry::layout::CoordinateSystem;
+use crate::app::composition::layout::CoordinateSystem;
 use crate::geometry::flow::CartesianFlow;
 use vek::{Extent2, Mat3, Rect, Vec2};
 
