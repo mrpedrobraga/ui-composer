@@ -1,10 +1,10 @@
 use crate::app::composition::algebra::Bubble;
 use crate::app::composition::effects::signal::{React, SignalReactExt};
 use crate::app::composition::elements::{Blueprint, Element};
-use crate::geometry::layout::flow::CartesianFlow;
+use crate::geometry::flow::CartesianFlow;
 use crate::geometry::layout::hints::ParentHints;
 use crate::geometry::layout::LayoutItem;
-use crate::runners::tui::runner::TUIEnvironment;
+use crate::runners::tui::runner::TerminalEnvironment;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use futures_signals::signal::Mutable;
@@ -19,7 +19,7 @@ pub fn Terminal<UI>(
 ) -> TerminalBlueprint<
     React<
         impl Signal<Item = UI::Content>,
-        TUIEnvironment,
+        TerminalEnvironment,
     >,
 >
 where
@@ -55,13 +55,13 @@ pub struct TerminalState {
     pub mouse_position: Mutable<Option<Vec2<f32>>>,
 }
 
-impl<UI> Blueprint<TUIEnvironment> for TerminalBlueprint<UI>
+impl<UI> Blueprint<TerminalEnvironment> for TerminalBlueprint<UI>
 where
-    UI: Blueprint<TUIEnvironment> + Send,
+    UI: Blueprint<TerminalEnvironment> + Send,
 {
     type Element = TerminalElement<UI::Element>;
 
-    fn make(self, env: &TUIEnvironment) -> Self::Element {
+    fn make(self, env: &TerminalEnvironment) -> Self::Element {
         TerminalElement {
             state: self.state,
             ui: self.ui.make(env),
@@ -87,9 +87,9 @@ where
     }
 }
 
-impl<UI> Element<TUIEnvironment> for TerminalElement<UI>
+impl<UI> Element<TerminalEnvironment> for TerminalElement<UI>
 where
-    UI: Element<TUIEnvironment>,
+    UI: Element<TerminalEnvironment>,
 {
     type Effect = ();
 
@@ -97,7 +97,7 @@ where
         todo!()
     }
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context, env: &TUIEnvironment) -> Poll<Option<()>> {
+    fn poll(self: Pin<&mut Self>, cx: &mut Context, env: &TerminalEnvironment) -> Poll<Option<()>> {
         let ui = unsafe { self.map_unchecked_mut(|this| &mut this.ui) };
         ui.poll(cx, env)
     }

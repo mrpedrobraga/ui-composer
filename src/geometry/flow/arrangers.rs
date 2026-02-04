@@ -10,18 +10,18 @@ use vek::{Extent2, Rect, Vec2};
 
 /// Struct that can be used to allocate rects for layout items in
 /// simple stacks.
-pub struct RectStackAllocator {
+pub struct RectStackArranger {
     offset: Vec2<f32>,
 }
 
-impl RectStackAllocator {
+impl RectStackArranger {
     #[inline(always)]
     pub fn stack<I>(sizes: I, gap: f32, vertical: bool) -> impl Iterator<Item = Rect<f32, f32>>
     where
         I: Iterator<Item = Extent2<f32>>,
     {
         sizes.scan(
-            RectStackAllocator {
+            RectStackArranger {
                 offset: Vec2::zero(),
             },
             move |cx, item| {

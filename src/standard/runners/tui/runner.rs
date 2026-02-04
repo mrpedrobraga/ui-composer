@@ -21,13 +21,13 @@ use std::io::{stdout, Write};
 use std::rc::Rc;
 use vek::{Extent2, Rect, Rgba, Vec2};
 
-pub struct TUIEnvironment;
+pub struct TerminalEnvironment;
 pub type Own<T> = Rc<RefCell<T>>;
 
 #[pin_project(project=TUIBackendProj)]
 pub struct TUIRunner<AppBlueprint>
 where
-    AppBlueprint: Send + Blueprint<TUIEnvironment>,
+    AppBlueprint: Send + Blueprint<TerminalEnvironment>,
 {
     #[pin]
     pub app: Own<AppBlueprint::Element>,
@@ -35,14 +35,14 @@ where
 
 impl<AppBlueprint> Runner for TUIRunner<AppBlueprint>
 where
-    AppBlueprint: Send + Blueprint<TUIEnvironment>
+    AppBlueprint: Send + Blueprint<TerminalEnvironment>
 {
     type AppBlueprint = AppBlueprint;
 
     fn run(blueprint: Self::AppBlueprint) {
         Self::grab_terminal().unwrap();
 
-        let app = blueprint.make(&TUIEnvironment);
+        let app = blueprint.make(&TerminalEnvironment);
         let runner = TUIRunner::<AppBlueprint> {
             app: Rc::new(RefCell::new(app)),
         };
@@ -69,7 +69,7 @@ where
 
 impl<AppBlueprint> TUIRunner<AppBlueprint>
 where
-    AppBlueprint: Send + Blueprint<TUIEnvironment>,
+    AppBlueprint: Send + Blueprint<TerminalEnvironment>,
 {
     pub(crate) async fn process_events(&self) -> std::io::Result<()> {
         let mut stdout = stdout();

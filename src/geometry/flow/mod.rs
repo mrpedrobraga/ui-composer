@@ -34,7 +34,7 @@ use crate::geometry::layout::hints::ParentHints;
 use cgmath::{BaseFloat, Matrix4};
 use vek::{Mat3, Vec2};
 
-pub mod allocators;
+pub mod arrangers;
 
 /// The direction that a container spreads its items in.
 #[derive(Debug, Clone, Copy)]

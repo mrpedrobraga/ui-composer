@@ -23,7 +23,7 @@ use {
 };
 use crate::app::composition::algebra::Bubble;
 use crate::app::input::Event;
-use crate::geometry::layout::flow::CartesianFlow;
+use crate::geometry::flow::CartesianFlow;
 use crate::geometry::layout::LayoutItem;
 
 #[allow(non_snake_case)]

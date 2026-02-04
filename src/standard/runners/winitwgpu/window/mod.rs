@@ -1,7 +1,7 @@
 use crate::app::backend::AppContext;
 use crate::app::input::Event;
 use crate::geometry::layout::hints::ParentHints;
-use crate::geometry::layout::{flow::CartesianFlow, LayoutItem};
+use crate::geometry::layout::LayoutItem;
 use crate::standard::runners::wgpu::backend::WgpuResources;
 use crate::standard::runners::wgpu::pipeline::graphics::RenderGraphic;
 use crate::standard::runners::wgpu::pipeline::{
@@ -40,6 +40,7 @@ use {
     },
 };
 use crate::app::composition::algebra::Bubble;
+use crate::geometry::flow::CartesianFlow;
 
 mod conversion;
 

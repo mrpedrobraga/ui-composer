@@ -1,7 +1,7 @@
 use crate::app::composition::algebra::{Bubble, Empty};
 use crate::app::composition::effects::ElementEffect;
 use crate::app::composition::elements::{Blueprint, Element};
-use crate::runners::tui::runner::TUIEnvironment;
+use crate::runners::tui::runner::TerminalEnvironment;
 use vek::Rect;
 use {crate::app::input::Event, vek::Rgba};
 
@@ -41,15 +41,15 @@ impl Bubble<Event, bool> for Graphic {
     }
 }
 
-impl Blueprint<TUIEnvironment> for Graphic {
+impl Blueprint<TerminalEnvironment> for Graphic {
     type Element = Self;
 
-    fn make(self, _: &TUIEnvironment) -> Self::Element {
+    fn make(self, _: &TerminalEnvironment) -> Self::Element {
         self
     }
 }
 
-impl Element<TUIEnvironment> for Graphic {
+impl Element<TerminalEnvironment> for Graphic {
     type Effect = RenderQuad;
 
     fn effect(&self) -> Self::Effect {

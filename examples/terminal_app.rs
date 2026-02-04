@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 use ui_composer::geometry::layout::{ItemBox, Resizable};
 use ui_composer::runners::tui::nodes::{Terminal};
-use ui_composer::runners::tui::runner::{TUIEnvironment, TUIRunner};
+use ui_composer::runners::tui::runner::{TerminalEnvironment, TUIRunner};
 use ui_composer::runners::tui::{Graphic, TUI};
 use ui_composer::standard::prelude::UIComposer;
 use vek::{Extent2, Rgba};
@@ -12,7 +12,7 @@ fn main() {
     UIComposer::run_custom::<TUIRunner<_>>(AApp())
 }
 
-fn AApp() -> impl Blueprint<TUIEnvironment> {
+fn AApp() -> impl Blueprint<TerminalEnvironment> {
     Terminal(App())
 }
 

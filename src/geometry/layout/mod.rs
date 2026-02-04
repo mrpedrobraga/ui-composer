@@ -63,19 +63,18 @@
 //! Some utility functions for calculating layouts are in the [`flow`] module.
 
 use crate::app::composition::reify::Emit;
-pub use flow::CoordinateSystem;
+pub use crate::geometry::flow::CoordinateSystem;
 use hints::{ChildHints, ParentHints};
 use std::marker::PhantomData;
-use std::pin::Pin;
-use std::task::{Context, Poll};
 use {
     futures_signals::signal::{Signal, SignalExt},
     vek::{Extent2, Rect},
 };
+use crate::app::composition::effects::signal::{React, SignalReactExt};
 use crate::app::composition::elements::Blueprint;
+use crate::geometry::flow;
 use crate::state::process::{Pollable, SignalReactItem};
 
-pub mod flow;
 pub mod hints;
 pub mod implementations;
 
@@ -122,6 +121,22 @@ pub trait LayoutItem: Send {
                 ..parent_hints
             })
         }))
+    }
+
+    /// Creates a reactive Element that resizes its content to fit `rect_signal`.
+    fn bind_reactive<Sig, Env>(
+        mut self,
+        rect_signal: Sig,
+        parent_hints: ParentHints,
+    ) -> React<impl Signal<Item = Self::Content>, Env>
+    where
+        Sig: Signal<Item = Rect<f32, f32>> + Send,
+        Self: Sized + Send,
+        Self::Content: Blueprint<Env>,
+    {
+        rect_signal.map(move |rect| {
+            self.lay(ParentHints { rect, ..parent_hints })
+        }).react()
     }
 }
 
