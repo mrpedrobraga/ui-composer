@@ -28,9 +28,6 @@ pub use futures_signals::signal_vec::{self, SignalVec};
 pub mod macros;
 pub use crate::standard::*;
 
-#[cfg(all(feature = "winit", feature = "wgpu"))]
-pub use crate::standard::runners::winitwgpu::window::{Window, WindowAttributes};
-
 /// This struct is the "entry point" of a UI Composer project.
 pub struct UIComposer;
 
@@ -57,31 +54,5 @@ impl UIComposer {
         });
 
         println!("Done. Cleaning up...");
-    }
-}
-
-#[cfg(all(feature = "winit", feature = "wgpu"))]
-mod winit_wgpu {
-    use crate::app::runner::Runner as _;
-    use crate::standard::prelude::UIComposer;
-    use crate::standard::runners::wgpu::backend::WgpuBackend;
-    use crate::standard::runners::wgpu::pipeline::UIContext;
-    use crate::standard::runners::winitwgpu::runner::{EReify, WinitWgpuRunner};
-    use crate::state::process::Pollable;
-
-    impl UIComposer {
-        /// Creates and runs a new app in the default runner for the selected target.
-        /// For cross-platform compatibility, this should be called in the main thread,
-        /// and only once in your program.
-        pub fn run<N: EReify + 'static>(node_tree_descriptor: N) {
-            WinitWgpuRunner::<N>::run(node_tree_descriptor);
-        }
-
-        pub fn run2<N: EReify + 'static>(node_tree_descriptor: N)
-        where
-            N::Output: Pollable<UIContext>,
-        {
-            WgpuBackend::<N>::run(node_tree_descriptor);
-        }
     }
 }

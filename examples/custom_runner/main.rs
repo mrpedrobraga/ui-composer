@@ -22,12 +22,12 @@ impl Runner for ExampleRunner {
         let app = ui.make(&env);
 
         println!("Boy, I sure do be runnin'!\nApp: {:?}", app);
-        
+
         Self {}
     }
 
-    fn event_stream(&mut self) -> impl Stream<Item=Event> {
-        async { 
+    fn event_stream(&mut self) -> impl Stream<Item=Event> + 'static {
+        async {
             Event::CloseRequested
         }.into_stream()
     }
