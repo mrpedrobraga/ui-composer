@@ -9,7 +9,8 @@ pub mod shaders;
 pub mod canvas;
 
 /// An effect that describes rendering of a quad in the terminal.
-pub struct RenderQuad(Rect<f32, f32>, Rgba<f32>);
+#[derive(Debug)]
+pub struct RenderQuad(pub Rect<f32, f32>, pub Rgba<f32>);
 impl ElementEffect for RenderQuad {}
 
 /// A simple coloured graphic.

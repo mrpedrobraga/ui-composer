@@ -32,17 +32,19 @@ pub trait Runner {
     /// will receive and react to.
     fn event_stream(&mut self) -> impl Stream<Item = Event> + Send + Sync + 'static;
 
-    /// `UIComposer` will call this method whenever the app reacts to anything.
+    /// `UIComposer` will call this callback whenever the app reacts to anything.
     ///
     /// This might be a reaction to an event (like window resizing or a click),
     /// or a `Future` or a `Signal` that resolved somewhere in your app.
-    fn on_update(&mut self);
+    fn on_update(&mut self) -> impl FnMut() + Send + 'static;
 
-    /// `UIComposer` will call this function on the main thread after setting up the execution
+    /// `UIComposer` will call this callback on the main thread after setting up the execution
     /// of events and reactivity.
     ///
     /// This is necessary for platforms that need anything to be done on the main thread specifically.
-    fn main_loop(&mut self) {}
+    fn main_loop(&mut self) -> impl FnOnce() + 'static {
+        || {}
+    }
 
     /// Polls the UI as a [`Signal`].
     #[allow(unused_variables)]

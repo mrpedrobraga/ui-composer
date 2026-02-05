@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use downcast_rs::{impl_downcast, Downcast};
 
 pub mod future;
@@ -9,7 +10,7 @@ pub mod executor;
 /// For example, a `Graphic` might imply a rectangle should be drawn at some place on-screen.
 /// Depending on the effect handler, this might result in quad instances being sent to the GPU
 /// or rectangles drawn on the terminal or pixels in a GameBoy screen.
-pub trait ElementEffect: Downcast {}
+pub trait ElementEffect: Downcast + Debug {}
 
 impl ElementEffect for () {}
 
@@ -31,9 +32,11 @@ pub trait EffectHandler {
 
 #[test]
 fn test_effect_handler() {
+    #[derive(Debug)]
     pub struct DummyEffect;
     impl ElementEffect for DummyEffect {}
 
+    #[derive(Debug)]
     pub struct NullEffect;
     impl ElementEffect for NullEffect {}
 

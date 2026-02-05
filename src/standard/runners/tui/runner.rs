@@ -1,8 +1,8 @@
-use crate::app::composition::elements::Blueprint;
+use crate::app::composition::elements::{Blueprint, Element};
 use crate::app::input::{ButtonState, DeviceId, Event, KeyEvent};
 use crate::app::runner::Runner;
+use crate::prelude::KeyboardEvent;
 use crate::runners::tui::render::shaders;
-use crate::standard::prelude::KeyboardEvent;
 use crate::standard::runners::tui::render::canvas::Canvas;
 use async_std::prelude::Stream;
 use crossterm::cursor::{Hide, RestorePosition, SavePosition, SetCursorStyle, Show};
@@ -18,7 +18,6 @@ use crossterm::{event, QueueableCommand};
 use futures::StreamExt;
 use pin_project::pin_project;
 use smol_str::ToSmolStr;
-use spin::RwLock;
 use std::io::{stdout, Write};
 use std::sync::{Arc, Mutex};
 use vek::{Rect, Rgba, Vec2};
@@ -38,7 +37,7 @@ where
 impl<AppBlueprint> Runner for TUIRunner<AppBlueprint>
 where
     AppBlueprint: Send + Blueprint<TerminalEnvironment>,
-    AppBlueprint::Element: Send,
+    AppBlueprint::Element: Send + 'static,
 {
     type AppBlueprint = AppBlueprint;
 
@@ -46,11 +45,10 @@ where
         Self::grab_terminal(&mut stdout()).unwrap();
 
         let app = blueprint.make(&TerminalEnvironment);
-        let runner = TUIRunner::<AppBlueprint> {
-            app: Arc::new(Mutex::new(app)),
-        };
 
-        runner
+        TUIRunner::<AppBlueprint> {
+            app: Arc::new(Mutex::new(app)),
+        }
     }
 
     fn event_stream(&mut self) -> impl Stream<Item = Event> + Send + Sync + 'static {
@@ -92,13 +90,17 @@ where
         })
     }
 
-    fn on_update(&mut self) {
-        // TODO: Drawing should be granular.
-        self.redraw(
-            &mut stdout(),
-            Rect::new(0.0, 0.0, 32.0, 16.0),
-            Vec2::new(1.0, 1.0),
-        );
+    fn on_update(&mut self) -> impl FnMut() + 'static {
+        let app = self.app.clone();
+
+        move || {
+            Self::redraw(
+                app.clone(),
+                &mut stdout(),
+                Rect::new(0.0, 0.0, 32.0, 16.0),
+                Vec2::new(1.0, 1.0),
+            );
+        }
     }
 }
 
@@ -107,13 +109,13 @@ where
     AppBlueprint: Send + Blueprint<TerminalEnvironment>,
 {
     pub fn redraw<C: Canvas<Pixel = Rgba<u8>>>(
-        &self,
+        app: Own<AppBlueprint::Element>,
         canvas: &mut C,
         rect: Rect<f32, f32>,
         mouse: Vec2<f32>,
     ) {
-        // let app = self.app.borrow();
-        //app.draw(canvas, rect.as_());
+        let app = app.lock().unwrap();
+        dbg!(app.effect());
         canvas.quad(rect, shaders::image);
         canvas.put_pixel(mouse.as_(), Rgba::new(0, 255, 255, 0));
     }

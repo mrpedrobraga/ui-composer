@@ -17,7 +17,7 @@ impl<Env> Element<Env> for () {
     type Effect = ();
 
     fn effect(&self) -> Self::Effect {
-        todo!()
+
     }
 }
 

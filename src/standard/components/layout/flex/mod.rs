@@ -1,20 +1,19 @@
 use crate::geometry::flow::CartesianFlow::{
     BottomToTop, LeftToRight, RightToLeft, TopToBottom,
 };
-use crate::geometry::flow::arrangers::weighted_division_with_minima;
 use crate::app::composition::layout::hints::ParentHints;
 use crate::geometry::flow::{CartesianFlow, Flow, WritingFlow};
 use crate::app::composition::layout::{CoordinateSystem, LayoutItem};
-use arrayvec::ArrayVec;
 use core::iter::{Chain, Once, once};
 use vek::{Extent2, Rect};
+use crate::prelude::flow::arrangers::w_div_min_alloc;
 
 #[allow(non_snake_case)]
 #[inline(always)]
 /// A container that stretches some of its items to fill the remaining space.
-pub fn Flex<const SIZE: usize, Items>(items: Items) -> FlexContainer<SIZE, Items>
+pub fn flex<TItems>(items: TItems) -> FlexContainer<TItems>
 where
-    Items: FlexItemList,
+    TItems: FlexItemList,
 {
     FlexContainer {
         items,
@@ -22,13 +21,13 @@ where
     }
 }
 
-/// The struct created by [Flex].
-pub struct FlexContainer<const SIZE: usize, TItems: FlexItemList> {
+/// The struct created by [flex].
+pub struct FlexContainer<TItems: FlexItemList> {
     items: TItems,
     flow_direction: Flow,
 }
 
-impl<const SIZE: usize, TItems: FlexItemList> FlexContainer<SIZE, TItems> {
+impl<TItems: FlexItemList> FlexContainer<TItems> {
     #[inline(always)]
     pub fn with_flow(self, flow_direction: Flow) -> Self {
         Self {
@@ -48,7 +47,7 @@ impl<const SIZE: usize, TItems: FlexItemList> FlexContainer<SIZE, TItems> {
     }
 }
 
-impl<const SIZE: usize, ItemList> LayoutItem for FlexContainer<SIZE, ItemList>
+impl<ItemList> LayoutItem for FlexContainer<ItemList>
 where
     ItemList: FlexItemList + Send,
 {
@@ -83,10 +82,10 @@ where
         // TODO: Receive the parent hints from... well, the parent.
         let flow_direction = self.flow_direction.as_cartesian(&ParentHints {
             rect: Rect::new(0.0, 0.0, 0.0, 0.0),
-            current_flow_direction: CartesianFlow::LeftToRight,
-            current_cross_flow_direction: CartesianFlow::TopToBottom,
-            current_writing_flow_direction: CartesianFlow::LeftToRight,
-            current_writing_cross_flow_direction: CartesianFlow::TopToBottom,
+            current_flow_direction: LeftToRight,
+            current_cross_flow_direction: TopToBottom,
+            current_writing_flow_direction: LeftToRight,
+            current_writing_cross_flow_direction: TopToBottom,
         });
 
         match flow_direction {
@@ -105,8 +104,11 @@ where
         let minima = self
             .items
             .minima(flow_direction)
-            .collect::<ArrayVec<_, SIZE>>();
-        let weights = self.items.weights().collect::<ArrayVec<_, SIZE>>();
+            //.collect::<ArrayVec<_, SIZE>>();
+            .collect::<Vec<_>>();
+        let weights = self.items.weights()
+            //.collect::<ArrayVec<_, SIZE>>();
+            .collect::<Vec<_>>();
 
         use CartesianFlow::*;
         let parent_size = match flow_direction {
@@ -114,10 +116,16 @@ where
             TopToBottom | BottomToTop => parent_hints.rect.h,
         };
 
-        let main_axis_sizes = weighted_division_with_minima(
+        /*let main_axis_sizes = weighted_division_with_minima(
             parent_size,
             &weights.into_inner().unwrap(),
             &minima.into_inner().unwrap(),
+            0.01,
+        );*/
+        let main_axis_sizes = w_div_min_alloc(
+            parent_size,
+            weights.as_slice(),
+            minima.as_slice(),
             0.01,
         );
         let parent_hints = lay_sizes(parent_hints, flow_direction, main_axis_sizes.into_iter());
@@ -183,7 +191,18 @@ where
 }
 
 /// An Item of a Flex Container, contains a LayoutItem and a weight.
-pub struct FlexItem<T>(pub T, pub f32);
+pub struct FlexItem<T> {
+    item: T,
+    grow: f32
+}
+pub fn item<T>(item: T) -> FlexItem<T> {
+    FlexItem { item, grow: 0.0 }
+}
+impl<T> FlexItem<T> {
+    pub fn with_grow(self, grow: f32) -> FlexItem<T> {
+        Self { grow, ..self }
+    }
+}
 
 pub trait FlexItemList {
     type Content;
@@ -210,23 +229,23 @@ where
     const SIZE: usize = 1;
 
     fn get_natural_sizes(&self) -> impl Iterator<Item = Extent2<f32>> {
-        once(self.0.get_natural_size())
+        once(self.item.get_natural_size())
     }
 
     fn get_minimum_sizes(&self) -> impl Iterator<Item = Extent2<f32>> {
-        once(self.0.get_minimum_size())
+        once(self.item.get_minimum_size())
     }
 
     fn weights(&self) -> Once<f32> {
-        once(self.1)
+        once(self.grow)
     }
 
     fn minima(&self, flow_direction: CartesianFlow) -> Once<f32> {
         use CartesianFlow::*;
 
         match flow_direction {
-            LeftToRight | RightToLeft => once(self.0.get_minimum_size().w),
-            TopToBottom | BottomToTop => once(self.0.get_minimum_size().h),
+            LeftToRight | RightToLeft => once(self.item.get_minimum_size().w),
+            TopToBottom | BottomToTop => once(self.item.get_minimum_size().h),
         }
     }
 
@@ -234,7 +253,7 @@ where
     where
         I: Iterator<Item = ParentHints>,
     {
-        self.0.lay(hx.next().unwrap()) //NOTE: Make sure to send an element or else...
+        self.item.lay(hx.next().unwrap()) //NOTE: Make sure to send an element or else...
     }
 }
 

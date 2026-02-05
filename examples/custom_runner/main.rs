@@ -3,7 +3,7 @@ use futures::FutureExt;
 use ui_composer::app::runner::Runner;
 use ui_composer::app::composition::elements::Blueprint;
 use ui_composer::app::input::Event;
-use ui_composer::standard::prelude::UIComposer;
+use ui_composer::prelude::UIComposer;
 
 fn main() {
     UIComposer::run_custom::<ExampleRunner>(())
@@ -32,7 +32,9 @@ impl Runner for ExampleRunner {
         }.into_stream()
     }
 
-    fn on_update(&mut self) {
-        println!("Something updated!")
+    fn on_update(&mut self) -> impl FnMut() + 'static {
+        || {
+            println!("Something updated!")
+        }
     }
 }

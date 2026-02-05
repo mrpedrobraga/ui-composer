@@ -73,10 +73,58 @@ pub fn weighted_division_with_minima<const SIZE: usize, T: BaseFloat + core::ite
     let equation = |x| {
         total
             - normalized_w
+            .iter()
+            .zip(m.iter())
+            .map(|(nw, m)| m.max(total * *nw * x))
+            .sum::<T>()
+    };
+
+    let mut lower_bound = T::zero();
+    let mut upper_bound = total;
+
+    loop {
+        let sample_point = (lower_bound + upper_bound) / T::from(2).unwrap();
+        let error = equation(sample_point);
+
+        if error.abs() < tolerance {
+            return normalized_w
                 .iter()
                 .zip(m.iter())
-                .map(|(nw, m)| m.max(total * *nw * x))
-                .sum::<T>()
+                .map(|(nw, m)| m.max(total * *nw * sample_point))
+                .collect();
+        }
+
+        if error > T::zero() {
+            lower_bound = sample_point;
+        } else {
+            upper_bound = sample_point;
+        }
+    }
+}
+
+pub fn w_div_min_alloc<T: BaseFloat + core::iter::Sum>(
+    total: T,
+    w: &[T],
+    m: &[T],
+    tolerance: T,
+) -> Vec<T> {
+    let total_m: T = m.iter().copied().sum();
+    let total_w: T = w.iter().copied().sum();
+
+    if total_m >= total || total_w <= T::zero() {
+        return m.iter().copied().collect();
+    }
+
+    // Precompute normalized weights
+    let normalized_w: Vec<T> = w.iter().map(|&w| w / total_w).collect();
+
+    let equation = |x| {
+        total
+            - normalized_w
+            .iter()
+            .zip(m.iter())
+            .map(|(nw, m)| m.max(total * *nw * x))
+            .sum::<T>()
     };
 
     let mut lower_bound = T::zero();

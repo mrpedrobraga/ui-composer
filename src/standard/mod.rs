@@ -3,9 +3,6 @@
 /// Module for optional builtin runners. Might move each runner to a sub-crate.
 /// `ui-composer-winit` and `ui-composer-tui` and `ui-composer-embedded`.
 pub mod runners;
-#[doc(hidden)]
-#[rust_analyzer::completions(ignore_flyimport)]
-pub mod prelude;
 
 pub mod components;
 

@@ -15,14 +15,14 @@ Add the library to your crate with `cargo add ui-composer`.
 After adding the library, you should be able to create a simple Window like this:
 
 ```rust
-* use ui_composer::standard::prelude::*;
+* use ui_composer::prelude::*;
 *
 * fn main() {
 *   UIComposer::run(
 *       Window(())
 *   );
 * }
-```
+* ```
 
 > [!INFO] Not on crates.io
 > While this library isn't on crates.io yet, you can add it with
@@ -45,5 +45,8 @@ pub mod state;
 /// Module for optional builtin standard. Might move this to a sub-crate, too.
 /// `ui-composer-standard` has a nice ring to it, no?
 pub mod standard;
+#[doc(hidden)]
+#[rust_analyzer::completions(ignore_flyimport)]
+pub mod prelude;
 
 pub use standard::runners;

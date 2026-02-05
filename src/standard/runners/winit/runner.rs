@@ -1,13 +1,12 @@
-use crate::app::composition::elements::Blueprint;
+use crate::app::composition::elements::{Blueprint, Element};
 use crate::app::input::Event;
 use crate::app::runner::Runner;
 use async_std::prelude::Stream;
 use async_std::task::block_on;
 use futures::channel::mpsc;
-use futures::SinkExt;
-use std::marker::PhantomData;
-use std::sync::{Arc, Mutex};
 use futures::channel::mpsc::Sender;
+use futures::SinkExt;
+use std::sync::{Arc, Mutex};
 use winit::application::ApplicationHandler;
 use winit::dpi::{PhysicalSize, Size};
 use winit::event::WindowEvent;
@@ -24,12 +23,11 @@ where
 {
     pub app: Share<AppBlueprint::Element>,
     sink: Option<Sender<Event>>,
-    __thread_fixed: PhantomData<*mut ()>,
 }
 
 impl<AppBlueprint> Runner for WinitRunner<AppBlueprint>
 where
-    AppBlueprint: Blueprint<WinitEnvironment>,
+    AppBlueprint: Blueprint<WinitEnvironment, Element: Send + 'static>,
 {
     type AppBlueprint = AppBlueprint;
 
@@ -42,7 +40,6 @@ where
         WinitRunner {
             app: Arc::new(Mutex::new(app)),
             sink: None,
-            __thread_fixed: PhantomData,
         }
     }
 
@@ -52,26 +49,32 @@ where
         rx
     }
 
-    fn on_update(&mut self) {
-        println!("Something happened?");
+    fn on_update(&mut self) -> impl FnMut() + Send + 'static {
+        let app = self.app.clone();
+        move || {
+            let app = app.lock().unwrap();
+            let e = app.effect();
+            dbg!(e);
+        }
     }
 
-    fn main_loop(&mut self) {
+    fn main_loop(&mut self) -> impl FnOnce() + 'static {
         let mut winit_app_handler = WinitAppHandler {
             sink: self.sink.take().unwrap(),
             window: None,
         };
 
         // For cross-platform compatibility, the EventLoop must be created on the main thread, and only once per application.
-        let event_loop = EventLoop::builder()
-            .build()
-            .expect("Failed to build winit event loop.");
-        event_loop.set_control_flow(ControlFlow::Wait);
-
-        // TODO: Implements this Runner so it works for every platform `winit` supports.
-        event_loop
-            .run_app(&mut winit_app_handler)
-            .expect("Failed to run winit event loop.");
+        move || {
+            let event_loop = EventLoop::builder()
+                .build()
+                .expect("Failed to build winit event loop.");
+            event_loop.set_control_flow(ControlFlow::Wait);
+            // TODO: Implements this Runner so it works for every platform `winit` supports.
+            event_loop
+                .run_app(&mut winit_app_handler)
+                .expect("Failed to run winit event loop.");
+        }
     }
 }
 

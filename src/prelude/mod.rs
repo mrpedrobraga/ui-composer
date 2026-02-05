@@ -35,24 +35,33 @@ impl UIComposer {
     /// Creates and runs a new app in a given runner.
     /// For cross-platform compatibility, this should be called in the main thread,
     /// and only once in your program.
-    pub fn run_custom<CustomRunner: Runner>(node_tree_descriptor: CustomRunner::AppBlueprint) {
-        let mut runner = CustomRunner::run(node_tree_descriptor);
+    pub fn run_custom<CustomRunner: Runner + Send>(app_blueprint: CustomRunner::AppBlueprint) {
+        let mut runner = CustomRunner::run(app_blueprint);
 
         use async_std::stream::StreamExt;
-        println!("Requesting event stream...");
         let event_stream = runner.event_stream();
-        println!("Event stream arrived.");
+        let main_loop = runner.main_loop();
+        let mut on_update = runner.on_update();
         let event_co = event_stream.for_each(|event| {
             println!("An event arrived = {:?}", event);
+            on_update();
         });
-        println!("Starting.");
         std::thread::scope(|s| {
             s.spawn(|| {
                 block_on(async { join!(event_co) });
             });
-            runner.main_loop();
+            main_loop();
         });
 
         println!("Done. Cleaning up...");
+    }
+}
+
+use crate::app::composition::elements::Blueprint;
+use crate::runners::tui::runner::{TUIRunner, TerminalEnvironment};
+
+impl UIComposer {
+    pub fn run_tui(app_blueprint: impl Blueprint<TerminalEnvironment, Element: Send + 'static> + Send) {
+        UIComposer::run_custom::<TUIRunner<_>>(app_blueprint);
     }
 }
