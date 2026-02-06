@@ -3452,7 +3452,6 @@ dependencies = [
 name = "uix"
 version = "0.0.0"
 dependencies = [
- "log",
  "proc-macro2",
  "quote",
  "rstml",

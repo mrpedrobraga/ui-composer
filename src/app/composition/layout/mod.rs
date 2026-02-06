@@ -80,9 +80,9 @@ pub mod implementations;
 
 /// The closure-like trait that produces [`Emit`]s.
 #[diagnostic::on_unimplemented(
-    message = "{Self} is not a `LayoutItem` thus can not be used...",
+    message = "{Self} is not a [`LayoutItem`] thus can not be used...",
     label = "...in this context...",
-    note = "You can use `ResizableItem` to use graphics/input primitives as layout items."
+    note = "You can use `ResizableItem` to bundle [`Blueprint`]s as UI."
 )]
 #[must_use = "layout items need to be put in a layout context to be used."]
 pub trait LayoutItem: Send {
@@ -158,34 +158,31 @@ pub trait Resizable: LayoutItem {
 
 /// Simple layout item that can be resized by its parent
 /// in whatever way the parent sees fit.
-pub struct ItemBox<Factory, Item, Env>
+pub struct ItemBox<Factory, Item>
 where
     Factory: Send + FnMut(ParentHints) -> Item,
 {
     hints: ChildHints,
     factory: Factory,
-    __context: PhantomData<fn() -> Env>,
 }
 
-impl<Factory, Item, Env> ItemBox<Factory, Item, Env>
+impl<Factory, Item> ItemBox<Factory, Item>
 where
     Factory: FnMut(ParentHints) -> Item + Send,
-    Item: Blueprint<Env>,
 {
     pub fn new(factory: Factory) -> Self {
         Self {
             hints: ChildHints::default(),
             factory,
-            __context: PhantomData,
         }
     }
 }
 
-impl<F: Send, T, Res> LayoutItem for ItemBox<F, T, Res>
+impl<F: Send, Item> LayoutItem for ItemBox<F, Item>
 where
-    F: FnMut(ParentHints) -> T,
+    F: FnMut(ParentHints) -> Item,
 {
-    type Content = T;
+    type Content = Item;
 
     fn get_natural_size(&self) -> Extent2<f32> {
         #[allow(deprecated)]
@@ -201,9 +198,9 @@ where
     }
 }
 
-impl<F, T, Res> Resizable for ItemBox<F, T, Res>
+impl<F, Item> Resizable for ItemBox<F, Item>
 where
-    F: Send + FnMut(ParentHints) -> T,
+    F: Send + FnMut(ParentHints) -> Item,
 {
     fn with_minimum_size(self, min_size: Extent2<f32>) -> Self {
         Self {

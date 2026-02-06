@@ -1,9 +1,9 @@
 #![allow(non_snake_case)]
-use ui_composer::prelude::{ItemBox, Resizable, UIComposer};
+use ui_composer::prelude::{ItemBox, UIComposer};
 use ui_composer::runners::tui::{Graphic, TUI, Terminal};
 use ui_composer::standard::{flex, item};
 use uix::uix as view;
-use vek::{Extent2, Rgba};
+use vek::Rgba;
 
 fn main() {
     UIComposer::run_tui(view! (
@@ -25,9 +25,12 @@ fn main() {
 
 /// A simple coloured square.
 fn Square(color: Rgba<f32>) -> impl TUI {
-    view! (
-        <ItemBox::new minimum_size=Extent2::new(16.0, 8.0)>
-            { move |hx| Graphic { rect: hx.rect, color } }
+    view!(
+        <ItemBox::new>
+            {move |hx| Graphic {
+                rect: hx.rect,
+                color,
+            }}
         </ItemBox::new>
     )
 }
