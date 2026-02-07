@@ -1,12 +1,11 @@
-use crate::app::composition::elements::{Blueprint, Element};
+use crate::app::composition::elements::Blueprint;
 use crate::app::input::Event;
 use crate::app::runner::Runner;
-use async_std::prelude::Stream;
 use async_std::task::block_on;
-use futures::channel::mpsc;
 use futures::channel::mpsc::Sender;
 use futures::SinkExt;
-use std::sync::{Arc, Mutex};
+use std::marker::PhantomData;
+use std::sync::{mpsc, Arc, Mutex};
 use winit::application::ApplicationHandler;
 use winit::dpi::{PhysicalSize, Size};
 use winit::event::WindowEvent;
@@ -21,8 +20,7 @@ pub struct WinitRunner<AppBlueprint>
 where
     AppBlueprint: Blueprint<WinitEnvironment>,
 {
-    pub app: Share<AppBlueprint::Element>,
-    sink: Option<Sender<Event>>,
+    _app: PhantomData<AppBlueprint>,
 }
 
 impl<AppBlueprint> Runner for WinitRunner<AppBlueprint>
@@ -31,50 +29,28 @@ where
 {
     type AppBlueprint = AppBlueprint;
 
-    fn run(app: Self::AppBlueprint) -> Self {
-        println!("Running!");
+    fn run(app: Self::AppBlueprint) {
+        println!("[Winit] Initializing.");
 
         let env = WinitEnvironment;
         let app = app.make(&env);
+        let app = Arc::new(Mutex::new(app));
 
-        WinitRunner {
-            app: Arc::new(Mutex::new(app)),
-            sink: None,
-        }
-    }
+        let (sink, tap) = futures::channel::mpsc::channel(0);
 
-    fn event_stream(&mut self) -> impl Stream<Item = Event> + Send + Sync + 'static {
-        let (tx, rx) = mpsc::channel::<Event>(10);
-        self.sink.replace(tx);
-        rx
-    }
+        /*
+            Create a handler in the format winit requires.
+            It must run on the main thread, and it IS blocking...
+            And thus we _must_ create a new thread if we want any futures/signals to be polled.
+         */
+        let mut winit_app_handler = WinitAppHandler { sink, window: None };
 
-    fn on_update(&mut self) -> impl FnMut() + Send + 'static {
-        let app = self.app.clone();
-        move || {
-            let app = app.lock().unwrap();
-            let e = app.effect();
-            dbg!(e);
-        }
-    }
-
-    fn main_loop(&mut self) -> impl FnOnce() + 'static {
-        let mut winit_app_handler = WinitAppHandler {
-            sink: self.sink.take().unwrap(),
-            window: None,
-        };
-
-        // For cross-platform compatibility, the EventLoop must be created on the main thread, and only once per application.
-        move || {
-            let event_loop = EventLoop::builder()
-                .build()
-                .expect("Failed to build winit event loop.");
-            event_loop.set_control_flow(ControlFlow::Wait);
-            // TODO: Implements this Runner so it works for every platform `winit` supports.
-            event_loop
-                .run_app(&mut winit_app_handler)
-                .expect("Failed to run winit event loop.");
-        }
+        /*
+            Create event loop and run the handler.
+        */
+        let e_loop = EventLoop::builder().build().expect("[Winit] Failed to create event loop");
+        e_loop.set_control_flow(ControlFlow::Wait);
+        e_loop.run_app(&mut winit_app_handler).expect("[Winit] Failed to run event loop...");
     }
 }
 
@@ -84,8 +60,6 @@ pub struct WinitAppHandler {
 }
 impl ApplicationHandler for WinitAppHandler {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        println!("[Winit App] Resumed!");
-
         let attributes = Window::default_attributes()
             .with_title("My App!".to_string())
             .with_inner_size(Size::Physical(PhysicalSize {
@@ -96,7 +70,7 @@ impl ApplicationHandler for WinitAppHandler {
 
         let window = event_loop
             .create_window(attributes)
-            .expect("Failed to create window!");
+            .expect("[Winit] Failed to create window!");
 
         self.window = Some(window);
     }
@@ -104,10 +78,10 @@ impl ApplicationHandler for WinitAppHandler {
     fn window_event(&mut self, _: &ActiveEventLoop, _: WindowId, event: WindowEvent) {
         let uic_event = Event::try_from(event).expect("Unrecognized event.");
         //TODO: Restructure how the event loop sends events.
-        block_on(self.sink.send(uic_event)).expect("Receiver is gone!");
+        block_on(self.sink.send(uic_event)).expect("[Winit] Failed to send event though channel.");
     }
 
     fn exiting(&mut self, _: &ActiveEventLoop) {
-        println!("[Winit App] Goodbye!")
+        println!("[Winit] Goodbye!")
     }
 }

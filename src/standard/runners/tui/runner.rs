@@ -1,37 +1,29 @@
 use crate::app::composition::elements::{Blueprint, Element};
-use crate::app::input::{ButtonState, DeviceId, Event, KeyEvent};
 use crate::app::runner::Runner;
-use crate::prelude::KeyboardEvent;
 use crate::runners::tui::render::shaders;
 use crate::standard::runners::tui::render::canvas::Canvas;
-use async_std::prelude::Stream;
 use crossterm::cursor::{Hide, RestorePosition, SavePosition, SetCursorStyle, Show};
 use crossterm::event::{
     DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
-    EventStream, KeyCode,
 };
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, DisableLineWrap, EnableLineWrap, EnterAlternateScreen,
     LeaveAlternateScreen,
 };
-use crossterm::{event, QueueableCommand};
-use futures::StreamExt;
-use pin_project::pin_project;
-use smol_str::ToSmolStr;
+use crossterm::QueueableCommand;
 use std::io::{stdout, Write};
+use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
 use vek::{Rect, Rgba, Vec2};
 
 pub struct TerminalEnvironment;
 pub type Own<T> = Arc<Mutex<T>>;
 
-#[pin_project(project=TUIBackendProj)]
 pub struct TUIRunner<AppBlueprint>
 where
     AppBlueprint: Send + Blueprint<TerminalEnvironment>,
 {
-    #[pin]
-    pub app: Own<AppBlueprint::Element>,
+    _app: PhantomData<AppBlueprint>,
 }
 
 impl<AppBlueprint> Runner for TUIRunner<AppBlueprint>
@@ -41,67 +33,66 @@ where
 {
     type AppBlueprint = AppBlueprint;
 
-    fn run(blueprint: Self::AppBlueprint) -> Self {
+    fn run(blueprint: Self::AppBlueprint) {
         Self::grab_terminal(&mut stdout()).unwrap();
 
         let app = blueprint.make(&TerminalEnvironment);
+        let app = Arc::new(Mutex::new(app));
 
-        TUIRunner::<AppBlueprint> {
-            app: Arc::new(Mutex::new(app)),
-        }
+        Self::release_terminal(&mut stdout()).unwrap();
     }
 
-    fn event_stream(&mut self) -> impl Stream<Item = Event> + Send + Sync + 'static {
-        let event_stream = EventStream::new();
-
-        event_stream.filter_map(|event| async {
-            let event = event.ok()?;
-
-            match event {
-                event::Event::Key(key_event) => {
-                    if let KeyCode::Char('q') = key_event.code {
-                        let _ = Self::release_terminal(&mut stdout());
-                        std::process::exit(1);
-                    }
-                    Some(Event::Keyboard {
-                        id: DeviceId(0),
-                        event: KeyboardEvent::Key(KeyEvent {
-                            is_implicit: false,
-                            text_repr: Some(key_event.code.to_smolstr()),
-                            button_state: if key_event.is_press() {
-                                ButtonState::Pressed
-                            } else {
-                                ButtonState::Released
-                            },
-                        }),
-                    })
-                }
-                event::Event::Resize(width, height) => {
-                    /*self.redraw(
-                        &mut stdout(),
-                        Rect::new(0.0, 0.0, width as f32, height as f32),
-                        Vec2::new(0.0, 0.0),
-                    );*/
-
-                    None
-                }
-                _ => None,
-            }
-        })
-    }
-
-    fn on_update(&mut self) -> impl FnMut() + 'static {
-        let app = self.app.clone();
-
-        move || {
-            Self::redraw(
-                app.clone(),
-                &mut stdout(),
-                Rect::new(0.0, 0.0, 32.0, 16.0),
-                Vec2::new(1.0, 1.0),
-            );
-        }
-    }
+    // fn event_stream(&mut self) -> impl Stream<Item = Event> + Send + Sync + 'static {
+    //     let event_stream = EventStream::new();
+    //
+    //     event_stream.filter_map(|event| async {
+    //         let event = event.ok()?;
+    //
+    //         match event {
+    //             event::Event::Key(key_event) => {
+    //                 if let KeyCode::Char('q') = key_event.code {
+    //                     let _ = Self::release_terminal(&mut stdout());
+    //                     std::process::exit(1);
+    //                 }
+    //                 Some(Event::Keyboard {
+    //                     id: DeviceId(0),
+    //                     event: KeyboardEvent::Key(KeyEvent {
+    //                         is_implicit: false,
+    //                         text_repr: Some(key_event.code.to_smolstr()),
+    //                         button_state: if key_event.is_press() {
+    //                             ButtonState::Pressed
+    //                         } else {
+    //                             ButtonState::Released
+    //                         },
+    //                     }),
+    //                 })
+    //             }
+    //             event::Event::Resize(width, height) => {
+    //                 /*self.redraw(
+    //                     &mut stdout(),
+    //                     Rect::new(0.0, 0.0, width as f32, height as f32),
+    //                     Vec2::new(0.0, 0.0),
+    //                 );*/
+    //
+    //                 None
+    //             }
+    //             _ => None,
+    //         }
+    //     })
+    // }
+    //
+    // fn on_update(&mut self) -> impl FnMut() + 'static {
+    //     let app = self.app.clone();
+    //
+    //     move || {
+    //         Self::redraw(
+    //             app.clone(),
+    //             &mut stdout(),
+    //             Rect::new(0.0, 0.0, 32.0, 16.0),
+    //             Vec2::new(1.0, 1.0),
+    //         );
+    //     }
+    // }
 }
 
 impl<AppBlueprint> TUIRunner<AppBlueprint>
