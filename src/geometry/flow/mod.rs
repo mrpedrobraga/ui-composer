@@ -31,7 +31,6 @@
 //! require things to be shown the same way for everybody. Compasses, drawings, etc.
 
 use crate::app::composition::layout::hints::ParentHints;
-use cgmath::{BaseFloat, Matrix4};
 use vek::{Mat3, Vec2};
 
 pub mod arrangers;
@@ -229,8 +228,12 @@ impl CoordinateSystem for RelativeFlow {
 
     fn get_cross_axis(&self, parent_hints: &ParentHints) -> Vec2<f32> {
         match self {
-            Self::MainAxisForward => parent_hints.current_flow_direction.get_cross_axis(parent_hints),
-            Self::MainAxisBackwards => -parent_hints.current_flow_direction.get_cross_axis(parent_hints),
+            Self::MainAxisForward => parent_hints
+                .current_flow_direction
+                .get_cross_axis(parent_hints),
+            Self::MainAxisBackwards => -parent_hints
+                .current_flow_direction
+                .get_cross_axis(parent_hints),
             Self::CrossAxisForward => parent_hints
                 .current_cross_flow_direction
                 .get_cross_axis(parent_hints),

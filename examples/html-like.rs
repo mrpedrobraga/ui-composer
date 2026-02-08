@@ -25,12 +25,11 @@ fn main() {
 
 /// A simple coloured square.
 fn Square(color: Rgba<f32>) -> impl TUI {
-    view!(
-        <ItemBox::new>
-            {move |hx| Graphic {
+        ItemBox::new(
+            move |hx| Graphic {
                 rect: hx.rect,
                 color,
-            }}
-        </ItemBox::new>
-    )
+            }
+        )
+    
 }

@@ -4,10 +4,13 @@
 //! Every time they change (in response to an event or a future or signal yielding),
 //! it will render them to its [WindowRenderTarget].
 
+use pin_project::pin_project;
+
 use crate::app::composition::elements::{Blueprint, Element};
 use crate::runners::winit::gpu::{Gpu, RenderTarget};
 use crate::runners::winit::runner::WinitEnvironment;
 use std::sync::Arc;
+use std::task::Poll;
 
 pub struct WindowBlueprint<UiBlueprint> {
     ui: UiBlueprint,
@@ -26,7 +29,9 @@ where
     }
 }
 
+#[pin_project(project = WindowElementProj)]
 pub struct WindowElement<Ui> {
+    #[pin]
     ui: Ui,
 }
 
@@ -37,6 +42,27 @@ where
     type Effect = ();
 
     fn effect(&self) -> Self::Effect {}
+
+    fn poll(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context,
+        env: &WinitEnvironment,
+    ) -> std::task::Poll<Option<()>> {
+        let WindowElementProj { ui } = self.project();
+
+        let inner_poll: Poll<Option<_>> = ui.poll(cx, env);
+
+        match inner_poll {
+            Poll::Pending => Poll::Pending,
+            Poll::Ready(Some(_)) => {
+                /*
+                    TODO: Element changed! Re-render!
+                */
+                Poll::Ready(Some(()))
+            }
+            Poll::Ready(None) => Poll::Ready(None),
+        }
+    }
 }
 
 /// The render target a window will draw to in order to show its elements in a [window](winit::window::Window).
@@ -49,7 +75,6 @@ pub struct WindowRenderTarget {
 impl WindowRenderTarget {
     /// Creates a new `RenderTarget` which renders to a window.
     pub fn new(gpu: &Gpu, window: Arc<winit::window::Window>) -> Self {
-        let window_id = window.id();
         let size = window.inner_size();
         let size = vek::Extent2::new(size.width, size.height);
         let surface = wgpu::Instance::default()
@@ -65,8 +90,8 @@ impl WindowRenderTarget {
     }
 
     fn new_depth_texture(gpu: &Gpu, size: &vek::Extent2<u32>) -> wgpu::Texture {
-        let depth_texture = gpu.device.create_texture(&wgpu::TextureDescriptor {
-            label: Some(&"UI Composer Winit Window Depth Texture.".to_string()),
+        gpu.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("UI Composer Winit Window Depth Texture."),
             size: wgpu::Extent3d {
                 width: size.w,
                 height: size.h,
@@ -79,8 +104,7 @@ impl WindowRenderTarget {
             format: wgpu::TextureFormat::Depth32Float,
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
             view_formats: &[],
-        });
-        depth_texture
+        })
     }
 }
 

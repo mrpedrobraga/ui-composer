@@ -1,9 +1,9 @@
+use downcast_rs::{Downcast, impl_downcast};
 use std::fmt::Debug;
-use downcast_rs::{impl_downcast, Downcast};
 
+pub mod executor;
 pub mod future;
 pub mod signal;
-pub mod executor;
 
 /// An effect that some element of a structure might produce.
 ///
@@ -21,13 +21,15 @@ where
 {
 }
 
-impl<A> ElementEffect for Option<A> where A: ElementEffect, {}
+impl<A> ElementEffect for Option<A> where A: ElementEffect {}
 
 impl_downcast!(ElementEffect);
 
 /// Please refer to the [module level documentation](self).
 pub trait EffectHandler {
-    fn handle<E>(&mut self, event: E) where E: 'static + ElementEffect;
+    fn handle<E>(&mut self, event: E)
+    where
+        E: 'static + ElementEffect;
 }
 
 #[test]
@@ -43,18 +45,21 @@ fn test_effect_handler() {
     pub struct DummyEffectHandler {}
 
     impl EffectHandler for DummyEffectHandler {
-        fn handle<E>(&mut self, effect: E) where E: 'static + ElementEffect {
+        fn handle<E>(&mut self, effect: E)
+        where
+            E: 'static + ElementEffect,
+        {
             let effect: &dyn ElementEffect = &effect;
 
-            if let Some(dummy) = effect.downcast_ref::<DummyEffect>() {
+            if let Some(_fx) = effect.downcast_ref::<DummyEffect>() {
                 println!("Holy shit!")
             }
         }
     }
 
     let a = DummyEffect;
-    let b = DummyEffect;
-    let c = NullEffect;
+    let _b = DummyEffect;
+    let _c = NullEffect;
     //let effects = (a, (b, c));
 
     let mut handler = DummyEffectHandler {};

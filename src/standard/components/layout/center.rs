@@ -1,9 +1,6 @@
-use std::io::stdout;
-use crossterm::cursor::MoveTo;
-use crossterm::style::Print;
+use crate::app::composition::layout::LayoutItem;
 use crate::app::composition::layout::hints::ParentHints;
 use vek::{Extent2, Rect};
-use crate::app::composition::layout::LayoutItem;
 
 /// A container that, as it is reshaped, keeps its item at its natural size and centered in the available space.
 pub fn Center<A>(item: A) -> CenterContainer<A>
@@ -36,12 +33,11 @@ where
 
     fn lay(&mut self, layout_hints: ParentHints) -> Self::Content {
         let my_rect = layout_hints.rect;
-
         let item_size = self.item.get_natural_size();
         let item_position = my_rect.position() + (my_rect.extent() - item_size) / 2.0;
 
         let item_rect = Rect::new(item_position.x, item_position.y, item_size.w, item_size.h);
-        
+
         let inner_hints = ParentHints {
             rect: item_rect,
             ..layout_hints

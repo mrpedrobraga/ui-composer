@@ -1,5 +1,5 @@
-use std::sync::OnceLock;
 use image::RgbaImage;
+use std::sync::OnceLock;
 use vek::{Rgba, Vec2, Vec3};
 
 pub struct PixelShaderInput {
@@ -10,7 +10,7 @@ pub struct PixelShaderInput {
 
 pub fn funky(PixelShaderInput { uv, time, .. }: PixelShaderInput) -> Rgba<f32> {
     // Center the coordinates (-1.0 to 1.0) and adjust for typical terminal aspect ratio
-    let p = (uv * 2.0 - Vec2::new(1.0, 1.0));
+    let p = uv * 2.0 - Vec2::new(1.0, 1.0);
 
     // Create some "wobble" using sine waves and time
     let mut color = Vec3::new(0.0, 0.0, 0.0);
@@ -23,9 +23,9 @@ pub fn funky(PixelShaderInput { uv, time, .. }: PixelShaderInput) -> Rgba<f32> {
         );
 
         // Combine sine waves to create the "plasma" feel
-        let val = (uv_wobble.x + time).sin() +
-            (uv_wobble.y + time * 0.5).cos() +
-            (uv_wobble.x + uv_wobble.y + time).sin();
+        let val = (uv_wobble.x + time).sin()
+            + (uv_wobble.y + time * 0.5).cos()
+            + (uv_wobble.x + uv_wobble.y + time).sin();
 
         // Map values to funky RGB channels
         color.x += (val * std::f32::consts::PI).cos();
@@ -38,7 +38,7 @@ pub fn funky(PixelShaderInput { uv, time, .. }: PixelShaderInput) -> Rgba<f32> {
         (color.x * 0.5 + 0.5).clamp(0.0, 1.0),
         (color.y * 0.5 + 0.5).clamp(0.0, 1.0),
         (color.z * 0.5 + 0.5).clamp(0.0, 1.0),
-        1.0
+        1.0,
     )
 }
 
@@ -61,12 +61,10 @@ pub fn image(PixelShaderInput { uv, .. }: PixelShaderInput) -> Rgba<f32> {
 
     let pixel = img.get_pixel(x, y);
 
-    let col = Rgba::new(
+    Rgba::new(
         pixel[0] as f32 / 255.0,
         pixel[1] as f32 / 255.0,
         pixel[2] as f32 / 255.0,
         pixel[3] as f32 / 255.0,
-    );
-
-    col
+    )
 }

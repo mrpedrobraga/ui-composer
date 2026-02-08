@@ -4,14 +4,13 @@
 //!
 //! The [`Blueprint`] trait is parametric (it has the `Environment` parameter)
 //! which allows you to implement it multiple times for the same type.
-//! 
+//!
 //! For example, if you have a struct `BoxGraphic` you can implement `Blueprint<Desktop> + Blueprint<TUI>`
 //! and determine distinct [`Element`]s it creates when you call `Blueprint::make`
 
+use crate::app::composition::effects::ElementEffect;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use downcast_rs::{impl_downcast, Downcast};
-use crate::app::composition::effects::ElementEffect;
 
 pub mod implementations;
 

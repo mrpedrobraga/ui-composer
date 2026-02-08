@@ -1,6 +1,5 @@
-use crate::app::composition::algebra::{Bubble, Gather, Empty, Semigroup};
-use std::task::Poll;
-use std::task::Poll::Pending;
+use crate::app::composition::algebra::{Bubble, Empty, Gather, Semigroup};
+
 /* Combine */
 
 impl Semigroup for bool {
@@ -16,8 +15,8 @@ impl Empty for bool {
 }
 
 pub mod bubble {
-    use crate::app::composition::algebra::Monoid;
     use super::{Bubble, Empty, Semigroup};
+    use crate::app::composition::algebra::Monoid;
 
     impl<Down, Up> Bubble<Down, Up> for ()
     where
@@ -47,7 +46,7 @@ pub mod bubble {
         Up: Monoid,
     {
         fn bubble(&mut self, cx: &mut Down) -> Up {
-            self.into_iter().fold(Empty::empty(), |acc, el| {
+            self.iter_mut().fold(Empty::empty(), |acc, el| {
                 Semigroup::combine(acc, el.bubble(cx))
             })
         }
@@ -92,11 +91,10 @@ pub mod bubble {
 }
 
 pub mod gather {
+    use super::Gather;
     use std::mem::MaybeUninit;
-    use super::{Gather};
 
-    impl<Context, Item> Gather<Context, Item> for ()
-    {
+    impl<Context, Item> Gather<Context, Item> for () {
         const SIZE: usize = 0;
 
         fn gather(&mut self, #[expect(unused)] cx: &mut Context, acc: &mut [MaybeUninit<Item>]) {
@@ -114,8 +112,8 @@ pub mod gather {
         fn gather(&mut self, cx: &mut Context, acc: &mut [MaybeUninit<Item>]) {
             debug_assert_eq!(acc.len(), Self::SIZE);
             let (left, right) = acc.split_at_mut(A::SIZE);
-            let a = self.0.gather(cx, left);
-            let b = self.1.gather(cx, right);
+            self.0.gather(cx, left);
+            self.1.gather(cx, right);
         }
     }
 
@@ -145,7 +143,7 @@ pub mod gather {
         fn gather(&mut self, cx: &mut Context, acc: &mut [MaybeUninit<Item>]) {
             debug_assert_eq!(acc.len(), Self::SIZE);
             match self {
-                None => { /* Leave buffer initialized. */ },
+                None => { /* Leave buffer initialized. */ }
                 Some(inner) => inner.gather(cx, acc),
             }
         }
@@ -178,7 +176,7 @@ pub mod gather {
 
         fn gather(&mut self, cx: &mut Context, acc: &mut [MaybeUninit<Item>]) {
             debug_assert_eq!(acc.len(), Self::SIZE);
-            let a = self.as_mut().gather(cx, acc);
+            self.as_mut().gather(cx, acc);
         }
     }
 }

@@ -1,18 +1,18 @@
 use crate::app::composition::elements::Blueprint;
 use crate::app::input::Event;
 use crate::app::runner::Runner;
+use crate::app::runner::futures::AsyncExecutor;
 use async_std::task::block_on;
 use futures::channel::mpsc::Sender;
-use futures::{join, SinkExt, StreamExt};
-use std::marker::PhantomData;
-use std::sync::{mpsc, Arc, Mutex};
+use futures::{SinkExt, StreamExt, join};
 use futures_signals::signal::SignalExt;
+use std::marker::PhantomData;
+use std::sync::{Arc, Mutex};
 use winit::application::ApplicationHandler;
 use winit::dpi::{PhysicalSize, Size};
 use winit::event::WindowEvent;
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
 use winit::window::{Window, WindowId};
-use crate::app::runner::futures::AsyncExecutor;
 
 pub struct WinitEnvironment;
 
@@ -52,7 +52,9 @@ where
                     let app2 = app2;
 
                     while let Some(event) = tap.next().await {
-                        let _lock = app2.lock().expect("[Event] Failed to lock app to send event.");
+                        let _lock = app2
+                            .lock()
+                            .expect("[Event] Failed to lock app to send event.");
                         /* Push event down app! */
                         println!("A new event arrived! {:?}", event);
                     }
@@ -75,9 +77,13 @@ where
             /*
                 Create event loop and run the handler.
             */
-            let e_loop = EventLoop::builder().build().expect("[Winit] Failed to create event loop");
+            let e_loop = EventLoop::builder()
+                .build()
+                .expect("[Winit] Failed to create event loop");
             e_loop.set_control_flow(ControlFlow::Wait);
-            e_loop.run_app(&mut winit_app_handler).expect("[Winit] Failed to run event loop...");
+            e_loop
+                .run_app(&mut winit_app_handler)
+                .expect("[Winit] Failed to run event loop...");
         });
 
         println!("[Winit] All processes finished. Shutting down.");

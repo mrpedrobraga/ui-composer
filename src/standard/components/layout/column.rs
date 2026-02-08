@@ -1,6 +1,6 @@
+use crate::app::composition::layout::LayoutItem;
 use crate::app::composition::layout::hints::ParentHints;
 use vek::{Extent2, Rect};
-use crate::app::composition::layout::LayoutItem;
 
 /// A vertical, writing order stack of items.
 ///
@@ -33,6 +33,7 @@ where
 
     fn get_natural_size(&self) -> Extent2<f32> {
         let a_size = self.item_a.get_natural_size();
+
         let b_size = self.item_b.get_natural_size();
 
         // Adjust to stack vertically, considering the gap between the items
@@ -44,6 +45,7 @@ where
 
     fn get_minimum_size(&self) -> Extent2<f32> {
         let a_size = self.item_a.get_minimum_size();
+
         let b_size = self.item_b.get_minimum_size();
 
         // Minimum size also stacks vertically
@@ -55,6 +57,7 @@ where
 
     fn lay(&mut self, parent_hints: ParentHints) -> Self::Content {
         let a_size = self.item_a.get_natural_size();
+
         let b_size = self.item_b.get_natural_size();
 
         let a = self.item_a.lay(ParentHints {

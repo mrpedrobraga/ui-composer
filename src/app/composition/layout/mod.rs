@@ -62,17 +62,17 @@
 //!
 //! Some utility functions for calculating layouts are in the [`flow`] module.
 
+use crate::app::composition::effects::signal::{React, SignalReactExt};
+use crate::app::composition::elements::Blueprint;
 pub use crate::geometry::flow::CoordinateSystem;
 use hints::{ChildHints, ParentHints};
 use {
     futures_signals::signal::{Signal, SignalExt},
     vek::{Extent2, Rect},
 };
-use crate::app::composition::effects::signal::{React, SignalReactExt};
-use crate::app::composition::elements::Blueprint;
 
 pub mod hints;
-pub mod implementations;
+mod implementations;
 
 /// The closure-like trait that produces [`Emit`]s.
 #[diagnostic::on_unimplemented(
@@ -88,14 +88,12 @@ pub trait LayoutItem: Send {
     ///
     /// DEPRECATED: Instead of a callback, [Self::lay] will have a "natural size"
     /// reverse [Signal] in its child hints.
-    #[deprecated]
     fn get_natural_size(&self) -> Extent2<f32>;
 
     /// The size this component prefers to be at. It's usually its minimum size.
     ///
     /// DEPRECATED: Instead of a callback, [Self::lay] will have a "minimum size"
     /// reverse [Signal] in its child hints.
-    #[deprecated]
     fn get_minimum_size(&self) -> Extent2<f32>;
 
     /// Renders the content of this layout item with a specific rect.
@@ -112,9 +110,14 @@ pub trait LayoutItem: Send {
         Self: Sized + Send,
         Self::Content: Blueprint<Env>,
     {
-        rect_signal.map(move |rect| {
-            self.lay(ParentHints { rect, ..parent_hints })
-        }).react()
+        rect_signal
+            .map(move |rect| {
+                self.lay(ParentHints {
+                    rect,
+                    ..parent_hints
+                })
+            })
+            .react()
     }
 }
 
@@ -163,7 +166,6 @@ where
     type Content = Item;
 
     fn get_natural_size(&self) -> Extent2<f32> {
-        #[allow(deprecated)]
         self.get_minimum_size()
     }
 

@@ -1,13 +1,13 @@
+use crate::runners::tui::render::shaders::PixelShaderInput;
+use crossterm::QueueableCommand;
+use crossterm::cursor::MoveTo;
+use crossterm::style::{Color, PrintStyledContent, ResetColor, StyledContent, Stylize, style};
+use crossterm::terminal::{Clear, ClearType};
+use ndarray::Array2;
 use std::io::Stdout;
 use std::sync::OnceLock;
 use std::time::Instant;
-use crossterm::cursor::MoveTo;
-use crossterm::QueueableCommand;
-use crossterm::style::{style, Color, PrintStyledContent, ResetColor, StyledContent, Stylize};
-use crossterm::terminal::{Clear, ClearType};
 use vek::{Rect, Rgba, Vec2};
-use ndarray::Array2;
-use crate::runners::tui::render::shaders::PixelShaderInput;
 
 static START: OnceLock<Instant> = OnceLock::new();
 
@@ -190,6 +190,7 @@ pub trait Canvas {
     fn quad(&mut self, rect: Rect<f32, f32>, shader: impl Fn(PixelShaderInput) -> Rgba<f32>);
 }
 
+#[allow(unused)]
 struct Framebuffer<P> {
     pixels: Array2<P>,
 }
@@ -221,7 +222,7 @@ where
         }
     }
 
-    fn quad(&mut self, rect: Rect<f32, f32>, shader: impl Fn(PixelShaderInput) -> Rgba<f32>) {
+    fn quad(&mut self, _rect: Rect<f32, f32>, _shader: impl Fn(PixelShaderInput) -> Rgba<f32>) {
         todo!("Handle this.")
     }
 }

@@ -2,12 +2,12 @@
 //!
 //! Mathematical utilities for laying out things in space.
 
-pub mod extensions;
+pub mod geometry_ext;
 
 pub mod flow;
 
 pub use cgmath::BaseNum;
-pub use extensions::RectExt;
+pub use geometry_ext::RectExt;
 pub use vek::*;
 
 use core::ops::{Add, Mul, Sub};

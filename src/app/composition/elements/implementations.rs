@@ -8,7 +8,7 @@ use std::task::{Context, Poll};
 impl<Env> Blueprint<Env> for () {
     type Element = ();
 
-    fn make(self, env: &Env) -> Self::Element {}
+    fn make(self, _: &Env) -> Self::Element {}
 }
 
 impl<Env> Element<Env> for () {
@@ -41,7 +41,7 @@ where
     }
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context, env: &Env) -> Poll<Option<()>> {
-        let mut_ref = unsafe { self.map_unchecked_mut(|e| &mut** e) };
+        let mut_ref = unsafe { self.map_unchecked_mut(|e| &mut **e) };
         mut_ref.poll(cx, env)
     }
 }

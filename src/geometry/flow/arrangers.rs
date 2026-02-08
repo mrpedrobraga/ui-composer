@@ -73,10 +73,10 @@ pub fn weighted_division_with_minima<const SIZE: usize, T: BaseFloat + core::ite
     let equation = |x| {
         total
             - normalized_w
-            .iter()
-            .zip(m.iter())
-            .map(|(nw, m)| m.max(total * *nw * x))
-            .sum::<T>()
+                .iter()
+                .zip(m.iter())
+                .map(|(nw, m)| m.max(total * *nw * x))
+                .sum::<T>()
     };
 
     let mut lower_bound = T::zero();
@@ -112,7 +112,7 @@ pub fn w_div_min_alloc<T: BaseFloat + core::iter::Sum>(
     let total_w: T = w.iter().copied().sum();
 
     if total_m >= total || total_w <= T::zero() {
-        return m.iter().copied().collect();
+        return m.to_vec();
     }
 
     // Precompute normalized weights
@@ -121,10 +121,10 @@ pub fn w_div_min_alloc<T: BaseFloat + core::iter::Sum>(
     let equation = |x| {
         total
             - normalized_w
-            .iter()
-            .zip(m.iter())
-            .map(|(nw, m)| m.max(total * *nw * x))
-            .sum::<T>()
+                .iter()
+                .zip(m.iter())
+                .map(|(nw, m)| m.max(total * *nw * x))
+                .sum::<T>()
     };
 
     let mut lower_bound = T::zero();
