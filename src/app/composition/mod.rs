@@ -5,10 +5,6 @@ use crate::app::composition::elements::Blueprint;
 use layout::LayoutItem;
 
 pub mod algebra;
-#[deprecated]
-pub mod reify;
-#[deprecated]
-pub mod implementations;
 pub mod elements;
 pub mod effects;
 pub mod layout;

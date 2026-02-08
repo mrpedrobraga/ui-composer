@@ -62,18 +62,14 @@
 //!
 //! Some utility functions for calculating layouts are in the [`flow`] module.
 
-use crate::app::composition::reify::Emit;
 pub use crate::geometry::flow::CoordinateSystem;
 use hints::{ChildHints, ParentHints};
-use std::marker::PhantomData;
 use {
     futures_signals::signal::{Signal, SignalExt},
     vek::{Extent2, Rect},
 };
 use crate::app::composition::effects::signal::{React, SignalReactExt};
 use crate::app::composition::elements::Blueprint;
-use crate::geometry::flow;
-use crate::state::process::{Pollable, SignalReactItem};
 
 pub mod hints;
 pub mod implementations;
@@ -105,26 +101,8 @@ pub trait LayoutItem: Send {
     /// Renders the content of this layout item with a specific rect.
     fn lay(&mut self, parent_hints: ParentHints) -> Self::Content;
 
-    /// Creates a reactive node that re-bakes the layout item to fit a container that can change shape.
-    fn lay_reactive<S>(
-        mut self,
-        size_signal: S,
-        parent_hints: ParentHints,
-    ) -> SignalReactItem<impl Signal<Item = Self::Content>>
-    where
-        S: Signal<Item = Extent2<f32>> + Send,
-        Self: Sized + Send,
-    {
-        SignalReactItem(size_signal.map(move |new_size| {
-            self.lay(ParentHints {
-                rect: Rect::new(0.0, 0.0, new_size.w, new_size.h),
-                ..parent_hints
-            })
-        }))
-    }
-
     /// Creates a reactive Element that resizes its content to fit `rect_signal`.
-    fn bind_reactive<Sig, Env>(
+    fn lay_reactive<Sig, Env>(
         mut self,
         rect_signal: Sig,
         parent_hints: ParentHints,

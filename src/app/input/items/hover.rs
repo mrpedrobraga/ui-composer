@@ -1,7 +1,6 @@
 #![allow(unused)]
 use crate::app::composition::algebra::Bubble;
 use crate::app::input::CursorEvent;
-use crate::state::process::Pollable;
 use {
     super::super::{Event, InputItem},
     futures_signals::signal::Mutable,
@@ -46,4 +45,3 @@ impl Bubble<Event, bool> for Hover {
     }
 }
 
-impl<Res> Pollable<Res> for Hover {}

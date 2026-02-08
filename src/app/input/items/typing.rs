@@ -1,6 +1,5 @@
 use crate::app::input::{ButtonState, InputItem, KeyEvent, KeyboardEvent};
 use crate::app::input::Event;
-use crate::state::process::Pollable;
 use futures_signals::signal::Mutable;
 use crate::app::composition::algebra::Bubble;
 
@@ -42,4 +41,3 @@ impl Bubble<Event, bool> for Typing {
     }
 }
 
-impl<Res> Pollable<Res> for Typing {}

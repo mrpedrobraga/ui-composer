@@ -1,21 +1,57 @@
-use crate::runners::winit::gpu::{Gpu, RenderTarget};
-use std::sync::Arc;
-use vek::Extent2;
-use wgpu::{Surface, Texture, TextureDimension, TextureFormat, TextureUsages};
-use winit::window::{Window, WindowId};
+//! # Window
+//!
+//! [WindowElement]s contain several elements inside itself.
+//! Every time they change (in response to an event or a future or signal yielding),
+//! it will render them to its [WindowRenderTarget].
 
+use crate::app::composition::elements::{Blueprint, Element};
+use crate::runners::winit::gpu::{Gpu, RenderTarget};
+use crate::runners::winit::runner::WinitEnvironment;
+use std::sync::Arc;
+
+pub struct WindowBlueprint<UiBlueprint> {
+    ui: UiBlueprint,
+}
+
+impl<UiBlueprint> Blueprint<WinitEnvironment> for WindowBlueprint<UiBlueprint>
+where
+    UiBlueprint: Blueprint<WinitEnvironment>,
+{
+    type Element = WindowElement<UiBlueprint::Element>;
+
+    fn make(self, env: &WinitEnvironment) -> Self::Element {
+        WindowElement {
+            ui: self.ui.make(env),
+        }
+    }
+}
+
+pub struct WindowElement<Ui> {
+    ui: Ui,
+}
+
+impl<Ui> Element<WinitEnvironment> for WindowElement<Ui>
+where
+    Ui: Element<WinitEnvironment>,
+{
+    type Effect = ();
+
+    fn effect(&self) -> Self::Effect {}
+}
+
+/// The render target a window will draw to in order to show its elements in a [window](winit::window::Window).
 pub struct WindowRenderTarget {
-    pub size: Extent2<u32>,
-    pub surface: Surface<'static>,
+    pub size: vek::Extent2<u32>,
+    pub surface: wgpu::Surface<'static>,
     pub depth_texture: wgpu::Texture,
 }
 
 impl WindowRenderTarget {
     /// Creates a new `RenderTarget` which renders to a window.
-    pub fn new(gpu: &Gpu, window: Arc<Window>) -> Self {
+    pub fn new(gpu: &Gpu, window: Arc<winit::window::Window>) -> Self {
         let window_id = window.id();
         let size = window.inner_size();
-        let size = Extent2::new(size.width, size.height);
+        let size = vek::Extent2::new(size.width, size.height);
         let surface = wgpu::Instance::default()
             .create_surface(window)
             .expect("Failed to create surface for window!");
@@ -28,9 +64,9 @@ impl WindowRenderTarget {
         }
     }
 
-    fn new_depth_texture(gpu: &Gpu, size: &Extent2<u32>) -> Texture {
+    fn new_depth_texture(gpu: &Gpu, size: &vek::Extent2<u32>) -> wgpu::Texture {
         let depth_texture = gpu.device.create_texture(&wgpu::TextureDescriptor {
-            label: Some(&format!("UI Composer Winit Window Depth Texture.")),
+            label: Some(&"UI Composer Winit Window Depth Texture.".to_string()),
             size: wgpu::Extent3d {
                 width: size.w,
                 height: size.h,
@@ -38,10 +74,10 @@ impl WindowRenderTarget {
             },
             mip_level_count: 1,
             sample_count: 1,
-            dimension: TextureDimension::D2,
+            dimension: wgpu::TextureDimension::D2,
             // TODO: Maybe use ints for depth in 2D?
-            format: TextureFormat::Depth32Float,
-            usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
+            format: wgpu::TextureFormat::Depth32Float,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
             view_formats: &[],
         });
         depth_texture
@@ -49,7 +85,7 @@ impl WindowRenderTarget {
 }
 
 impl RenderTarget for WindowRenderTarget {
-    async fn resize(&mut self, gpu: &Gpu, new_size: Extent2<u32>) {
+    async fn resize(&mut self, gpu: &Gpu, new_size: vek::Extent2<u32>) {
         let adapter = wgpu::Instance::default()
             .request_adapter(&wgpu::RequestAdapterOptions {
                 compatible_surface: Some(&self.surface),

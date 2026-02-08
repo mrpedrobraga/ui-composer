@@ -1,12 +1,12 @@
-use crate::state::process::FutureAwaitItem;
+use crate::app::composition::effects::future::{FutureReactExt, ReactOnce};
+use crate::geometry::Vector;
+use crate::state::effect::animation::{Animation, AnimationFrame, Poll};
 use cgmath::BaseFloat;
 use core::{
     future::Future,
-    ops::{Add, Div, Mul},
+    ops::Mul,
 };
 use futures_signals::signal::{Mutable, Signal, SignalExt};
-use crate::geometry::Vector;
-use crate::state::effect::animation::{AnimationFrame, Poll, Animation};
 
 #[derive(Default)]
 /// A [`super::Animation`] that simulates Hooke's law
@@ -36,12 +36,12 @@ where
     }
 
     /// Animates `state` between two values depending on whether a condition is met.
-    pub fn if_then_else<S>(
+    pub fn if_then_else<S, Env>(
         condition: S,
         state: Mutable<T>,
         value_if: T,
         value_else: T,
-    ) -> impl Signal<Item = FutureAwaitItem<impl Future<Output = ()>>>
+    ) -> impl Signal<Item = ReactOnce<impl Future<Output = ()>, Env>>
     where
         S: Signal<Item = bool>,
     {
@@ -52,7 +52,7 @@ where
                 20.0,
                 0.75,
             );
-            FutureAwaitItem(spring.animate_value(state.clone()))
+            spring.animate_value(state.clone()).react()
         })
     }
 }

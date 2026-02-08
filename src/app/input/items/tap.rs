@@ -2,7 +2,6 @@
 use crate::app::composition::algebra::Bubble;
 use crate::app::input::CursorEvent;
 use crate::state::effect::Effect;
-use crate::state::process::Pollable;
 use {
     super::super::{Event, InputItem},
     crate::{
@@ -65,4 +64,3 @@ where
     }
 }
 
-impl<A, Res> Pollable<Res> for Tap<A> where A: Effect + Send + Sync {}

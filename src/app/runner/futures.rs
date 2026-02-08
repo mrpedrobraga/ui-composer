@@ -10,12 +10,11 @@
 //! code from [`crate::state`]. But, like `Future`s need executors, this crate offers "App executors",
 //! which can poll the app's futures and signals.
 
-use std::marker::PhantomData;
-use std::pin::Pin;
-use std::task::{Context, Poll};
+use crate::app::composition::elements::Element;
 use futures_signals::signal::Signal;
 use pin_project::pin_project;
-use crate::app::composition::elements::Element;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 
 #[cfg(feature = "std")]
 type Own<A> = std::sync::Arc<std::sync::Mutex<A>>;
@@ -28,11 +27,16 @@ pub struct AsyncExecutor<Env, App: Element<Env>> {
     #[pin]
     element: Own<App>,
     environment: Env,
+    initial_yield: bool,
 }
 
 impl<Env, App: Element<Env>> AsyncExecutor<Env, App> {
     pub fn new(element: Own<App>, environment: Env) -> Self {
-        AsyncExecutor { element, environment }
+        AsyncExecutor {
+            element,
+            environment,
+            initial_yield: true,
+        }
     }
 }
 
@@ -40,11 +44,22 @@ impl<Env, App: Element<Env>> Signal for AsyncExecutor<Env, App> {
     type Item = ();
 
     fn poll_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
-        let AsyncExecutorProj { element, environment } = self.project();
+        let AsyncExecutorProj {
+            element,
+            environment,
+            initial_yield,
+        } = self.project();
 
         if let Ok(mut element_borrow) = element.lock() {
             let pinned_element = unsafe { Pin::new_unchecked(&mut *element_borrow) };
-            pinned_element.poll(cx, &environment)
+            
+            // Because of how signals work, we must yield at least once!
+            if *initial_yield {
+                *initial_yield = false;
+                Poll::Ready(Some(()))
+            } else {
+                pinned_element.poll(cx, environment)
+            }
         } else {
             cx.waker().wake_by_ref();
             Poll::Pending

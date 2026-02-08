@@ -2,7 +2,6 @@
 
 use crate::app::composition::algebra::Bubble;
 use crate::app::input::CursorEvent;
-use crate::state::process::Pollable;
 use vek::Vec2;
 use {
     super::super::{Event, InputItem},
@@ -107,4 +106,3 @@ impl Bubble<Event, bool> for Drag {
     }
 }
 
-impl<Res> Pollable<Res> for Drag {}
