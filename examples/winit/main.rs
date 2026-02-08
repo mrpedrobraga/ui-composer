@@ -9,7 +9,6 @@ use ui_composer::runners::tui::Graphic;
 use ui_composer::runners::winit::runner::{WinitEnvironment, WinitRunner};
 
 fn main() {
-    #[allow(clippy::unit_arg)]
     UIComposer::run_custom::<WinitRunner<_>>(TestingFuture())
 }
 
