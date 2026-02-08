@@ -1,15 +1,13 @@
 #![allow(non_snake_case)]
 
-use chttp::ResponseExt;
-use vek::{Rect, Rgba};
-use ui_composer::app::composition::effects::future::FutureExt;
 use ui_composer::app::composition::elements::Blueprint;
 use ui_composer::prelude::UIComposer;
 use ui_composer::runners::tui::Graphic;
 use ui_composer::runners::winit::runner::{WinitEnvironment, WinitRunner};
+use vek::{Rect, Rgba};
 
 fn main() {
-    UIComposer::run_custom::<WinitRunner<_>>(TestingFuture())
+    UIComposer::run_custom::<WinitRunner<_>>(App())
 }
 
 fn App() -> impl Blueprint<WinitEnvironment, Element: Send> + Send {
@@ -23,14 +21,4 @@ fn App() -> impl Blueprint<WinitEnvironment, Element: Send> + Send {
             color: Rgba::new(0.0, 0.0, 1.0, 1.0),
         }
     )
-}
-
-fn TestingFuture() -> impl Blueprint<WinitEnvironment, Element: Send> + Send {
-    let fut = async {
-        let mut response = chttp::get_async("https://baconipsum.com/api/?type=meat-and-filler&paras=1&format=text").await.expect("Bacon ipsum failed :-(");
-        let text = response.text().expect("Failed to parse response as text.");
-        println!("Response: {}", text);
-    };
-
-    fut.into_signal()
 }

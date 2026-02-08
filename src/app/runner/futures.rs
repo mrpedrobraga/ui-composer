@@ -27,7 +27,7 @@ pub struct AsyncExecutor<Env, App: Element<Env>> {
     #[pin]
     element: Own<App>,
     environment: Env,
-    initial_yield: bool,
+    first_tick: bool,
 }
 
 impl<Env, App: Element<Env>> AsyncExecutor<Env, App> {
@@ -35,7 +35,7 @@ impl<Env, App: Element<Env>> AsyncExecutor<Env, App> {
         AsyncExecutor {
             element,
             environment,
-            initial_yield: true,
+            first_tick: true,
         }
     }
 }
@@ -47,19 +47,19 @@ impl<Env, App: Element<Env>> Signal for AsyncExecutor<Env, App> {
         let AsyncExecutorProj {
             element,
             environment,
-            initial_yield,
+            first_tick,
         } = self.project();
 
         if let Ok(mut element_borrow) = element.lock() {
             let pinned_element = unsafe { Pin::new_unchecked(&mut *element_borrow) };
             
-            // Because of how signals work, we must yield at least once!
-            if *initial_yield {
-                *initial_yield = false;
-                Poll::Ready(Some(()))
-            } else {
-                pinned_element.poll(cx, environment)
+            // Because of how signals work internally, we must yield at least once.
+            let inner_poll = pinned_element.poll(cx, environment);
+            if let Poll::Ready(None) = inner_poll && *first_tick {
+                *first_tick = false;
+                return Poll::Ready(Some(()));
             }
+            inner_poll
         } else {
             cx.waker().wake_by_ref();
             Poll::Pending
