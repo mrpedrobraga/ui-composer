@@ -3,7 +3,6 @@ use crate::app::composition::effects::signal::{React, SignalReactExt};
 use crate::app::composition::elements::{Blueprint, Element};
 use crate::geometry::flow::CartesianFlow;
 use crate::app::composition::layout::hints::ParentHints;
-use crate::app::composition::layout::LayoutItem;
 use crate::runners::tui::runner::TerminalEnvironment;
 use core::pin::Pin;
 use core::task::{Context, Poll};

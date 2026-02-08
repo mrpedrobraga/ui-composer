@@ -16,14 +16,14 @@ where
     element: Option<<Fut::Output as Blueprint<Env>>::Element>,
 }
 
-pub trait FutureReactExt: Future {
-    fn react<Env>(self) -> ReactOnce<Self, Env>
+pub trait FutureExt: Future {
+    fn into_signal<Env>(self) -> ReactOnce<Self, Env>
     where
         Self: Sized,
         <Self as Future>::Output: Blueprint<Env>;
 }
-impl<Fut> FutureReactExt for Fut where Fut: Future {
-    fn react<Env>(self) -> ReactOnce<Self, Env>
+impl<Fut> FutureExt for Fut where Fut: Future {
+    fn into_signal<Env>(self) -> ReactOnce<Self, Env>
     where
         Self: Sized,
         <Self as Future>::Output: Blueprint<Env>

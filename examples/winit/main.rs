@@ -2,7 +2,7 @@
 
 use chttp::ResponseExt;
 use vek::{Rect, Rgba};
-use ui_composer::app::composition::effects::future::FutureReactExt;
+use ui_composer::app::composition::effects::future::FutureExt;
 use ui_composer::app::composition::elements::Blueprint;
 use ui_composer::prelude::UIComposer;
 use ui_composer::runners::tui::Graphic;
@@ -33,5 +33,5 @@ fn TestingFuture() -> impl Blueprint<WinitEnvironment, Element: Send> + Send {
         println!("Response: {}", text);
     };
 
-    fut.react()
+    fut.into_signal()
 }

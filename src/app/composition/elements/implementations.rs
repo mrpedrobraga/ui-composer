@@ -1,29 +1,58 @@
+use super::{Blueprint, Element};
+use crate::app::composition::algebra::Semigroup;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use crate::app::composition::algebra::Semigroup;
-use super::{Blueprint, Element};
 
 /* Unit */
 
-impl <Env> Blueprint<Env> for () {
+impl<Env> Blueprint<Env> for () {
     type Element = ();
 
-    fn make(self, env: &Env) -> Self::Element {
-        ()
-    }
+    fn make(self, env: &Env) -> Self::Element {}
 }
 
 impl<Env> Element<Env> for () {
     type Effect = ();
 
-    fn effect(&self) -> Self::Effect {
+    fn effect(&self) -> Self::Effect {}
+}
 
+/* Indirection */
+impl<A, Env> Blueprint<Env> for Box<A>
+where
+    A: Blueprint<Env>,
+{
+    type Element = Box<A::Element>;
+
+    fn make(self, env: &Env) -> Self::Element {
+        Box::new(A::make(*self, env))
+    }
+}
+
+impl<A, Env> Element<Env> for Box<A>
+where
+    A: Element<Env>,
+{
+    type Effect = A::Effect;
+
+    fn effect(&self) -> Self::Effect {
+        let item = &**self;
+        item.effect()
+    }
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context, env: &Env) -> Poll<Option<()>> {
+        let mut_ref = unsafe { self.map_unchecked_mut(|e| &mut** e) };
+        mut_ref.poll(cx, env)
     }
 }
 
 /* Tuples */
 
-impl<A, B, Env> Blueprint<Env> for (A, B) where A: Blueprint<Env>, B: Blueprint<Env> {
+impl<A, B, Env> Blueprint<Env> for (A, B)
+where
+    A: Blueprint<Env>,
+    B: Blueprint<Env>,
+{
     type Element = (A::Element, B::Element);
 
     fn make(self, env: &Env) -> Self::Element {
@@ -62,7 +91,10 @@ where
 
 /* Options */
 
-impl<A, Env> Blueprint<Env> for Option<A> where A: Blueprint<Env> {
+impl<A, Env> Blueprint<Env> for Option<A>
+where
+    A: Blueprint<Env>,
+{
     type Element = Option<A::Element>;
 
     fn make(self, env: &Env) -> Self::Element {
@@ -70,7 +102,10 @@ impl<A, Env> Blueprint<Env> for Option<A> where A: Blueprint<Env> {
     }
 }
 
-impl<A, Env> Element<Env> for Option<A> where A: Element<Env> {
+impl<A, Env> Element<Env> for Option<A>
+where
+    A: Element<Env>,
+{
     type Effect = Option<A::Effect>;
 
     fn effect(&self) -> Self::Effect {

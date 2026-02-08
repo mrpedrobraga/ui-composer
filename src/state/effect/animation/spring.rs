@@ -1,4 +1,4 @@
-use crate::app::composition::effects::future::{FutureReactExt, ReactOnce};
+use crate::app::composition::effects::future::{FutureExt, ReactOnce};
 use crate::geometry::Vector;
 use crate::state::effect::animation::{Animation, AnimationFrame, Poll};
 use cgmath::BaseFloat;
@@ -52,7 +52,7 @@ where
                 20.0,
                 0.75,
             );
-            spring.animate_value(state.clone()).react()
+            spring.animate_value(state.clone()).into_signal()
         })
     }
 }
