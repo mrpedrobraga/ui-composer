@@ -22,8 +22,8 @@ futures = { version = "0.3.30", default-features = false, features = [
 pin-project = "1.1.5"
 
 ### Geometry ###
-cgmath = "0.18.0"
 vek = { version = "0.17.0", features = ["bytemuck"] }
+num-traits = "0.2.19"
 
 ### Rendering
 bytemuck = { version = "1.16.1", features = ["derive"] }

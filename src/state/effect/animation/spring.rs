@@ -1,12 +1,12 @@
 use crate::app::composition::effects::future::{FutureExt, ReactOnce};
 use crate::geometry::Vector;
 use crate::state::effect::animation::{Animation, AnimationFrame, Poll};
-use cgmath::BaseFloat;
 use core::{
     future::Future,
     ops::Mul,
 };
 use futures_signals::signal::{Mutable, Signal, SignalExt};
+use num_traits::Float;
 
 #[derive(Default)]
 /// A [`super::Animation`] that simulates Hooke's law
@@ -22,7 +22,7 @@ pub struct Spring<T> {
 
 impl<T> Spring<T>
 where
-    T: Default + Vector + BaseFloat + Send + Sync + 'static,
+    T: Default + Vector + Float + Send + Sync + 'static,
     f32: Mul<T, Output = T>,
 {
     pub fn new(equilibrium: T, stiffness: f32, damping: f32, mass: f32) -> Self {
@@ -58,7 +58,7 @@ where
 }
 
 
-impl<T: BaseFloat> Animation for Spring<T>
+impl<T: Float> Animation for Spring<T>
 where
     f32: Mul<T, Output = T>,
     T: Copy + Vector,

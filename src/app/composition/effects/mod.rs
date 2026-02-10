@@ -1,7 +1,8 @@
 use downcast_rs::{Downcast, impl_downcast};
 use std::fmt::Debug;
 
-pub mod executor;
+use crate::items_internal;
+
 pub mod future;
 pub mod signal;
 
@@ -11,57 +12,102 @@ pub mod signal;
 /// Depending on the effect handler, this might result in quad instances being sent to the GPU
 /// or rectangles drawn on the terminal or pixels in a GameBoy screen.
 pub trait ElementEffect: Downcast + Debug {}
+impl_downcast!(ElementEffect);
 
-impl ElementEffect for () {}
-
-impl<A, B> ElementEffect for (A, B)
-where
-    A: ElementEffect,
-    B: ElementEffect,
-{
+/// An [Effect] gathered into an ADT with reflection.
+pub trait ElementEffectNode {
+    fn visit<Handler>(&self, h: &mut Handler)
+    where
+        Handler: EffectHandler;
 }
 
-impl<A> ElementEffect for Option<A> where A: ElementEffect {}
+impl<T> ElementEffectNode for T
+where
+    T: ElementEffect,
+{
+    fn visit<Handler>(&self, h: &mut Handler)
+    where
+        Handler: EffectHandler,
+    {
+        h.handle(self);
+    }
+}
 
-impl_downcast!(ElementEffect);
+impl ElementEffectNode for () {
+    fn visit<Handler>(&self, _: &mut Handler)
+    where
+        Handler: EffectHandler,
+    {
+        /* Nothing to visit. */
+    }
+}
+
+impl<A, B> ElementEffectNode for (A, B)
+where
+    A: ElementEffectNode,
+    B: ElementEffectNode,
+{
+    fn visit<Handler>(&self, h: &mut Handler)
+    where
+        Handler: EffectHandler,
+    {
+        self.0.visit(h);
+        self.1.visit(h);
+    }
+}
+
+impl<A> ElementEffectNode for Option<A>
+where
+    A: ElementEffectNode,
+{
+    fn visit<Handler>(&self, h: &mut Handler)
+    where
+        Handler: EffectHandler,
+    {
+        if let Some(inner) = self {
+            inner.visit(h);
+        }
+    }
+}
 
 /// Please refer to the [module level documentation](self).
 pub trait EffectHandler {
-    fn handle<E>(&mut self, event: E)
+    fn handle<E>(&mut self, effect: &E)
     where
         E: 'static + ElementEffect;
 }
 
 #[test]
-fn test_effect_handler() {
+fn visit_all() {
     #[derive(Debug)]
-    pub struct DummyEffect;
-    impl ElementEffect for DummyEffect {}
+    struct EffectA;
 
     #[derive(Debug)]
-    pub struct NullEffect;
-    impl ElementEffect for NullEffect {}
+    struct EffectB;
 
-    pub struct DummyEffectHandler {}
+    impl ElementEffect for EffectA {}
+    impl ElementEffect for EffectB {}
 
-    impl EffectHandler for DummyEffectHandler {
-        fn handle<E>(&mut self, effect: E)
+    struct SomeHandler;
+
+    impl EffectHandler for SomeHandler {
+        fn handle<E>(&mut self, effect: &E)
         where
             E: 'static + ElementEffect,
         {
-            let effect: &dyn ElementEffect = &effect;
+            let effect: &dyn ElementEffect = effect;
 
-            if let Some(_fx) = effect.downcast_ref::<DummyEffect>() {
-                println!("Holy shit!")
+            if effect.downcast_ref::<EffectA>().is_some() {
+                println!("Holy shit is this an EffectA?");
+            } else if effect.downcast_ref::<EffectB>().is_some() {
+                println!("Oh, brother, this EffeectB stinks...");
             }
         }
     }
 
-    let a = DummyEffect;
-    let _b = DummyEffect;
-    let _c = NullEffect;
-    //let effects = (a, (b, c));
-
-    let mut handler = DummyEffectHandler {};
-    handler.handle(a);
+    let mut h = SomeHandler;
+    let effect_tree = items_internal!(
+        EffectA, EffectA, EffectB, EffectB, EffectA, EffectA, EffectB
+    );
+    effect_tree.visit(&mut h);
 }

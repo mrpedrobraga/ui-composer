@@ -23,24 +23,26 @@ type Own<A> = spin::Mutex<A>;
 
 /// Has a reference to a runner, serving as an Executor for its [`Future`]s and [`Signal`]s.
 #[pin_project(project=AsyncExecutorProj)]
-pub struct AsyncExecutor<Env, App: Element<Env>> {
+pub struct AsyncExecutor<Env, App: Element<Env>, Callback> {
     #[pin]
     element: Own<App>,
     environment: Env,
     first_tick: bool,
+    callback: Callback,
 }
 
-impl<Env, App: Element<Env>> AsyncExecutor<Env, App> {
-    pub fn new(element: Own<App>, environment: Env) -> Self {
+impl<Env, App: Element<Env>, Callback> AsyncExecutor<Env, App, Callback> {
+    pub fn new(element: Own<App>, environment: Env, callback: Callback) -> Self {
         AsyncExecutor {
             element,
             environment,
             first_tick: true,
+            callback,
         }
     }
 }
 
-impl<Env, App: Element<Env>> Signal for AsyncExecutor<Env, App> {
+impl<Env, App: Element<Env>, Callback: FnMut()> Signal for AsyncExecutor<Env, App, Callback> {
     type Item = ();
 
     fn poll_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
@@ -48,15 +50,20 @@ impl<Env, App: Element<Env>> Signal for AsyncExecutor<Env, App> {
             element,
             environment,
             first_tick,
+            callback,
         } = self.project();
 
         if let Ok(mut element_borrow) = element.lock() {
             let pinned_element = unsafe { Pin::new_unchecked(&mut *element_borrow) };
-            
+
             // Because of how signals work internally, we must yield at least once.
             let inner_poll = pinned_element.poll(cx, environment);
-            if let Poll::Ready(None) = inner_poll && *first_tick {
+            if let Poll::Ready(None) = inner_poll
+                && *first_tick
+            {
                 *first_tick = false;
+                (callback)();
+
                 return Poll::Ready(Some(()));
             }
             inner_poll

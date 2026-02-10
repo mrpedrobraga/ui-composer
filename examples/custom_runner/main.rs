@@ -41,7 +41,9 @@ where
         let tasks = async move {
             // One of them should be an `AsyncExecutor`,
             // which polls the app's futures, streams and signals.
-            AsyncExecutor::new(app, env).to_future().await
+            AsyncExecutor::new(app, env, || println!("[Example] There was an UI update!"))
+                .to_future()
+                .await
         };
 
         // We block on all tasks.

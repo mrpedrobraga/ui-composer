@@ -1,8 +1,9 @@
 use crate::app::composition::algebra::Bubble;
 use crate::app::composition::effects::signal::{React, SignalReactExt};
 use crate::app::composition::elements::{Blueprint, Element};
-use crate::geometry::flow::CartesianFlow;
 use crate::app::composition::layout::hints::ParentHints;
+use crate::geometry::flow::CartesianFlow;
+use crate::runners::tui::TUI;
 use crate::runners::tui::runner::TerminalEnvironment;
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -10,17 +11,11 @@ use futures_signals::signal::Mutable;
 use futures_signals::signal::{Signal, SignalExt};
 use vek::{Extent2, Rect};
 use {crate::app::input::Event, vek::Vec2};
-use crate::runners::tui::TUI;
 
 #[allow(non_snake_case)]
 pub fn Terminal<UI>(
     mut ui: UI,
-) -> TerminalBlueprint<
-    React<
-        impl Signal<Item = UI::Content>,
-        TerminalEnvironment,
-    >,
->
+) -> TerminalBlueprint<React<impl Signal<Item = UI::Content>, TerminalEnvironment>>
 where
     UI: TUI,
 {
@@ -29,17 +24,21 @@ where
         mouse_position: Default::default(),
     };
 
-    let ui = state.size.signal().map(move |window_size| {
-        ui.lay(ParentHints {
-            rect: Rect::new(0.0, 0.0, window_size.w, window_size.h),
-            // TODO: Allow configuring this from the locale/user settings,
-            // possibly turning them into signals!
-            current_flow_direction: CartesianFlow::LeftToRight,
-            current_cross_flow_direction: CartesianFlow::TopToBottom,
-            current_writing_flow_direction: CartesianFlow::LeftToRight,
-            current_writing_cross_flow_direction: CartesianFlow::TopToBottom,
+    let ui = state
+        .size
+        .signal()
+        .map(move |window_size| {
+            ui.lay(ParentHints {
+                rect: Rect::new(0.0, 0.0, window_size.w, window_size.h),
+                // TODO: Allow configuring this from the locale/user settings,
+                // possibly turning them into signals!
+                current_flow_direction: CartesianFlow::LeftToRight,
+                current_cross_flow_direction: CartesianFlow::TopToBottom,
+                current_writing_flow_direction: CartesianFlow::LeftToRight,
+                current_writing_cross_flow_direction: CartesianFlow::TopToBottom,
+            })
         })
-    }).react();
+        .react();
 
     TerminalBlueprint { ui, state }
 }
@@ -97,7 +96,20 @@ where
     }
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context, env: &TerminalEnvironment) -> Poll<Option<()>> {
-        let ui = unsafe { self.map_unchecked_mut(|this| &mut this.ui) };
-        ui.poll(cx, env)
+        let mut ui = unsafe { self.map_unchecked_mut(|this| &mut this.ui) };
+
+        let inner = ui.as_mut().poll(cx, env);
+
+        match inner {
+            Poll::Pending => Poll::Pending,
+            Poll::Ready(None) => Poll::Ready(None),
+            Poll::Ready(Some(_)) => {
+                // TODO: Destructure the ui changes and re-render.
+
+                let new_ui = ui.effect();
+
+                Poll::Ready(Some(()))
+            }
+        }
     }
 }

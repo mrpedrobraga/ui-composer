@@ -60,7 +60,7 @@ where
                     }
                 };
 
-                let async_handler = AsyncExecutor::new(app, env).to_future();
+                let async_handler = AsyncExecutor::new(app, env, || {}).to_future();
 
                 let processes = async { join!(async_handler, event_handler) };
 

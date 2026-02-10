@@ -6,7 +6,6 @@ pub mod geometry_ext;
 
 pub mod flow;
 
-pub use cgmath::BaseNum;
 pub use geometry_ext::RectExt;
 pub use vek::*;
 

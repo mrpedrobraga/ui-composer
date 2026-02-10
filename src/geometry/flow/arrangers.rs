@@ -5,7 +5,7 @@
 //! no_std environments.
 
 use arrayvec::ArrayVec;
-use cgmath::BaseFloat;
+use num_traits::Float;
 use vek::{Extent2, Rect, Vec2};
 
 /// Struct that can be used to allocate rects for layout items in
@@ -54,7 +54,7 @@ impl RectStackArranger {
 /// it gets "twice" as much space as the others.
 ///
 /// ```[AAAAAAAABBBBCCCCDDDD]```
-pub fn weighted_division_with_minima<const SIZE: usize, T: BaseFloat + core::iter::Sum>(
+pub fn weighted_division_with_minima<const SIZE: usize, T: Float + core::iter::Sum>(
     total: T,
     w: &[T; SIZE],
     m: &[T; SIZE],
@@ -102,7 +102,7 @@ pub fn weighted_division_with_minima<const SIZE: usize, T: BaseFloat + core::ite
     }
 }
 
-pub fn w_div_min_alloc<T: BaseFloat + core::iter::Sum>(
+pub fn w_div_min_alloc<T: Float + core::iter::Sum>(
     total: T,
     w: &[T],
     m: &[T],

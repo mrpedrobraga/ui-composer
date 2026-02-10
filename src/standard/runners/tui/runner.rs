@@ -1,25 +1,22 @@
-use crate::app::composition::elements::{Blueprint, Element};
-use crate::app::runner::futures::AsyncExecutor;
+use crate::app::composition::elements::Blueprint;
 use crate::app::runner::Runner;
-use crate::runners::tui::render::shaders;
-use crate::standard::runners::tui::render::canvas::Canvas;
+use crate::app::runner::futures::AsyncExecutor;
 use async_std::task::block_on;
+use crossterm::QueueableCommand;
 use crossterm::cursor::{Hide, RestorePosition, SavePosition, SetCursorStyle, Show};
 use crossterm::event::{
     DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
     Event as CrosstermEvent, EventStream, KeyCode,
 };
 use crossterm::terminal::{
-    disable_raw_mode, enable_raw_mode, DisableLineWrap, EnableLineWrap, EnterAlternateScreen,
-    LeaveAlternateScreen,
+    DisableLineWrap, EnableLineWrap, EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode,
+    enable_raw_mode,
 };
-use crossterm::QueueableCommand;
-use futures::{join, StreamExt};
+use futures::{StreamExt, join};
 use futures_signals::signal::SignalExt;
-use std::io::{stdout, Write};
+use std::io::{Write, stdout};
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
-use vek::{Rect, Rgba, Vec2};
 
 pub struct TerminalEnvironment;
 pub type Own<T> = Arc<Mutex<T>>;
@@ -60,7 +57,7 @@ where
                 })
                 .await;
         };
-        let async_handler = AsyncExecutor::new(app, env).to_future();
+        let async_handler = AsyncExecutor::new(app, env, || {}).to_future();
         let processes = async { join!(event_handler, async_handler) };
         block_on(processes);
 
@@ -72,18 +69,6 @@ impl<AppBlueprint> TUIRunner<AppBlueprint>
 where
     AppBlueprint: Send + Blueprint<TerminalEnvironment>,
 {
-    pub fn redraw<C: Canvas<Pixel = Rgba<u8>>>(
-        app: Own<AppBlueprint::Element>,
-        canvas: &mut C,
-        rect: Rect<f32, f32>,
-        mouse: Vec2<f32>,
-    ) {
-        let app = app.lock().unwrap();
-        dbg!(app.effect());
-        canvas.quad(rect, shaders::image);
-        canvas.put_pixel(mouse.as_(), Rgba::new(0, 255, 255, 0));
-    }
-
     pub fn grab_terminal(
         terminal: &mut (impl QueueableCommand + Write),
     ) -> Result<(), std::io::Error> {

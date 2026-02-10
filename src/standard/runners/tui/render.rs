@@ -1,17 +1,24 @@
 use crate::app::composition::algebra::{Bubble, Empty};
-use crate::app::composition::effects::ElementEffect;
+use crate::app::composition::effects::{ElementEffect, ElementEffectNode};
 use crate::app::composition::elements::{Blueprint, Element};
 use crate::runners::tui::runner::TerminalEnvironment;
 use vek::Rect;
 use {crate::app::input::Event, vek::Rgba};
 
-pub mod shaders;
 pub mod canvas;
+pub mod shaders;
 
 /// An effect that describes rendering of a quad in the terminal.
 #[derive(Debug)]
 pub struct RenderQuad(pub Rect<f32, f32>, pub Rgba<f32>);
 impl ElementEffect for RenderQuad {}
+
+pub fn Graphic() -> Graphic {
+    Graphic {
+        rect: Rect::default(),
+        color: Rgba::default(),
+    }
+}
 
 /// A simple coloured graphic.
 #[derive(Default, Clone, Copy, PartialEq)]
@@ -33,6 +40,11 @@ impl Graphic {
     /// Adapts this graphic with a new colour!
     pub fn with_color(self, color: Rgba<f32>) -> Self {
         Self { color, ..self }
+    }
+
+    /// Adapts this graphic with a new rect!
+    pub fn with_rect(self, rect: Rect<f32, f32>) -> Self {
+        Self { rect, ..self }
     }
 }
 
@@ -57,4 +69,3 @@ impl Element<TerminalEnvironment> for Graphic {
         RenderQuad(self.rect, self.color)
     }
 }
-
