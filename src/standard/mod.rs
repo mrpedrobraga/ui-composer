@@ -10,10 +10,10 @@ pub mod components;
 pub use components::layout::*;
 
 #[macro_export]
-macro_rules! items_internal {
+macro_rules! list_internal {
     ($a:expr $(,)?) => { $a };
     ($a:expr, $b:expr) => {($a, $b)};
     ($a:expr, $($rest:tt)*) => {
-        ($a, $crate::items_internal!($($rest)*))
+        ($a, $crate::list_internal!($($rest)*))
     };
 }

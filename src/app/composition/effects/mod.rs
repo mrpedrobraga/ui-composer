@@ -1,6 +1,3 @@
-use downcast_rs::{Downcast, impl_downcast};
-use std::fmt::Debug;
-
 pub mod future;
 pub mod signal;
 
@@ -9,58 +6,55 @@ pub mod signal;
 /// For example, a `Graphic` might imply a rectangle should be drawn at some place on-screen.
 /// Depending on the effect handler, this might result in quad instances being sent to the GPU
 /// or rectangles drawn on the terminal or pixels in a GameBoy screen.
-pub trait ElementEffect: Downcast + Debug {}
-impl_downcast!(ElementEffect);
+#[diagnostic::on_unimplemented(
+    message = "{Self} is not an effect applicable to {Environment}."
+)]
+pub trait ElementEffect<Environment> {
+    /// Applies the effect to an environment — this can be something like queueing a render,
+    /// a sound effect, a task, etc.
+    fn apply(&self, env: &mut Environment);
+}
 
 /// An [Effect] gathered into an ADT with reflection.
-pub trait ElementEffectNode {
+#[diagnostic::on_unimplemented(
+    message = "{Self} is not an effect node applicable to {Environment}."
+)]
+pub trait ElementEffectNode<Environment> {
     fn visit_with<Handler>(&self, h: &mut Handler)
     where
-        Handler: EffectHandler;
+        Handler: EffectHandler<Environment>;
 }
 
-impl<T> ElementEffectNode for T
-where
-    T: ElementEffect,
-{
-    fn visit_with<Handler>(&self, h: &mut Handler)
-    where
-        Handler: EffectHandler,
-    {
-        h.handle(self);
-    }
-}
-
-impl ElementEffectNode for () {
+impl<Env> ElementEffectNode<Env> for () {
     fn visit_with<Handler>(&self, _: &mut Handler)
     where
-        Handler: EffectHandler,
+        Handler: EffectHandler<Env>,
     {
         /* Nothing to visit. */
     }
 }
 
-impl<A, B> ElementEffectNode for (A, B)
+impl<Env, A, B> ElementEffectNode<Env> for (A, B)
 where
-    A: ElementEffectNode,
-    B: ElementEffectNode,
+    A: ElementEffectNode<Env>,
+    B: ElementEffectNode<Env>,
 {
     fn visit_with<Handler>(&self, h: &mut Handler)
     where
-        Handler: EffectHandler,
+        Handler: EffectHandler<Env>,
     {
         self.0.visit_with(h);
         self.1.visit_with(h);
     }
 }
 
-impl<A> ElementEffectNode for Option<A>
+impl<Env, A> ElementEffectNode<Env> for Option<A>
 where
-    A: ElementEffectNode,
+    A: ElementEffectNode<Env>,
 {
     fn visit_with<Handler>(&self, h: &mut Handler)
     where
-        Handler: EffectHandler,
+        Handler: EffectHandler<Env>,
     {
         if let Some(inner) = self {
             inner.visit_with(h);
@@ -69,48 +63,81 @@ where
 }
 
 /// Please refer to the [module level documentation](self).
-pub trait EffectHandler {
-    fn handle<E>(&mut self, effect: &E)
+pub trait EffectHandler<Environment> {
+    fn handle_one<E>(&mut self, effect: &E)
     where
-        E: 'static + ElementEffect;
+        E: 'static + ElementEffect<Environment>;
 }
 
 #[test]
 fn visit_all() {
-    use crate::items_internal;
+    use crate::list_internal;
 
     #[derive(Debug)]
-    struct EffectA;
+    struct SomeEnvironment {
+        state: usize,
+    }
 
     #[derive(Debug)]
-    struct EffectB;
+    struct SomeHandler {
+        env: SomeEnvironment,
+    }
 
-    impl ElementEffect for EffectA {}
-    impl ElementEffect for EffectB {}
-
-    struct SomeHandler;
-
-    impl EffectHandler for SomeHandler {
-        fn handle<E>(&mut self, effect: &E)
+    impl EffectHandler<SomeEnvironment> for SomeHandler {
+        fn handle_one<E>(&mut self, effect: &E)
         where
-            E: 'static + ElementEffect,
+            E: 'static + ElementEffect<SomeEnvironment>,
         {
-            let effect: &dyn ElementEffect = effect;
-
-            if effect.downcast_ref::<EffectA>().is_some() {
-                println!("[Handler] Holy shit is this an EffectA?");
-            } else if effect.downcast_ref::<EffectB>().is_some() {
-                println!("[Handler] Oh, brother, this EffeectB stinks...");
-            }
+            effect.apply(&mut self.env);
         }
     }
 
-    let mut h = SomeHandler;
-    let effect_tree = items_internal!(
+    struct EffectA;
+
+    struct EffectB;
+
+    impl ElementEffect<SomeEnvironment> for EffectA {
+        fn apply(&self, env: &mut SomeEnvironment) {
+            env.state += 1;
+        }
+    }
+    impl<Env> ElementEffectNode<Env> for EffectA
+    where
+        EffectA: ElementEffect<Env>,
+    {
+        fn visit_with<Handler>(&self, h: &mut Handler)
+        where
+            Handler: EffectHandler<Env>,
+        {
+            h.handle_one(self);
+        }
+    }
+    impl ElementEffect<SomeEnvironment> for EffectB {
+        fn apply(&self, _: &mut SomeEnvironment) {
+            /* Nothing! */
+        }
+    }
+    impl ElementEffectNode<SomeEnvironment> for EffectB {
+        fn visit_with<Handler>(&self, h: &mut Handler)
+        where
+            Handler: EffectHandler<SomeEnvironment>,
+        {
+            h.handle_one(self);
+        }
+    }
+
+    /* Using */
+
+    let mut h = SomeHandler {
+        env: SomeEnvironment { state: 0 },
+    };
+    let effect_tree = list_internal!(
         EffectA,
         EffectB,
         Some(EffectA),
         None as Option<EffectB>
     );
     effect_tree.visit_with(&mut h);
+    dbg!(&h);
+    assert_eq!(h.env.state, 2);
 }

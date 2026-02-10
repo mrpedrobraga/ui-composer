@@ -1,5 +1,8 @@
 use crate::app::composition::algebra::Bubble;
 use crate::app::composition::effects::signal::{React, SignalReactExt};
+use crate::app::composition::effects::{
+    EffectHandler, ElementEffect, ElementEffectNode,
+};
 use crate::app::composition::elements::{Blueprint, Element};
 use crate::app::composition::layout::hints::ParentHints;
 use crate::geometry::flow::CartesianFlow;
@@ -111,12 +114,31 @@ where
             Poll::Pending => Poll::Pending,
             Poll::Ready(None) => Poll::Ready(None),
             Poll::Ready(Some(_)) => {
-                // TODO: Destructure the ui changes and re-render.
+                let ui_effects = ui.effect();
 
-                let _new_ui = ui.effect();
+                // TODO: Use the terminal environment in the poll?
+                // Actually, maybe not.
+                let mut handler = TerminalEffectHandler {
+                    env: TerminalEnvironment,
+                };
+
+                ui_effects.visit_with(&mut handler);
 
                 Poll::Ready(Some(()))
             }
         }
+    }
+}
+
+struct TerminalEffectHandler {
+    env: TerminalEnvironment,
+}
+
+impl EffectHandler<TerminalEnvironment> for TerminalEffectHandler {
+    fn handle_one<E>(&mut self, effect: &E)
+    where
+        E: 'static + ElementEffect<TerminalEnvironment>,
+    {
+        effect.apply(&mut self.env);
     }
 }

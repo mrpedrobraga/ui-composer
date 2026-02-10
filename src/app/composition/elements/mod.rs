@@ -22,7 +22,7 @@ pub trait Blueprint<Environment> {
 }
 
 pub trait Element<Environment> {
-    type Effect: ElementEffectNode;
+    type Effect: ElementEffectNode<Environment>;
 
     fn effect(&self) -> Self::Effect;
 
