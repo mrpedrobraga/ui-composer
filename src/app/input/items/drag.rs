@@ -78,12 +78,17 @@ impl Bubble<Event, bool> for Drag {
                     self.mouse_position.set(*position);
                     true
                 }
-                (CursorEvent::Exited, DragState::Dragging | DragState::Hovering) => {
+                (
+                    CursorEvent::Exited,
+                    DragState::Dragging | DragState::Hovering,
+                ) => {
                     self.drag_state.set(DragState::None);
                     false
                 }
                 (CursorEvent::Button(button, state), DragState::Hovering) => {
-                    if let (MouseButton::Left, ButtonState::Pressed) = (button, state) {
+                    if let (MouseButton::Left, ButtonState::Pressed) =
+                        (button, state)
+                    {
                         self.drag_state.set(DragState::Dragging);
                         true
                     } else {
@@ -91,7 +96,9 @@ impl Bubble<Event, bool> for Drag {
                     }
                 }
                 (CursorEvent::Button(button, state), DragState::Dragging) => {
-                    if let (MouseButton::Left, ButtonState::Released) = (button, state) {
+                    if let (MouseButton::Left, ButtonState::Released) =
+                        (button, state)
+                    {
                         self.drag_state.set(DragState::Hovering);
                         true
                     } else {
@@ -105,4 +112,3 @@ impl Bubble<Event, bool> for Drag {
         }
     }
 }
-

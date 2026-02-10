@@ -38,7 +38,7 @@ where
 
         // Adjust to stack vertically, considering the gap between the items
         Extent2::new(
-            a_size.w.max(b_size.w),         // Max width of the two items
+            a_size.w.max(b_size.w), // Max width of the two items
             a_size.h + self.gap + b_size.h, // Sum of heights with the gap in between
         )
     }

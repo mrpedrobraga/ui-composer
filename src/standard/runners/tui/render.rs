@@ -1,5 +1,5 @@
 use crate::app::composition::algebra::{Bubble, Empty};
-use crate::app::composition::effects::{ElementEffect, ElementEffectNode};
+use crate::app::composition::effects::ElementEffect;
 use crate::app::composition::elements::{Blueprint, Element};
 use crate::runners::tui::runner::TerminalEnvironment;
 use vek::Rect;

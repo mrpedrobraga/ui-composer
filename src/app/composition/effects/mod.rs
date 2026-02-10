@@ -1,8 +1,6 @@
 use downcast_rs::{Downcast, impl_downcast};
 use std::fmt::Debug;
 
-use crate::items_internal;
-
 pub mod future;
 pub mod signal;
 
@@ -16,7 +14,7 @@ impl_downcast!(ElementEffect);
 
 /// An [Effect] gathered into an ADT with reflection.
 pub trait ElementEffectNode {
-    fn visit<Handler>(&self, h: &mut Handler)
+    fn visit_with<Handler>(&self, h: &mut Handler)
     where
         Handler: EffectHandler;
 }
@@ -25,7 +23,7 @@ impl<T> ElementEffectNode for T
 where
     T: ElementEffect,
 {
-    fn visit<Handler>(&self, h: &mut Handler)
+    fn visit_with<Handler>(&self, h: &mut Handler)
     where
         Handler: EffectHandler,
     {
@@ -34,7 +32,7 @@ where
 }
 
 impl ElementEffectNode for () {
-    fn visit<Handler>(&self, _: &mut Handler)
+    fn visit_with<Handler>(&self, _: &mut Handler)
     where
         Handler: EffectHandler,
     {
@@ -47,12 +45,12 @@ where
     A: ElementEffectNode,
     B: ElementEffectNode,
 {
-    fn visit<Handler>(&self, h: &mut Handler)
+    fn visit_with<Handler>(&self, h: &mut Handler)
     where
         Handler: EffectHandler,
     {
-        self.0.visit(h);
-        self.1.visit(h);
+        self.0.visit_with(h);
+        self.1.visit_with(h);
     }
 }
 
@@ -60,12 +58,12 @@ impl<A> ElementEffectNode for Option<A>
 where
     A: ElementEffectNode,
 {
-    fn visit<Handler>(&self, h: &mut Handler)
+    fn visit_with<Handler>(&self, h: &mut Handler)
     where
         Handler: EffectHandler,
     {
         if let Some(inner) = self {
-            inner.visit(h);
+            inner.visit_with(h);
         }
     }
 }
@@ -79,6 +77,8 @@ pub trait EffectHandler {
 
 #[test]
 fn visit_all() {
+    use crate::items_internal;
+
     #[derive(Debug)]
     struct EffectA;
 
@@ -98,16 +98,19 @@ fn visit_all() {
             let effect: &dyn ElementEffect = effect;
 
             if effect.downcast_ref::<EffectA>().is_some() {
-                println!("Holy shit is this an EffectA?");
+                println!("[Handler] Holy shit is this an EffectA?");
             } else if effect.downcast_ref::<EffectB>().is_some() {
-                println!("Oh, brother, this EffeectB stinks...");
+                println!("[Handler] Oh, brother, this EffeectB stinks...");
             }
         }
     }
 
     let mut h = SomeHandler;
     let effect_tree = items_internal!(
-        EffectA, EffectA, EffectB, EffectB, EffectA, EffectA, EffectB
+        EffectA,
+        EffectB,
+        Some(EffectA),
+        None as Option<EffectB>
     );
-    effect_tree.visit(&mut h);
+    effect_tree.visit_with(&mut h);
 }

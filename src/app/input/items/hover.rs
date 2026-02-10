@@ -29,7 +29,8 @@ impl Bubble<Event, bool> for Hover {
         match event {
             Event::Cursor { id, event } => match event {
                 CursorEvent::Moved { position } => {
-                    let rect_contains_point = self.rect.contains_point(*position);
+                    let rect_contains_point =
+                        self.rect.contains_point(*position);
                     self.is_hovered_state
                         .set_if(rect_contains_point, |a, b| a != b);
                     true
@@ -44,4 +45,3 @@ impl Bubble<Event, bool> for Hover {
         }
     }
 }
-

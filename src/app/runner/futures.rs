@@ -32,7 +32,11 @@ pub struct AsyncExecutor<Env, App: Element<Env>, Callback> {
 }
 
 impl<Env, App: Element<Env>, Callback> AsyncExecutor<Env, App, Callback> {
-    pub fn new(element: Own<App>, environment: Env, callback: Callback) -> Self {
+    pub fn new(
+        element: Own<App>,
+        environment: Env,
+        callback: Callback,
+    ) -> Self {
         AsyncExecutor {
             element,
             environment,
@@ -42,10 +46,15 @@ impl<Env, App: Element<Env>, Callback> AsyncExecutor<Env, App, Callback> {
     }
 }
 
-impl<Env, App: Element<Env>, Callback: FnMut()> Signal for AsyncExecutor<Env, App, Callback> {
+impl<Env, App: Element<Env>, Callback: FnMut()> Signal
+    for AsyncExecutor<Env, App, Callback>
+{
     type Item = ();
 
-    fn poll_change(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
+    fn poll_change(
+        self: Pin<&mut Self>,
+        cx: &mut Context,
+    ) -> Poll<Option<Self::Item>> {
         let AsyncExecutorProj {
             element,
             environment,
@@ -54,7 +63,8 @@ impl<Env, App: Element<Env>, Callback: FnMut()> Signal for AsyncExecutor<Env, Ap
         } = self.project();
 
         if let Ok(mut element_borrow) = element.lock() {
-            let pinned_element = unsafe { Pin::new_unchecked(&mut *element_borrow) };
+            let pinned_element =
+                unsafe { Pin::new_unchecked(&mut *element_borrow) };
 
             // Because of how signals work internally, we must yield at least once.
             let inner_poll = pinned_element.poll(cx, environment);

@@ -52,15 +52,16 @@ where
                     let app2 = app2;
 
                     while let Some(event) = tap.next().await {
-                        let _lock = app2
-                            .lock()
-                            .expect("[Event] Failed to lock app to send event.");
+                        let _lock = app2.lock().expect(
+                            "[Event] Failed to lock app to send event.",
+                        );
                         /* Push event down app! */
                         println!("A new event arrived! {:?}", event);
                     }
                 };
 
-                let async_handler = AsyncExecutor::new(app, env, || {}).to_future();
+                let async_handler =
+                    AsyncExecutor::new(app, env, || {}).to_future();
 
                 let processes = async { join!(async_handler, event_handler) };
 
@@ -111,10 +112,16 @@ impl ApplicationHandler for WinitAppHandler {
         self.window = Some(window);
     }
 
-    fn window_event(&mut self, _: &ActiveEventLoop, _: WindowId, event: WindowEvent) {
+    fn window_event(
+        &mut self,
+        _: &ActiveEventLoop,
+        _: WindowId,
+        event: WindowEvent,
+    ) {
         let uic_event = Event::try_from(event).expect("Unrecognized event.");
         //TODO: Restructure how the event loop sends events.
-        block_on(self.sink.send(uic_event)).expect("[Winit] Failed to send event though channel.");
+        block_on(self.sink.send(uic_event))
+            .expect("[Winit] Failed to send event though channel.");
     }
 
     fn exiting(&mut self, _: &ActiveEventLoop) {

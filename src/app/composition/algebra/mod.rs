@@ -31,11 +31,18 @@ pub trait Bubble<Down, Up> {
 pub trait Gather<Context, Item> {
     const SIZE: usize;
 
-    fn gather(&mut self, cx: &mut Context, acc: &mut [std::mem::MaybeUninit<Item>]);
+    fn gather(
+        &mut self,
+        cx: &mut Context,
+        acc: &mut [std::mem::MaybeUninit<Item>],
+    );
 }
 
 #[cfg(feature = "specialization")]
-impl<T, Down, Up> Bubble<Down, Up> for T where Up: Empty {
+impl<T, Down, Up> Bubble<Down, Up> for T
+where
+    Up: Empty,
+{
     default fn bubble(&mut self, cx: &mut Down) -> Up {
         Up::empty()
     }

@@ -15,7 +15,9 @@ use {crate::app::input::Event, vek::Vec2};
 #[allow(non_snake_case)]
 pub fn Terminal<UI>(
     mut ui: UI,
-) -> TerminalBlueprint<React<impl Signal<Item = UI::Content>, TerminalEnvironment>>
+) -> TerminalBlueprint<
+    React<impl Signal<Item = UI::Content>, TerminalEnvironment>,
+>
 where
     UI: TUI,
 {
@@ -35,7 +37,8 @@ where
                 current_flow_direction: CartesianFlow::LeftToRight,
                 current_cross_flow_direction: CartesianFlow::TopToBottom,
                 current_writing_flow_direction: CartesianFlow::LeftToRight,
-                current_writing_cross_flow_direction: CartesianFlow::TopToBottom,
+                current_writing_cross_flow_direction:
+                    CartesianFlow::TopToBottom,
             })
         })
         .react();
@@ -95,7 +98,11 @@ where
         todo!()
     }
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context, env: &TerminalEnvironment) -> Poll<Option<()>> {
+    fn poll(
+        self: Pin<&mut Self>,
+        cx: &mut Context,
+        env: &TerminalEnvironment,
+    ) -> Poll<Option<()>> {
         let mut ui = unsafe { self.map_unchecked_mut(|this| &mut this.ui) };
 
         let inner = ui.as_mut().poll(cx, env);
@@ -106,7 +113,7 @@ where
             Poll::Ready(Some(_)) => {
                 // TODO: Destructure the ui changes and re-render.
 
-                let new_ui = ui.effect();
+                let _new_ui = ui.effect();
 
                 Poll::Ready(Some(()))
             }

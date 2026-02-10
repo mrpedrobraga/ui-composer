@@ -215,8 +215,12 @@ impl CoordinateSystem for CartesianFlow {
 impl CoordinateSystem for RelativeFlow {
     fn get_axis(&self, parent_hints: &ParentHints) -> Vec2<f32> {
         match self {
-            Self::MainAxisForward => parent_hints.current_flow_direction.get_axis(parent_hints),
-            Self::MainAxisBackwards => -parent_hints.current_flow_direction.get_axis(parent_hints),
+            Self::MainAxisForward => {
+                parent_hints.current_flow_direction.get_axis(parent_hints)
+            }
+            Self::MainAxisBackwards => {
+                -parent_hints.current_flow_direction.get_axis(parent_hints)
+            }
             Self::CrossAxisForward => parent_hints
                 .current_cross_flow_direction
                 .get_axis(parent_hints),
@@ -245,7 +249,9 @@ impl CoordinateSystem for RelativeFlow {
 
     fn get_origin(&self, parent_hints: &ParentHints) -> Vec2<f32> {
         match self {
-            Self::MainAxisForward => parent_hints.current_flow_direction.get_origin(parent_hints),
+            Self::MainAxisForward => {
+                parent_hints.current_flow_direction.get_origin(parent_hints)
+            }
             Self::MainAxisBackwards => {
                 -parent_hints.current_flow_direction.get_origin(parent_hints)
             }

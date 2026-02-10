@@ -1,10 +1,13 @@
+use crate::app::composition::layout::LayoutItem;
 use crate::app::composition::layout::hints::ParentHints;
 use vek::Extent2;
-use crate::app::composition::layout::LayoutItem;
 
 /// A container that scales its single item to a bigger size.
 /// You **can not** make the minimum size _lower_ than the original, however.
-pub fn WithSize<A>(suggested_size: Extent2<f32>, item: A) -> WithSizeContainer<A>
+pub fn WithSize<A>(
+    suggested_size: Extent2<f32>,
+    item: A,
+) -> WithSizeContainer<A>
 where
     A: LayoutItem,
 {

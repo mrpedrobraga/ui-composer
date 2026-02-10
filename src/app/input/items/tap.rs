@@ -48,11 +48,13 @@ where
                     self.mouse_position_state.set(Some(*position));
                     false
                 }
-                CursorEvent::Button(MouseButton::Left, ButtonState::Pressed)
-                    if self
-                        .mouse_position_state
-                        .get()
-                        .is_some_and(|pos| self.rect.contains_point(pos)) =>
+                CursorEvent::Button(
+                    MouseButton::Left,
+                    ButtonState::Pressed,
+                ) if self
+                    .mouse_position_state
+                    .get()
+                    .is_some_and(|pos| self.rect.contains_point(pos)) =>
                 {
                     self.tap_effect.apply();
                     true
@@ -63,4 +65,3 @@ where
         }
     }
 }
-

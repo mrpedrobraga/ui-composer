@@ -16,7 +16,11 @@ pub struct RectStackArranger {
 
 impl RectStackArranger {
     #[inline(always)]
-    pub fn stack<I>(sizes: I, gap: f32, vertical: bool) -> impl Iterator<Item = Rect<f32, f32>>
+    pub fn stack<I>(
+        sizes: I,
+        gap: f32,
+        vertical: bool,
+    ) -> impl Iterator<Item = Rect<f32, f32>>
     where
         I: Iterator<Item = Extent2<f32>>,
     {
@@ -54,7 +58,10 @@ impl RectStackArranger {
 /// it gets "twice" as much space as the others.
 ///
 /// ```[AAAAAAAABBBBCCCCDDDD]```
-pub fn weighted_division_with_minima<const SIZE: usize, T: Float + core::iter::Sum>(
+pub fn weighted_division_with_minima<
+    const SIZE: usize,
+    T: Float + core::iter::Sum,
+>(
     total: T,
     w: &[T; SIZE],
     m: &[T; SIZE],

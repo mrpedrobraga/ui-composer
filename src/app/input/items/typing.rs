@@ -1,7 +1,7 @@
-use crate::app::input::{ButtonState, InputItem, KeyEvent, KeyboardEvent};
-use crate::app::input::Event;
-use futures_signals::signal::Mutable;
 use crate::app::composition::algebra::Bubble;
+use crate::app::input::Event;
+use crate::app::input::{ButtonState, InputItem, KeyEvent, KeyboardEvent};
+use futures_signals::signal::Mutable;
 
 /// Input item that receives key events...
 #[derive(Clone)]
@@ -40,4 +40,3 @@ impl Bubble<Event, bool> for Typing {
         false
     }
 }
-

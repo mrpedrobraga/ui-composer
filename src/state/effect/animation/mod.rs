@@ -63,7 +63,11 @@ pub trait Animation {
 
     /// Consumes this [Animation] and produces a future that completes
     /// when the animation is finished.
-    fn animate_from<F>(mut self, mut f: F, initial_value: Self::Item) -> impl Future<Output = ()>
+    fn animate_from<F>(
+        mut self,
+        mut f: F,
+        initial_value: Self::Item,
+    ) -> impl Future<Output = ()>
     where
         Self::Item: Copy,
         Self: Sized,
@@ -74,7 +78,8 @@ pub trait Animation {
         async move {
             loop {
                 let delta = last_frame.elapsed().into();
-                let poll = self.process(initial_value, AnimationFrame { start, delta });
+                let poll = self
+                    .process(initial_value, AnimationFrame { start, delta });
 
                 match poll {
                     Poll::Ongoing(frame) => {
@@ -87,7 +92,10 @@ pub trait Animation {
                     }
                 }
 
-                task::sleep(Duration::from_millis(16) - last_frame.elapsed().into()).await;
+                task::sleep(
+                    Duration::from_millis(16) - last_frame.elapsed().into(),
+                )
+                .await;
             }
         }
     }
@@ -233,7 +241,10 @@ impl<Item> Animation for Assign<Item> {
 }
 
 /// Interpolates the initial value to a destination value in a certain time.
-pub fn lerp<Item: Vector>(to: Item, duration: Duration) -> LinearInterpolate<Item> {
+pub fn lerp<Item: Vector>(
+    to: Item,
+    duration: Duration,
+) -> LinearInterpolate<Item> {
     LinearInterpolate { to, duration }
 }
 
@@ -259,7 +270,8 @@ impl<Item: Vector> Animation for LinearInterpolate<Item> {
         } else {
             Poll::Ongoing(initial_value.linear_interpolate(
                 self.to,
-                frame_params.start.elapsed().as_secs_f32() / self.duration.as_secs_f32(),
+                frame_params.start.elapsed().as_secs_f32()
+                    / self.duration.as_secs_f32(),
             ))
         }
     }
@@ -268,7 +280,10 @@ impl<Item: Vector> Animation for LinearInterpolate<Item> {
 /// Moves towards the target value with a scalar speed.
 /// Unlike [lerp], this animation does not have a defined duration,
 /// instead, it takes longer the further away the value is from the target.
-pub fn move_toward<Item: Vector>(target: Item, speed: Item) -> MoveToward<Item> {
+pub fn move_toward<Item: Vector>(
+    target: Item,
+    speed: Item,
+) -> MoveToward<Item> {
     MoveToward {
         current_value: None,
         target,
@@ -293,7 +308,8 @@ impl<Item: Vector + Copy> Animation for MoveToward<Item> {
     ) -> Poll<Self::Item> {
         if let Some(current_value) = self.current_value {
             let vector = self.target - current_value;
-            let next_value = current_value + vector * self.speed * frame_params.delta.as_secs_f32();
+            let next_value = current_value
+                + vector * self.speed * frame_params.delta.as_secs_f32();
             self.current_value = Some(next_value);
             Poll::Ongoing(next_value)
         } else {

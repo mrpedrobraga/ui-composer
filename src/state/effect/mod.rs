@@ -12,8 +12,8 @@ pub trait Effect: Clone + Send + Sync {
 }
 
 pub mod implementations {
-    use futures_signals::signal::Mutable;
     use crate::state::effect::Effect;
+    use futures_signals::signal::Mutable;
 
     impl<F> Effect for F
     where

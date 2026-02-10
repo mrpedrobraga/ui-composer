@@ -15,5 +15,11 @@ pub use render::Graphic;
 pub trait TUI: UI<TerminalEnvironment> {}
 impl<T> TUI for T where T: UI<TerminalEnvironment> {}
 
-pub trait TUIBlueprint: Blueprint<TerminalEnvironment, Element: Send> + Send {}
-impl<T> TUIBlueprint for T where T: Blueprint<TerminalEnvironment, Element: Send> + Send {}
+pub trait TUIBlueprint:
+    Blueprint<TerminalEnvironment, Element: Send> + Send
+{
+}
+impl<T> TUIBlueprint for T where
+    T: Blueprint<TerminalEnvironment, Element: Send> + Send
+{
+}

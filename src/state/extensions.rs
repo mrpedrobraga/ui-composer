@@ -2,7 +2,9 @@
 //!
 //! Extension traits and impls to make dealing with states more ergonomic.
 
-impl crate::app::composition::algebra::Semigroup for std::task::Poll<Option<()>> {
+impl crate::app::composition::algebra::Semigroup
+    for std::task::Poll<Option<()>>
+{
     /// If any of the values are Poll::Ready(Some(())), the result will be Poll::Ready(Some(()));
     /// If not and any of the values are Poll::Pending, the result will be Poll::Pending;
     /// Otherwise (if both values are Poll::Ready(None)), the result will be Poll::Ready(None);

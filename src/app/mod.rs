@@ -60,9 +60,8 @@
 //! This means you could run your app in a cross-platform runner like `WinitWgpuRunner`...
 //! Or on a web-specific `HTMLCanvasRunner`. The sky is the limit.
 
-pub mod runner;
 pub mod composition;
+pub mod runner;
 
 /// User events are one of the things that can be bubbled down an application.
 pub mod input;
-

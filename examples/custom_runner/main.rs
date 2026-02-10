@@ -1,4 +1,4 @@
-﻿use async_std::task::block_on;
+use async_std::task::block_on;
 use chttp::ResponseExt;
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
@@ -41,9 +41,11 @@ where
         let tasks = async move {
             // One of them should be an `AsyncExecutor`,
             // which polls the app's futures, streams and signals.
-            AsyncExecutor::new(app, env, || println!("[Example] There was an UI update!"))
-                .to_future()
-                .await
+            AsyncExecutor::new(app, env, || {
+                println!("[Example] There was an UI update!")
+            })
+            .to_future()
+            .await
         };
 
         // We block on all tasks.

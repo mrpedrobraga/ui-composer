@@ -3,14 +3,16 @@ use crate::app::runner::Runner;
 use crate::app::runner::futures::AsyncExecutor;
 use async_std::task::block_on;
 use crossterm::QueueableCommand;
-use crossterm::cursor::{Hide, RestorePosition, SavePosition, SetCursorStyle, Show};
+use crossterm::cursor::{
+    Hide, RestorePosition, SavePosition, SetCursorStyle, Show,
+};
 use crossterm::event::{
-    DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
-    Event as CrosstermEvent, EventStream, KeyCode,
+    DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste,
+    EnableMouseCapture, Event as CrosstermEvent, EventStream, KeyCode,
 };
 use crossterm::terminal::{
-    DisableLineWrap, EnableLineWrap, EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode,
-    enable_raw_mode,
+    DisableLineWrap, EnableLineWrap, EnterAlternateScreen,
+    LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
 };
 use futures::{StreamExt, join};
 use futures_signals::signal::SignalExt;

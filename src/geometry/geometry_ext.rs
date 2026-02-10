@@ -2,8 +2,8 @@
 //!
 //! Extension traits to make working with some foreign types a little bit more ergonomic.
 
-use num_traits::Num;
 use super::{Extent2, Extent3, Rect, Vec2, Vec3};
+use num_traits::Num;
 
 pub trait RectExt {
     type Num: Num + Clone;
@@ -24,7 +24,12 @@ pub trait RectExt {
     where
         Self: Sized,
     {
-        self.expand_from_center(offset.clone(), offset.clone(), offset.clone(), offset)
+        self.expand_from_center(
+            offset.clone(),
+            offset.clone(),
+            offset.clone(),
+            offset,
+        )
     }
 
     /// Sets this rectangle (keeping the top left in place) to have a specific, definite size.

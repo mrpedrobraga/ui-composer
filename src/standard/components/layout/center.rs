@@ -34,9 +34,15 @@ where
     fn lay(&mut self, layout_hints: ParentHints) -> Self::Content {
         let my_rect = layout_hints.rect;
         let item_size = self.item.get_natural_size();
-        let item_position = my_rect.position() + (my_rect.extent() - item_size) / 2.0;
+        let item_position =
+            my_rect.position() + (my_rect.extent() - item_size) / 2.0;
 
-        let item_rect = Rect::new(item_position.x, item_position.y, item_size.w, item_size.h);
+        let item_rect = Rect::new(
+            item_position.x,
+            item_position.y,
+            item_size.w,
+            item_size.h,
+        );
 
         let inner_hints = ParentHints {
             rect: item_rect,

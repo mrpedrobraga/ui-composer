@@ -102,7 +102,8 @@ impl WindowRenderTarget {
             dimension: wgpu::TextureDimension::D2,
             // TODO: Maybe use ints for depth in 2D?
             format: wgpu::TextureFormat::Depth32Float,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                | wgpu::TextureUsages::TEXTURE_BINDING,
             view_formats: &[],
         })
     }

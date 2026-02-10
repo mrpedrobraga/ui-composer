@@ -97,7 +97,11 @@ pub mod gather {
     impl<Context, Item> Gather<Context, Item> for () {
         const SIZE: usize = 0;
 
-        fn gather(&mut self, #[expect(unused)] cx: &mut Context, acc: &mut [MaybeUninit<Item>]) {
+        fn gather(
+            &mut self,
+            #[expect(unused)] cx: &mut Context,
+            acc: &mut [MaybeUninit<Item>],
+        ) {
             debug_assert_eq!(acc.len(), 0);
         }
     }

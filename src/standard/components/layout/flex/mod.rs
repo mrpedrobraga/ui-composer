@@ -1,12 +1,12 @@
+use crate::app::composition::layout::hints::ParentHints;
+use crate::app::composition::layout::{CoordinateSystem, LayoutItem};
 use crate::geometry::flow::CartesianFlow::{
     BottomToTop, LeftToRight, RightToLeft, TopToBottom,
 };
-use crate::app::composition::layout::hints::ParentHints;
 use crate::geometry::flow::{CartesianFlow, Flow, WritingFlow};
-use crate::app::composition::layout::{CoordinateSystem, LayoutItem};
+use crate::prelude::flow::arrangers::w_div_min_alloc;
 use core::iter::{Chain, Once, once};
 use vek::{Extent2, Rect};
-use crate::prelude::flow::arrangers::w_div_min_alloc;
 
 #[allow(non_snake_case)]
 #[inline(always)]
@@ -66,12 +66,10 @@ where
         });
 
         match flow_direction {
-            LeftToRight | RightToLeft => {
-                item_natural_sizes.reduce(|a, b| Extent2::new(a.w + b.w, a.h.max(b.h)))
-            }
-            TopToBottom | BottomToTop => {
-                item_natural_sizes.reduce(|a, b| Extent2::new(a.w.max(b.w), a.h + b.h))
-            }
+            LeftToRight | RightToLeft => item_natural_sizes
+                .reduce(|a, b| Extent2::new(a.w + b.w, a.h.max(b.h))),
+            TopToBottom | BottomToTop => item_natural_sizes
+                .reduce(|a, b| Extent2::new(a.w.max(b.w), a.h + b.h)),
         }
         .unwrap_or_default()
     }
@@ -89,12 +87,10 @@ where
         });
 
         match flow_direction {
-            LeftToRight | RightToLeft => {
-                item_min_sizes.reduce(|a, b| Extent2::new(a.w + b.w, a.h.max(b.h)))
-            }
-            TopToBottom | BottomToTop => {
-                item_min_sizes.reduce(|a, b| Extent2::new(a.w.max(b.w), a.h + b.h))
-            }
+            LeftToRight | RightToLeft => item_min_sizes
+                .reduce(|a, b| Extent2::new(a.w + b.w, a.h.max(b.h))),
+            TopToBottom | BottomToTop => item_min_sizes
+                .reduce(|a, b| Extent2::new(a.w.max(b.w), a.h + b.h)),
         }
         .unwrap_or_default()
     }
@@ -106,7 +102,9 @@ where
             .minima(flow_direction)
             //.collect::<ArrayVec<_, SIZE>>();
             .collect::<Vec<_>>();
-        let weights = self.items.weights()
+        let weights = self
+            .items
+            .weights()
             //.collect::<ArrayVec<_, SIZE>>();
             .collect::<Vec<_>>();
 
@@ -128,7 +126,11 @@ where
             minima.as_slice(),
             0.01,
         );
-        let parent_hints = lay_sizes(parent_hints, flow_direction, main_axis_sizes.into_iter());
+        let parent_hints = lay_sizes(
+            parent_hints,
+            flow_direction,
+            main_axis_sizes.into_iter(),
+        );
 
         self.items.lay(parent_hints)
     }
@@ -157,7 +159,9 @@ where
             },
             RightToLeft => ParentHints {
                 rect: Rect::new(
-                    container.rect.x + container.rect.w - *offset_from_start - current_element_size,
+                    container.rect.x + container.rect.w
+                        - *offset_from_start
+                        - current_element_size,
                     container.rect.y,
                     current_element_size,
                     container.rect.h,
@@ -176,7 +180,9 @@ where
             BottomToTop => ParentHints {
                 rect: Rect::new(
                     container.rect.x,
-                    container.rect.y + container.rect.w - *offset_from_start - current_element_size,
+                    container.rect.y + container.rect.w
+                        - *offset_from_start
+                        - current_element_size,
                     container.rect.w,
                     current_element_size,
                 ),
@@ -193,7 +199,7 @@ where
 /// An Item of a Flex Container, contains a LayoutItem and a weight.
 pub struct FlexItem<T> {
     item: T,
-    grow: f32
+    grow: f32,
 }
 pub fn item<T>(item: T) -> FlexItem<T> {
     FlexItem { item, grow: 0.0 }
@@ -279,7 +285,10 @@ where
     }
 
     fn minima(&self, flow_direction: CartesianFlow) -> Self::Weights {
-        Iterator::chain(self.0.minima(flow_direction), self.1.minima(flow_direction))
+        Iterator::chain(
+            self.0.minima(flow_direction),
+            self.1.minima(flow_direction),
+        )
     }
 
     fn lay<I>(&mut self, mut parent_hints: I) -> Self::Content

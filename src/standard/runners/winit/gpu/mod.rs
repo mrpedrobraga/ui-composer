@@ -43,10 +43,7 @@ impl Gpu {
             .await
             .expect("Failed to create device and queue!");
 
-        Gpu {
-            device,
-            queue,
-        }
+        Gpu { device, queue }
     }
 }
 

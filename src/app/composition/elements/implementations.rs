@@ -40,7 +40,11 @@ where
         item.effect()
     }
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context, env: &Env) -> Poll<Option<()>> {
+    fn poll(
+        self: Pin<&mut Self>,
+        cx: &mut Context,
+        env: &Env,
+    ) -> Poll<Option<()>> {
         let mut_ref = unsafe { self.map_unchecked_mut(|e| &mut **e) };
         mut_ref.poll(cx, env)
     }
@@ -71,7 +75,11 @@ where
         (self.0.effect(), self.1.effect())
     }
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context, env: &Env) -> Poll<Option<()>> {
+    fn poll(
+        self: Pin<&mut Self>,
+        cx: &mut Context,
+        env: &Env,
+    ) -> Poll<Option<()>> {
         let (pinned_a, pinned_b) = {
             let mut_ref = unsafe { self.get_unchecked_mut() };
             let (a, b) = mut_ref;

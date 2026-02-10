@@ -1,12 +1,16 @@
-use std::pin::Pin;
-use std::task::{Context, Poll};
+use crate::app::composition::elements::{Blueprint, Element};
 use futures_signals::signal::Signal;
 use pin_project::pin_project;
-use crate::app::composition::elements::{Blueprint, Element};
+use std::pin::Pin;
+use std::task::{Context, Poll};
 
 #[pin_project]
 #[must_use = "React does nothing unless polled"]
-pub struct React<Sig, Env> where Sig: Signal, Sig::Item: Blueprint<Env> {
+pub struct React<Sig, Env>
+where
+    Sig: Signal,
+    Sig::Item: Blueprint<Env>,
+{
     #[pin]
     signal: Sig,
     element: Option<<Sig::Item as Blueprint<Env>>::Element>,
@@ -18,19 +22,25 @@ pub trait SignalReactExt: Signal {
         Self: Sized,
         <Self as Signal>::Item: Blueprint<Env>;
 }
-impl<Sig> SignalReactExt for Sig where Sig: Signal {
+impl<Sig> SignalReactExt for Sig
+where
+    Sig: Signal,
+{
     fn react<Env>(self) -> React<Self, Env>
     where
         Self: Sized,
-        <Self as Signal>::Item: Blueprint<Env>
+        <Self as Signal>::Item: Blueprint<Env>,
     {
-        React { signal: self, element: None }
+        React {
+            signal: self,
+            element: None,
+        }
     }
 }
 
 impl<Sig, Env> Blueprint<Env> for React<Sig, Env>
 where
-    Sig: Signal<Item: Blueprint<Env>>
+    Sig: Signal<Item: Blueprint<Env>>,
 {
     type Element = Self;
 
@@ -41,14 +51,24 @@ where
 
 impl<Sig, Env> Element<Env> for React<Sig, Env>
 where
-    Sig: Signal<Item: Blueprint<Env>> {
-    type Effect = Option<<<<Sig as Signal>::Item as Blueprint<Env>>::Element as Element<Env>>::Effect>;
+    Sig: Signal<Item: Blueprint<Env>>,
+{
+    type Effect =
+        Option<
+            <<<Sig as Signal>::Item as Blueprint<Env>>::Element as Element<
+                Env,
+            >>::Effect,
+        >;
 
     fn effect(&self) -> Self::Effect {
         self.element.as_ref().map(|e| e.effect())
     }
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context, env: &Env) -> Poll<Option<()>> {
+    fn poll(
+        self: Pin<&mut Self>,
+        cx: &mut Context,
+        env: &Env,
+    ) -> Poll<Option<()>> {
         let this = self.project();
 
         if let Some(element) = this.element {
@@ -66,7 +86,8 @@ where
                 let mut element = blueprint.make(env);
 
                 // Wake up the element.
-                let _ = unsafe { Pin::new_unchecked(&mut element) }.poll(cx, env);
+                let _ =
+                    unsafe { Pin::new_unchecked(&mut element) }.poll(cx, env);
                 *this.element = Some(element);
 
                 Poll::Ready(Some(()))
