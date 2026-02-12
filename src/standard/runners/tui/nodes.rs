@@ -1,8 +1,8 @@
 use crate::app::composition::algebra::Bubble;
 use crate::app::composition::effects::signal::{React, SignalReactExt};
-use crate::app::composition::effects::{Drive, EffectHandler, ElementEffect};
 use crate::app::composition::elements::{Blueprint, Element};
 use crate::app::composition::layout::hints::ParentHints;
+use crate::app::composition::visit::DriveThru;
 use crate::geometry::flow::CartesianFlow;
 use crate::runners::tui::TUI;
 use crate::runners::tui::render::canvas::{PixelCanvas, TextModePixel};
@@ -122,26 +122,10 @@ where
             Poll::Ready(Some(_)) => {
                 let ui_effects = ui.effect();
                 let mut env = TerminalEnvironment;
-
-                let mut handler = TerminalEffectHandler { env: &mut env };
-
-                ui_effects.drive_thru(&mut handler);
+                ui_effects.drive_thru(&mut env);
 
                 Poll::Ready(Some(()))
             }
         }
-    }
-}
-
-struct TerminalEffectHandler<'a> {
-    env: &'a mut TerminalEnvironment,
-}
-
-impl<'a> EffectHandler<TerminalEnvironment> for TerminalEffectHandler<'a> {
-    fn visit<E>(&mut self, effect: &E)
-    where
-        E: 'static + ElementEffect<TerminalEnvironment>,
-    {
-        effect.apply(self.env);
     }
 }

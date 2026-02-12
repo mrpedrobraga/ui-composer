@@ -9,7 +9,7 @@
 //! and determine distinct [`Element`]s it creates when you call `Blueprint::make`
 
 use crate::app::composition::algebra::Bubble;
-use crate::app::composition::effects::Drive;
+use crate::app::composition::visit::DriveThru;
 use crate::app::input::Event;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -24,7 +24,7 @@ pub trait Blueprint<Environment> {
 }
 
 pub trait Element<Environment>: Bubble<Event, bool> {
-    type Effect: Drive<Environment>;
+    type Effect: DriveThru<Environment>;
 
     fn effect(&self) -> Self::Effect;
 

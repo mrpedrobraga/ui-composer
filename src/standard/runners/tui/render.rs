@@ -1,8 +1,9 @@
 use std::io::Write;
 
 use crate::app::composition::algebra::{Bubble, Empty};
-use crate::app::composition::effects::{Drive, EffectHandler, ElementEffect};
+use crate::app::composition::effects::ElementEffect;
 use crate::app::composition::elements::{Blueprint, Element};
+use crate::app::composition::visit::{Apply, DriveThru};
 use crate::geometry::Lerp;
 use crate::runners::tui::runner::TerminalEnvironment;
 use crate::runners::winit::runner::WinitEnvironment;
@@ -64,15 +65,12 @@ impl ElementEffect<TerminalEnvironment> for RenderQuad {
         s.flush().unwrap();
     }
 }
-impl<Env> Drive<Env> for RenderQuad
+impl<V> DriveThru<V> for RenderQuad
 where
-    RenderQuad: ElementEffect<Env>,
+    V: Apply<Self>,
 {
-    fn drive_thru<Handler>(&self, h: &mut Handler)
-    where
-        Handler: EffectHandler<Env>,
-    {
-        h.visit(self);
+    fn drive_thru(&self, visitor: &mut V) {
+        visitor.visit(self);
     }
 }
 

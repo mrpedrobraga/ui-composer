@@ -1,5 +1,7 @@
 use crate::app::composition::algebra::Bubble;
+use crate::app::composition::effects::ElementEffect;
 use crate::app::composition::elements::Blueprint;
+use crate::app::composition::visit::Apply;
 use crate::app::runner::Runner;
 use crate::app::runner::futures::AsyncExecutor;
 use crate::prelude::Event;
@@ -25,6 +27,15 @@ use vek::Extent2;
 
 pub struct TerminalEnvironment;
 pub type Own<T> = Arc<Mutex<T>>;
+
+impl<T> Apply<T> for TerminalEnvironment
+where
+    T: ElementEffect<Self>,
+{
+    fn visit(&mut self, node: &T) {
+        node.apply(self);
+    }
+}
 
 pub struct TUIRunner<AppBlueprint>
 where

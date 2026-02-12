@@ -4,113 +4,135 @@
 //!
 //! The main traits of this module are [Visit] and [Drive] (and their counterparts [VisitMut] and [DriveMut]).
 
-/// Trait for anything which is a visitor of structures.
-pub trait Visitor {
-    fn enter<E>(&self, node: &E)
-    where
-        E: Drive<Self>,
-        Self: Sized,
-    {
-        node.drive_thru(self);
-    }
-
-    fn enter_mut<E>(&self, node: &mut E)
-    where
-        E: DriveMut<Self>,
-        Self: Sized,
-    {
-        node.drive_thru_mut(self);
-    }
-}
-
 /// Trait for a visitor which can visit a `T`.
-pub trait Visit<T> {
-    fn visit(&self, node: &T);
+pub trait Apply<T> {
+    fn visit(&mut self, node: &T);
 }
 
 /// Trait for a visitor which can visit a `T` and mutate it.
-pub trait VisitMut<T> {
-    fn visit_mut(&self, node: &mut T);
+pub trait ApplyMut<T> {
+    fn visit_mut(&mut self, node: &mut T);
 }
 
 /// Trait for structures that can be driven through and, potentially, visited.
-pub trait Drive<V: Visitor> {
-    fn drive_thru(&self, visitor: &V);
+pub trait DriveThru<V> {
+    fn drive_thru(&self, visitor: &mut V);
 }
 
 /// Trait for structures that can be driven through and, potentially, visited mutably.
-pub trait DriveMut<V: Visitor> {
-    fn drive_thru_mut(&mut self, visitor: &V);
+pub trait DriveThruMut<V> {
+    fn drive_thru_mut(&mut self, visitor: &mut V);
 }
 
-#[test]
-fn test_visit() {
-    struct Logger {}
+pub mod implementations {
+    use super::{DriveThru, DriveThruMut};
 
-    impl Visitor for Logger {}
-    impl Visit<i32> for Logger {
-        fn visit(&self, node: &i32) {
-            println!("Found a {}", node);
+    impl<V> DriveThru<V> for () {
+        fn drive_thru(&self, _: &mut V) {
+            /* Nothing to visit!  */
         }
     }
 
-    impl<V, A, B> Drive<V> for (A, B)
+    impl<V> DriveThruMut<V> for () {
+        fn drive_thru_mut(&mut self, _: &mut V) {
+            /* Nothing to visit!  */
+        }
+    }
+
+    impl<V, A, B> DriveThru<V> for (A, B)
     where
-        A: Drive<V>,
-        B: Drive<V>,
-        V: Visitor,
+        A: DriveThru<V>,
+        B: DriveThru<V>,
     {
-        fn drive_thru(&self, visitor: &V) {
+        fn drive_thru(&self, visitor: &mut V) {
             self.0.drive_thru(visitor);
             self.1.drive_thru(visitor);
         }
     }
-    impl<V> Drive<V> for i32
+
+    impl<V, A, B> DriveThruMut<V> for (A, B)
     where
-        V: Visitor + Visit<i32>,
+        A: DriveThruMut<V>,
+        B: DriveThruMut<V>,
     {
-        fn drive_thru(&self, visitor: &V) {
+        fn drive_thru_mut(&mut self, visitor: &mut V) {
+            self.0.drive_thru_mut(visitor);
+            self.1.drive_thru_mut(visitor);
+        }
+    }
+
+    impl<V, A> DriveThru<V> for Option<A>
+    where
+        A: DriveThru<V>,
+    {
+        fn drive_thru(&self, visitor: &mut V) {
+            if let Some(inner) = self {
+                inner.drive_thru(visitor);
+            }
+        }
+    }
+
+    impl<V, A> DriveThruMut<V> for Option<A>
+    where
+        A: DriveThruMut<V>,
+    {
+        fn drive_thru_mut(&mut self, visitor: &mut V) {
+            if let Some(inner) = self {
+                inner.drive_thru_mut(visitor);
+            }
+        }
+    }
+}
+
+#[test]
+fn test_visit() {
+    struct Logger {
+        logs: Vec<String>,
+    }
+
+    impl Apply<i32> for Logger {
+        fn visit(&mut self, node: &i32) {
+            self.logs.push(format!("Found a {}", node));
+        }
+    }
+
+    #[allow(non_local_definitions)]
+    impl<V> DriveThru<V> for i32
+    where
+        V: Apply<i32>,
+    {
+        fn drive_thru(&self, visitor: &mut V) {
             visitor.visit(self);
         }
     }
 
     let structure = (1, (2, 3));
-    let log = Logger {};
-    log.enter(&structure);
+    let mut log = Logger { logs: Vec::new() };
+    structure.drive_thru(&mut log);
 }
 
 #[test]
 fn test_visit_mut() {
     struct Incrementor {}
 
-    impl Visitor for Incrementor {}
-    impl VisitMut<i32> for Incrementor {
-        fn visit_mut(&self, node: &mut i32) {
+    impl ApplyMut<i32> for Incrementor {
+        fn visit_mut(&mut self, node: &mut i32) {
             *node += 1;
         }
     }
-    impl<V, A, B> DriveMut<V> for (A, B)
+
+    #[allow(non_local_definitions)]
+    impl<V> DriveThruMut<V> for i32
     where
-        A: DriveMut<V>,
-        B: DriveMut<V>,
-        V: Visitor,
+        V: ApplyMut<i32>,
     {
-        fn drive_thru_mut(&mut self, visitor: &V) {
-            self.0.drive_thru_mut(visitor);
-            self.1.drive_thru_mut(visitor);
-        }
-    }
-    impl<V> DriveMut<V> for i32
-    where
-        V: Visitor + VisitMut<i32>,
-    {
-        fn drive_thru_mut(&mut self, visitor: &V) {
+        fn drive_thru_mut(&mut self, visitor: &mut V) {
             visitor.visit_mut(self);
         }
     }
 
     let mut structure = (1, (2, 3));
-    let inc = Incrementor {};
-    inc.enter_mut(&mut structure);
+    let mut inc = Incrementor {};
+    structure.drive_thru_mut(&mut inc);
     assert_eq!(structure, (2, (3, 4)));
 }

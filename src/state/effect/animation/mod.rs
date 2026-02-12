@@ -3,14 +3,13 @@
 //! An animation is a coordinated, continuous and long-lived effect.
 //! Animation is to Effect what Stream is to Future.
 
+use crate::geometry::Vector;
 use crate::{geometry::Lerp, state::Slot};
 use core::{fmt::Debug, future::Future};
 use futures_time::{
     task,
     time::{Duration, Instant},
 };
-use std::ops::{Add, Mul, Sub};
-use crate::geometry::Vector;
 
 pub mod spring;
 

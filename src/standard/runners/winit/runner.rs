@@ -1,4 +1,6 @@
+use crate::app::composition::effects::ElementEffect;
 use crate::app::composition::elements::Blueprint;
+use crate::app::composition::visit::Apply;
 use crate::app::input::Event;
 use crate::app::runner::Runner;
 use crate::app::runner::futures::AsyncExecutor;
@@ -17,6 +19,15 @@ use winit::window::{Window, WindowId};
 pub struct WinitEnvironment;
 
 pub type Share<T> = Arc<Mutex<T>>;
+
+impl<T> Apply<T> for WinitEnvironment
+where
+    T: ElementEffect<Self>,
+{
+    fn visit(&mut self, node: &T) {
+        node.apply(self);
+    }
+}
 
 pub struct WinitRunner<AppBlueprint>
 where
