@@ -11,13 +11,13 @@ fn main() {
         <Terminal>
             <flex>
                 <item>
-                    <Square>{ Rgba::red() }</Square>
+                    <Square>{ Rgba::magenta() }</Square>
                 </item>
                 <item grow=2.0>
-                    <Square>{ Rgba::red() }</Square>
+                    <Square>{ Rgba::yellow() }</Square>
                 </item>
                 <item>
-                    <Square>{ Rgba::red() }</Square>
+                    <Square>{ Rgba::cyan() }</Square>
                 </item>
             </flex>
         </Terminal>
@@ -27,7 +27,7 @@ fn main() {
 /// A simple coloured square.
 fn Square(color: Rgba<f32>) -> impl TUI {
     view! (
-        <ItemBox::new minimum_size=Extent2::new(16.0, 8.0)>
+        <ItemBox::new minimum_size=Extent2::new(16.0, 2.0)>
             @move |hx| <Graphic color=color rect=hx.rect />
         </ItemBox::new>
     )

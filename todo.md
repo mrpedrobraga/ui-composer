@@ -2,12 +2,19 @@
 
 ## Reactivity
 
-- Implement reverse-signals: they ability to derive data from many (anonymous) sources.
-    - Implement child hints, especially `ChildSizeHints`...
-    - Implement more `with_reactive` methods for `WindowNode` to allow children to:
-        - Prevent a window from closing.
-        - Drag a window.
-        - Alter the window's size.
+- Reverse broadcasters which gather data from multiple sources.
+    - Child hints.
+    - Marking a window as dirty (preventing it from closing).
+- Dynamic arity containers.
+
+## Animation
+
+- Animatable UI.
+  - Lerp for UI: the ability to interpolate between two compatible blueprints.
+    - If `A: Lerp` and `B: Lerp` you can assume `(A, B): Lerp` and similarly for other product types;
+    - If `A: Fade` you can assume `Option<A>: Lerp`;
+    - If `A: Lerp`, then `Either<A, A>: Lerp`, similarly for other sum types;
+    - Even if `A: ?Lerp, B: ?Lerp`, an adapter `FadeBetween<A, B>` can animate between them;
 
 ## Layout
 
@@ -15,8 +22,6 @@
     - Integrate with access-kit.
 
 ## Graphics
-
-- Implement
 
 ## Stability
 

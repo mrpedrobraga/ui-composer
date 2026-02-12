@@ -3,12 +3,14 @@
 //! An animation is a coordinated, continuous and long-lived effect.
 //! Animation is to Effect what Stream is to Future.
 
-use crate::{geometry::Vector, state::Slot};
+use crate::{geometry::Lerp, state::Slot};
 use core::{fmt::Debug, future::Future};
 use futures_time::{
     task,
     time::{Duration, Instant},
 };
+use std::ops::{Add, Mul, Sub};
+use crate::geometry::Vector;
 
 pub mod spring;
 
@@ -47,7 +49,7 @@ pub trait Animation {
     ) -> Chain<Self, LinearInterpolate<Self::Item>>
     where
         Self: Sized,
-        Self::Item: Vector,
+        Self::Item: Lerp,
     {
         self.chain(lerp(target_value, duration))
     }
@@ -241,7 +243,7 @@ impl<Item> Animation for Assign<Item> {
 }
 
 /// Interpolates the initial value to a destination value in a certain time.
-pub fn lerp<Item: Vector>(
+pub fn lerp<Item: Lerp>(
     to: Item,
     duration: Duration,
 ) -> LinearInterpolate<Item> {
@@ -249,12 +251,12 @@ pub fn lerp<Item: Vector>(
 }
 
 /// See [lerp].
-pub struct LinearInterpolate<Item: Vector> {
+pub struct LinearInterpolate<Item: Lerp> {
     to: Item,
     duration: Duration,
 }
 
-impl<Item: Vector> Animation for LinearInterpolate<Item> {
+impl<Item: Lerp> Animation for LinearInterpolate<Item> {
     type Item = Item;
 
     fn process(
@@ -280,10 +282,7 @@ impl<Item: Vector> Animation for LinearInterpolate<Item> {
 /// Moves towards the target value with a scalar speed.
 /// Unlike [lerp], this animation does not have a defined duration,
 /// instead, it takes longer the further away the value is from the target.
-pub fn move_toward<Item: Vector>(
-    target: Item,
-    speed: Item,
-) -> MoveToward<Item> {
+pub fn move_toward<Item: Lerp>(target: Item, speed: Item) -> MoveToward<Item> {
     MoveToward {
         current_value: None,
         target,
@@ -292,13 +291,16 @@ pub fn move_toward<Item: Vector>(
 }
 
 /// See [move_toward].
-pub struct MoveToward<Item: Vector> {
+pub struct MoveToward<Item: Lerp> {
     current_value: Option<Item>,
     target: Item,
     speed: Item,
 }
 
-impl<Item: Vector + Copy> Animation for MoveToward<Item> {
+impl<Item> Animation for MoveToward<Item>
+where
+    Item: Lerp + Vector + Copy,
+{
     type Item = Item;
 
     fn process(

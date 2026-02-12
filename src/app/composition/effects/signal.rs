@@ -1,4 +1,6 @@
+use crate::app::composition::algebra::Bubble;
 use crate::app::composition::elements::{Blueprint, Element};
+use crate::prelude::Event;
 use futures_signals::signal::Signal;
 use pin_project::pin_project;
 use std::pin::Pin;
@@ -46,6 +48,18 @@ where
 
     fn make(self, _: &Env) -> Self::Element {
         self
+    }
+}
+
+impl<Sig, Env> Bubble<Event, bool> for React<Sig, Env>
+where
+    Sig: Signal<Item: Blueprint<Env>>,
+{
+    fn bubble(&mut self, cx: &mut Event) -> bool {
+        self.element
+            .as_mut()
+            .map(|e| e.bubble(cx))
+            .unwrap_or_default()
     }
 }
 

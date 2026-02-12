@@ -24,5 +24,5 @@ fn Square(color: Rgba<f32>) -> impl TUI {
         rect: hx.rect,
         color,
     })
-    .with_minimum_size(Extent2::new(16.0, 8.0))
+    .with_minimum_size(Extent2::new(16.0, 4.0))
 }

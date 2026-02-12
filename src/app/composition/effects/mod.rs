@@ -19,14 +19,14 @@ pub trait ElementEffect<Environment> {
 #[diagnostic::on_unimplemented(
     message = "{Self} is not an effect node applicable to {Environment}."
 )]
-pub trait ElementEffectNode<Environment> {
-    fn visit_with<Handler>(&self, h: &mut Handler)
+pub trait Drive<Environment> {
+    fn drive_thru<Handler>(&self, h: &mut Handler)
     where
         Handler: EffectHandler<Environment>;
 }
 
-impl<Env> ElementEffectNode<Env> for () {
-    fn visit_with<Handler>(&self, _: &mut Handler)
+impl<Env> Drive<Env> for () {
+    fn drive_thru<Handler>(&self, _: &mut Handler)
     where
         Handler: EffectHandler<Env>,
     {
@@ -34,37 +34,37 @@ impl<Env> ElementEffectNode<Env> for () {
     }
 }
 
-impl<Env, A, B> ElementEffectNode<Env> for (A, B)
+impl<Env, A, B> Drive<Env> for (A, B)
 where
-    A: ElementEffectNode<Env>,
-    B: ElementEffectNode<Env>,
+    A: Drive<Env>,
+    B: Drive<Env>,
 {
-    fn visit_with<Handler>(&self, h: &mut Handler)
+    fn drive_thru<Handler>(&self, h: &mut Handler)
     where
         Handler: EffectHandler<Env>,
     {
-        self.0.visit_with(h);
-        self.1.visit_with(h);
+        self.0.drive_thru(h);
+        self.1.drive_thru(h);
     }
 }
 
-impl<Env, A> ElementEffectNode<Env> for Option<A>
+impl<Env, A> Drive<Env> for Option<A>
 where
-    A: ElementEffectNode<Env>,
+    A: Drive<Env>,
 {
-    fn visit_with<Handler>(&self, h: &mut Handler)
+    fn drive_thru<Handler>(&self, h: &mut Handler)
     where
         Handler: EffectHandler<Env>,
     {
         if let Some(inner) = self {
-            inner.visit_with(h);
+            inner.drive_thru(h);
         }
     }
 }
 
 /// Please refer to the [module level documentation](self).
 pub trait EffectHandler<Environment> {
-    fn handle_one<E>(&mut self, effect: &E)
+    fn visit<E>(&mut self, effect: &E)
     where
         E: 'static + ElementEffect<Environment>;
 }
@@ -84,7 +84,7 @@ fn visit_all() {
     }
 
     impl EffectHandler<SomeEnvironment> for SomeHandler {
-        fn handle_one<E>(&mut self, effect: &E)
+        fn visit<E>(&mut self, effect: &E)
         where
             E: 'static + ElementEffect<SomeEnvironment>,
         {
@@ -101,15 +101,15 @@ fn visit_all() {
             env.state += 1;
         }
     }
-    impl<Env> ElementEffectNode<Env> for EffectA
+    impl<Env> Drive<Env> for EffectA
     where
         EffectA: ElementEffect<Env>,
     {
-        fn visit_with<Handler>(&self, h: &mut Handler)
+        fn drive_thru<Handler>(&self, h: &mut Handler)
         where
             Handler: EffectHandler<Env>,
         {
-            h.handle_one(self);
+            h.visit(self);
         }
     }
     impl ElementEffect<SomeEnvironment> for EffectB {
@@ -117,12 +117,12 @@ fn visit_all() {
             /* Nothing! */
         }
     }
-    impl ElementEffectNode<SomeEnvironment> for EffectB {
-        fn visit_with<Handler>(&self, h: &mut Handler)
+    impl Drive<SomeEnvironment> for EffectB {
+        fn drive_thru<Handler>(&self, h: &mut Handler)
         where
             Handler: EffectHandler<SomeEnvironment>,
         {
-            h.handle_one(self);
+            h.visit(self);
         }
     }
 
@@ -137,7 +137,7 @@ fn visit_all() {
         Some(EffectA),
         None as Option<EffectB>
     );
-    effect_tree.visit_with(&mut h);
+    effect_tree.drive_thru(&mut h);
     dbg!(&h);
     assert_eq!(h.env.state, 2);
 }

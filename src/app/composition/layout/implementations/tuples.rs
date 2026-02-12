@@ -3,7 +3,7 @@ use crate::app::composition::layout::hints::ParentHints;
 use vek::Extent2;
 
 impl LayoutItem for () {
-    type Content = ();
+    type Blueprint = ();
 
     fn get_natural_size(&self) -> Extent2<f32> {
         self.get_minimum_size()
@@ -13,5 +13,5 @@ impl LayoutItem for () {
         Extent2::zero()
     }
 
-    fn lay(&mut self, _layout_hints: ParentHints) -> Self::Content {}
+    fn lay(&mut self, _layout_hints: ParentHints) -> Self::Blueprint {}
 }

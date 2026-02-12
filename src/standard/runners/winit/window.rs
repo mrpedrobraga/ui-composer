@@ -6,7 +6,9 @@
 
 use pin_project::pin_project;
 
+use crate::app::composition::algebra::Bubble;
 use crate::app::composition::elements::{Blueprint, Element};
+use crate::prelude::Event;
 use crate::runners::winit::gpu::{Gpu, RenderTarget};
 use crate::runners::winit::runner::WinitEnvironment;
 use std::sync::Arc;
@@ -33,6 +35,27 @@ where
 pub struct WindowElement<Ui> {
     #[pin]
     ui: Ui,
+}
+
+impl<Ui> Bubble<Event, bool> for WindowElement<Ui> {
+    fn bubble(&mut self, cx: &mut Event) -> bool {
+        match cx {
+            Event::Resized(_extent2) => {
+                /* Store and broadcast this change by setting the window's state. */
+                true
+            }
+            Event::CloseRequested => false,
+            Event::RedrawRequested => false,
+            Event::OcclusionStateChanged(_) => false,
+            Event::FocusStateChanged(_) => false,
+            Event::ScaleFactorChanged(_) => false,
+            Event::ThemeTypeChanged(_) => false,
+            Event::Cursor { .. } => false,
+            Event::Keyboard { .. } => false,
+            Event::Ime(_) => false,
+            Event::File(_) => false,
+        }
+    }
 }
 
 impl<Ui> Element<WinitEnvironment> for WindowElement<Ui>

@@ -1,3 +1,6 @@
+use crate::app::composition::algebra::Bubble;
+use crate::prelude::Event;
+
 use super::super::elements::{Blueprint, Element};
 use pin_project::pin_project;
 use std::future::Future;
@@ -46,6 +49,18 @@ where
 
     fn make(self, _: &Env) -> Self::Element {
         self
+    }
+}
+
+impl<Fut, Env> Bubble<Event, bool> for ReactOnce<Fut, Env>
+where
+    Fut: Future<Output: Blueprint<Env>>,
+{
+    fn bubble(&mut self, cx: &mut Event) -> bool {
+        self.element
+            .as_mut()
+            .map(|e| e.bubble(cx))
+            .unwrap_or_default()
     }
 }
 

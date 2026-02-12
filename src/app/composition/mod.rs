@@ -8,13 +8,14 @@ pub mod algebra;
 pub mod effects;
 pub mod elements;
 pub mod layout;
+pub mod visit;
 
 /// Trait for an item that can be used in an app's layout context.
 pub trait UI<Environment>:
-    LayoutItem<Content: Blueprint<Environment, Element: Send>>
+    LayoutItem<Blueprint: Blueprint<Environment, Element: Send>>
 {
 }
 impl<Environment, T> UI<Environment> for T where
-    T: LayoutItem<Content: Blueprint<Environment, Element: Send>>
+    T: LayoutItem<Blueprint: Blueprint<Environment, Element: Send>>
 {
 }

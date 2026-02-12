@@ -1,6 +1,8 @@
+use crate::app::composition::algebra::Bubble;
 use crate::app::composition::elements::Blueprint;
 use crate::app::runner::Runner;
 use crate::app::runner::futures::AsyncExecutor;
+use crate::prelude::Event;
 use async_std::task::block_on;
 use crossterm::QueueableCommand;
 use crossterm::cursor::{
@@ -12,13 +14,14 @@ use crossterm::event::{
 };
 use crossterm::terminal::{
     DisableLineWrap, EnableLineWrap, EnterAlternateScreen,
-    LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
+    LeaveAlternateScreen, enable_raw_mode,
 };
 use futures::{StreamExt, join};
 use futures_signals::signal::SignalExt;
 use std::io::{Write, stdout};
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
+use vek::Extent2;
 
 pub struct TerminalEnvironment;
 pub type Own<T> = Arc<Mutex<T>>;
@@ -43,18 +46,32 @@ where
         let env = TerminalEnvironment;
         let app = blueprint.make(&env);
         let app = Arc::new(Mutex::new(app));
+        let app_e = app.clone();
 
         let event_handler = async {
             let e_stream = EventStream::new();
 
             e_stream
                 .filter_map(|e| async { e.ok() })
-                .for_each(|event| async move {
-                    if let CrosstermEvent::Key(e) = event
-                        && let KeyCode::Char('q') = e.code
-                    {
-                        let _ = Self::release_terminal(&mut stdout());
-                        std::process::exit(1);
+                .for_each(move |event| {
+                    let value = app_e.clone();
+                    async move {
+                        if let CrosstermEvent::Key(e) = event
+                            && let KeyCode::Char('q') = e.code
+                        {
+                            let _ = Self::release_terminal(&mut stdout());
+                            std::process::exit(1);
+                        }
+
+                        if let CrosstermEvent::Resize(new_width, new_height) =
+                            event
+                        {
+                            let mut l = value.lock().unwrap();
+                            l.bubble(&mut Event::Resized(Extent2::new(
+                                new_width as f32,
+                                new_height as f32,
+                            )));
+                        }
                     }
                 })
                 .await;
@@ -101,7 +118,7 @@ where
             .queue(RestorePosition)?
             .flush()?;
 
-        disable_raw_mode().expect("Couldn't disable raw mode.");
+        enable_raw_mode().expect("Couldn't disable raw mode.");
         Ok(())
     }
 }

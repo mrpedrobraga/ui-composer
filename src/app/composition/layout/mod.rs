@@ -82,7 +82,7 @@ mod implementations;
 )]
 #[must_use = "layout items need to be put in a layout context to be used."]
 pub trait LayoutItem: Send {
-    type Content;
+    type Blueprint;
 
     /// The size this component prefers to be at. It's usually its minimum size.
     ///
@@ -97,18 +97,18 @@ pub trait LayoutItem: Send {
     fn get_minimum_size(&self) -> Extent2<f32>;
 
     /// Renders the content of this layout item with a specific rect.
-    fn lay(&mut self, parent_hints: ParentHints) -> Self::Content;
+    fn lay(&mut self, parent_hints: ParentHints) -> Self::Blueprint;
 
     /// Creates a reactive Element that resizes its content to fit `rect_signal`.
     fn lay_reactive<Sig, Env>(
         mut self,
         rect_signal: Sig,
         parent_hints: ParentHints,
-    ) -> React<impl Signal<Item = Self::Content>, Env>
+    ) -> React<impl Signal<Item = Self::Blueprint>, Env>
     where
         Sig: Signal<Item = Rect<f32, f32>> + Send,
         Self: Sized + Send,
-        Self::Content: Blueprint<Env>,
+        Self::Blueprint: Blueprint<Env>,
     {
         rect_signal
             .map(move |rect| {
@@ -163,7 +163,7 @@ impl<F: Send, Item> LayoutItem for ItemBox<F, Item>
 where
     F: FnMut(ParentHints) -> Item,
 {
-    type Content = Item;
+    type Blueprint = Item;
 
     fn get_natural_size(&self) -> Extent2<f32> {
         self.get_minimum_size()
@@ -173,7 +173,7 @@ where
         self.hints.minimum_size
     }
 
-    fn lay(&mut self, layout_hints: ParentHints) -> Self::Content {
+    fn lay(&mut self, layout_hints: ParentHints) -> Self::Blueprint {
         (self.factory)(layout_hints)
     }
 }

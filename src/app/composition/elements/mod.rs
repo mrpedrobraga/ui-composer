@@ -8,7 +8,9 @@
 //! For example, if you have a struct `BoxGraphic` you can implement `Blueprint<Desktop> + Blueprint<TUI>`
 //! and determine distinct [`Element`]s it creates when you call `Blueprint::make`
 
-use crate::app::composition::effects::ElementEffectNode;
+use crate::app::composition::algebra::Bubble;
+use crate::app::composition::effects::Drive;
+use crate::app::input::Event;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
@@ -21,8 +23,8 @@ pub trait Blueprint<Environment> {
     fn make(self, env: &Environment) -> Self::Element;
 }
 
-pub trait Element<Environment> {
-    type Effect: ElementEffectNode<Environment>;
+pub trait Element<Environment>: Bubble<Event, bool> {
+    type Effect: Drive<Environment>;
 
     fn effect(&self) -> Self::Effect;
 

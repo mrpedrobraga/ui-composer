@@ -51,7 +51,7 @@ impl<ItemList> LayoutItem for FlexContainer<ItemList>
 where
     ItemList: FlexItemList + Send,
 {
-    type Content = ItemList::Content;
+    type Blueprint = ItemList::Content;
 
     fn get_natural_size(&self) -> Extent2<f32> {
         let item_natural_sizes = self.items.get_natural_sizes();
@@ -95,7 +95,7 @@ where
         .unwrap_or_default()
     }
 
-    fn lay(&mut self, parent_hints: ParentHints) -> Self::Content {
+    fn lay(&mut self, parent_hints: ParentHints) -> Self::Blueprint {
         let flow_direction = self.flow_direction.as_cartesian(&parent_hints);
         let minima = self
             .items
@@ -229,7 +229,7 @@ impl<A> FlexItemList for FlexItem<A>
 where
     A: LayoutItem,
 {
-    type Content = A::Content;
+    type Content = A::Blueprint;
     type Weights = Once<f32>;
     type Minima = Once<f32>;
     const SIZE: usize = 1;
