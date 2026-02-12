@@ -121,12 +121,9 @@ where
             Poll::Ready(None) => Poll::Ready(None),
             Poll::Ready(Some(_)) => {
                 let ui_effects = ui.effect();
+                let mut env = TerminalEnvironment;
 
-                // TODO: Use the terminal environment in the poll?
-                // Actually, maybe not.
-                let mut handler = TerminalEffectHandler {
-                    env: TerminalEnvironment,
-                };
+                let mut handler = TerminalEffectHandler { env: &mut env };
 
                 ui_effects.drive_thru(&mut handler);
 
@@ -136,15 +133,15 @@ where
     }
 }
 
-struct TerminalEffectHandler {
-    env: TerminalEnvironment,
+struct TerminalEffectHandler<'a> {
+    env: &'a mut TerminalEnvironment,
 }
 
-impl EffectHandler<TerminalEnvironment> for TerminalEffectHandler {
+impl<'a> EffectHandler<TerminalEnvironment> for TerminalEffectHandler<'a> {
     fn visit<E>(&mut self, effect: &E)
     where
         E: 'static + ElementEffect<TerminalEnvironment>,
     {
-        effect.apply(&mut self.env);
+        effect.apply(self.env);
     }
 }
