@@ -63,7 +63,7 @@
 //! Some utility functions for calculating layouts are in the [`flow`] module.
 
 use crate::app::composition::effects::signal::{React, SignalReactExt};
-use crate::app::composition::elements::Blueprint;
+use crate::app::composition::elements::{Blueprint, Environment};
 pub use crate::geometry::flow::CoordinateSystem;
 use hints::{ChildHints, ParentHints};
 use {
@@ -100,7 +100,7 @@ pub trait LayoutItem: Send {
     fn lay(&mut self, parent_hints: ParentHints) -> Self::Blueprint;
 
     /// Creates a reactive Element that resizes its content to fit `rect_signal`.
-    fn lay_reactive<Sig, Env>(
+    fn lay_reactive<Sig, Env: Environment>(
         mut self,
         rect_signal: Sig,
         parent_hints: ParentHints,

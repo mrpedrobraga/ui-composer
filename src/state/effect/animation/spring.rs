@@ -1,4 +1,5 @@
 use crate::app::composition::effects::future::{FutureExt, ReactOnce};
+use crate::app::composition::elements::Environment;
 use crate::geometry::{Lerp, Vector};
 use crate::state::effect::animation::{Animation, AnimationFrame, Poll};
 use core::{future::Future, ops::Mul};
@@ -38,7 +39,7 @@ where
     }
 
     /// Animates `state` between two values depending on whether a condition is met.
-    pub fn if_then_else<S, Env>(
+    pub fn if_then_else<S, Env: Environment>(
         condition: S,
         state: Mutable<T>,
         value_if: T,

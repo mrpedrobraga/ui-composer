@@ -1,8 +1,9 @@
 use crate::app::composition::algebra::Bubble;
+use crate::app::composition::effects::ElementEffect;
 use crate::app::composition::effects::signal::{React, SignalReactExt};
 use crate::app::composition::elements::{Blueprint, Element};
 use crate::app::composition::layout::hints::ParentHints;
-use crate::app::composition::visit::DriveThru;
+use crate::app::composition::visit::{Apply, DriveThru};
 use crate::geometry::flow::CartesianFlow;
 use crate::runners::tui::TUI;
 use crate::runners::tui::render::canvas::{PixelCanvas, TextModePixel};
@@ -11,6 +12,7 @@ use core::pin::Pin;
 use core::task::{Context, Poll};
 use futures_signals::signal::Mutable;
 use futures_signals::signal::{Signal, SignalExt};
+use pin_project::pin_project;
 use vek::{Extent2, Rect};
 use {crate::app::input::Event, vek::Vec2};
 
@@ -27,7 +29,8 @@ where
         .map(|(x, y)| Extent2::new(x, y))
         .unwrap_or(Extent2::new(8, 8));
 
-    let render_target = PixelCanvas::new(size.as_());
+    //let render_target = PixelCanvas::new(size.as_());
+    let render_target = PixelCanvas::new(Extent2::new(100, 100));
 
     let state = TerminalState {
         size: Mutable::new(size.as_()),
@@ -79,8 +82,10 @@ where
     }
 }
 
+#[pin_project(project = TerminalElementProj)]
 pub struct TerminalElement<UI> {
     pub state: TerminalState,
+    #[pin]
     pub ui: UI,
 }
 
@@ -101,9 +106,12 @@ impl<UI> Element<TerminalEnvironment> for TerminalElement<UI>
 where
     UI: Element<TerminalEnvironment>,
 {
-    type Effect = ();
+    type Effect<'a>
+        = ()
+    where
+        UI: 'a;
 
-    fn effect(&self) -> Self::Effect {
+    fn effect(&self) -> Self::Effect<'_> {
         todo!()
     }
 
@@ -112,7 +120,7 @@ where
         cx: &mut Context,
         env: &TerminalEnvironment,
     ) -> Poll<Option<()>> {
-        let mut ui = unsafe { self.map_unchecked_mut(|this| &mut this.ui) };
+        let TerminalElementProj { state, mut ui } = self.project();
 
         let inner = ui.as_mut().poll(cx, env);
 
@@ -121,11 +129,18 @@ where
             Poll::Ready(None) => Poll::Ready(None),
             Poll::Ready(Some(_)) => {
                 let ui_effects = ui.effect();
-                let mut env = TerminalEnvironment;
-                ui_effects.drive_thru(&mut env);
+                let mut vis = TerminalEffectVisitor {
+                    buffer: &mut state.render_target,
+                };
+                ui_effects.drive_thru(&mut vis);
+                vis.buffer.show();
 
                 Poll::Ready(Some(()))
             }
         }
     }
+}
+
+pub struct TerminalEffectVisitor<'fx> {
+    pub buffer: &'fx mut PixelCanvas<TextModePixel>,
 }

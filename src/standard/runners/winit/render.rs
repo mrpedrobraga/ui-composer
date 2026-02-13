@@ -12,9 +12,9 @@ impl Blueprint<WinitEnvironment> for Graphic {
 }
 
 impl Element<WinitEnvironment> for Graphic {
-    type Effect = RenderQuad;
+    type Effect<'a> = RenderQuad;
 
-    fn effect(&self) -> Self::Effect {
+    fn effect(&self) -> Self::Effect<'_> {
         RenderQuad(self.rect, self.color)
     }
 }

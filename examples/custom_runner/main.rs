@@ -3,7 +3,7 @@ use chttp::ResponseExt;
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
 use ui_composer::app::composition::effects::future::FutureExt;
-use ui_composer::app::composition::elements::Blueprint;
+use ui_composer::app::composition::elements::{Blueprint, Environment};
 use ui_composer::app::runner::Runner;
 use ui_composer::app::runner::futures::AsyncExecutor;
 use ui_composer::prelude::UIComposer;
@@ -11,6 +11,9 @@ use ui_composer::state::SignalExt;
 
 /// An environment identifies a platform for which you can develop apps.
 pub struct ExampleEnvironment;
+impl Environment for ExampleEnvironment {
+    type EffectVisitor<'fx> = ();
+}
 
 /// A runner holds the app and runs it.
 pub struct ExampleRunner<B>(PhantomData<B>);

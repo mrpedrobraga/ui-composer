@@ -18,21 +18,30 @@ pub mod implementations;
 
 pub struct DummyEnvironment();
 
-pub trait Blueprint<Environment> {
-    type Element: Element<Environment>;
-    fn make(self, env: &Environment) -> Self::Element;
+pub trait Blueprint<Env>
+where
+    Env: Environment,
+{
+    type Element: Element<Env>;
+    fn make(self, env: &Env) -> Self::Element;
 }
 
-pub trait Element<Environment>: Bubble<Event, bool> {
-    type Effect: DriveThru<Environment>;
+pub trait Element<Env: Environment>: Bubble<Event, bool> {
+    type Effect<'fx>: DriveThru<Env::EffectVisitor<'fx>>
+    where
+        Self: 'fx;
 
-    fn effect(&self) -> Self::Effect;
+    fn effect(&self) -> Self::Effect<'_>;
 
     fn poll(
         self: Pin<&mut Self>,
         #[expect(unused)] cx: &mut Context,
-        #[expect(unused)] env: &Environment,
+        #[expect(unused)] env: &Env,
     ) -> Poll<Option<()>> {
         Poll::Ready(None)
     }
+}
+
+pub trait Environment {
+    type EffectVisitor<'fx>;
 }

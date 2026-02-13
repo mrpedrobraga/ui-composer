@@ -1,24 +1,25 @@
 use super::{Blueprint, Element};
 use crate::app::composition::algebra::Semigroup;
+use crate::app::composition::elements::Environment;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
 /* Unit */
 
-impl<Env> Blueprint<Env> for () {
+impl<Env: Environment> Blueprint<Env> for () {
     type Element = ();
 
     fn make(self, _: &Env) -> Self::Element {}
 }
 
-impl<Env> Element<Env> for () {
-    type Effect = ();
+impl<Env: Environment> Element<Env> for () {
+    type Effect<'fx> = ();
 
-    fn effect(&self) -> Self::Effect {}
+    fn effect(&self) -> Self::Effect<'_> {}
 }
 
 /* Indirection */
-impl<A, Env> Blueprint<Env> for Box<A>
+impl<A, Env: Environment> Blueprint<Env> for Box<A>
 where
     A: Blueprint<Env>,
 {
@@ -29,13 +30,16 @@ where
     }
 }
 
-impl<A, Env> Element<Env> for Box<A>
+impl<A, Env: Environment> Element<Env> for Box<A>
 where
     A: Element<Env>,
 {
-    type Effect = A::Effect;
+    type Effect<'fx>
+        = A::Effect<'fx>
+    where
+        A: 'fx;
 
-    fn effect(&self) -> Self::Effect {
+    fn effect(&self) -> Self::Effect<'_> {
         let item = &**self;
         item.effect()
     }
@@ -52,7 +56,7 @@ where
 
 /* Tuples */
 
-impl<A, B, Env> Blueprint<Env> for (A, B)
+impl<A, B, Env: Environment> Blueprint<Env> for (A, B)
 where
     A: Blueprint<Env>,
     B: Blueprint<Env>,
@@ -64,14 +68,18 @@ where
     }
 }
 
-impl<A, B, Env> Element<Env> for (A, B)
+impl<A, B, Env: Environment> Element<Env> for (A, B)
 where
     A: Element<Env>,
     B: Element<Env>,
 {
-    type Effect = (A::Effect, B::Effect);
+    type Effect<'fx>
+        = (A::Effect<'fx>, B::Effect<'fx>)
+    where
+        A: 'fx,
+        B: 'fx;
 
-    fn effect(&self) -> Self::Effect {
+    fn effect(&self) -> Self::Effect<'_> {
         (self.0.effect(), self.1.effect())
     }
 
@@ -99,7 +107,7 @@ where
 
 /* Options */
 
-impl<A, Env> Blueprint<Env> for Option<A>
+impl<A, Env: Environment> Blueprint<Env> for Option<A>
 where
     A: Blueprint<Env>,
 {
@@ -110,13 +118,16 @@ where
     }
 }
 
-impl<A, Env> Element<Env> for Option<A>
+impl<A, Env: Environment> Element<Env> for Option<A>
 where
     A: Element<Env>,
 {
-    type Effect = Option<A::Effect>;
+    type Effect<'fx>
+        = Option<A::Effect<'fx>>
+    where
+        A: 'fx;
 
-    fn effect(&self) -> Self::Effect {
+    fn effect(&self) -> Self::Effect<'_> {
         self.as_ref().map(|x| x.effect())
     }
 }

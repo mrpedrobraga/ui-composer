@@ -1,10 +1,11 @@
 use crate::app::composition::algebra::Bubble;
 use crate::app::composition::effects::ElementEffect;
-use crate::app::composition::elements::Blueprint;
+use crate::app::composition::elements::{Blueprint, Environment};
 use crate::app::composition::visit::Apply;
 use crate::app::runner::Runner;
 use crate::app::runner::futures::AsyncExecutor;
 use crate::prelude::Event;
+use crate::runners::tui::nodes::TerminalEffectVisitor;
 use async_std::task::block_on;
 use crossterm::QueueableCommand;
 use crossterm::cursor::{
@@ -26,15 +27,9 @@ use std::sync::{Arc, Mutex};
 use vek::Extent2;
 
 pub struct TerminalEnvironment;
-pub type Own<T> = Arc<Mutex<T>>;
 
-impl<T> Apply<T> for TerminalEnvironment
-where
-    T: ElementEffect<Self>,
-{
-    fn visit(&mut self, node: &T) {
-        node.apply(self);
-    }
+impl Environment for TerminalEnvironment {
+    type EffectVisitor<'fx> = TerminalEffectVisitor<'fx>;
 }
 
 pub struct TUIRunner<AppBlueprint>

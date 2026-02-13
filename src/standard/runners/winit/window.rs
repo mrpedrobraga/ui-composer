@@ -62,9 +62,12 @@ impl<Ui> Element<WinitEnvironment> for WindowElement<Ui>
 where
     Ui: Element<WinitEnvironment>,
 {
-    type Effect = ();
+    type Effect<'a>
+        = ()
+    where
+        Ui: 'a;
 
-    fn effect(&self) -> Self::Effect {}
+    fn effect(&self) -> Self::Effect<'_> {}
 
     fn poll(
         self: std::pin::Pin<&mut Self>,

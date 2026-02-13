@@ -1,4 +1,5 @@
 use crate::app::composition::algebra::Bubble;
+use crate::app::composition::elements::Environment;
 use crate::prelude::Event;
 
 use super::super::elements::{Blueprint, Element};
@@ -9,7 +10,7 @@ use std::task::{Context, Poll};
 
 #[pin_project]
 #[must_use = "ReactOnce does nothing unless polled"]
-pub struct ReactOnce<Fut, Env>
+pub struct ReactOnce<Fut, Env: Environment>
 where
     Fut: Future,
     Fut::Output: Blueprint<Env>,
@@ -20,7 +21,7 @@ where
 }
 
 pub trait FutureExt: Future {
-    fn into_signal<Env>(self) -> ReactOnce<Self, Env>
+    fn into_signal<Env: Environment>(self) -> ReactOnce<Self, Env>
     where
         Self: Sized,
         <Self as Future>::Output: Blueprint<Env>;
@@ -29,7 +30,7 @@ impl<Fut> FutureExt for Fut
 where
     Fut: Future,
 {
-    fn into_signal<Env>(self) -> ReactOnce<Self, Env>
+    fn into_signal<Env: Environment>(self) -> ReactOnce<Self, Env>
     where
         Self: Sized,
         <Self as Future>::Output: Blueprint<Env>,
@@ -41,7 +42,7 @@ where
     }
 }
 
-impl<Fut, Env> Blueprint<Env> for ReactOnce<Fut, Env>
+impl<Fut, Env: Environment> Blueprint<Env> for ReactOnce<Fut, Env>
 where
     Fut: Future<Output: Blueprint<Env>>,
 {
@@ -52,7 +53,7 @@ where
     }
 }
 
-impl<Fut, Env> Bubble<Event, bool> for ReactOnce<Fut, Env>
+impl<Fut, Env: Environment> Bubble<Event, bool> for ReactOnce<Fut, Env>
 where
     Fut: Future<Output: Blueprint<Env>>,
 {
@@ -64,17 +65,21 @@ where
     }
 }
 
-impl<Fut, Env> Element<Env> for ReactOnce<Fut, Env>
+impl<Fut, Env: Environment> Element<Env> for ReactOnce<Fut, Env>
 where
     Fut: Future<Output: Blueprint<Env>>,
 {
-    type Effect = Option<
+    type Effect<'fx>
+        = Option<
         <<<Fut as Future>::Output as Blueprint<Env>>::Element as Element<
             Env,
-        >>::Effect,
-    >;
+        >>::Effect<'fx>,
+    >
+    where
+        Fut: 'fx,
+        Env: 'fx;
 
-    fn effect(&self) -> Self::Effect {
+    fn effect(&self) -> Self::Effect<'_> {
         self.element.as_ref().map(|e| e.effect())
     }
 

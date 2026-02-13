@@ -5,6 +5,8 @@ use crate::app::composition::effects::ElementEffect;
 use crate::app::composition::elements::{Blueprint, Element};
 use crate::app::composition::visit::{Apply, DriveThru};
 use crate::geometry::Lerp;
+use crate::runners::tui::nodes::TerminalEffectVisitor;
+use crate::runners::tui::render::canvas::{Canvas, TextModePixel};
 use crate::runners::tui::runner::TerminalEnvironment;
 use crate::runners::winit::runner::WinitEnvironment;
 use vek::Rect;
@@ -63,6 +65,23 @@ impl ElementEffect<TerminalEnvironment> for RenderQuad {
         }
 
         s.flush().unwrap();
+    }
+}
+impl<'fx> Apply<RenderQuad> for TerminalEffectVisitor<'fx> {
+    fn visit(&mut self, node: &RenderQuad) {
+        self.buffer.rect(
+            node.0.as_(),
+            TextModePixel {
+                bg_color: node.1,
+                fg_color: node.1,
+                character: ' ',
+            },
+        );
+    }
+}
+impl Apply<RenderQuad> for () {
+    fn visit(&mut self, _: &RenderQuad) {
+        /* Do nothing for now */
     }
 }
 impl<V> DriveThru<V> for RenderQuad
@@ -124,9 +143,9 @@ impl Blueprint<TerminalEnvironment> for Graphic {
 }
 
 impl Element<TerminalEnvironment> for Graphic {
-    type Effect = RenderQuad;
+    type Effect<'fx> = RenderQuad;
 
-    fn effect(&self) -> Self::Effect {
+    fn effect(&self) -> Self::Effect<'_> {
         RenderQuad(self.rect, self.color)
     }
 }

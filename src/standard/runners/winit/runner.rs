@@ -1,5 +1,5 @@
 use crate::app::composition::effects::ElementEffect;
-use crate::app::composition::elements::Blueprint;
+use crate::app::composition::elements::{Blueprint, Environment};
 use crate::app::composition::visit::Apply;
 use crate::app::input::Event;
 use crate::app::runner::Runner;
@@ -17,6 +17,9 @@ use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
 use winit::window::{Window, WindowId};
 
 pub struct WinitEnvironment;
+impl Environment for WinitEnvironment {
+    type EffectVisitor<'fx> = ();
+}
 
 pub type Share<T> = Arc<Mutex<T>>;
 

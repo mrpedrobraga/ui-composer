@@ -9,15 +9,22 @@ use vek::{Extent2, Rgba};
 fn main() {
     UIComposer::run_tui(view! (
         <Terminal>
-            <flex>
-                <item>
-                    <Square>{ Rgba::magenta() }</Square>
+            <flex vertical_flow>
+                <item grow=1.0>
+                    <flex>
+                        <item>
+                            <Square>{ Rgba::magenta() }</Square>
+                        </item>
+                        <item grow=2.0>
+                            <Square>{ Rgba::yellow() }</Square>
+                        </item>
+                        <item>
+                            <Square>{ Rgba::cyan() }</Square>
+                        </item>
+                    </flex>
                 </item>
-                <item grow=2.0>
-                    <Square>{ Rgba::yellow() }</Square>
-                </item>
                 <item>
-                    <Square>{ Rgba::cyan() }</Square>
+                    <Square>{ Rgba::blue() }</Square>
                 </item>
             </flex>
         </Terminal>

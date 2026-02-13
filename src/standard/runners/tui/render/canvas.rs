@@ -4,7 +4,7 @@ use crossterm::cursor::MoveTo;
 use crossterm::style::{Color, PrintStyledContent, Stylize};
 use ndarray::Array2;
 use std::io::{Write, stdout};
-use vek::{Rect, Rgba, Vec2};
+use vek::{Extent2, Rect, Rgba, Vec2};
 
 /// Trait that defines a pixel of a canvas.
 pub trait Pixel: Default {
@@ -40,14 +40,17 @@ pub trait Canvas {
         rect: Rect<f32, f32>,
         shader: impl Fn(PixelShaderInput) -> Self::Pixel,
     );
+
+    /// Resizes the canvas to `new_size`;
+    fn resize(&mut self, new_size: Extent2<u32>);
 }
 
 /// A unit of the beautiful frame buffer.
 #[derive(Copy, Clone, PartialEq)]
 pub struct TextModePixel {
-    bg_color: Rgba<f32>,
-    fg_color: Rgba<f32>,
-    character: char,
+    pub bg_color: Rgba<f32>,
+    pub fg_color: Rgba<f32>,
+    pub character: char,
 }
 
 impl Default for TextModePixel {
@@ -163,8 +166,10 @@ where
 {
     type Pixel = P;
 
-    fn put_pixel(&mut self, position: Vec2<u32>, pixel: P) {
-        self.pixels[(position.x as usize, position.y as usize)] = pixel;
+    fn put_pixel(&mut self, position: Vec2<u32>, new_pixel: P) {
+        if let Some(pixel) = self.pixels.get_mut((position.x as usize, position.y as usize)) {
+            *pixel = new_pixel;
+        }
     }
 
     fn rect(&mut self, rect: Rect<u32, u32>, color: Self::Pixel)
@@ -212,5 +217,9 @@ where
                 self.put_pixel(Vec2::new(x, y), shader(input));
             }
         }
+    }
+
+    fn resize(&mut self, new_size: Extent2<u32>) {
+        // TODO: Resize array.
     }
 }
