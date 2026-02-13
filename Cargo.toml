@@ -13,20 +13,34 @@ name = "ui_composer"
 [dependencies]
 
 ### Futures and Asynchronicity ###
-async-std = "1.13.0"
-futures-signals = "0.3.33"
-futures-time = "3.0.0"
+
+# Main asynchronicity library.
 futures = { version = "0.3.30", default-features = false, features = [
     "async-await",
 ] }
+
+# Useful async constructs. I can probably remove this dependency.
+async-std = "1.13.0"
+
+# FRP Signals for reactivity. I might port this library into UI composer 
+# in order to add my own implementations of signals, especially no-std ones.
+futures-signals = "0.3.33"
+
+# Used for animation.
+futures-time = "3.0.0"
+
+# Utility for safely pinning values when implementing traits like `Future`.
 pin-project = "1.1.5"
 
 ### Geometry ###
+
+# Crate for geometry types. Might get rid of this dependency.
 vek = { version = "0.17.0", features = ["bytemuck"] }
+
+# Trait for generalizing numbers.
 num-traits = "0.2.19"
 
 ### Rendering
-bytemuck = { version = "1.16.1", features = ["derive"] }
 glyphon = { git = "https://github.com/grovesNL/glyphon.git" }
 wgpu = { version = "28.0.0", default-features = false, features = [
     "wgsl",
@@ -38,10 +52,17 @@ wgpu = { version = "28.0.0", default-features = false, features = [
 ], optional = true }
 
 ### Data ###
+
+# Working with bytes.
+bytemuck = { version = "1.16.1", features = ["derive"] }
+
+# Serializing and deserializing UI composer and re-exported crates' types.
 serde = { version = "1.0.204", features = ["derive"], optional = true }
+
+# Fixed-capacity vector that does not allocate.
 arrayvec = { version = "0.7.6", default-features = false }
-ndarray = "0.17.2"
-# rand = {version = "0.9.0-beta.3", features = []}
+
+# String
 smol_str = "0.3.2"
 spin = "0.10.0"
 downcast-rs = { version = "2.0.2", default-features = false }

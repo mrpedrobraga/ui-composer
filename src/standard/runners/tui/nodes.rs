@@ -6,7 +6,7 @@ use crate::app::composition::layout::hints::ParentHints;
 use crate::app::composition::visit::{Apply, DriveThru};
 use crate::geometry::flow::CartesianFlow;
 use crate::runners::tui::TUI;
-use crate::runners::tui::render::canvas::{PixelCanvas, TextModePixel};
+use crate::runners::tui::render::canvas::{Canvas, PixelCanvas, TextModePixel};
 use crate::runners::tui::runner::TerminalEnvironment;
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -29,8 +29,7 @@ where
         .map(|(x, y)| Extent2::new(x, y))
         .unwrap_or(Extent2::new(8, 8));
 
-    //let render_target = PixelCanvas::new(size.as_());
-    let render_target = PixelCanvas::new(Extent2::new(100, 100));
+    let render_target = PixelCanvas::new(size.as_());
 
     let state = TerminalState {
         size: Mutable::new(size.as_()),
@@ -95,6 +94,7 @@ where
 {
     fn bubble(&mut self, cx: &mut Event) -> bool {
         if let Event::Resized(new_size) = cx {
+            self.state.render_target.resize(new_size.as_());
             self.state.size.set(*new_size);
         };
 

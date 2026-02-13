@@ -2,7 +2,6 @@ use crate::runners::tui::render::shaders::PixelShaderInput;
 use crossterm::QueueableCommand;
 use crossterm::cursor::MoveTo;
 use crossterm::style::{Color, PrintStyledContent, Stylize};
-use ndarray::Array2;
 use std::io::{Write, stdout};
 use vek::{Extent2, Rect, Rgba, Vec2};
 
@@ -24,10 +23,10 @@ pub trait Canvas {
     type Pixel;
 
     /// Places a single pixel within the frame buffer.
-    fn put_pixel(&mut self, position: Vec2<u32>, pixel: Self::Pixel);
+    fn put_pixel(&mut self, position: Vec2<usize>, pixel: Self::Pixel);
 
     /// Draws a rectangle with a single colour.
-    fn rect(&mut self, rect: Rect<u32, u32>, color: Self::Pixel)
+    fn rect(&mut self, rect: Rect<usize, usize>, color: Self::Pixel)
     where
         Self::Pixel: Clone;
 
@@ -42,7 +41,9 @@ pub trait Canvas {
     );
 
     /// Resizes the canvas to `new_size`;
-    fn resize(&mut self, new_size: Extent2<u32>);
+    fn resize(&mut self, new_size: Extent2<usize>)
+    where
+        Self::Pixel: Clone;
 }
 
 /// A unit of the beautiful frame buffer.
@@ -114,16 +115,18 @@ impl Pixel for TextModePixel {
 }
 
 pub struct PixelCanvas<P> {
-    pixels: Array2<P>,
+    size: Extent2<usize>,
+    pixels: Vec<P>,
 }
 
 impl<P> PixelCanvas<P>
 where
-    P: Pixel,
+    P: Pixel + Clone,
 {
-    pub fn new(size: vek::Extent2<usize>) -> Self {
+    pub fn new(size: Extent2<usize>) -> Self {
         PixelCanvas {
-            pixels: Array2::default([size.w, size.h]),
+            size,
+            pixels: vec![P::default(); size.w * size.h],
         }
     }
 }
@@ -132,66 +135,61 @@ impl PixelCanvas<TextModePixel> {
     pub fn show(&self) {
         let mut s = stdout();
 
-        for ((x, y), pixel) in self.pixels.indexed_iter() {
-            s.queue(MoveTo(x as u16, y as u16)).unwrap();
-
-            fn f32tou8(x: f32) -> u8 {
-                (x * 255.0) as u8
-            }
-
-            s.queue(PrintStyledContent(
-                pixel
-                    .character
-                    .with(Color::Rgb {
-                        r: f32tou8(pixel.fg_color.r),
-                        g: f32tou8(pixel.fg_color.g),
-                        b: f32tou8(pixel.fg_color.b),
-                    })
-                    .on(Color::Rgb {
-                        r: f32tou8(pixel.bg_color.r),
-                        g: f32tou8(pixel.bg_color.g),
-                        b: f32tou8(pixel.bg_color.b),
-                    }),
-            ))
-            .unwrap();
+        fn f32tou8(x: f32) -> u8 {
+            (x.clamp(0.0, 1.0) * 255.0) as u8
         }
 
-        s.flush().unwrap();
+        for y in 0..self.size.h {
+            for x in 0..self.size.w {
+                if let Some(pixel) = self.pixels.get(y * self.size.w + x) {
+                    s.queue(MoveTo(x as u16, y as u16)).unwrap();
+                    s.queue(PrintStyledContent(
+                        pixel
+                            .character
+                            .with(Color::Rgb {
+                                r: f32tou8(pixel.fg_color.r),
+                                g: f32tou8(pixel.fg_color.g),
+                                b: f32tou8(pixel.fg_color.b),
+                            })
+                            .on(Color::Rgb {
+                                r: f32tou8(pixel.bg_color.r),
+                                g: f32tou8(pixel.bg_color.g),
+                                b: f32tou8(pixel.bg_color.b),
+                            }),
+                    ))
+                    .unwrap();
+                }
+            }
+        }
     }
 }
 
 impl<P> Canvas for PixelCanvas<P>
 where
-    P: Default,
+    P: Pixel + Clone + Default,
 {
     type Pixel = P;
 
-    fn put_pixel(&mut self, position: Vec2<u32>, new_pixel: P) {
-        if let Some(pixel) = self.pixels.get_mut((position.x as usize, position.y as usize)) {
+    fn put_pixel(&mut self, position: Vec2<usize>, new_pixel: P) {
+        if position.x < self.size.w
+            && position.y < self.size.h
+            && let Some(pixel) =
+                self.pixels.get_mut(position.y * self.size.w + position.x)
+        {
             *pixel = new_pixel;
         }
     }
 
-    fn rect(&mut self, rect: Rect<u32, u32>, color: Self::Pixel)
-    where
-        Self::Pixel: Clone,
-    {
-        let x0 = rect.x;
-        let x1 = rect.x + rect.w;
-        let y0 = rect.y;
-        let y1 = rect.y + rect.h;
-
-        for y in y0..y1 {
-            for x in x0..x1 {
+    fn rect(&mut self, rect: Rect<usize, usize>, color: Self::Pixel) {
+        for y in rect.y..(rect.y + rect.h) {
+            for x in rect.x..(rect.x + rect.w) {
                 self.put_pixel(Vec2::new(x, y), color.clone());
             }
         }
     }
 
     fn clear(&mut self) {
-        for pixel in &mut self.pixels {
-            *pixel = P::default();
-        }
+        self.pixels.fill(P::default());
     }
 
     fn quad(
@@ -199,19 +197,19 @@ where
         rect: Rect<f32, f32>,
         shader: impl Fn(PixelShaderInput) -> Self::Pixel,
     ) {
-        let x0 = rect.x.floor();
-        let x1 = rect.x.floor() + rect.w.floor();
-        let y0 = rect.y.floor();
-        let y1 = rect.y.floor() + rect.h.floor();
+        let x_start = rect.x.floor() as usize;
+        let y_start = rect.y.floor() as usize;
+        let x_end = (rect.x + rect.w).floor() as usize;
+        let y_end = (rect.y + rect.h).floor() as usize;
 
-        for y in y0 as u32..y1 as u32 {
-            for x in x0 as u32..x1 as u32 {
-                let u = (x as f32 - x0) / (x1 - x0);
-                let v = (y as f32 - y0) / (y1 - y0);
+        for y in y_start..y_end {
+            for x in x_start..x_end {
+                let u = (x as f32 - rect.x) / rect.w;
+                let v = (y as f32 - rect.y) / rect.h;
 
                 let input = PixelShaderInput {
                     uv: Vec2::new(u, v),
-                    pixelCoord: Vec2::new(x, y),
+                    pixelCoord: Vec2::new(x as u32, y as u32),
                     time: 0.0,
                 };
                 self.put_pixel(Vec2::new(x, y), shader(input));
@@ -219,7 +217,15 @@ where
         }
     }
 
-    fn resize(&mut self, new_size: Extent2<u32>) {
-        // TODO: Resize array.
+    fn resize(&mut self, new_size: Extent2<usize>) {
+        let mut new_pixels = vec![P::default(); new_size.w * new_size.h];
+        for y in 0..new_size.h.min(self.size.h) {
+            for x in 0..new_size.w.min(self.size.w) {
+                new_pixels[y * new_size.w + x] =
+                    self.pixels[y * self.size.w + x].clone();
+            }
+        }
+        self.pixels = new_pixels;
+        self.size = new_size;
     }
 }

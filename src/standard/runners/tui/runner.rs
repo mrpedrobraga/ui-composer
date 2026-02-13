@@ -1,7 +1,5 @@
 use crate::app::composition::algebra::Bubble;
-use crate::app::composition::effects::ElementEffect;
 use crate::app::composition::elements::{Blueprint, Environment};
-use crate::app::composition::visit::Apply;
 use crate::app::runner::Runner;
 use crate::app::runner::futures::AsyncExecutor;
 use crate::prelude::Event;
