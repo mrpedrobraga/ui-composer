@@ -1,4 +1,4 @@
-use crate::app::composition::effects::future::{FutureExt, ReactOnce};
+use crate::app::composition::effects::future::{FutureReactExt, ReactOnce};
 use crate::app::composition::elements::Environment;
 use crate::geometry::{Lerp, Vector};
 use crate::state::effect::animation::{Animation, AnimationFrame, Poll};

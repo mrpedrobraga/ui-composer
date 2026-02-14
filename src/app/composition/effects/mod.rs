@@ -9,8 +9,4 @@ pub mod signal;
 #[diagnostic::on_unimplemented(
     message = "{Self} is not an effect applicable to {Environment}."
 )]
-pub trait ElementEffect<Environment> {
-    /// Applies the effect to an environment — this can be something like queueing a render,
-    /// a sound effect, a task, etc.
-    fn apply(&self, env: &mut Environment);
-}
+pub trait ElementEffect<Environment> {}

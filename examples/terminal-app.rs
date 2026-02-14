@@ -1,11 +1,12 @@
 #![allow(non_snake_case)]
 use ui_composer::app::composition::layout::{ItemBox, Resizable};
 use ui_composer::list;
-use ui_composer::prelude::{UIComposer, flex};
+use ui_composer::prelude::{flex, UIComposer};
 use ui_composer::runners::tui::nodes::Terminal;
 use ui_composer::runners::tui::runner::TUIRunner;
 use ui_composer::runners::tui::{Graphic, TUI};
 use ui_composer::standard::item;
+use ui_composer::standard::runners::tui::render::text::Text;
 use vek::{Extent2, Rgba};
 
 fn main() {
@@ -19,9 +20,18 @@ fn main() {
 }
 
 fn Square(color: Rgba<f32>) -> impl TUI {
-    ItemBox::new(move |hx| Graphic {
-        rect: hx.rect,
-        color,
+    ItemBox::new(move |hx| {
+        (
+            Graphic {
+                rect: hx.rect,
+                color,
+            },
+            Text {
+                rect: hx.rect,
+                text: "Hi there, my name is Pedro!".to_string(),
+                color: Rgba::black(),
+            },
+        )
     })
     .with_minimum_size(Extent2::new(16.0, 4.0))
 }

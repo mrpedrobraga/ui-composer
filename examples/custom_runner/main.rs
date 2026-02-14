@@ -2,7 +2,7 @@ use async_std::task::block_on;
 use chttp::ResponseExt;
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
-use ui_composer::app::composition::effects::future::FutureExt;
+use ui_composer::app::composition::effects::future::FutureReactExt;
 use ui_composer::app::composition::elements::{Blueprint, Environment};
 use ui_composer::app::runner::Runner;
 use ui_composer::app::runner::futures::AsyncExecutor;

@@ -23,15 +23,6 @@ impl Environment for WinitEnvironment {
 
 pub type Share<T> = Arc<Mutex<T>>;
 
-impl<T> Apply<T> for WinitEnvironment
-where
-    T: ElementEffect<Self>,
-{
-    fn visit(&mut self, node: &T) {
-        node.apply(self);
-    }
-}
-
 pub struct WinitRunner<AppBlueprint>
 where
     AppBlueprint: Blueprint<WinitEnvironment>,

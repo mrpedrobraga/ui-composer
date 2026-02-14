@@ -16,7 +16,7 @@ pub trait Pixel: Default {
     /// according to `self`'s opacity.
     ///
     /// This operation is non-commutative.
-    fn blend_normal(&self, other: Self) -> Self;
+    fn blend_normal(&self, other: &Self) -> Self;
 }
 
 /// Trait that defines a canvas that can be drawn to.
@@ -58,8 +58,8 @@ pub struct TextModePixel {
 impl Default for TextModePixel {
     fn default() -> Self {
         Self {
-            bg_color: Rgba::black(),
-            fg_color: Rgba::black(),
+            bg_color: Rgba::new_transparent(0.0, 0.0, 0.0),
+            fg_color: Rgba::new_transparent(0.0, 0.0, 0.0),
             character: ' ',
         }
     }
@@ -80,31 +80,21 @@ impl TextModePixel {
 }
 
 impl Pixel for TextModePixel {
-    fn blend_normal(&self, other: Self) -> Self {
-        /// Interpolates linearly between A and B.
+    fn blend_normal(&self, under_pixel: &Self) -> Self {
         fn lerp(a: Rgba<f32>, b: Rgba<f32>, factor: f32) -> Rgba<f32> {
-            a * (factor) + b * (1.0 - factor)
+            a * (1.0 - factor) + b * factor
         }
 
-        let self_bg_color_opaque =
-            Rgba::new(self.bg_color.r, self.bg_color.g, self.bg_color.b, 1.0);
+        // This simulates looking at the under pixel through the top pixel as if it were translucent.
+        let bg_color = lerp(under_pixel.bg_color, self.bg_color, self.bg_color.a);
 
-        // The background colour is just the NORMAL blend of the background colours.
-        let bg_color =
-            lerp(other.bg_color, self_bg_color_opaque, self.bg_color.a);
-
-        let (fg_color, character) = if self.character == ' ' {
-            (
-                // The bottom pixel will have its character partially "occluded" by
-                // the top pixel's background.
-                lerp(other.fg_color, self_bg_color_opaque, self.bg_color.a),
-                other.character,
-            )
+        let (character, fg_color) = if self.character == ' ' {
+            // If this pixel has no character, we just show the character underneath,
+            // but tinted with our pixel's background colour.
+            (under_pixel.character, lerp(under_pixel.fg_color, self.bg_color, self.bg_color.a))
         } else {
-            // The top pixel's character can not be occluded.
-            // If it has any alpha, that won't be resolved right now,
-            // it will be resolved when drawing to the canvas...
-            (self.fg_color, self.character)
+            // Unless we show our own character.
+            (self.character, lerp(bg_color, self.fg_color, self.fg_color.a))
         };
 
         TextModePixel {
@@ -220,7 +210,7 @@ where
             && let Some(pixel) =
                 self.back_buffer.get_mut(position.y * self.size.w + position.x)
         {
-            *pixel = new_pixel;
+            *pixel = new_pixel.blend_normal(pixel);
         }
     }
 

@@ -20,13 +20,13 @@ where
     element: Option<<Fut::Output as Blueprint<Env>>::Element>,
 }
 
-pub trait FutureExt: Future {
+pub trait FutureReactExt: Future {
     fn into_signal<Env: Environment>(self) -> ReactOnce<Self, Env>
     where
         Self: Sized,
         <Self as Future>::Output: Blueprint<Env>;
 }
-impl<Fut> FutureExt for Fut
+impl<Fut> FutureReactExt for Fut
 where
     Fut: Future,
 {

@@ -15,26 +15,20 @@ use {crate::app::input::Event, vek::Rgba};
 pub mod canvas;
 pub mod shaders;
 
+pub mod text;
+
 /// An effect that describes rendering of a quad in the terminal.
 #[derive(Debug)]
 pub struct RenderQuad(pub Rect<f32, f32>, pub Rgba<f32>);
-impl ElementEffect<WinitEnvironment> for RenderQuad {
-    fn apply(&self, _: &mut WinitEnvironment) {
-        println!("[Winit] Handling a RenderQuad!!!");
-    }
-}
-impl ElementEffect<TerminalEnvironment> for RenderQuad {
-    fn apply(&self, env: &mut TerminalEnvironment) {
-        /* TODO: Remove this function */
-    }
-}
+impl ElementEffect<WinitEnvironment> for RenderQuad {}
+impl ElementEffect<TerminalEnvironment> for RenderQuad {}
 impl<'fx> Apply<RenderQuad> for TerminalEffectVisitor<'fx> {
     fn visit(&mut self, RenderQuad(rect, color): &RenderQuad) {
         self.canvas.rect(
             rect.as_(),
             TextModePixel {
                 bg_color: *color,
-                fg_color: Rgba::zero(),
+                fg_color: Rgba::new_transparent(0.0, 0.0, 0.0),
                 character: ' ',
             },
         );
