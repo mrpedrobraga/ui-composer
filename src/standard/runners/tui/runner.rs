@@ -1,11 +1,11 @@
 use crate::app::composition::algebra::Bubble;
 use crate::app::composition::elements::{Blueprint, Environment};
-use crate::app::runner::Runner;
 use crate::app::runner::futures::AsyncExecutor;
-use crate::prelude::Event;
+use crate::app::runner::Runner;
+use crate::prelude::KeyboardEvent::Key;
+use crate::prelude::{ButtonState, CursorEvent, DeviceId, Event, KeyEvent};
 use crate::runners::tui::nodes::TerminalEffectVisitor;
 use async_std::task::block_on;
-use crossterm::QueueableCommand;
 use crossterm::cursor::{
     Hide, RestorePosition, SavePosition, SetCursorStyle, Show,
 };
@@ -13,13 +13,18 @@ use crossterm::event::{
     DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste,
     EnableMouseCapture, Event as CrosstermEvent, EventStream, KeyCode,
 };
-use crossterm::terminal::{DisableLineWrap, EnableLineWrap, EnterAlternateScreen, LeaveAlternateScreen, enable_raw_mode, disable_raw_mode};
-use futures::{StreamExt, join};
+use crossterm::terminal::{
+    disable_raw_mode, enable_raw_mode, DisableLineWrap,
+    EnableLineWrap, EnterAlternateScreen, LeaveAlternateScreen,
+};
+use crossterm::QueueableCommand;
+use futures::{join, StreamExt};
 use futures_signals::signal::SignalExt;
-use std::io::{Write, stdout};
+use std::io::{stdout, Write};
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
-use vek::Extent2;
+use smol_str::ToSmolStr;
+use vek::{Extent2, Vec2};
 
 pub struct TerminalEnvironment;
 
@@ -55,7 +60,7 @@ where
             e_stream
                 .filter_map(|e| async { e.ok() })
                 .for_each(move |event| {
-                    let value = app_e.clone();
+                    let app_e = app_e.clone();
                     async move {
                         if let CrosstermEvent::Key(e) = event
                             && let KeyCode::Char('q') = e.code
@@ -67,11 +72,38 @@ where
                         if let CrosstermEvent::Resize(new_width, new_height) =
                             event
                         {
-                            let mut l = value.lock().unwrap();
+                            let mut l = app_e.lock().unwrap();
                             l.bubble(&mut Event::Resized(Extent2::new(
                                 new_width as f32,
                                 new_height as f32,
                             )));
+                        }
+
+                        if let CrosstermEvent::Key(k) = event {
+                            let mut l = app_e.lock().unwrap();
+                            l.bubble(&mut Event::Keyboard {
+                                id: DeviceId(0),
+                                event: Key(KeyEvent {
+                                    is_implicit: false,
+                                    text_repr: k.code.as_char().map(|x| x.to_smolstr()),
+                                    button_state: if k.is_press() {
+                                        ButtonState::Pressed
+                                    } else {
+                                        ButtonState::Released
+                                    },
+                                }),
+                            });
+                        }
+
+                        if let CrosstermEvent::Mouse(m) = event {
+                            let mut l = app_e.lock().unwrap();
+                            l.bubble(&mut Event::Cursor {
+                                id: DeviceId(0),
+                                event: CursorEvent::Moved {
+                                    // Remember that column and row are 1-indexed.
+                                    position: Vec2::new(m.column, m.row).as_(),
+                                },
+                            });
                         }
                     }
                 })

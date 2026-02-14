@@ -2,6 +2,8 @@ use crate::app::composition::algebra::Bubble;
 use crate::app::input::Event;
 use crate::app::input::{ButtonState, InputItem, KeyEvent, KeyboardEvent};
 use futures_signals::signal::Mutable;
+use crate::app::composition::elements::{Blueprint, Element};
+use crate::runners::tui::runner::TerminalEnvironment;
 
 /// Input item that receives key events...
 #[derive(Clone)]
@@ -39,4 +41,18 @@ impl Bubble<Event, bool> for Typing {
 
         false
     }
+}
+
+impl Blueprint<TerminalEnvironment> for Typing {
+    type Element = Self;
+
+    fn make(self, env: &TerminalEnvironment) -> Self::Element {
+        self
+    }
+}
+
+impl Element<TerminalEnvironment> for Typing {
+    type Effect<'fx> = ();
+
+    fn effect(&self) -> Self::Effect<'_> {}
 }

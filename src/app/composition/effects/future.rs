@@ -3,6 +3,8 @@ use crate::app::composition::elements::Environment;
 use crate::prelude::Event;
 
 use super::super::elements::{Blueprint, Element};
+use futures::future::Map;
+use futures::FutureExt;
 use pin_project::pin_project;
 use std::future::Future;
 use std::pin::Pin;
@@ -21,15 +23,17 @@ where
 }
 
 pub trait FutureReactExt: Future {
-    fn into_signal<Env: Environment>(self) -> ReactOnce<Self, Env>
+    fn derive<Env: Environment, F>(
+        self,
+        predicate: F,
+    ) -> ReactOnce<Map<Self, F>, Env>
     where
+        F: FnOnce(Self::Output),
         Self: Sized,
-        <Self as Future>::Output: Blueprint<Env>;
-}
-impl<Fut> FutureReactExt for Fut
-where
-    Fut: Future,
-{
+    {
+        self.map(predicate).into_signal()
+    }
+
     fn into_signal<Env: Environment>(self) -> ReactOnce<Self, Env>
     where
         Self: Sized,
@@ -41,6 +45,7 @@ where
         }
     }
 }
+impl<Fut> FutureReactExt for Fut where Fut: Future {}
 
 impl<Fut, Env: Environment> Blueprint<Env> for ReactOnce<Fut, Env>
 where
