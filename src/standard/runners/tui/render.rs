@@ -24,56 +24,17 @@ impl ElementEffect<WinitEnvironment> for RenderQuad {
     }
 }
 impl ElementEffect<TerminalEnvironment> for RenderQuad {
-    fn apply(&self, _: &mut TerminalEnvironment) {
-        use crossterm::QueueableCommand;
-        use crossterm::cursor::MoveTo;
-        use crossterm::style::Color;
-        use crossterm::style::PrintStyledContent;
-        use crossterm::style::Stylize;
-
-        let mut s = std::io::stdout();
-        let RenderQuad(rect, color) = self;
-
-        let x0 = rect.x;
-        let x1 = rect.x + rect.w;
-        let y0 = rect.y;
-        let y1 = rect.y + rect.h;
-
-        for y in (y0 as u16)..(y1 as u16) {
-            for x in (x0 as u16)..(x1 as u16) {
-                fn f32tou8(x: f32) -> u8 {
-                    (x * 255.0) as u8
-                }
-
-                let pixel = "█"
-                    .with(Color::Rgb {
-                        r: f32tou8(color.r),
-                        g: f32tou8(color.g),
-                        b: f32tou8(color.b),
-                    })
-                    .on(Color::Rgb {
-                        r: f32tou8(color.r),
-                        g: f32tou8(color.g),
-                        b: f32tou8(color.b),
-                    });
-
-                s.queue(MoveTo(x, y))
-                    .unwrap()
-                    .queue(PrintStyledContent(pixel))
-                    .unwrap();
-            }
-        }
-
-        s.flush().unwrap();
+    fn apply(&self, env: &mut TerminalEnvironment) {
+        /* TODO: Remove this function */
     }
 }
 impl<'fx> Apply<RenderQuad> for TerminalEffectVisitor<'fx> {
-    fn visit(&mut self, node: &RenderQuad) {
-        self.buffer.rect(
-            node.0.as_(),
+    fn visit(&mut self, RenderQuad(rect, color): &RenderQuad) {
+        self.canvas.rect(
+            rect.as_(),
             TextModePixel {
-                bg_color: node.1,
-                fg_color: node.1,
+                bg_color: *color,
+                fg_color: Rgba::zero(),
                 character: ' ',
             },
         );

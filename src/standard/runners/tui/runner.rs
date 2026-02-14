@@ -13,10 +13,7 @@ use crossterm::event::{
     DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste,
     EnableMouseCapture, Event as CrosstermEvent, EventStream, KeyCode,
 };
-use crossterm::terminal::{
-    DisableLineWrap, EnableLineWrap, EnterAlternateScreen,
-    LeaveAlternateScreen, enable_raw_mode,
-};
+use crossterm::terminal::{DisableLineWrap, EnableLineWrap, EnterAlternateScreen, LeaveAlternateScreen, enable_raw_mode, disable_raw_mode};
 use futures::{StreamExt, join};
 use futures_signals::signal::SignalExt;
 use std::io::{Write, stdout};
@@ -121,8 +118,7 @@ where
             .queue(LeaveAlternateScreen)?
             .queue(RestorePosition)?
             .flush()?;
-
-        enable_raw_mode().expect("Couldn't disable raw mode.");
+        disable_raw_mode().expect("Couldn't disable raw mode.");
         Ok(())
     }
 }

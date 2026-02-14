@@ -130,10 +130,11 @@ where
             Poll::Ready(Some(_)) => {
                 let ui_effects = ui.effect();
                 let mut vis = TerminalEffectVisitor {
-                    buffer: &mut state.render_target,
+                    canvas: &mut state.render_target,
                 };
+                vis.canvas.clear();
                 ui_effects.drive_thru(&mut vis);
-                vis.buffer.show();
+                vis.canvas.show();
 
                 Poll::Ready(Some(()))
             }
@@ -142,5 +143,5 @@ where
 }
 
 pub struct TerminalEffectVisitor<'fx> {
-    pub buffer: &'fx mut PixelCanvas<TextModePixel>,
+    pub canvas: &'fx mut PixelCanvas<TextModePixel>,
 }

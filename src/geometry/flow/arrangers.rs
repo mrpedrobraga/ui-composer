@@ -154,19 +154,15 @@ pub fn arrange_stretchy_rects_with_minimum_sizes<
     // but binary search is Good Enough.
     let mut lower_bound = Num::zero();
     let mut upper_bound = container_size;
-    loop {
-        let equilibrium = (lower_bound + upper_bound) / Num::from(2).unwrap();
+    let mut equilibrium = (lower_bound + upper_bound) / Num::from(2).unwrap();
+
+    // Find the value for equilibrium in up to 64 iterations.
+    // Okay maybe later I'll replace this with something else.
+    for _ in 0..64 {
         let error = flex_equation(equilibrium);
 
         if error.abs() < tolerance {
-            // And each element is sized according to the previous equation.
-            return normalized_stretch_weights
-                .iter()
-                .zip(minima.iter())
-                .map(|(weight, minimum)| {
-                    minimum.max(container_size * *weight * equilibrium)
-                })
-                .collect();
+            break;
         }
 
         if error > Num::zero() {
@@ -175,9 +171,49 @@ pub fn arrange_stretchy_rects_with_minimum_sizes<
             upper_bound = equilibrium;
         }
     }
+
+    // And each element is sized according to the previous equation.
+    let element_sizes: ArrayVec<Num, SIZE> = normalized_stretch_weights
+        .iter()
+        .zip(minima.iter())
+        .map(|(weight, minimum)| {
+            minimum.max(container_size * *weight * equilibrium)
+        })
+        .collect();
+
+    // The previous result has values as floating point numbers, which isn't ideal
+    // when rendering to a pixel canvas.
+    let mut pixel_element_sizes: ArrayVec<Num, SIZE> = ArrayVec::new();
+    // We start sweeping from the start of the container to the end.
+    let mut offset_from_start = Num::zero();
+    let mut pixel_offset_from_start = Num::zero();
+
+    for size in element_sizes {
+        // Move the float offset along.
+        offset_from_start = offset_from_start + size;
+        // Calculate the pixel perfect position based on the float offset.
+        let next_pixel_offset = offset_from_start.round();
+        // What makes this pixel perfect is that the pixel start edge of the current element
+        // is the pixel end edge of the previous element.
+        pixel_element_sizes.push(next_pixel_offset - pixel_offset_from_start);
+        pixel_offset_from_start = next_pixel_offset;
+    }
+
+    // We _have_ been rounding float falls, it's entirely possible that the ignored fractional part of the floats
+    // has resulted in one single pixel of error at the end.
+    let remaining_error = container_size.round() - pixel_offset_from_start;
+    if remaining_error != Num::zero()
+        && let Some(last) = pixel_element_sizes.last_mut()
+    {
+        // We just slightly stretch the last element to cover the empty space.
+        // It's just one pixel, so it's fine.
+        *last = *last + remaining_error;
+    }
+
+    pixel_element_sizes
 }
 
-pub fn w_div_min_alloc<Num: Float + core::iter::Sum>(
+pub fn arrange_stretchy_rects_with_minimum_sizes_dirty_alloc<Num: Float + core::iter::Sum>(
     t: Num,
     w: &[Num],
     m: &[Num],
@@ -190,36 +226,52 @@ pub fn w_div_min_alloc<Num: Float + core::iter::Sum>(
         return m.to_vec();
     }
 
-    // Precompute normalized weights
-    let n_w: Vec<Num> = w.iter().map(|&w| w / total_w).collect();
-
-    let flex = |x| {
-        t - n_w
-            .iter()
-            .zip(m.iter())
-            .map(|(nw, m)| m.max(t * *nw * x))
-            .sum::<Num>()
-    };
+    let inv_total_w = Num::one() / total_w;
+    let t_inv_w = t * inv_total_w;
 
     let mut equ_0 = Num::zero();
-    let mut equ_1 = t;
+    let mut equ_1 = t * Num::from(2).unwrap();
+    let mut equ = t;
 
-    loop {
-        let equ = (equ_0 + equ_1) / Num::from(2).unwrap();
-        let err = flex(equ);
+    for _ in 0..32 {
+        equ = (equ_0 + equ_1) / Num::from(2).unwrap();
 
-        if err.abs() < tol {
-            return n_w
-                .iter()
-                .zip(m.iter())
-                .map(|(nw, m)| m.max(t * *nw * equ))
-                .collect();
+        let sum: Num = w.iter().zip(m.iter())
+            .map(|(&weight, &min)| {
+                let scaled = weight * t_inv_w * equ;
+                if scaled > min { scaled } else { min }
+            })
+            .sum();
+
+        if (t - sum).abs() < tol {
+            break;
         }
 
-        if err > Num::zero() {
+        if t > sum {
             equ_0 = equ;
         } else {
             equ_1 = equ;
         }
     }
+
+    let mut s_off_px = Num::zero();
+    let mut res: Vec<Num> = w.iter().zip(m.iter())
+        .scan(Num::zero(), |s_off, (&weight, &min)| {
+            let float_size = min.max(weight * t_inv_w * equ);
+            *s_off = *s_off + float_size;
+            let next_off_px = s_off.round();
+            let pixel_size = next_off_px - s_off_px;
+            s_off_px = next_off_px;
+            Some(pixel_size)
+        })
+        .collect();
+
+    let diff = t.round() - s_off_px;
+    if diff != Num::zero() {
+        if let Some(last) = res.last_mut() {
+            *last = *last + diff;
+        }
+    }
+
+    res
 }

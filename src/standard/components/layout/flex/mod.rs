@@ -4,7 +4,7 @@ use crate::geometry::flow::CartesianFlow::{
     BottomToTop, LeftToRight, RightToLeft, TopToBottom,
 };
 use crate::geometry::flow::{CartesianFlow, Flow, WritingFlow};
-use crate::prelude::flow::arrangers::w_div_min_alloc;
+use crate::prelude::flow::arrangers::arrange_stretchy_rects_with_minimum_sizes_dirty_alloc;
 use core::iter::{Chain, Once, once};
 use vek::{Extent2, Rect};
 
@@ -120,7 +120,7 @@ where
             &minima.into_inner().unwrap(),
             0.01,
         );*/
-        let main_axis_sizes = w_div_min_alloc(
+        let main_axis_sizes = arrange_stretchy_rects_with_minimum_sizes_dirty_alloc(
             parent_size,
             weights.as_slice(),
             minima.as_slice(),

@@ -1,8 +1,9 @@
 use crate::runners::tui::render::shaders::PixelShaderInput;
-use crossterm::QueueableCommand;
 use crossterm::cursor::MoveTo;
-use crossterm::style::{Color, PrintStyledContent, Stylize};
-use std::io::{Write, stdout};
+use crossterm::style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor, Stylize};
+use crossterm::QueueableCommand;
+use std::io::{stdout, BufWriter, Stdout, Write};
+use crossterm::terminal::{BeginSynchronizedUpdate, Clear, ClearType, EndSynchronizedUpdate};
 use vek::{Extent2, Rect, Rgba, Vec2};
 
 /// Trait that defines a pixel of a canvas.
@@ -115,8 +116,10 @@ impl Pixel for TextModePixel {
 }
 
 pub struct PixelCanvas<P> {
-    size: Extent2<usize>,
-    pixels: Vec<P>,
+    pub size: Extent2<usize>,
+    back_buffer: Vec<P>,
+    front_buffer: Vec<P>,
+    needs_full_redraw: bool,
 }
 
 impl<P> PixelCanvas<P>
@@ -126,41 +129,82 @@ where
     pub fn new(size: Extent2<usize>) -> Self {
         PixelCanvas {
             size,
-            pixels: vec![P::default(); size.w * size.h],
+            back_buffer: vec![P::default(); size.w * size.h],
+            front_buffer: vec![P::default(); size.w * size.h],
+            needs_full_redraw: false,
         }
     }
 }
 
 impl PixelCanvas<TextModePixel> {
-    pub fn show(&self) {
-        let mut s = stdout();
+    pub fn show(&mut self) {
+        // Using a BufWriter so we don't write all at once.
+        let mut screen_buffer = BufWriter::with_capacity(self.size.w * self.size.h * 32, stdout());
 
-        fn f32tou8(x: f32) -> u8 {
-            (x.clamp(0.0, 1.0) * 255.0) as u8
+        // Notify the terminal to start a "transaction" and not update the screen until we're done drawing.
+        let _ = screen_buffer.queue(BeginSynchronizedUpdate);
+
+        // If the screen has been recently resized, we need to fully clear it.
+        if self.needs_full_redraw {
+            self.needs_full_redraw = false;
+            let _ = screen_buffer.queue(Clear(ClearType::All));
         }
+
+        // Send drawing commands to the buffer, but only of what changed.
+        self.draw_diff(&mut screen_buffer);
+
+        // Finish the transaction and send the commands.
+        let _ = screen_buffer.queue(ResetColor);
+        let _ = screen_buffer.queue(EndSynchronizedUpdate);
+        let _ = screen_buffer.flush();
+    }
+
+    fn draw_diff(&mut self, screen_buffer: &mut BufWriter<Stdout>) {
+        let mut current_fg: Option<(u8, u8, u8)> = None;
+        let mut current_bg: Option<(u8, u8, u8)> = None;
 
         for y in 0..self.size.h {
+            let mut cursor_x: Option<usize> = None;
             for x in 0..self.size.w {
-                if let Some(pixel) = self.pixels.get(y * self.size.w + x) {
-                    s.queue(MoveTo(x as u16, y as u16)).unwrap();
-                    s.queue(PrintStyledContent(
-                        pixel
-                            .character
-                            .with(Color::Rgb {
-                                r: f32tou8(pixel.fg_color.r),
-                                g: f32tou8(pixel.fg_color.g),
-                                b: f32tou8(pixel.fg_color.b),
-                            })
-                            .on(Color::Rgb {
-                                r: f32tou8(pixel.bg_color.r),
-                                g: f32tou8(pixel.bg_color.g),
-                                b: f32tou8(pixel.bg_color.b),
-                            }),
-                    ))
-                    .unwrap();
+                let index = y * self.size.w + x;
+                let back_pixel = &self.back_buffer[index];
+                let front_pixel = &mut self.front_buffer[index];
+
+                if back_pixel == front_pixel { continue; }
+                *front_pixel = *back_pixel;
+
+                // If the cursor isn't in the correct place, queue moving it.
+                if cursor_x != Some(x) {
+                    let _ = screen_buffer.queue(MoveTo(x as u16, y as u16));
                 }
+                cursor_x = Some(x + 1);
+
+                // Queues sending the pixel to the terminal.
+                Self::queue_pixel(screen_buffer, &mut current_fg, &mut current_bg, back_pixel);
             }
         }
+    }
+
+    fn queue_pixel(screen_buffer: &mut BufWriter<Stdout>, current_fg: &mut Option<(u8, u8, u8)>, current_bg: &mut Option<(u8, u8, u8)>, back_pixel: &TextModePixel) {
+        let r_fg = (back_pixel.fg_color.r.clamp(0.0, 1.0) * 255.0) as u8;
+        let g_fg = (back_pixel.fg_color.g.clamp(0.0, 1.0) * 255.0) as u8;
+        let b_fg = (back_pixel.fg_color.b.clamp(0.0, 1.0) * 255.0) as u8;
+
+        if *current_fg != Some((r_fg, g_fg, b_fg)) {
+            let _ = screen_buffer.queue(SetForegroundColor(Color::Rgb { r: r_fg, g: g_fg, b: b_fg }));
+            *current_fg = Some((r_fg, g_fg, b_fg));
+        }
+
+        let r_bg = (back_pixel.bg_color.r.clamp(0.0, 1.0) * 255.0) as u8;
+        let g_bg = (back_pixel.bg_color.g.clamp(0.0, 1.0) * 255.0) as u8;
+        let b_bg = (back_pixel.bg_color.b.clamp(0.0, 1.0) * 255.0) as u8;
+
+        if *current_bg != Some((r_bg, g_bg, b_bg)) {
+            let _ = screen_buffer.queue(SetBackgroundColor(Color::Rgb { r: r_bg, g: g_bg, b: b_bg }));
+            *current_bg = Some((r_bg, g_bg, b_bg));
+        }
+
+        let _ = screen_buffer.queue(Print(back_pixel.character));
     }
 }
 
@@ -174,7 +218,7 @@ where
         if position.x < self.size.w
             && position.y < self.size.h
             && let Some(pixel) =
-                self.pixels.get_mut(position.y * self.size.w + position.x)
+                self.back_buffer.get_mut(position.y * self.size.w + position.x)
         {
             *pixel = new_pixel;
         }
@@ -183,13 +227,18 @@ where
     fn rect(&mut self, rect: Rect<usize, usize>, color: Self::Pixel) {
         for y in rect.y..(rect.y + rect.h) {
             for x in rect.x..(rect.x + rect.w) {
+                // DEBUG: Draw hollow rectangles instead.
+                // if !(x == rect.x || x == rect.x + rect.w - 1 || y == rect.y || y == rect.y + rect.h - 1) {
+                //     continue;
+                // }
+
                 self.put_pixel(Vec2::new(x, y), color.clone());
             }
         }
     }
 
     fn clear(&mut self) {
-        self.pixels.fill(P::default());
+        self.back_buffer.fill(P::default());
     }
 
     fn quad(
@@ -218,14 +267,17 @@ where
     }
 
     fn resize(&mut self, new_size: Extent2<usize>) {
-        let mut new_pixels = vec![P::default(); new_size.w * new_size.h];
-        for y in 0..new_size.h.min(self.size.h) {
-            for x in 0..new_size.w.min(self.size.w) {
-                new_pixels[y * new_size.w + x] =
-                    self.pixels[y * self.size.w + x].clone();
-            }
+        let new_buffer_size = new_size.w * new_size.h;
+        if self.back_buffer.len() > new_buffer_size {
+            self.back_buffer.truncate(new_buffer_size);
+            self.front_buffer.truncate(new_buffer_size);
+        } else {
+            self.back_buffer.resize(new_buffer_size, P::default());
+            self.front_buffer.resize(new_buffer_size, P::default());
         }
-        self.pixels = new_pixels;
+        self.back_buffer.fill(P::default());
+        self.front_buffer.fill(P::default());
         self.size = new_size;
+        self.needs_full_redraw = true;
     }
 }
