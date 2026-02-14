@@ -10,9 +10,11 @@ use vek::{Extent2, Rgba};
 
 fn main() {
     UIComposer::run_custom::<TUIRunner<_>>(Terminal(flex(list!(
-        item(Square(Rgba::red())).with_grow(2.0),
-        item(Square(Rgba::green())).with_grow(1.0),
-        item(Square(Rgba::blue())).with_grow(0.0),
+        item(Square(Rgba::new(255, 235, 252, 255).as_() / 255.0))
+            .with_grow(2.0),
+        item(Square(Rgba::new(245, 219, 241, 255).as_() / 255.0))
+            .with_grow(1.0),
+        item(Square(Rgba::new(134, 70, 139, 255).as_() / 255.0)).with_grow(0.0),
     ))))
 }
 
