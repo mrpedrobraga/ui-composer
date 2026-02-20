@@ -121,7 +121,7 @@ where
             size,
             back_buffer: vec![P::default(); size.w * size.h],
             front_buffer: vec![P::default(); size.w * size.h],
-            needs_full_redraw: false,
+            needs_full_redraw: true,
         }
     }
 }
@@ -136,7 +136,6 @@ impl PixelCanvas<TextModePixel> {
 
         // If the screen has been recently resized, we need to fully clear it.
         if self.needs_full_redraw {
-            self.needs_full_redraw = false;
             let _ = screen_buffer.queue(Clear(ClearType::All));
         }
 
@@ -160,7 +159,7 @@ impl PixelCanvas<TextModePixel> {
                 let back_pixel = &self.back_buffer[index];
                 let front_pixel = &mut self.front_buffer[index];
 
-                if back_pixel == front_pixel { continue; }
+                if back_pixel == front_pixel && !self.needs_full_redraw { continue; }
                 *front_pixel = *back_pixel;
 
                 // If the cursor isn't in the correct place, queue moving it.
@@ -173,6 +172,8 @@ impl PixelCanvas<TextModePixel> {
                 Self::queue_pixel(screen_buffer, &mut current_fg, &mut current_bg, back_pixel);
             }
         }
+
+        self.needs_full_redraw = false;
     }
 
     fn queue_pixel(screen_buffer: &mut BufWriter<Stdout>, current_fg: &mut Option<(u8, u8, u8)>, current_bg: &mut Option<(u8, u8, u8)>, back_pixel: &TextModePixel) {

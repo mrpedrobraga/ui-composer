@@ -154,11 +154,12 @@ pub fn arrange_stretchy_rects_with_minimum_sizes<
     // but binary search is Good Enough.
     let mut lower_bound = Num::zero();
     let mut upper_bound = container_size;
-    let mut equilibrium = (lower_bound + upper_bound) / Num::from(2).unwrap();
-
+    
+    let mut equilibrium = Num::zero();
     // Find the value for equilibrium in up to 64 iterations.
     // Okay maybe later I'll replace this with something else.
     for _ in 0..64 {
+        equilibrium = (lower_bound + upper_bound) / Num::from(2).unwrap();
         let error = flex_equation(equilibrium);
 
         if error.abs() < tolerance {
@@ -267,11 +268,20 @@ pub fn arrange_stretchy_rects_with_minimum_sizes_dirty_alloc<Num: Float + core::
         .collect();
 
     let diff = t.round() - s_off_px;
-    if diff != Num::zero() {
-        if let Some(last) = res.last_mut() {
+    if diff != Num::zero()
+        && let Some(last) = res.last_mut() {
             *last = *last + diff;
         }
-    }
 
     res
+}
+
+pub fn arrange_stretchy_rects_with_minimum_sizes_dirty_alloc_alt<Num: Float + core::iter::Sum>(
+    t: Num,
+    w: &[Num],
+    m: &[Num],
+    tol: Num,
+) -> Vec<Num> {
+    let x = (t - m.iter().copied().sum()) / w.iter().copied().sum();
+    m.iter().zip(w.iter()).map(|(m, w)| *m + *w * Num::max(x, Num::zero())).collect()
 }

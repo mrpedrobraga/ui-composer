@@ -137,8 +137,6 @@ pub trait Resizable: LayoutItem {
     fn with_minimum_size(self, min_size: Extent2<f32>) -> Self;
 }
 
-/// Simple layout item that can be resized by its parent
-/// in whatever way the parent sees fit.
 pub struct ItemBox<Factory, Item>
 where
     Factory: Send + FnMut(ParentHints) -> Item,

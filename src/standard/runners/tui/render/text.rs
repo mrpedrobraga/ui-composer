@@ -1,13 +1,14 @@
-use vek::{Rect, Rgba};
 use crate::app::composition::algebra::{Bubble, Empty};
 use crate::app::composition::effects::ElementEffect;
 use crate::app::composition::elements::{Blueprint, Element};
 use crate::app::composition::visit::{Apply, DriveThru};
-use crate::prelude::Event;
+use crate::prelude::hints::ParentHints;
+use crate::prelude::{Event, LayoutItem};
 use crate::runners::tui::nodes::TerminalEffectVisitor;
 use crate::runners::tui::render::canvas::{Canvas, TextModePixel};
 use crate::runners::tui::runner::TerminalEnvironment;
 use crate::runners::winit::runner::WinitEnvironment;
+use vek::{Extent2, Rect, Rgba};
 
 /// An effect that describes rendering some text in the terminal.
 #[derive(Debug)]
@@ -46,7 +47,9 @@ impl<'fx> Apply<RenderText> for TerminalEffectVisitor<'fx> {
                 if curr_x >= rect.w {
                     curr_x = 0;
                     curr_y += 1;
-                    if curr_y >= rect.h { return; }
+                    if curr_y >= rect.h {
+                        return;
+                    }
                 }
 
                 self.canvas.put_pixel(
@@ -136,5 +139,24 @@ impl Element<TerminalEnvironment> for Text {
 
     fn effect(&self) -> Self::Effect<'_> {
         RenderText(self.rect, self.text.clone(), self.color)
+    }
+}
+
+impl LayoutItem for &'static str {
+    type Blueprint = Text;
+
+    fn get_natural_size(&self) -> Extent2<f32> {
+        Extent2::new(15.0, 1.0)
+    }
+
+    fn get_minimum_size(&self) -> Extent2<f32> {
+        Extent2::new(15.0, 1.0)
+    }
+
+    fn lay(&mut self, parent_hints: ParentHints) -> Self::Blueprint {
+        Text()
+            .with_text(self.to_string())
+            .with_rect(parent_hints.rect)
+            .with_color(Rgba::white())
     }
 }

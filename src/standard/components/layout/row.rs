@@ -1,5 +1,5 @@
-use crate::app::composition::layout::LayoutItem;
 use crate::app::composition::layout::hints::ParentHints;
+use crate::app::composition::layout::LayoutItem;
 use vek::{Extent2, Rect};
 
 /// A horizontal, writing order stack of items.
@@ -22,6 +22,12 @@ pub struct RowContainer<A, B> {
     pub item_a: A,
     pub item_b: B,
     pub gap: f32,
+}
+
+impl<A, B> RowContainer<A, B> {
+    pub fn with_gap(self, gap: f32) -> Self {
+        Self { gap, ..self }
+    }
 }
 
 impl<A, B> LayoutItem for RowContainer<A, B>

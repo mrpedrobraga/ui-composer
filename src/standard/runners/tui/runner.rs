@@ -3,7 +3,9 @@ use crate::app::composition::elements::{Blueprint, Environment};
 use crate::app::runner::futures::AsyncExecutor;
 use crate::app::runner::Runner;
 use crate::prelude::KeyboardEvent::Key;
-use crate::prelude::{ButtonState, CursorEvent, DeviceId, Event, KeyEvent};
+use crate::prelude::{
+    ButtonState, CursorEvent, DeviceId, Event, KeyEvent, TouchStage,
+};
 use crate::runners::tui::nodes::TerminalEffectVisitor;
 use async_std::task::block_on;
 use crossterm::cursor::{
@@ -20,10 +22,10 @@ use crossterm::terminal::{
 use crossterm::QueueableCommand;
 use futures::{join, StreamExt};
 use futures_signals::signal::SignalExt;
+use smol_str::ToSmolStr;
 use std::io::{stdout, Write};
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
-use smol_str::ToSmolStr;
 use vek::{Extent2, Vec2};
 
 pub struct TerminalEnvironment;
@@ -85,7 +87,10 @@ where
                                 id: DeviceId(0),
                                 event: Key(KeyEvent {
                                     is_implicit: false,
-                                    text_repr: k.code.as_char().map(|x| x.to_smolstr()),
+                                    text_repr: k
+                                        .code
+                                        .as_char()
+                                        .map(|x| x.to_smolstr()),
                                     button_state: if k.is_press() {
                                         ButtonState::Pressed
                                     } else {
@@ -97,13 +102,27 @@ where
 
                         if let CrosstermEvent::Mouse(m) = event {
                             let mut l = app_e.lock().unwrap();
-                            l.bubble(&mut Event::Cursor {
-                                id: DeviceId(0),
-                                event: CursorEvent::Moved {
-                                    // Remember that column and row are 1-indexed.
-                                    position: Vec2::new(m.column, m.row).as_(),
-                                },
-                            });
+
+                            if m.kind.is_moved() {
+                                l.bubble(&mut Event::Cursor {
+                                    id: DeviceId(0),
+                                    event: CursorEvent::Moved {
+                                        // Remember that column and row are 1-indexed.
+                                        position: Vec2::new(m.column, m.row)
+                                            .as_(),
+                                    },
+                                });
+                            }
+
+                            if m.kind.is_down() {
+                                l.bubble(&mut Event::Cursor {
+                                    id: DeviceId(0),
+                                    event: CursorEvent::Touched {
+                                        finger_id: 0,
+                                        stage: TouchStage::Started,
+                                    },
+                                });
+                            }
                         }
                     }
                 })

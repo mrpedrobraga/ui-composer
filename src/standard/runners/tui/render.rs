@@ -72,6 +72,10 @@ impl From<Rect<f32, f32>> for Graphic {
 }
 
 impl Graphic {
+    pub fn new(rect: Rect<f32, f32>, color: Rgba<f32>) -> Self {
+        Self { rect, color }
+    }
+    
     /// Adapts this graphic with a new colour!
     pub fn with_color(self, color: Rgba<f32>) -> Self {
         Self { color, ..self }

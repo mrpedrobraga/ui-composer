@@ -19,7 +19,7 @@ fn main() {
         uix! (
             <Terminal>
                 <Center>
-                    <Row>
+                    <Row gap=2.0>
                         <TestingTyping />
                         <TestingHover />
                     </Row>

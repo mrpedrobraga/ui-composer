@@ -4,47 +4,26 @@
 /*!
 # UI Composer
 
-Rust-based library for modern, declarative, native user interface.
+A batteries-included user interface library.
 
-## Getting started
-
-Add the library to your crate with `cargo add ui-composer`.
-
-After adding the library, you should be able to create a simple Window like this:
-
-```no_run
-use ui_composer::prelude::*;
-
-fn main() {
-  UIComposer::run(
-      Window(())
-  )
-}
+```rust
+* use ui_composer::prelude::UIComposer;
+UIComposer::run_winit(Window(()))
 ```
 
-> [!INFO] Not on crates.io
-> While this library isn't on crates.io yet, you can add it with
-> `cargo add --git https://github.com/mrpedrobraga/ui-composer.git ui-composer`.
-
-## No-std
-
-No-std is not yet available.
 */
 
-/// Module for composition and execution of declarative programs.
+/// Module for app definition, blueprints and composition.
 pub mod app;
-
-/// Module for mathematics related to visual arrangements of things.
+/// Module for geometry and visual mathematics.
 pub mod geometry;
-
-/// Module for state definition and management.
+/// Module for state management, tasks, animations and reactivity.
 pub mod state;
 
 #[doc(hidden)]
 #[rust_analyzer::completions(ignore_flyimport)]
 pub mod prelude;
-/// Module for optional builtin standard. Might move this to a sub-crate, too.
-/// `ui-composer-standard` has a nice ring to it, no?
+
 pub mod standard;
 
 pub use standard::runners;

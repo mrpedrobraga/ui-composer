@@ -1,10 +1,12 @@
 use crate::app::composition::algebra::{Bubble, Semigroup};
 use crate::app::composition::elements::{Blueprint, Element, Environment};
-use crate::prelude::Event;
+use crate::prelude::hints::ParentHints;
+use crate::prelude::{Event, LayoutItem};
 use futures_signals::signal::Signal;
 use pin_project::pin_project;
 use std::pin::Pin;
 use std::task::{Context, Poll};
+use vek::Extent2;
 
 #[pin_project]
 #[must_use = "React does nothing unless polled"]
@@ -40,6 +42,20 @@ where
     }
 }
 
+/*impl<Sig, Env: Environment> Blueprint<Env> for Sig
+where
+    Sig: Signal<Item: Blueprint<Env>>,
+{
+    type Element = React<Sig, Env>;
+
+    fn make(self, _: &Env) -> Self::Element {
+        React {
+            signal: self,
+            element: None,
+        }
+    }
+}*/
+
 impl<Sig, Env: Environment> Blueprint<Env> for React<Sig, Env>
 where
     Sig: Signal<Item: Blueprint<Env>>,
@@ -68,12 +84,7 @@ where
     Sig: Signal<Item: Blueprint<Env>>,
 {
     type Effect<'a>
-        =
-        Option<
-            <<<Sig as Signal>::Item as Blueprint<Env>>::Element as Element<
-                Env,
-            >>::Effect<'a>,
-        >
+        = Option<<<<Sig as Signal>::Item as Blueprint<Env>>::Element as Element<Env>>::Effect<'a>>
     where
         Sig: 'a,
         Env: 'a;
@@ -82,11 +93,7 @@ where
         self.element.as_ref().map(|e| e.effect())
     }
 
-    fn poll(
-        self: Pin<&mut Self>,
-        cx: &mut Context,
-        env: &Env,
-    ) -> Poll<Option<()>> {
+    fn poll(self: Pin<&mut Self>, cx: &mut Context, env: &Env) -> Poll<Option<()>> {
         let this = self.project();
 
         // SAFETY: Because the signal is pinned in this struct, its captures are stable.
@@ -95,8 +102,7 @@ where
                 let mut element = blueprint.make(env);
 
                 // Wake up the element.
-                let _ =
-                    unsafe { Pin::new_unchecked(&mut element) }.poll(cx, env);
+                let _ = unsafe { Pin::new_unchecked(&mut element) }.poll(cx, env);
                 *this.element = Some(element);
 
                 Poll::Ready(Some(()))
@@ -105,9 +111,10 @@ where
             Poll::Ready(None) => Poll::Ready(None),
         };
 
-        let element_poll = this.element.as_mut().map(|element| {
-           unsafe { Pin::new_unchecked(element) }.poll(cx, env)
-        });
+        let element_poll = this
+            .element
+            .as_mut()
+            .map(|element| unsafe { Pin::new_unchecked(element) }.poll(cx, env));
 
         signal_poll.combine(element_poll.unwrap_or(Poll::Pending))
     }

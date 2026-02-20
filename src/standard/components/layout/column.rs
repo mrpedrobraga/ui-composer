@@ -24,6 +24,16 @@ pub struct ColumnContainer<A, B> {
     pub gap: f32,
 }
 
+impl<A, B> ColumnContainer<A, B> {
+    /// Adds some spacing between elements.
+    pub fn with_gap(self, gap: f32) -> Self {
+        Self {
+            gap,
+            ..self
+        }
+    }
+}
+
 impl<A, B> LayoutItem for ColumnContainer<A, B>
 where
     A: LayoutItem,
