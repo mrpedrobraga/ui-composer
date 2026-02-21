@@ -111,6 +111,8 @@ impl ApplicationHandler for WinitAppHandler {
             .create_window(attributes)
             .expect("[Winit] Failed to create window!");
 
+        // TODO: Maybe send windows through channels when requested???
+        // That sounds funny but it might be the way.
         self.window = Some(window);
     }
 
