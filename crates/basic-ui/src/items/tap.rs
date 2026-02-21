@@ -1,10 +1,10 @@
 #![allow(unused)]
-use crate::app::composition::algebra::Bubble;
-use crate::app::composition::elements::{Blueprint, Element};
-use crate::app::input::{CursorEvent, Event, TouchStage};
+use ui_composer_core::app::composition::algebra::Bubble;
+use ui_composer_core::app::composition::elements::{Blueprint, Element};
+use ui_composer_input::event::{CursorEvent, Event, TouchStage};
 use ui_composer_state::effect::Effect;
 use {
-    crate::app::input::{ButtonState, MouseButton},
+    ui_composer_input::event::{ButtonState, MouseButton},
     vek::{Rect, Vec2},
 };
 

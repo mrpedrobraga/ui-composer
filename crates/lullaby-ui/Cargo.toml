@@ -11,6 +11,8 @@ name = "lullaby_ui"
 vek = "0.17.2"
 ui-composer-core = { path = "../core" }
 ui-composer-geometry = { path = "../geometry" }
+ui-composer-input = { path = "../input" }
+ui-composer-basic-ui = { path = "../basic-ui" }
 
 # Gate these behind feature flags.
 ui-composer-platform-tui = { path = "../platform-tui" }

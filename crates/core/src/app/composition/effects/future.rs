@@ -1,6 +1,6 @@
 use crate::app::composition::algebra::Bubble;
 use crate::app::composition::elements::Environment;
-use crate::app::input::Event;
+use ui_composer_input::event::Event;
 
 use super::super::elements::{Blueprint, Element};
 use futures::future::Map;

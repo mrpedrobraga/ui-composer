@@ -1,8 +1,8 @@
-use ui_composer_core::app::input::{CursorEvent, EvNum, Event};
+use ui_composer_input::event::{CursorEvent, EvNum, Event};
 use winit::event::ElementState;
 use {
     smol_str::SmolStr,
-    ui_composer_core::app::input::{
+    ui_composer_input::event::{
         ButtonState, DeviceId, FileDragAndDropEvent, ImeEvent, KeyEvent, KeyboardEvent,
         MouseButton, ScrollOffset, ThemeType, TouchStage,
     },

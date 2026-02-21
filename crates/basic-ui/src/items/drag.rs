@@ -1,11 +1,10 @@
 #![allow(unused)]
 
-use crate::app::input::CursorEvent;
-use crate::app::{composition::algebra::Bubble, input::Event};
-use vek::Vec2;
+use {ui_composer_core::app::composition::algebra::Bubble, ui_composer_input::event::CursorEvent};
+use {ui_composer_input::event::Event, vek::Vec2};
 use {
-    crate::app::input::{ButtonState, MouseButton},
-    futures_signals::signal::Mutable,
+    ui_composer_input::event::{ButtonState, MouseButton},
+    ui_composer_state::futures_signals::signal::Mutable,
     vek::Rect,
 };
 

@@ -1,10 +1,10 @@
 use crate::app::composition::algebra::{Bubble, Semigroup as _};
 use crate::app::composition::elements::{Blueprint, Element, Environment};
-use crate::app::input::Event;
 use futures_signals::signal::Signal;
 use pin_project::pin_project;
 use std::pin::Pin;
 use std::task::{Context, Poll};
+use ui_composer_input::event::Event;
 
 #[pin_project]
 #[must_use = "React does nothing unless polled"]

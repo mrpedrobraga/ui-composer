@@ -1,9 +1,7 @@
 use {
     crate::runner::TerminalEnvironment,
-    ui_composer_core::{
-        app::composition::elements::{Blueprint, Element},
-        items::{Hover, Tap, Typing},
-    },
+    ui_composer_basic_ui::items::{Hover, Tap, Typing},
+    ui_composer_core::app::composition::elements::{Blueprint, Element},
     ui_composer_state::effect::Effect,
 };
 

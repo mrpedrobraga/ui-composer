@@ -17,4 +17,6 @@ ui-composer-canvas = { path = "../canvas" }
 ui-composer-core = { path = "../core" }
 ui-composer-geometry = { path = "../geometry" }
 ui-composer-state = { path = "../state" }
+ui-composer-input = { path = "../input" }
+ui-composer-basic-ui = { path = "../basic-ui" }
 vek = "0.17.2"

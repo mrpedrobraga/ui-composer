@@ -16,7 +16,7 @@ use futures_signals::signal::SignalExt as _;
 use smol_str::ToSmolStr as _;
 use ui_composer_core::app::composition::algebra::Bubble as _;
 use ui_composer_core::app::composition::elements::{Blueprint, Environment};
-use ui_composer_core::app::input::{ButtonState, CursorEvent, DeviceId, Event, KeyEvent, KeyboardEvent, TouchStage};
+use ui_composer_input::event::{ButtonState, CursorEvent, DeviceId, Event, KeyEvent, KeyboardEvent, TouchStage};
 use ui_composer_core::app::runner::Runner;
 use ui_composer_core::app::runner::futures::AsyncExecutor;
 use vek::{Extent2, Vec2};

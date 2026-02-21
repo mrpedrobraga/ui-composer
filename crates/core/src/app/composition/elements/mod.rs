@@ -10,9 +10,9 @@
 
 use crate::app::composition::algebra::Bubble;
 use crate::app::composition::visit::DriveThru;
-use crate::app::input::Event;
 use std::pin::Pin;
 use std::task::{Context, Poll};
+use ui_composer_input::event::Event;
 
 pub mod implementations;
 

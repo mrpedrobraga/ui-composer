@@ -5,9 +5,9 @@ use futures_signals::signal::SignalExt;
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
 use ui_composer_core::app::composition::elements::{Blueprint, Environment};
-use ui_composer_core::app::input::Event;
 use ui_composer_core::app::runner::futures::AsyncExecutor;
 use ui_composer_core::app::runner::Runner;
+use ui_composer_input::event::Event;
 use winit::application::ApplicationHandler;
 use winit::dpi::{PhysicalSize, Size};
 use winit::event::WindowEvent;
@@ -55,16 +55,15 @@ where
                     let app2 = app2;
 
                     while let Some(event) = tap.next().await {
-                        let _lock = app2.lock().expect(
-                            "[Event] Failed to lock app to send event.",
-                        );
+                        let _lock = app2
+                            .lock()
+                            .expect("[Event] Failed to lock app to send event.");
                         /* Push event down app! */
                         println!("A new event arrived! {:?}", event);
                     }
                 };
 
-                let async_handler =
-                    AsyncExecutor::new(app, env, || {}).to_future();
+                let async_handler = AsyncExecutor::new(app, env, || {}).to_future();
 
                 let processes = async { join!(async_handler, event_handler) };
 
@@ -115,17 +114,11 @@ impl ApplicationHandler for WinitAppHandler {
         self.window = Some(window);
     }
 
-    fn window_event(
-        &mut self,
-        _: &ActiveEventLoop,
-        _: WindowId,
-        event: WindowEvent,
-    ) {
-        let uic_event = crate::winit_uic_conversion::into_event(event)
-            .expect("Unrecognized event.");
+    fn window_event(&mut self, _: &ActiveEventLoop, _: WindowId, event: WindowEvent) {
+        let uic_event =
+            crate::winit_uic_conversion::into_event(event).expect("Unrecognized event.");
         //TODO: Restructure how the event loop sends events.
-        block_on(self.sink.send(uic_event))
-            .expect("[Winit] Failed to send event though channel.");
+        block_on(self.sink.send(uic_event)).expect("[Winit] Failed to send event though channel.");
     }
 
     fn exiting(&mut self, _: &ActiveEventLoop) {

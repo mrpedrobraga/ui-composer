@@ -5,7 +5,7 @@
 //! it will render them to its [WindowRenderTarget].
 
 use pin_project::pin_project;
-use ui_composer_core::app::input::Event;
+use ui_composer_input::event::Event;
 
 use crate::gpu::{Gpu, RenderTarget};
 use crate::runner::WinitEnvironment;

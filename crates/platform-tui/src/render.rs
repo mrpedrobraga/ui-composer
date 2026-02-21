@@ -5,7 +5,7 @@ use ui_composer_core::app::composition::algebra::{Bubble, Empty};
 use ui_composer_core::app::composition::effects::ElementEffect;
 use ui_composer_core::app::composition::elements::{Blueprint, Element};
 use ui_composer_core::app::composition::visit::{Apply, DriveThru};
-use ui_composer_core::app::input::Event;
+use ui_composer_input::event::Event;
 use vek::Rect;
 use vek::Rgba;
 
@@ -124,21 +124,14 @@ impl Element<TerminalEnvironment> for Graphic {
 // }
 
 use crossterm::cursor::MoveTo;
-use crossterm::style::{
-    Print, ResetColor, SetBackgroundColor, SetForegroundColor,
-};
-use crossterm::terminal::{
-    BeginSynchronizedUpdate, Clear, ClearType, EndSynchronizedUpdate,
-};
+use crossterm::style::{Print, ResetColor, SetBackgroundColor, SetForegroundColor};
+use crossterm::terminal::{BeginSynchronizedUpdate, Clear, ClearType, EndSynchronizedUpdate};
 use crossterm::QueueableCommand as _;
 use std::io::{stdout, BufWriter, Stdout, Write};
 
-pub fn present_canvas_to_terminal(
-    canvas: &mut PixelCanvas<TextModePixel>,
-) -> std::io::Result<()> {
+pub fn present_canvas_to_terminal(canvas: &mut PixelCanvas<TextModePixel>) -> std::io::Result<()> {
     // Using a BufWriter so we don't write all at once.
-    let mut screen_buffer =
-        BufWriter::with_capacity(canvas.size.w * canvas.size.h * 32, stdout());
+    let mut screen_buffer = BufWriter::with_capacity(canvas.size.w * canvas.size.h * 32, stdout());
 
     // Notify the terminal to start a "transaction" and not update the screen until we're done drawing.
     screen_buffer.queue(BeginSynchronizedUpdate)?;
@@ -185,12 +178,7 @@ fn draw_diff(
             cursor_x = Some(x + 1);
 
             // Queues sending the pixel to the terminal.
-            queue_pixel(
-                screen_buffer,
-                &mut current_fg,
-                &mut current_bg,
-                back_pixel,
-            )?;
+            queue_pixel(screen_buffer, &mut current_fg, &mut current_bg, back_pixel)?;
         }
     }
 
@@ -210,13 +198,11 @@ fn queue_pixel(
     let b_fg = (back_pixel.fg_color.b.clamp(0.0, 1.0) * 255.0) as u8;
 
     if *current_fg != Some((r_fg, g_fg, b_fg)) {
-        screen_buffer.queue(SetForegroundColor(
-            crossterm::style::Color::Rgb {
-                r: r_fg,
-                g: g_fg,
-                b: b_fg,
-            },
-        ))?;
+        screen_buffer.queue(SetForegroundColor(crossterm::style::Color::Rgb {
+            r: r_fg,
+            g: g_fg,
+            b: b_fg,
+        }))?;
         *current_fg = Some((r_fg, g_fg, b_fg));
     }
 
@@ -225,13 +211,11 @@ fn queue_pixel(
     let b_bg = (back_pixel.bg_color.b.clamp(0.0, 1.0) * 255.0) as u8;
 
     if *current_bg != Some((r_bg, g_bg, b_bg)) {
-        screen_buffer.queue(SetBackgroundColor(
-            crossterm::style::Color::Rgb {
-                r: r_bg,
-                g: g_bg,
-                b: b_bg,
-            },
-        ))?;
+        screen_buffer.queue(SetBackgroundColor(crossterm::style::Color::Rgb {
+            r: r_bg,
+            g: g_bg,
+            b: b_bg,
+        }))?;
         *current_bg = Some((r_bg, g_bg, b_bg));
     }
 

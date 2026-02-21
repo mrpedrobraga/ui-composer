@@ -5,6 +5,7 @@ version = "0.1.0"
 
 [workspace]
 members = [
+    "crates/input",
     "crates/core",
     "crates/geometry",
     "crates/state",
@@ -31,6 +32,7 @@ ui-composer-platform-winit = { path = "crates/platform-winit" }
 ui-composer-state = { path = "crates/state" }
 ui-composer-macros = { path = "crates/macros" }
 ui-composer-geometry = { path = "crates/geometry" }
+ui-composer-basic-ui = { path = "crates/basic-ui" }
 
 uix = { path = "crates/uix" }
 vek = "*"

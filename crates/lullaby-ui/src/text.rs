@@ -1,12 +1,10 @@
-use ui_composer_core::app::{
-    composition::{
-        algebra::{Bubble, Empty},
-        effects::ElementEffect,
-        elements::{Blueprint, Element},
-        visit::{Apply, DriveThru},
-    },
-    input::Event,
+use ui_composer_core::app::composition::{
+    algebra::{Bubble, Empty},
+    effects::ElementEffect,
+    elements::{Blueprint, Element},
+    visit::{Apply, DriveThru},
 };
+use ui_composer_input::event::Event;
 use ui_composer_platform_tui::{
     canvas::{Canvas as _, TextModePixel},
     nodes::TerminalEffectVisitor,

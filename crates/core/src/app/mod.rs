@@ -62,6 +62,3 @@
 
 pub mod composition;
 pub mod runner;
-
-/// User events are one of the things that can be bubbled down an application.
-pub mod input;

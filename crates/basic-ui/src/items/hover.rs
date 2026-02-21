@@ -1,10 +1,11 @@
 #![allow(unused)]
 
-use crate::app::composition::algebra::Bubble;
-use crate::app::composition::elements::{Blueprint, Element};
-use crate::app::input::{CursorEvent, Event};
 use vek::Vec2;
-use {futures_signals::signal::Mutable, vek::Rect};
+use {
+    ui_composer_core::app::composition::algebra::Bubble,
+    ui_composer_input::event::{CursorEvent, Event},
+};
+use {ui_composer_state::futures_signals::signal::Mutable, vek::Rect};
 
 /// An Interactor that handles a user hovering over it with a cursor.
 pub struct Hover {

@@ -1743,8 +1743,10 @@ dependencies = [
 name = "lullaby-ui"
 version = "0.1.0"
 dependencies = [
+ "ui-composer-basic-ui",
  "ui-composer-core",
  "ui-composer-geometry",
+ "ui-composer-input",
  "ui-composer-platform-tui",
  "ui-composer-platform-winit",
  "vek",
@@ -3205,6 +3207,7 @@ dependencies = [
  "chttp",
  "futures",
  "lullaby-ui",
+ "ui-composer-basic-ui",
  "ui-composer-core",
  "ui-composer-geometry",
  "ui-composer-macros",
@@ -3212,6 +3215,17 @@ dependencies = [
  "ui-composer-platform-winit",
  "ui-composer-state",
  "uix",
+ "vek",
+]
+
+[[package]]
+name = "ui-composer-basic-ui"
+version = "0.1.0"
+dependencies = [
+ "ui-composer-core",
+ "ui-composer-geometry",
+ "ui-composer-input",
+ "ui-composer-state",
  "vek",
 ]
 
@@ -3233,6 +3247,7 @@ dependencies = [
  "smol_str 0.3.5",
  "spin",
  "ui-composer-geometry",
+ "ui-composer-input",
  "ui-composer-state",
  "vek",
 ]
@@ -3243,6 +3258,14 @@ version = "0.1.0"
 dependencies = [
  "arrayvec",
  "num-traits",
+ "vek",
+]
+
+[[package]]
+name = "ui-composer-input"
+version = "0.1.0"
+dependencies = [
+ "smol_str 0.3.5",
  "vek",
 ]
 
@@ -3265,9 +3288,11 @@ dependencies = [
  "futures-signals",
  "pin-project",
  "smol_str 0.3.5",
+ "ui-composer-basic-ui",
  "ui-composer-canvas",
  "ui-composer-core",
  "ui-composer-geometry",
+ "ui-composer-input",
  "ui-composer-state",
  "vek",
 ]
@@ -3280,7 +3305,9 @@ dependencies = [
  "futures-signals",
  "pin-project",
  "smol_str 0.3.5",
+ "ui-composer-basic-ui",
  "ui-composer-core",
+ "ui-composer-input",
  "vek",
  "wgpu",
  "winit",

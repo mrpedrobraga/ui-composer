@@ -1,4 +1,4 @@
-//! # Backend
+//! # Runner
 //!
 //! This module declares the [`Runner`] trait, which is the procedural "runtime" that can
 //! interpret and execute an application defined functionally-declaratively.
