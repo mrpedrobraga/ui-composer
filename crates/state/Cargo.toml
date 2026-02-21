@@ -1,0 +1,14 @@
+[package]
+edition = "2024"
+name = "ui-composer-state"
+version = "0.1.0"
+
+[lib]
+name = "ui_composer_state"
+
+[dependencies]
+futures-signals = "*"
+futures-time = "3.0.1"
+num-traits = "0.2.19"
+pin-project = "1.1.10"
+vek = "0.17.2"

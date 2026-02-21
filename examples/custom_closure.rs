@@ -1,12 +1,11 @@
-use futures_signals::signal::MutableSignal;
-use ui_composer::state::Mutable;
+use ui_composer_state::futures_signals::signal::{Mutable, MutableSignal};
 
 fn main() {
     let m = Mutable::new(0);
     let mut c = ReactToSignal(m.signal());
 
-    let s1 = c.run();
-    let s2 = c.run();
+    let _s1 = c.run();
+    let _s2 = c.run();
 }
 
 trait Closure {

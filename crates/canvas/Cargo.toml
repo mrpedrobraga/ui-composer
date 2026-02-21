@@ -1,0 +1,11 @@
+[package]
+edition = "2024"
+name = "ui-composer-canvas"
+version = "0.1.0"
+
+[lib]
+name = "ui_composer_canvas"
+
+[dependencies]
+image = "0.25.9"
+vek = "0.17.2"

@@ -1,14 +1,17 @@
-use futures_signals::signal::{Mutable};
-use futures_signals::signal::{Signal, SignalExt};
-use ui_composer::app::composition::effects::signal::SignalReactExt;
+#![allow(non_snake_case)]
+use lullaby_ui::layout::{flex, item, Center};
+use lullaby_ui::text::Text;
 use ui_composer::list;
-use ui_composer::prelude::{flex, Hover, ItemBox, Resizable, Tap, UIComposer};
-use ui_composer::runners::tui::render::text::Text;
-use ui_composer::runners::tui::TUI;
-use ui_composer::runners::tui::{Graphic, Terminal};
-use ui_composer::standard::{item, Center};
-use ui_composer::state::effect::Effect;
-use ui_composer::state::State;
+use ui_composer::prelude::UIComposer;
+use ui_composer_core::app::composition::effects::signal::SignalReactExt;
+use ui_composer_core::app::composition::layout::{ItemBox, Resizable as _};
+use ui_composer_core::items::{Hover, Tap};
+use ui_composer_platform_tui::TUI;
+use ui_composer_platform_tui::{Graphic, Terminal};
+use ui_composer_state::effect::Effect;
+use ui_composer_state::futures_signals::signal::{always, Mutable};
+use ui_composer_state::futures_signals::signal::{Signal, SignalExt};
+use ui_composer_state::State;
 use vek::{Extent2, Rgba};
 
 fn main() {
@@ -19,8 +22,14 @@ fn main() {
 
 fn Counter(counter: Mutable<i32>) -> impl TUI {
     let label = Label(counter.signal().map(|num| format!("Counter: {}", num)));
-    let decr = Button("Take 1", counter.clone().effect(|e| *e -= 1));
-    let incr = Button("Add 1", counter.effect(|e| *e += 1));
+    let decr = Button(
+        Label(always("Take 1".to_string())),
+        counter.clone().effect(|e| *e -= 1),
+    );
+    let incr = Button(
+        Label(always("Add 1".to_string())),
+        counter.effect(|e| *e += 1),
+    );
 
     flex(list![item(label), item(decr), item(incr)])
 }

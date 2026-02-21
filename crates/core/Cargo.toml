@@ -1,0 +1,22 @@
+[package]
+edition = "2024"
+name = "ui-composer-core"
+version = "0.1.0"
+
+[lib]
+name = "ui_composer_core"
+# crate-type = ["dylib"]
+
+[dependencies]
+futures = "0.3.32"
+futures-signals = "0.3.34"
+pin-project = "1.1.10"
+smol_str = "0.3.5"
+spin = "0.10.0"
+vek = "0.17.2"
+ui-composer-geometry = { path = "../geometry" }
+ui-composer-state = { path = "../state" }
+
+[features]
+default = ["std"]
+std = []

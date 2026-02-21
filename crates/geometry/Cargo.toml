@@ -1,0 +1,13 @@
+[package]
+edition = "2024"
+name = "ui-composer-geometry"
+version = "0.1.0"
+
+[lib]
+name = "ui_composer_geometry"
+
+[dependencies]
+arrayvec = "0.7.6"
+num-traits = "0.2.19"
+vek = "0.17.2"
+

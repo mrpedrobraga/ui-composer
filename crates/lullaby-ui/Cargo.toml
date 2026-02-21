@@ -1,0 +1,17 @@
+[package]
+edition = "2024"
+name = "lullaby-ui"
+version = "0.1.0"
+
+[lib]
+name = "lullaby_ui"
+# crate-type = ["dylib"]
+
+[dependencies]
+vek = "0.17.2"
+ui-composer-core = { path = "../core" }
+ui-composer-geometry = { path = "../geometry" }
+
+# Gate these behind feature flags.
+ui-composer-platform-tui = { path = "../platform-tui" }
+ui-composer-platform-winit = { path = "../platform-winit" }

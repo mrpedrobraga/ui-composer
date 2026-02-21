@@ -1,13 +1,12 @@
-use async_std::task::block_on;
 use chttp::ResponseExt;
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
-use ui_composer::app::composition::effects::future::FutureReactExt;
-use ui_composer::app::composition::elements::{Blueprint, Environment};
-use ui_composer::app::runner::Runner;
-use ui_composer::app::runner::futures::AsyncExecutor;
 use ui_composer::prelude::UIComposer;
-use ui_composer::state::SignalExt;
+use ui_composer_core::app::composition::effects::future::FutureReactExt;
+use ui_composer_core::app::composition::elements::{Blueprint, Environment};
+use ui_composer_core::app::runner::futures::AsyncExecutor;
+use ui_composer_core::app::runner::Runner;
+use ui_composer_state::futures_signals::signal::SignalExt as _;
 
 /// An environment identifies a platform for which you can develop apps.
 pub struct ExampleEnvironment;
@@ -52,7 +51,7 @@ where
         };
 
         // We block on all tasks.
-        block_on(tasks);
+        futures::executor::block_on(tasks);
 
         // When all tasks are done, the app will naturally finish.
         // In complex apps, you might use `std::process::exit` instead,

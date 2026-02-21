@@ -1,32 +1,30 @@
 #![allow(non_snake_case)]
 
-use futures_signals::signal::Mutable;
-use futures_signals::signal::SignalExt;
-use uix::uix;
-use ui_composer::app::composition::effects::signal::SignalReactExt;
-use ui_composer::app::composition::layout::{ItemBox, Resizable};
+use lullaby_ui::layout::{Center, Row};
+use lullaby_ui::text::Text;
 use ui_composer::list;
-use ui_composer::prelude::{Hover, Row, Typing, UIComposer};
-use ui_composer::runners::tui::nodes::Terminal;
-use ui_composer::runners::tui::render::text::Text;
-use ui_composer::runners::tui::runner::TUIRunner;
-use ui_composer::runners::tui::{Graphic, TUI};
-use ui_composer::standard::Center;
+use ui_composer::prelude::UIComposer;
+use ui_composer_core::app::composition::effects::signal::SignalReactExt;
+use ui_composer_core::app::composition::layout::{ItemBox, Resizable};
+use ui_composer_core::items::{Hover, Typing};
+use ui_composer_platform_tui::nodes::Terminal;
+use ui_composer_platform_tui::runner::TUIRunner;
+use ui_composer_platform_tui::{Graphic, TUI};
+use ui_composer_state::futures_signals::signal::{Mutable, SignalExt as _};
+use uix::uix;
 use vek::{Extent2, Rgba};
 
 fn main() {
-    UIComposer::run_custom::<TUIRunner<_>>(
-        uix! (
-            <Terminal>
-                <Center>
-                    <Row gap=2.0>
-                        <TestingTyping />
-                        <TestingHover />
-                    </Row>
-                </Center>
-            </Terminal>
-        )
-    )
+    UIComposer::run_custom::<TUIRunner<_>>(uix! (
+        <Terminal>
+            <Center>
+                <Row gap=2.0>
+                    <TestingTyping />
+                    <TestingHover />
+                </Row>
+            </Center>
+        </Terminal>
+    ))
 }
 
 fn TestingTyping() -> impl TUI {

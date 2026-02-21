@@ -1,0 +1,26 @@
+[package]
+name = "uix"
+version = "0.0.0"
+authors = ["mrpedrobraga <mrhenribraga@gmail.com>"]
+description = "A `cargo generate` template for quick-starting a procedural macro crate"
+keywords = ["template", "proc_macro", "procmacro"]
+edition = "2018"
+
+[package.metadata.ui_composer]
+uix_containers = ["Flex", "Row", "Column"]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1"
+proc-macro2 = "1.0"
+rstml = "0.12.1"
+syn = "2.0.114"
+syn_derive = "0.2.0"
+toml = "0.9.11"
+
+[dev-dependencies]
+futures-signals = "0.3.34"
+async-std = "1.13.2"
+

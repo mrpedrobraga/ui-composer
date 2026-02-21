@@ -3,109 +3,44 @@ edition = "2024"
 name = "ui-composer"
 version = "0.1.0"
 
-[package.metadata.ui_composer]
-uix_containers = ["flex", "row", "column"]
+[workspace]
+members = [
+    "crates/core",
+    "crates/geometry",
+    "crates/state",
+    "crates/canvas",
+    "crates/macros",
+    "crates/platform-tui",
+    "crates/platform-winit",
+    "crates/uix",
+
+    # Design Libraries
+    "crates/lullaby-ui",
+]
 
 [lib]
 name = "ui_composer"
 # crate-type = ["dylib"]
 
 [dependencies]
-
-### Futures and Asynchronicity ###
-
-# Main asynchronicity library.
-futures = { version = "0.3.30", default-features = false, features = [
-    "async-await",
-] }
-
-# Useful async constructs. I can probably remove this dependency.
-async-std = "1.13.0"
-
-# FRP Signals for reactivity. I might port this library into UI composer 
-# in order to add my own implementations of signals, especially no-std ones.
-futures-signals = "0.3.33"
-
-# Used for animation.
-futures-time = "3.0.0"
-
-# Utility for safely pinning values when implementing traits like `Future`.
-pin-project = "1.1.5"
-
-### Geometry ###
-
-# Crate for geometry types. Might get rid of this dependency.
-vek = { version = "0.17.0", features = ["bytemuck"] }
-
-# Trait for generalizing numbers.
-num-traits = "0.2.19"
-
-### Rendering
-glyphon = { git = "https://github.com/grovesNL/glyphon.git" }
-wgpu = { version = "28.0.0", default-features = false, features = [
-    "wgsl",
-    "vulkan",
-    "webgpu",
-    "gles",
-    "metal",
-    "dx12",
-], optional = true }
-
-### Data ###
-
-# Working with bytes.
-bytemuck = { version = "1.16.1", features = ["derive"] }
-
-# Serializing and deserializing UI composer and re-exported crates' types.
-serde = { version = "1.0.204", features = ["derive"], optional = true }
-
-# Fixed-capacity vector that does not allocate.
-arrayvec = { version = "0.7.6", default-features = false }
-
-# String
-smol_str = "0.3.2"
-spin = "0.10.0"
-downcast-rs = { version = "2.0.2", default-features = false }
-image = "0.25.6"
-
-### Platforms: Winit ###
-winit = { version = "0.30.7", optional = true }
-
-### Platforms: Terminal ###
-crossterm = { version = "0.29.0", optional = true, features = ["event-stream"] }
-
-[features]
-default = ["default-desktop", "serde", "tui"]
-
-### Standard ###
-std = ["downcast-rs/std"]
-debug = []
-serde = ["dep:serde"]
-
-### Platform: Desktop ###
-default-desktop = ["wgpu", "winit"]
-winit = ["dep:winit", "std", "futures/executor"]
-wgpu = ["dep:wgpu", "std"]
-
-### Platform: Terminal ###
-default-terminal = ["tui"]
-tui = ["dep:crossterm", "std"]
-
-### Experimental ###
-specialization = []
+ui-composer-core = { path = "crates/core" }
+ui-composer-platform-tui = { path = "crates/platform-tui" }
+ui-composer-platform-winit = { path = "crates/platform-winit" }
 
 [dev-dependencies]
-chttp = "0.5.5"
-serde_json = "1.0.134"
-vek = { version = "0.17.0", features = ["serde"] }
-winit = { version = "0.30.7" }
-uix = { path = "../rust-tests/uix" }
+ui-composer-state = { path = "crates/state" }
+ui-composer-macros = { path = "crates/macros" }
+ui-composer-geometry = { path = "crates/geometry" }
 
-# Enable a small amount of optimization in the dev profile.
+uix = { path = "crates/uix" }
+vek = "*"
+lullaby-ui = { path = "crates/lullaby-ui" }
+futures = "*"
+chttp = "*"
+
 [profile.dev]
 opt-level = 1
 
-# Enable a large amount of optimization in the dev profile for dependencies.
 [profile.dev.package."*"]
 opt-level = 3
 
