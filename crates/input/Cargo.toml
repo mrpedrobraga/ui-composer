@@ -8,9 +8,10 @@ name = "ui_composer_input"
 # crate-type = ["dylib"]
 
 [features]
-default = ["std"]
+default = []
 std = []
 
 [dependencies]
 smol_str = "0.3.5"
 vek = "0.17.2"
+nstr = "0.3.2"

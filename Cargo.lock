@@ -1911,6 +1911,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0676bb32a98c1a483ce53e500a81ad9c3d5b3f7c920c28c24e9cb0980d0b5bc8"
 
 [[package]]
+name = "nstr"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9bb02d78238fdacbb75b28278378bbd526a57cb1b9825b19d6ebed5be8fa3f5e"
+
+[[package]]
 name = "num-bigint"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3265,6 +3271,7 @@ dependencies = [
 name = "ui-composer-input"
 version = "0.1.0"
 dependencies = [
+ "nstr",
  "smol_str 0.3.5",
  "vek",
 ]

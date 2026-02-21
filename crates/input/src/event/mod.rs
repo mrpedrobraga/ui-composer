@@ -5,6 +5,11 @@ use {
 
 pub type EvNum = f32;
 
+#[cfg(feature = "std")]
+pub type EvString = String;
+#[cfg(not(feature = "std"))]
+pub type EvString = nstr::String;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Event {
     /// The user requested that the application closes.
@@ -142,7 +147,6 @@ pub enum ThemeType {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-#[cfg(feature = "std")]
 pub enum ImeEvent {
     /// IME was enabled, and you should get ready to handle IME events such as
     /// [Self::Preedit] or [Self::Commit].
@@ -153,10 +157,10 @@ pub enum ImeEvent {
     /// User composed text at some range. The range here is byte-indexed.
     /// When the range is `None`, the cursor should be hidden.
     ///
-    /// When the `String` is empty, this indicates the pre-edit was cleared.
+    /// When the string is empty, this indicates the pre-edit was cleared.
     /// This usually happens before [Self::Commit] is emitted.
-    Preedit(Option<std::ops::Range<usize>>, String),
-    Commit(String),
+    Preedit(Option<core::ops::Range<usize>>, EvString),
+    Commit(EvString),
 }
 
 // MARK: Keyboard
