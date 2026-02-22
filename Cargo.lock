@@ -3339,6 +3339,7 @@ dependencies = [
  "ui-composer-platform-tui",
  "ui-composer-platform-winit",
  "ui-composer-state",
+ "ui-composer-view-macro",
  "uix",
  "vek",
 ]
@@ -3448,6 +3449,17 @@ dependencies = [
  "num-traits",
  "pin-project",
  "vek",
+]
+
+[[package]]
+name = "ui-composer-view-macro"
+version = "0.0.0"
+dependencies = [
+ "async-std",
+ "futures-signals",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

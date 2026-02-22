@@ -14,9 +14,11 @@ members = [
     "crates/platform-tui",
     "crates/platform-winit",
     "crates/uix",
+    "crates/view-macro",
 
     # Design Libraries
-    "crates/lullaby-ui", "examples/example-android",
+    "crates/lullaby-ui",
+    "examples/example-android",
 ]
 
 [lib]
@@ -35,6 +37,8 @@ ui-composer-geometry = { path = "crates/geometry" }
 ui-composer-basic-ui = { path = "crates/basic-ui" }
 
 uix = { path = "crates/uix" }
+ui-composer-view-macro = { path = "crates/view-macro" }
+
 vek = "*"
 lullaby-ui = { path = "crates/lullaby-ui" }
 futures = "*"

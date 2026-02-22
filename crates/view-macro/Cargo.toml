@@ -1,0 +1,19 @@
+[package]
+name = "ui-composer-view-macro"
+version = "0.0.0"
+authors = ["mrpedrobraga <mrhenribraga@gmail.com>"]
+description = "A macro for writing UI Composer style components ergonomically!"
+keywords = ["template", "proc_macro", "procmacro"]
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1"
+proc-macro2 = "1.0"
+syn = "2.0.114"
+
+[dev-dependencies]
+futures-signals = "0.3.34"
+async-std = "1.13.2"
