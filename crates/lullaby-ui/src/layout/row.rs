@@ -9,7 +9,7 @@ use vek::{Extent2, Rect};
 ///
 /// The height of the container is the max height between the items.
 /// TODO: Allow it to take more than two items.
-pub fn Row<A, B>(item_a: A, item_b: B) -> RowContainer<A, B> {
+pub fn row<A, B>((item_a, item_b): (A, B)) -> RowContainer<A, B> {
     RowContainer {
         item_a,
         item_b,

@@ -6,6 +6,14 @@ use ui_composer_platform_tui::{Graphic, Terminal, TUI};
 use uix::uix as view;
 use vek::{Extent2, Rgba};
 
+static SURFACE_COLOR: Rgba<f32> = Rgba::new(255.0, 253.0, 248.0, 255.0);
+static SURFACE_COLOR_2: Rgba<f32> = Rgba::new(255.0, 241.0, 231.0, 255.0);
+
+static BUTTON_COLOR: Rgba<f32> = Rgba::new(255.0, 217.0, 179.0, 255.0);
+static BUTTON_COLOR_HOVER: Rgba<f32> = Rgba::new(235.0, 189.0, 143.0, 255.0);
+static BUTTON_TEXT_COLOR: Rgba<f32> = Rgba::new(175.0, 90.0, 16.0, 255.0);
+static TEXT_COLOR: Rgba<f32> = Rgba::new(156.0, 78.0, 10.0, 255.0);
+
 fn main() {
     UIComposer::run_tui(view! (
         <Terminal>
@@ -13,18 +21,18 @@ fn main() {
                 <item grow=1.0>
                     <flex>
                         <item>
-                            <Square>{ Rgba::magenta() }</Square>
+                            <Square>{ SURFACE_COLOR / 255.0 }</Square>
                         </item>
                         <item grow=2.0>
-                            <Square>{ Rgba::yellow() }</Square>
+                            <Square>{ SURFACE_COLOR_2 / 255.0 }</Square>
                         </item>
                         <item>
-                            <Square>{ Rgba::cyan() }</Square>
+                            <Square>{ BUTTON_COLOR / 255.0 }</Square>
                         </item>
                     </flex>
                 </item>
                 <item>
-                    <Square>{ Rgba::blue() }</Square>
+                    <Square>{ BUTTON_COLOR_HOVER / 255.0 }</Square>
                 </item>
             </flex>
         </Terminal>

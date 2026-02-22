@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use lullaby_ui::layout::{Center, Row};
+use lullaby_ui::layout::{center, row};
 use lullaby_ui::text::Text;
 use ui_composer::list;
 use ui_composer::prelude::UIComposer;
@@ -17,12 +17,12 @@ use vek::{Extent2, Rgba};
 fn main() {
     UIComposer::run_custom::<TUIRunner<_>>(uix! (
         <Terminal>
-            <Center>
-                <Row gap=2.0>
+            <center>
+                <row gap=2.0>
                     <TestingTyping />
                     <TestingHover />
-                </Row>
-            </Center>
+                </row>
+            </center>
         </Terminal>
     ))
 }

@@ -2,7 +2,7 @@
 
 use chttp::ResponseExt;
 use futures::FutureExt;
-use lullaby_ui::layout::Center;
+use lullaby_ui::layout::center;
 use lullaby_ui::text::Text;
 use ui_composer::prelude::UIComposer;
 use ui_composer_core::app::composition::effects::future::FutureReactExt;
@@ -14,7 +14,7 @@ use ui_composer_platform_tui::{Graphic, TUI};
 use vek::{Extent2, Rgba};
 
 fn main() {
-    UIComposer::run_custom::<TUIRunner<_>>(Terminal(Center(TestingFuture())))
+    UIComposer::run_custom::<TUIRunner<_>>(Terminal(center(TestingFuture())))
 }
 
 fn TestingFuture() -> impl TUI {

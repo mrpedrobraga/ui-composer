@@ -2,7 +2,7 @@ use ui_composer_core::app::composition::layout::{hints::ParentHints, LayoutItem}
 use vek::{Extent2, Rect};
 
 /// A container that, as it is reshaped, keeps its item at its natural size and centered in the available space.
-pub fn Center<A>(item: A) -> CenterContainer<A>
+pub fn center<A>(item: A) -> CenterContainer<A>
 where
     A: LayoutItem,
 {
