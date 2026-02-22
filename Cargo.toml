@@ -16,7 +16,7 @@ members = [
     "crates/uix",
 
     # Design Libraries
-    "crates/lullaby-ui",
+    "crates/lullaby-ui", "examples/example-android",
 ]
 
 [lib]

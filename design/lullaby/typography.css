@@ -1,0 +1,19 @@
+@font-face {
+    font-family: 'SF Pro Display';
+    src: url('./assets/San\ Fransisco\ Pro\ Display.otf');
+}
+
+@font-face {
+    font-family: 'Goudy Bookletter';
+    src: url('./assets/Goudy\ Bookletter.woff');
+}
+
+@font-face {
+    font-family: 'SF Pro Code';
+    src: url('./assets/San\ Fransisco\ Pro\ Code.otf');
+}
+
+@font-face {
+    font-family: 'Roboto Flex';
+    src: url('./assets/Roboto\ Flex.ttf');
+}

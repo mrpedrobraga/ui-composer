@@ -1,0 +1,47 @@
+:root {
+    --hue: 42.334;
+    --theme-color: oklch(62.573% 0.17615 var(--hue));
+
+    --bg-primary: oklch(from var(--theme-color) 88% 0.08 h);
+    --text-on-primary: oklch(from var(--theme-color) 35% calc(c + 0.02) h);
+
+    --bg-container-primary: oklch(from var(--theme-color) 95% 0.03 h);
+    --text-on-container-primary: oklch(from var(--theme-color) 10% 0.3 h);
+
+    --bg-container-secondary: oklch(from var(--theme-color) 92% 0.07 h);
+    --text-on-container-secondary: oklch(from var(--theme-color) 15% 0.04 h);
+
+    --bg-container-tertiary: oklch(from var(--theme-color) 90% 0.08 calc(h + 60));
+    --text-on-container-tertiary: oklch(from var(--theme-color) 15% 0.08 calc(h + 60));
+
+    --bg-surface: oklch(from var(--theme-color) 99% 0.015 h);
+    --bg-surface-darker: oklch(from var(--theme-color) 50% 0.1 h);
+    --text-on-surface: oklch(from var(--theme-color) 35% 0.08 h);
+
+    --outlines: oklch(from var(--theme-color) 80% 0.03 h);
+    --border: oklch(from var(--theme-color) 10% 0.08 h / 0.3);
+}
+
+@media screen and (prefers-color-scheme: dark) {
+    :root {
+        --theme-color: oklch(62.573% 0.17615 var(--hue));
+
+        --bg-primary: oklch(from var(--theme-color) 20% 0.03 h);
+        --text-on-primary: oklch(from var(--theme-color) 75% 0.03 h);
+
+        --bg-container-primary: oklch(from var(--theme-color) 25% 0.01 h);
+        --text-on-container-primary: oklch(from var(--theme-color) 90% 0.3 h);
+
+        --bg-container-secondary: oklch(from var(--theme-color) 20% 0.07 h);
+        --text-on-container-secondary: oklch(from var(--theme-color) 80% 0.04 h);
+
+        --bg-container-tertiary: oklch(from var(--theme-color) 20% 0.08 calc(h + 60));
+        --text-on-container-tertiary: oklch(from var(--theme-color) 90% 0.08 calc(h + 60));
+
+        --bg-surface: oklch(from var(--theme-color) 29% 0.02 h);
+        --bg-surface-darker: oklch(from var(--theme-color) 20% 0.02 h);
+        --text-on-surface: oklch(from var(--theme-color) 85% 0.01 h);
+
+        --outlines: oklch(from var(--theme-color) 20% 0.03 h);
+    }
+}

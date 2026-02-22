@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1820, initial-scale=1.0">
+    <link rel="stylesheet" href="./style.css">
+
+    <title>Lullaby UI</title>
+</head>
+
+<body>
+    <div class="window rounded shadow">
+        <div class="titlebar">
+            <div class="window-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-app-window-icon lucide-app-window">
+                    <rect x="2" y="4" width="20" height="16" rx="2" />
+                    <path d="M10 4v4" />
+                    <path d="M2 8h20" />
+                    <path d="M6 4v4" />
+                </svg>
+            </div>
+            <div class="controls">
+                <div class="control"></div>
+                <div class="control"></div>
+                <div class="control"></div>
+            </div>
+            <div class="tabs">
+                <div class="tab" tabindex="0">
+                    <span class="icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-folder-icon lucide-folder">
+                            <path
+                                d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+                        </svg>
+                    </span>
+                    <span class="tab-name">Music</span>
+                    <a class="close"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" class="lucide lucide-x-icon lucide-x">
+                            <path d="M18 6 6 18" />
+                            <path d="m6 6 12 12" />
+                        </svg></a>
+                </div>
+                <div class="tab" tabindex="0">
+                    <span class="icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-folder-icon lucide-folder">
+                            <path
+                                d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+                        </svg>
+                    </span>
+                    <span class="tab-name">Videos</span>
+                    <a class="close"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" class="lucide lucide-x-icon lucide-x">
+                            <path d="M18 6 6 18" />
+                            <path d="m6 6 12 12" />
+                        </svg></a>
+                </div>
+                <div class="tab selected" tabindex="0">
+                    <span class="icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-code-icon lucide-code">
+                            <path d="m16 18 6-6-6-6" />
+                            <path d="m8 6-6 6 6 6" />
+                        </svg> </span>
+                    <span class="tab-name">components.mdx</span>
+                    <a class="close"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" class="lucide lucide-x-icon lucide-x">
+                            <path d="M18 6 6 18" />
+                            <path d="m6 6 12 12" />
+                        </svg></a>
+                </div>
+            </div>
+        </div>
+        <div class="content">
+            <aside>
+                <div class="search">Files</div>
+                <div class="quick-access">
+                    <div class="folder-item" tabindex="0">
+                        <div class="image">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="lucide lucide-folder-icon lucide-folder">
+                                <path
+                                    d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+                            </svg>
+                        </div>
+                        <div class="name">Home</div>
+                        <div class="size">750kB</div>
+                    </div>
+                    <div class="folder-item" tabindex="0">
+                        <div class="image">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="lucide lucide-library-big-icon lucide-library-big">
+                                <rect width="8" height="18" x="3" y="3" rx="1" />
+                                <path d="M7 3v18" />
+                                <path
+                                    d="M20.4 18.9c.2.5-.1 1.1-.6 1.3l-1.9.7c-.5.2-1.1-.1-1.3-.6L11.1 5.1c-.2-.5.1-1.1.6-1.3l1.9-.7c.5-.2 1.1.1 1.3.6Z" />
+                            </svg>
+                        </div>
+                        <div class="name">Documents</div>
+                        <div class="size">750kB</div>
+                    </div>
+                    <div class="folder-item" tabindex="0">
+                        <div class="image">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="lucide lucide-disc-album-icon lucide-disc-album">
+                                <rect width="18" height="18" x="3" y="3" rx="2" />
+                                <circle cx="12" cy="12" r="5" />
+                                <path d="M12 12h.01" />
+                            </svg>
+                        </div>
+                        <div class="name">Music</div>
+                        <div class="size">120 items</div>
+                    </div>
+                    <div class="folder-item" tabindex="0">
+                        <div class="image">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="lucide lucide-film-icon lucide-film">
+                                <rect width="18" height="18" x="3" y="3" rx="2" />
+                                <path d="M7 3v18" />
+                                <path d="M3 7.5h4" />
+                                <path d="M3 12h18" />
+                                <path d="M3 16.5h4" />
+                                <path d="M17 3v18" />
+                                <path d="M17 7.5h4" />
+                                <path d="M17 16.5h4" />
+                            </svg>
+                        </div>
+                        <div class="name">Videos</div>
+                        <div class="size">4 items</div>
+                    </div>
+                </div>
+                <div class="drives">
+                    <div class="folder-item selected" tabindex="0">
+                        <div class="image">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="lucide lucide-hard-drive-icon lucide-hard-drive">
+                                <path d="M10 16h.01" />
+                                <path
+                                    d="M2.212 11.577a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+                                <path d="M21.946 12.013H2.054" />
+                                <path d="M6 16h.01" />
+                            </svg>
+                        </div>
+                        <div class="name">Pedro Braga</div>
+                        <div class="size">1TB</div>
+                    </div>
+                    <div class="folder-item" tabindex="0">
+                        <div class="image">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="lucide lucide-usb-icon lucide-usb">
+                                <circle cx="10" cy="7" r="1" />
+                                <circle cx="4" cy="20" r="1" />
+                                <path d="M4.7 19.3 19 5" />
+                                <path d="m21 3-3 1 2 2Z" />
+                                <path d="M9.26 7.68 5 12l2 5" />
+                                <path d="m10 14 5 2 3.5-3.5" />
+                                <path d="m18 12 1-1 1 1-1 1Z" />
+                            </svg>
+                        </div>
+                        <div class="name">Xiaomi Travel Drive</div>
+                        <div class="size">32GB</div>
+                    </div>
+                </div>
+            </aside>
+            <main>
+                <div class="md-content">
+                    <img style="display:none;" src="https://apps.rhs.org.uk/plantselectorimages/detail/visi34975.jpg"
+                        alt="" class="banner">
+                    <h1>Components</h1>
+                    <p>
+                        <strong>Lullaby</strong> is a <strong>design system</strong> created to showcase the
+                        capabilities of <a href="">UI
+                            Composer.</a>
+                    </p>
+
+                    <h2>The Editor Pattern</h2>
+
+                    <p>
+                        In UI Composer, components are <em>functorial</em>. In short, a component is something which
+                        visualizes and/or edits some datum T. Because data types are composable, components should be
+                        composable, too.
+                    </p>
+
+                    <h3>Views and Inputs</h3>
+
+                    <p><strong>TextEdit</strong> inputs can edit a <code>String</code>.</p>
+                    <input type="text" name="Text Input" id="" placeholder="Your name..." />
+
+                    <p>A <strong>ValidatedTextEdit</strong> can edit any <code>impl FromStr</code>. </p>
+
+                    <input type="email" name="Email Input" id="" placeholder="Your email..." />
+
+                    <input type="date" name="Phone Input" id="" placeholder="Your phone number..." />
+
+                    <h3>Actions and Effects</h3>
+
+                    <p><strong>Button</strong>s are the UI equivalent of <code>Effect</code>s. An <code>Effect</code>
+                        represents a change in state, whether that's a property of an element, dispatching a task, or
+                        incrementing a number.</p>
+
+                    <div class="buttons">
+                        <button>Primary Button</button>
+                        <button class="alt">Secondary Button</button>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <input type="range" name="hue" id="hue-slider" min="0" max="360" value="280">
+</body>
+
+<script defer>
+    const slider = document.getElementById("hue-slider");
+    const root = document.documentElement;
+
+    function updateHue(slider) {
+        const h = slider.value;
+        root.style.setProperty(
+            "--hue",
+            `${h}`,
+        );
+    }
+
+    slider.addEventListener(
+        "input",
+        (e) => updateHue(e.target),
+    );
+
+    updateHue(slider);
+</script>
+
+<style>
+    #hue-slider {
+        position: absolute;
+        top: 1rem;
+    }
+</style>
+
+</html>

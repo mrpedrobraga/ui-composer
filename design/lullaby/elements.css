@@ -1,0 +1,496 @@
+button {
+    background-color: var(--bg-primary);
+    color: var(--text-on-primary);
+    padding: 0.65rem;
+    margin: 0.2rem;
+    border-radius: 1rem;
+    will-change: margin, padding;
+    transition: var(--inertia);
+
+    font-weight: 700;
+
+    transition-property: padding, margin, translate;
+    transition-duration: 0.2s;
+    transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+button:hover,
+button:focus {
+    padding: 0.75rem;
+    margin: 0.1rem;
+    border-radius: 2rem;
+    cursor: pointer;
+    background-color: oklch(from var(--bg-primary) calc(l - 0.075) calc(c + 0.01) h);
+}
+
+button:active {
+    translate: 0 0.1rem;
+    background-color: oklch(from var(--bg-primary) calc(l - 0.1) calc(c + 0.01) h);
+}
+
+button.alt {
+    background-color: oklch(from var(--bg-surface) l c h);
+    color: oklch(from var(--text-on-primary) l c h);
+}
+
+button.alt:hover,
+button.alt:focus {
+    background-color: oklch(from var(--bg-surface) calc(l - 0.075) calc(c + 0.01) h);
+}
+
+button.alt:active {
+    background-color: oklch(from var(--bg-surface) calc(l - 0.1) calc(c + 0.01) h);
+}
+
+a.link,
+a[href] {
+    color: var(--text-on-container-tertiary);
+    text-decoration: underline;
+    padding: 0.1rem;
+    margin: -0.1rem;
+    transition-property: scale;
+    transition-duration: 0.5s;
+    transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+a.link:hover,
+a[href]:hover {
+    background-color: oklch(from var(--bg-container-tertiary) l c h / 0.5);
+    border-radius: 1rem;
+    corner-style: round;
+    scale: 1.1;
+}
+
+input {
+    accent-color: var(--bg-primary);
+}
+
+input[type="range"] {
+    position: relative;
+    appearance: none;
+    background-image: linear-gradient(to right,
+            oklch(70% 0.25 0deg),
+            oklch(70% 0.25 60deg),
+            oklch(70% 0.25 120deg),
+            oklch(70% 0.25 180deg),
+            oklch(70% 0.25 240deg),
+            oklch(70% 0.25 300deg),
+            oklch(70% 0.25 360deg));
+    padding: 0.2rem;
+    cursor: pointer;
+    width: 8rem;
+    height: 2rem;
+    border-radius: 1rem;
+    border: 0.5rem var(--bg-surface) solid;
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.06) 0px 1px 2px 0px;
+}
+
+input[type="range"]:focus {
+    outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    background: var(--text-on-primary);
+    width: 0.8rem;
+    height: calc(2rem - 0.2rem);
+    border-radius: 0.2rem;
+    corner-style: round;
+}
+
+input[type="range"]::before {
+    display: block;
+    position: absolute;
+    height: calc(2rem-0.2rem);
+    width: 2rem;
+    background-color: var(--bg-primary);
+}
+
+input[type="text"],
+input[type="number"],
+input[type="email"] {
+    background-color: oklch(from var(--bg-surface) calc(l - 0.025) calc(c + 0.01) h);
+    color: oklch(from var(--text-on-primary) l c h);
+    font-weight: 550;
+    padding-block: 0.75rem;
+    padding-inline: 1rem;
+    border-radius: 1rem;
+    caret-shape: block;
+
+    transition-property: padding, margin, translate;
+    transition-duration: 0.2s;
+    transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="email"]:focus {
+    background-color: oklch(from var(--bg-surface) calc(l - 0.08) calc(c + 0.01) h);
+    padding-block: 1.0rem;
+    padding-inline: 1.25rem;
+    margin: -0.25rem;
+    border-radius: 2rem;
+}
+
+input[type="email"]:invalid {
+    background-color: oklch(from var(--bg-surface) calc(l - 0.05) 0.1 10);
+    color: oklch(from var(--text-on-primary) l c 10);
+}
+
+::placeholder {
+    color: var(--bg-on-primary);
+    font-weight: 500;
+    font-style: italic;
+    opacity: 0.3;
+}
+
+.window .tabs .tab {
+    background-color: oklch(from var(--bg-surface) l c h);
+    color: oklch(from var(--text-on-primary) l c h);
+    padding-inline: 0.5rem;
+    gap: 0.25rem;
+    border-radius: 1rem;
+    will-change: margin, padding;
+    transition: var(--inertia);
+    align-items: center;
+    font-size: 0.8em;
+    font-weight: 700;
+
+    transition-property: padding, margin, translate;
+    transition-duration: 0.2s;
+    transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.window .tabs .tab:hover,
+.window .tabs .tab:focus {
+    border-radius: 2rem;
+    cursor: pointer;
+    background-color: oklch(from var(--bg-surface) calc(l - 0.025) calc(c + 0.01) h);
+}
+
+.window .tabs .tab.selected {
+    background-color: oklch(from var(--bg-surface) calc(l - 0.075) calc(c + 0.01) h);
+}
+
+.window .tabs .tab:has(.tab-name:active) {
+    translate: 0 0.1rem;
+    background-color: oklch(from var(--bg-surface) calc(l - 0.075) calc(c + 0.01) h);
+}
+
+@media screen and (prefers-color-scheme: dark) {
+    .window .tabs .tab {
+        background-color: oklch(from var(--bg-surface) l c h);
+    }
+
+    .window .tabs .tab.selected {
+        background-color: oklch(from var(--bg-surface) calc(l + 0.1) calc(c + 0.01) h);
+    }
+}
+
+.window .tabs .tab-name {
+    /* font-variant-caps: small-caps; */
+    flex-grow: 1;
+    text-align: start;
+}
+
+.window .tabs .icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 0.8rem;
+    aspect-ratio: 1/1;
+}
+
+.window .tabs .close {
+    corner-shape: round;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition-property: padding, scale;
+    transition-duration: 0.2s;
+    transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+    width: 0.5rem;
+    height: 0.5rem;
+}
+
+.window .tabs .close:hover,
+.window .tabs .close:focus {
+    background-color: oklch(from var(--bg-primary) calc(l - 0.1) c h);
+    scale: 2;
+}
+
+.window .tabs .close:active {
+    background-color: oklch(from var(--bg-primary) calc(l - 0.2) c h);
+    translate: 0 0.1rem;
+}
+
+.context-menu {
+    position: relative;
+    position: absolute;
+    flex-direction: column;
+    align-items: stretch;
+    flex-shrink: 0;
+    overflow: clip;
+    isolation: isolate;
+    border-radius: 3rem;
+    border: 1px solid var(--border);
+    justify-content: start;
+    padding-block: 0.3rem;
+    padding-inline: 0.2rem;
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.06) 0px 1px 2px 0px;
+    background-color: oklch(from var(--bg-surface) l c h / 0.7);
+    /* background-color: oklch(from var(--bg-surface) l c h / 1.0); */
+    backdrop-filter: blur(20px);
+}
+
+.context-menu hr {
+    background-color: var(--text-on-primary);
+    opacity: 0.25;
+    height: 1px;
+    margin-inline: 0.5rem;
+}
+
+.context-menu .item {
+    justify-content: start;
+    padding-inline: 1.1rem;
+    padding-block: 0.5rem;
+    gap: 0.7rem;
+    font-weight: 500;
+    border-radius: 10rem;
+}
+
+.context-menu .item:hover {
+    background-color: oklch(from var(--bg-surface) calc(l - 0.6) c h / 0.1);
+    cursor: pointer;
+}
+
+.context-menu .item .icon {
+    width: 1rem;
+    height: 1rem;
+}
+
+.context-menu .item .text {
+    flex-grow: 1;
+}
+
+.context-menu .item .shortcut {
+    justify-self: end;
+    opacity: 0.4;
+}
+
+svg {
+    flex-shrink: 1;
+}
+
+::-webkit-scrollbar {
+    appearance: none;
+    width: 0.5rem;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: oklch(from var(--bg-primary) calc(l - 0.2) c h / 0.2);
+    border-radius: 1rem;
+}
+
+.md-content {
+    padding-block-start: 1rem;
+    flex-direction: column;
+    align-self: stretch;
+    gap: 1rem;
+    height: 550px;
+    overflow: scroll;
+}
+
+.md-content .banner {
+    width: 100%;
+    height: 7rem;
+    object-fit: cover;
+    object-position: center;
+    /*mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+    margin-block-end: -2rem;*/
+    margin-block-start: -1rem;
+}
+
+.md-content h1 {
+    font-weight: 700;
+    margin-block-end: 1rem;
+    color: var(--text-on-primary);
+}
+
+.md-content h2 {
+    font-size: 1.7rem;
+    font-weight: 600;
+    margin-block-start: 1.3rem;
+    color: var(--text-on-primary);
+}
+
+.md-content h3 {
+    font-variant-caps: small-caps;
+    font-size: 1.3rem;
+    font-weight: 650;
+    margin-block-start: 1rem;
+    color: var(--text-on-primary);
+}
+
+.md-content p {
+    width: 100%;
+    max-width: 32rem;
+    user-select: text;
+    line-height: 1.5;
+    letter-spacing: 0.5px;
+
+    & strong {
+        font-weight: bold;
+    }
+
+    & em {
+        font-style: italic;
+    }
+
+    & code {
+        display: inline-flex;
+        font-family: 'SF Pro Code';
+        font-size: 0.9em;
+        letter-spacing: 0;
+        font-weight: bold;
+        padding: 0.1rem;
+        padding-inline: 0.25rem;
+        border-radius: 0.5rem;
+        color: oklch(from var(--text-on-container-tertiary) l c h / 0.7);
+        background-color: oklch(from var(--bg-container-tertiary) l c h / 0.5);
+    }
+}
+
+.md-content::selection {
+    background-color: var(--bg-container-tertiary);
+    color: var(--text-on-container-tertiary);
+}
+
+@media screen and (prefers-color-scheme: dark) {
+    .md-content::selection {
+        background-color: var(--text-on-container-tertiary);
+        color: var(--bg-container-tertiary);
+    }
+}
+
+.folder-items {
+    background-color: var(--bg-container-primary);
+    flex-direction: column;
+    padding-block: 0.25rem;
+    align-items: stretch;
+    align-self: stretch;
+    margin-inline: 1rem;
+    border-radius: 1rem;
+}
+
+.folder-items .item-row {
+    display: inline;
+    padding-inline: 0.25rem;
+    padding-block: 0.25rem;
+}
+
+.folder-items .item-row:nth-child(even) {
+    background-color: oklch(from var(--bg-container-primary) calc(l + 0.03) calc(c - 0.01) h);
+}
+
+@media screen and (prefers-color-scheme: dark) {
+    .folder-items .item-row:nth-child(even) {
+        background-color: oklch(from var(--bg-container-primary) calc(l + 0.02) c h);
+    }
+}
+
+.folder-item {
+    background-color: transparent;
+    color: oklch(from var(--text-on-primary) l c h);
+
+    height: fit-content;
+    flex-direction: row;
+    justify-content: start;
+    align-items: center;
+    padding-inline: 0.25rem;
+    border-radius: 1rem;
+
+    transition-property: translate;
+    transition-duration: 0.5s;
+    transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    font-size: 0.8em;
+    font-weight: 700;
+    text-wrap-mode: wrap;
+    text-wrap-style: pretty;
+    overflow-wrap: break-word;
+}
+
+.folder-item:hover,
+.folder-item:focus-within {
+    border-radius: 0.25rem;
+    cursor: pointer;
+    background-color: oklch(from var(--bg-container-primary) calc(l - 0.075) calc(c + 0.02) h);
+}
+
+.drives .folder-item:hover,
+.drives .folder-item:focus-within {
+    background-color: oklch(from var(--bg-container-primary) calc(l - 0.15) calc(c + 0.01) h);
+}
+
+.folder-items .item-row:nth-child(even) .folder-item:hover,
+.folder-items .item-row:nth-child(even) .folder-item:focus-within {
+    background-color: oklch(from var(--bg-container-primary) calc(l + 0.025 - 0.075) calc(c - 0.02) h);
+}
+
+.folder-item:active {
+    translate: 0 0.2rem;
+}
+
+.folder-item.selected {
+    background-color: oklch(from var(--bg-container-primary) calc(l - 0.075) calc(c + 0.02) h);
+}
+
+.drives .folder-item.selected {
+    background-color: oklch(from var(--bg-container-primary) calc(l - 0.15) calc(c + 0.01) h);
+}
+
+.folder-item .image {
+    height: 32px;
+    width: 32px;
+    background-color: oklch(from var(--bg-container-primary) calc(l - 0.075) calc(c + 0.02) h);
+    border-radius: 1rem;
+    margin-inline-end: 0.5rem;
+
+    transition-property: scale;
+    transition-duration: 0.5s;
+    transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media screen and (prefers-color-scheme: dark) {
+    .folder-item .image {
+        background-color: oklch(from var(--bg-container-primary) calc(l + 0.09) calc(c + 0.02) h);
+    }
+}
+
+.drives .folder-item .image {
+    background-color: oklch(from var(--bg-container-primary) calc(l - 0.15) calc(c + 0.01) h);
+}
+
+@media screen and (prefers-color-scheme: dark) {
+    .folder-item .image {
+        background-color: oklch(from var(--bg-container-primary) calc(l + 0.15) calc(c + 0.02) h);
+    }
+}
+
+.folder-item:hover .image,
+.folder-item:focus-within .image {
+    scale: 1.1;
+}
+
+.folder-item .name {
+    padding-inline: 0.2rem;
+    line-height: 1;
+    flex-grow: 1;
+    justify-content: start;
+}
+
+.folder-item .size {
+    opacity: 0.5;
+}
