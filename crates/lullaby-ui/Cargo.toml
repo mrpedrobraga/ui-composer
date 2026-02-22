@@ -13,6 +13,7 @@ ui-composer-core = { path = "../core" }
 ui-composer-geometry = { path = "../geometry" }
 ui-composer-input = { path = "../input" }
 ui-composer-basic-ui = { path = "../basic-ui" }
+ui-composer-state = { path = "../state" }
 
 # Gate these behind feature flags.
 ui-composer-platform-tui = { path = "../platform-tui" }

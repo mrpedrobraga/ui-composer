@@ -8,16 +8,21 @@ pub mod render;
 pub mod runner;
 
 pub use nodes::Terminal;
-pub use render::Graphic;
 pub use ui_composer_canvas as canvas;
 
 use {
     crate::runner::TerminalEnvironment,
-    ui_composer_core::app::composition::{elements::Blueprint, UI},
+    ui_composer_core::app::composition::{CompatibleWith, elements::Blueprint},
 };
 
-pub trait TUI: UI<TerminalEnvironment> {}
-impl<T> TUI for T where T: UI<TerminalEnvironment> {}
+pub trait TUI: CompatibleWith<TerminalEnvironment> {}
+impl<T> TUI for T where T: CompatibleWith<TerminalEnvironment> {}
 
-pub trait TUIBlueprint: Blueprint<TerminalEnvironment, Element: Send> + Send {}
-impl<T> TUIBlueprint for T where T: Blueprint<TerminalEnvironment, Element: Send> + Send {}
+pub trait TUIBlueprint:
+    Blueprint<TerminalEnvironment, Element: Send> + Send
+{
+}
+impl<T> TUIBlueprint for T where
+    T: Blueprint<TerminalEnvironment, Element: Send> + Send
+{
+}

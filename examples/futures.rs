@@ -3,14 +3,15 @@
 use chttp::ResponseExt;
 use futures::FutureExt;
 use lullaby_ui::layout::center;
-use lullaby_ui::text::Text;
+use lullaby_ui::primitives::graphic::Graphic;
+use lullaby_ui::primitives::text::Text;
 use ui_composer::prelude::UIComposer;
 use ui_composer_core::app::composition::effects::future::FutureReactExt;
 use ui_composer_core::app::composition::layout::{ItemBox, Resizable};
 use ui_composer_geometry::RectExt as _;
+use ui_composer_platform_tui::TUI;
 use ui_composer_platform_tui::nodes::Terminal;
 use ui_composer_platform_tui::runner::TUIRunner;
-use ui_composer_platform_tui::{Graphic, TUI};
 use vek::{Extent2, Rgba};
 
 fn main() {

@@ -1,15 +1,16 @@
 #![allow(non_snake_case)]
 
 use lullaby_ui::layout::{center, row};
-use lullaby_ui::text::Text;
+use lullaby_ui::primitives::graphic::Graphic;
+use lullaby_ui::primitives::text::Text;
 use ui_composer::list;
 use ui_composer::prelude::UIComposer;
 use ui_composer_basic_ui::items::{Hover, Typing};
 use ui_composer_core::app::composition::effects::signal::SignalReactExt;
 use ui_composer_core::app::composition::layout::{ItemBox, Resizable};
+use ui_composer_platform_tui::TUI;
 use ui_composer_platform_tui::nodes::Terminal;
 use ui_composer_platform_tui::runner::TUIRunner;
-use ui_composer_platform_tui::{Graphic, TUI};
 use ui_composer_state::futures_signals::signal::{Mutable, SignalExt as _};
 use uix::uix;
 use vek::{Extent2, Rgba};

@@ -11,11 +11,11 @@ pub mod layout;
 pub mod visit;
 
 /// Trait for an item that can be used in an app's layout context.
-pub trait UI<Env: Environment>:
+pub trait CompatibleWith<Env: Environment>:
     LayoutItem<Blueprint: Blueprint<Env, Element: Send>>
 {
 }
-impl<Env: Environment, T> UI<Env> for T where
+impl<Env: Environment, T> CompatibleWith<Env> for T where
     T: LayoutItem<Blueprint: Blueprint<Env, Element: Send>>
 {
 }

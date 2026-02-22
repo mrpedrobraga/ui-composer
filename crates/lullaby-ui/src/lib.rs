@@ -1,7 +1,8 @@
 #![allow(non_snake_case)]
-pub mod layout;
 
-pub mod text;
+pub mod components;
+pub mod layout;
+pub mod primitives;
 
 #[macro_export]
 macro_rules! list_internal {

@@ -5,7 +5,7 @@
 
 use {
     crate::runner::WinitEnvironment,
-    ui_composer_core::app::composition::{elements::Blueprint, UI},
+    ui_composer_core::app::composition::{elements::Blueprint, CompatibleWith},
 };
 
 pub mod gpu;
@@ -14,8 +14,8 @@ pub mod runner;
 pub mod window;
 mod winit_uic_conversion;
 
-pub trait WUI: UI<WinitEnvironment> {}
-impl<T> WUI for T where T: UI<WinitEnvironment> {}
+pub trait WUI: CompatibleWith<WinitEnvironment> {}
+impl<T> WUI for T where T: CompatibleWith<WinitEnvironment> {}
 
 pub trait WinitBlueprint: Blueprint<WinitEnvironment, Element: Send> + Send {}
 impl<T> WinitBlueprint for T where T: Blueprint<WinitEnvironment, Element: Send> + Send {}

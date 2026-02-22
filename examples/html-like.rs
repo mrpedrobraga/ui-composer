@@ -1,8 +1,11 @@
 #![allow(non_snake_case)]
-use lullaby_ui::layout::{flex, item};
+use lullaby_ui::{
+    layout::{flex, item},
+    primitives::graphic::Graphic,
+};
 use ui_composer::prelude::UIComposer;
 use ui_composer_core::app::composition::layout::{ItemBox, Resizable};
-use ui_composer_platform_tui::{Graphic, Terminal, TUI};
+use ui_composer_platform_tui::{TUI, Terminal};
 use uix::uix as view;
 use vek::{Extent2, Rgba};
 

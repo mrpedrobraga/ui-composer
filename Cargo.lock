@@ -1816,6 +1816,7 @@ dependencies = [
  "ui-composer-input",
  "ui-composer-platform-tui",
  "ui-composer-platform-winit",
+ "ui-composer-state",
  "vek",
 ]
 
@@ -3400,6 +3401,8 @@ dependencies = [
 name = "ui-composer-macros"
 version = "0.1.0"
 dependencies = [
+ "futures",
+ "futures-signals",
  "proc-macro2",
  "quote",
  "syn",
