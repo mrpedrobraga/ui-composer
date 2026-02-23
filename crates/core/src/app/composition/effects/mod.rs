@@ -7,6 +7,6 @@ pub mod signal;
 /// Depending on the effect handler, this might result in quad instances being sent to the GPU
 /// or rectangles drawn on the terminal or pixels in a GameBoy screen.
 #[diagnostic::on_unimplemented(
-    message = "{Self} is not an effect applicable to {Environment}."
+    message = "{Self} is not an effect applicable to {Env}."
 )]
-pub trait ElementEffect<Environment> {}
+pub trait ElementEffect<Env> {}

@@ -107,21 +107,21 @@ impl Element<TerminalEnvironment> for Graphic {
     }
 }
 
-// impl Lerp for Graphic {
-//     fn linear_interpolate(self, other: Self, t: f32) -> Self {
-//         Graphic {
-//             rect: Rect {
-//                 x: self.rect.x.linear_interpolate(other.rect.x, t),
-//                 y: self.rect.y.linear_interpolate(other.rect.y, t),
-//                 w: self.rect.w.linear_interpolate(other.rect.w, t),
-//                 h: self.rect.h.linear_interpolate(other.rect.h, t),
-//             },
-//             color: Rgba {
-//                 r: self.color.r.linear_interpolate(other.color.r, t),
-//                 g: self.color.g.linear_interpolate(other.color.g, t),
-//                 b: self.color.b.linear_interpolate(other.color.b, t),
-//                 a: self.color.a.linear_interpolate(other.color.a, t),
-//             },
-//         }
-//     }
-// }
+impl ui_composer_state::effect::animation::Lerp for Graphic {
+    fn linear_interpolate(self, other: Self, t: f32) -> Self {
+        Graphic {
+            rect: Rect {
+                x: self.rect.x.linear_interpolate(other.rect.x, t),
+                y: self.rect.y.linear_interpolate(other.rect.y, t),
+                w: self.rect.w.linear_interpolate(other.rect.w, t),
+                h: self.rect.h.linear_interpolate(other.rect.h, t),
+            },
+            color: Rgba {
+                r: self.color.r.linear_interpolate(other.color.r, t),
+                g: self.color.g.linear_interpolate(other.color.g, t),
+                b: self.color.b.linear_interpolate(other.color.b, t),
+                a: self.color.a.linear_interpolate(other.color.a, t),
+            },
+        }
+    }
+}

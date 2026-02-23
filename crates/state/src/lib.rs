@@ -13,10 +13,27 @@
 //! This drives ALL redrawing and layout in UI Composer.
 
 pub mod effect;
-pub mod signals;
 
 /// `futures-signals` reexport.
 pub use futures_signals;
+
+pub mod prelude {
+    pub use crate::effect::Effect;
+    pub use crate::{Slot, State};
+
+    pub use futures_signals::{map_mut, map_ref};
+
+    pub use futures_signals::signal::always;
+    pub use futures_signals::signal::{Mutable, Signal, SignalExt as _};
+
+    pub use futures_signals::signal_vec::{
+        MutableVec, SignalVec, SignalVecExt as _,
+    };
+
+    pub use futures_signals::signal_map::{
+        MutableBTreeMap, SignalMap, SignalMapExt as _,
+    };
+}
 
 use crate::effect::Effect;
 

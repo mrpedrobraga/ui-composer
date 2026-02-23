@@ -3,8 +3,6 @@ use crate::app::composition::elements::Environment;
 use ui_composer_input::event::Event;
 
 use super::super::elements::{Blueprint, Element};
-use futures::future::Map;
-use futures::FutureExt;
 use pin_project::pin_project;
 use std::future::Future;
 use std::pin::Pin;
@@ -21,28 +19,6 @@ where
     future: Fut,
     element: Option<<Fut::Output as Blueprint<Env>>::Element>,
 }
-
-pub trait FutureReactExt: Future {
-    fn derive<Env: Environment, F>(self, predicate: F) -> ReactOnce<Map<Self, F>, Env>
-    where
-        F: FnOnce(Self::Output),
-        Self: Sized,
-    {
-        self.map(predicate).into_signal()
-    }
-
-    fn into_signal<Env: Environment>(self) -> ReactOnce<Self, Env>
-    where
-        Self: Sized,
-        <Self as Future>::Output: Blueprint<Env>,
-    {
-        ReactOnce {
-            future: self,
-            element: None,
-        }
-    }
-}
-impl<Fut> FutureReactExt for Fut where Fut: Future {}
 
 impl<Fut, Env: Environment> Blueprint<Env> for ReactOnce<Fut, Env>
 where
@@ -72,8 +48,11 @@ where
     Fut: Future<Output: Blueprint<Env>>,
 {
     type Effect<'fx>
-        =
-        Option<<<<Fut as Future>::Output as Blueprint<Env>>::Element as Element<Env>>::Effect<'fx>>
+        = Option<
+        <<<Fut as Future>::Output as Blueprint<Env>>::Element as Element<
+            Env,
+        >>::Effect<'fx>,
+    >
     where
         Fut: 'fx,
         Env: 'fx;
@@ -82,7 +61,11 @@ where
         self.element.as_ref().map(|e| e.effect())
     }
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context, env: &Env) -> Poll<Option<()>> {
+    fn poll(
+        self: Pin<&mut Self>,
+        cx: &mut Context,
+        env: &Env,
+    ) -> Poll<Option<()>> {
         let this = self.project();
 
         if let Some(element) = this.element {
@@ -98,12 +81,42 @@ where
                 let mut element = blueprint.make(env);
 
                 // Wake up the element.
-                let _ = unsafe { Pin::new_unchecked(&mut element) }.poll(cx, env);
+                let _ =
+                    unsafe { Pin::new_unchecked(&mut element) }.poll(cx, env);
                 *this.element = Some(element);
 
                 Poll::Ready(Some(()))
             }
             Poll::Pending => Poll::Pending,
+        }
+    }
+}
+
+/*
+    This is necessary while we don't have `min_specialization`.
+
+    We can't implement `Blueprint` for all futures without problems,
+    so we need to a type this crate owns.
+*/
+
+pub trait IntoBlueprint<Env: Environment> {
+    type Output: Blueprint<Env>;
+
+    fn into_blueprint(self) -> Self::Output;
+}
+
+impl<Fut, Env> IntoBlueprint<Env> for Fut
+where
+    Fut: Future,
+    Env: Environment,
+    <Fut as futures::Future>::Output: Blueprint<Env>,
+{
+    type Output = ReactOnce<Fut, Env>;
+
+    fn into_blueprint(self) -> Self::Output {
+        ReactOnce {
+            future: self,
+            element: None,
         }
     }
 }

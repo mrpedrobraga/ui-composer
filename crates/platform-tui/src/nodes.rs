@@ -1,6 +1,6 @@
+use crate::TUI;
 use crate::render::present_canvas_to_terminal;
 use crate::runner::TerminalEnvironment;
-use crate::TUI;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use futures_signals::signal::Mutable;
@@ -8,7 +8,9 @@ use futures_signals::signal::{Signal, SignalExt};
 use pin_project::pin_project;
 use ui_composer_canvas::{Canvas, PixelCanvas, TextModePixel};
 use ui_composer_core::app::composition::algebra::Bubble;
-use ui_composer_core::app::composition::effects::signal::{React, SignalReactExt};
+use ui_composer_core::app::composition::effects::signal::{
+    IntoBlueprint, React,
+};
 use ui_composer_core::app::composition::elements::{Blueprint, Element};
 use ui_composer_core::app::composition::layout::hints::ParentHints;
 use ui_composer_core::app::composition::visit::DriveThru;
@@ -75,7 +77,11 @@ where
         todo!()
     }
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context, env: &TerminalEnvironment) -> Poll<Option<()>> {
+    fn poll(
+        self: Pin<&mut Self>,
+        cx: &mut Context,
+        env: &TerminalEnvironment,
+    ) -> Poll<Option<()>> {
         let TerminalElementProj { state, mut ui } = self.project();
 
         let inner = ui.as_mut().poll(cx, env);
@@ -106,7 +112,9 @@ pub struct TerminalEffectVisitor<'fx> {
 #[allow(non_snake_case)]
 pub fn Terminal<UI>(
     mut ui: UI,
-) -> TerminalBlueprint<React<impl Signal<Item = UI::Blueprint>, TerminalEnvironment>>
+) -> TerminalBlueprint<
+    React<impl Signal<Item = UI::Blueprint>, TerminalEnvironment>,
+>
 where
     UI: TUI,
 {
@@ -133,11 +141,12 @@ where
                     current_flow_direction: CartesianFlow::LeftToRight,
                     current_cross_flow_direction: CartesianFlow::TopToBottom,
                     current_writing_flow_direction: CartesianFlow::LeftToRight,
-                    current_writing_cross_flow_direction: CartesianFlow::TopToBottom,
+                    current_writing_cross_flow_direction:
+                        CartesianFlow::TopToBottom,
                 },
             })
         })
-        .react();
+        .into_blueprint();
 
     TerminalBlueprint { ui, state }
 }

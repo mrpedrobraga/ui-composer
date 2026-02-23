@@ -18,42 +18,6 @@ where
     element: Option<<Sig::Item as Blueprint<Env>>::Element>,
 }
 
-pub trait SignalReactExt: Signal {
-    fn react<Env: Environment>(self) -> React<Self, Env>
-    where
-        Self: Sized,
-        <Self as Signal>::Item: Blueprint<Env>;
-}
-impl<Sig> SignalReactExt for Sig
-where
-    Sig: Signal,
-{
-    fn react<Env: Environment>(self) -> React<Self, Env>
-    where
-        Self: Sized,
-        <Self as Signal>::Item: Blueprint<Env>,
-    {
-        React {
-            signal: self,
-            element: None,
-        }
-    }
-}
-
-/*impl<Sig, Env: Environment> Blueprint<Env> for Sig
-where
-    Sig: Signal<Item: Blueprint<Env>>,
-{
-    type Element = React<Sig, Env>;
-
-    fn make(self, _: &Env) -> Self::Element {
-        React {
-            signal: self,
-            element: None,
-        }
-    }
-}*/
-
 impl<Sig, Env: Environment> Blueprint<Env> for React<Sig, Env>
 where
     Sig: Signal<Item: Blueprint<Env>>,
@@ -82,7 +46,12 @@ where
     Sig: Signal<Item: Blueprint<Env>>,
 {
     type Effect<'a>
-        = Option<<<<Sig as Signal>::Item as Blueprint<Env>>::Element as Element<Env>>::Effect<'a>>
+        =
+        Option<
+            <<<Sig as Signal>::Item as Blueprint<Env>>::Element as Element<
+                Env,
+            >>::Effect<'a>,
+        >
     where
         Sig: 'a,
         Env: 'a;
@@ -91,7 +60,11 @@ where
         self.element.as_ref().map(|e| e.effect())
     }
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context, env: &Env) -> Poll<Option<()>> {
+    fn poll(
+        self: Pin<&mut Self>,
+        cx: &mut Context,
+        env: &Env,
+    ) -> Poll<Option<()>> {
         let this = self.project();
 
         // SAFETY: Because the signal is pinned in this struct, its captures are stable.
@@ -100,7 +73,8 @@ where
                 let mut element = blueprint.make(env);
 
                 // Wake up the element.
-                let _ = unsafe { Pin::new_unchecked(&mut element) }.poll(cx, env);
+                let _ =
+                    unsafe { Pin::new_unchecked(&mut element) }.poll(cx, env);
                 *this.element = Some(element);
 
                 Poll::Ready(Some(()))
@@ -118,3 +92,52 @@ where
         signal_poll.combine(element_poll)
     }
 }
+
+/*
+    This is necessary while we don't have `min_specialization`.
+
+    We can't implement `Blueprint` for all futures without problems,
+    so we need to a type this crate owns.
+*/
+
+pub trait IntoBlueprint<Env: Environment> {
+    type Output: Blueprint<Env>;
+
+    fn into_blueprint(self) -> Self::Output;
+}
+
+impl<Sig, Env> IntoBlueprint<Env> for Sig
+where
+    Sig: Signal,
+    Env: Environment,
+    Sig::Item: Blueprint<Env>,
+{
+    type Output = React<Sig, Env>;
+
+    fn into_blueprint(self) -> Self::Output {
+        React {
+            signal: self,
+            element: None,
+        }
+    }
+}
+
+/*
+// This is not possible without specialization.
+// Because upstream (`futures-signals`) could add an implemntation of `Signal`
+// for other types in this crate that `Blueprint<Env>` is implemented for
+// and that would resut in conflicting implementations.
+
+impl<Sig, Env: Environment> Blueprint<Env> for Sig
+where
+    Sig: Signal<Item: Blueprint<Env>>,
+{
+    type Element = React<Sig, Env>;
+
+    fn make(self, _: &Env) -> Self::Element {
+        React {
+            signal: self,
+            element: None,
+        }
+    }
+}*/

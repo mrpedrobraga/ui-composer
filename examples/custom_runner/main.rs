@@ -1,12 +1,7 @@
 use chttp::ResponseExt;
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
-use ui_composer::prelude::UIComposer;
-use ui_composer_core::app::composition::effects::future::FutureReactExt;
-use ui_composer_core::app::composition::elements::{Blueprint, Environment};
-use ui_composer_core::app::runner::futures::AsyncExecutor;
-use ui_composer_core::app::runner::Runner;
-use ui_composer_state::futures_signals::signal::SignalExt as _;
+use ui_composer::prelude::*;
 
 /// An environment identifies a platform for which you can develop apps.
 pub struct ExampleEnvironment;
@@ -76,5 +71,5 @@ fn app() -> impl Blueprint<ExampleEnvironment, Element: Send> + Send {
         println!("Response: {}", text);
     };
 
-    fut.into_signal()
+    fut.into_blueprint()
 }

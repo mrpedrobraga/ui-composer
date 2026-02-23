@@ -1,4 +1,3 @@
-#[macro_export]
 /// Creates recursive tuples — this is useful because traits can't be implemented
 /// for arbitrary-arity tuples.
 ///
@@ -17,10 +16,15 @@
 /// Produces:
 ///
 /// `(item1, (item2, item3))`
-macro_rules! list {
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __list {
     ($a:expr $(,)?) => { $a };
     ($a:expr, $b:expr) => {($a, $b)};
     ($a:expr, $($rest:tt)*) => {
-        ($a, ::ui_composer::list!($($rest)*))
+        ($a, $crate::__list!($($rest)*))
     };
 }
+
+#[doc(inline)]
+pub use __list as list;

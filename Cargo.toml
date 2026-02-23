@@ -21,6 +21,8 @@ members = [
     "examples/example-android",
 ]
 
+exclude = ["examples/aarch64-bare-metal"]
+
 [lib]
 name = "ui_composer"
 # crate-type = ["dylib"]
@@ -29,17 +31,17 @@ name = "ui_composer"
 ui-composer-core = { path = "crates/core" }
 ui-composer-platform-tui = { path = "crates/platform-tui" }
 ui-composer-platform-winit = { path = "crates/platform-winit" }
-
-[dev-dependencies]
 ui-composer-state = { path = "crates/state" }
-ui-composer-macros = { path = "crates/macros" }
 ui-composer-geometry = { path = "crates/geometry" }
 ui-composer-basic-ui = { path = "crates/basic-ui" }
-
 uix = { path = "crates/uix" }
 ui-composer-view-macro = { path = "crates/view-macro" }
 
+[dev-dependencies]
+ui-composer-macros = { path = "crates/macros" }
+
 vek = "*"
+
 lullaby-ui = { path = "crates/lullaby-ui" }
 futures = "*"
 chttp = "*"

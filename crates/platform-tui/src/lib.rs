@@ -26,3 +26,9 @@ impl<T> TUIBlueprint for T where
     T: Blueprint<TerminalEnvironment, Element: Send> + Send
 {
 }
+
+pub mod prelude {
+    pub use crate::TUI;
+    pub use crate::nodes::Terminal;
+    pub use crate::runner::{TUIRunner, TerminalEnvironment};
+}

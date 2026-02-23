@@ -1,21 +1,10 @@
 #![allow(non_snake_case)]
-
 use chttp::ResponseExt;
 use futures::FutureExt;
-use lullaby_ui::layout::center;
-use lullaby_ui::primitives::graphic::Graphic;
-use lullaby_ui::primitives::text::Text;
-use ui_composer::prelude::UIComposer;
-use ui_composer_core::app::composition::effects::future::FutureReactExt;
-use ui_composer_core::app::composition::layout::{ItemBox, Resizable};
-use ui_composer_geometry::RectExt as _;
-use ui_composer_platform_tui::TUI;
-use ui_composer_platform_tui::nodes::Terminal;
-use ui_composer_platform_tui::runner::TUIRunner;
-use vek::{Extent2, Rgba};
+use {lullaby_ui::prelude::*, ui_composer::prelude::*};
 
 fn main() {
-    UIComposer::run_custom::<TUIRunner<_>>(Terminal(center(TestingFuture())))
+    UIComposer::run_tui(Terminal(center(TestingFuture())))
 }
 
 fn TestingFuture() -> impl TUI {
@@ -39,7 +28,7 @@ fn TestingFuture() -> impl TUI {
                 text,
                 color: Rgba::red(),
             })
-            .into_signal(),
+            .into_blueprint(),
         )
     })
     .with_minimum_size(Extent2::new(32.0, 16.0))

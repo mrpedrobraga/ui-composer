@@ -1,13 +1,4 @@
-use crate::nodes::TerminalEffectVisitor;
-use crate::runner::TerminalEnvironment;
-use ui_composer_canvas::{Canvas, PixelCanvas, TextModePixel};
-use ui_composer_core::app::composition::algebra::{Bubble, Empty};
-use ui_composer_core::app::composition::effects::ElementEffect;
-use ui_composer_core::app::composition::elements::{Blueprint, Element};
-use ui_composer_core::app::composition::visit::{Apply, DriveThru};
-use ui_composer_input::event::Event;
-use vek::Rect;
-use vek::Rgba;
+use ui_composer_canvas::{PixelCanvas, TextModePixel};
 
 use crossterm::QueueableCommand as _;
 use crossterm::cursor::MoveTo;

@@ -1,13 +1,5 @@
 #![allow(non_snake_case)]
-
-use lullaby_ui::{
-    layout::{flex, item},
-    primitives::graphic::Graphic,
-};
-use ui_composer::{list, prelude::UIComposer};
-use ui_composer_core::app::composition::layout::{ItemBox, Resizable as _};
-use ui_composer_platform_tui::{TUI, Terminal, runner::TUIRunner};
-use vek::{Extent2, Rgba};
+use {lullaby_ui::prelude::*, ui_composer::prelude::*};
 
 fn main() {
     let app = flex(list![
@@ -17,7 +9,7 @@ fn main() {
             .with_grow(1.0),
         item(Square(Rgba::new(134, 70, 139, 255).as_() / 255.0)).with_grow(0.0),
     ]);
-    UIComposer::run_custom::<TUIRunner<_>>(Terminal(app))
+    UIComposer::run_tui(Terminal(app))
 }
 
 fn Square(color: Rgba<f32>) -> impl TUI {

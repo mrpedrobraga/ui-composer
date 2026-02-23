@@ -1,6 +1,5 @@
 use core::{future::Future, ops::Mul};
 use futures_signals::signal::{Mutable, Signal, SignalExt};
-use num_traits::Float;
 
 use crate::effect::animation::{Animation, AnimationFrame, Lerp, Poll, Vector};
 
@@ -18,10 +17,15 @@ pub struct Spring<T> {
 
 impl<T> Spring<T>
 where
-    T: Default + Vector + Lerp + Float + Send + Sync + 'static,
+    T: Default + Vector + Lerp + Copy + Send + Sync + 'static,
     f32: Mul<T, Output = T>,
 {
-    pub fn new(equilibrium: T, stiffness: f32, damping: f32, mass: f32) -> Self {
+    pub fn new(
+        equilibrium: T,
+        stiffness: f32,
+        damping: f32,
+        mass: f32,
+    ) -> Self {
         Self {
             equilibrium,
             stiffness,
@@ -44,9 +48,9 @@ where
         condition.map(move |is_hovering| {
             let spring = Self::new(
                 if is_hovering { value_if } else { value_else },
-                800.0,
+                200.0,
                 20.0,
-                0.75,
+                1.0,
             );
             spring.animate_value(state.clone())
         })
@@ -56,7 +60,7 @@ where
 impl<T> Animation for Spring<T>
 where
     f32: Mul<T, Output = T>,
-    T: Float + Copy + Vector + Lerp,
+    T: Copy + Vector + Lerp,
 {
     type Item = T;
 
@@ -69,7 +73,8 @@ where
 
         // Good ol' Velocity Verlet;
         if let Some((current_value, current_velocity)) = &self.current_values {
-            let spring_force = -self.stiffness * (*current_value - self.equilibrium);
+            let spring_force =
+                -self.stiffness * (*current_value - self.equilibrium);
             let damping_force = -self.damping * *current_velocity;
             let total_force = spring_force + damping_force;
             let current_acceleration = total_force * (1.0 / self.mass);
@@ -78,14 +83,16 @@ where
                 + delta_time * (*current_velocity)
                 + (0.5f32 * (delta_time * (delta_time * current_acceleration)));
 
-            let spring_force_new = -self.stiffness * (next_value - self.equilibrium);
-            let damping_force_new =
-                -self.damping * (*current_velocity + delta_time * current_acceleration);
+            let spring_force_new =
+                -self.stiffness * (next_value - self.equilibrium);
+            let damping_force_new = -self.damping
+                * (*current_velocity + delta_time * current_acceleration);
             let total_force_new = spring_force_new + damping_force_new;
             let next_acceleration = total_force_new * (1.0 / self.mass);
 
             let next_velocity = *current_velocity
-                + 0.5f32 * (delta_time * (current_acceleration + next_acceleration));
+                + 0.5f32
+                    * (delta_time * (current_acceleration + next_acceleration));
 
             self.current_values = Some((next_value, next_velocity));
             Poll::Ongoing(next_value)

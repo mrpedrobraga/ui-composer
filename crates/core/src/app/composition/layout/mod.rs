@@ -62,7 +62,7 @@
 //!
 //! Some utility functions for calculating layouts are in the [`flow`] module.
 
-use crate::app::composition::effects::signal::{React, SignalReactExt};
+use crate::app::composition::effects::signal::{IntoBlueprint as _, React};
 use crate::app::composition::elements::{Blueprint, Environment};
 use hints::{ChildHints, ParentHints};
 use {
@@ -116,7 +116,7 @@ pub trait LayoutItem: Send {
                     ..parent_hints
                 })
             })
-            .react()
+            .into_blueprint()
     }
 }
 

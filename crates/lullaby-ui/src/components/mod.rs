@@ -4,7 +4,14 @@ use {
     //ui_composer_platform_winit::runner::WinitEnvironment,
 };
 
+/* Views */
+pub mod label;
+
+/* Editors */
 pub mod button;
+
+/* Containers */
+pub mod panel_container;
 
 pub trait UI: CompatibleWith<TerminalEnvironment>
 //+ CompatibleWith<WinitEnvironment>

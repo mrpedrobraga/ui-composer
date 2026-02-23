@@ -2,8 +2,8 @@ use {
     crate::{components::UI, list_internal, primitives::graphic::Graphic},
     ui_composer_basic_ui::items::Tap,
     ui_composer_core::app::composition::{
-        effects::signal::SignalReactExt as _,
-        layout::{ItemBox, ItemBox2, Resizable as _, hints::ParentHints},
+        effects::signal::IntoBlueprint as _,
+        layout::{ItemBox, Resizable as _, hints::ParentHints},
     },
     ui_composer_geometry::RectExt as _,
     ui_composer_state::{effect::Effect, futures_signals::signal::Mutable},
@@ -34,7 +34,7 @@ pub fn Button(mut label: impl UI, effect: impl Effect + 'static) -> impl UI {
                     Graphic::new(hx.rect, BUTTON_COLOR / 255.0)
                 }
             })
-            .react();
+            .into_blueprint();
         let label = label.lay(ParentHints {
             rect: hx.rect.expand_from_center(-1.0, -1.0, -1.0, -1.0),
             ..hx
