@@ -10,22 +10,19 @@ use ui_composer_core::app::composition::effects::signal::SignalReactExt;
 use ui_composer_core::app::composition::layout::{ItemBox, Resizable};
 use ui_composer_platform_tui::TUI;
 use ui_composer_platform_tui::nodes::Terminal;
-use ui_composer_platform_tui::runner::TUIRunner;
 use ui_composer_state::futures_signals::signal::{Mutable, SignalExt as _};
-use uix::uix;
+use ui_composer_view_macro::view;
 use vek::{Extent2, Rgba};
 
 fn main() {
-    UIComposer::run_custom::<TUIRunner<_>>(uix! (
-        <Terminal>
-            <center>
-                <row gap=2.0>
-                    <TestingTyping />
-                    <TestingHover />
-                </row>
-            </center>
-        </Terminal>
-    ))
+    UIComposer::run_tui(view! {
+        Terminal {
+            center row(gap=2.0) [
+                TestingTyping,
+                TestingHover,
+            ]
+        }
+    });
 }
 
 fn TestingTyping() -> impl TUI {

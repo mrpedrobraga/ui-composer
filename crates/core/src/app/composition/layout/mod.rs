@@ -188,3 +188,62 @@ where
         }
     }
 }
+
+// ---
+
+pub struct ItemBox2<Capture, Factory, Item>
+where
+    Factory: Send + FnMut(&mut Capture, ParentHints) -> Item,
+{
+    capture: Capture,
+    hints: ChildHints,
+    factory: Factory,
+}
+
+impl<Capture, Factory, Item> ItemBox2<Capture, Factory, Item>
+where
+    Factory: FnMut(&mut Capture, ParentHints) -> Item + Send,
+{
+    pub fn new(capture: Capture, factory: Factory) -> Self {
+        Self {
+            capture,
+            hints: ChildHints::default(),
+            factory,
+        }
+    }
+}
+
+impl<Capture, F: Send, Item> LayoutItem for ItemBox2<Capture, F, Item>
+where
+    F: FnMut(&mut Capture, ParentHints) -> Item,
+    Capture: std::marker::Send,
+{
+    type Blueprint = Item;
+
+    fn get_natural_size(&self) -> Extent2<f32> {
+        self.get_minimum_size()
+    }
+
+    fn get_minimum_size(&self) -> Extent2<f32> {
+        self.hints.minimum_size
+    }
+
+    fn lay(&mut self, layout_hints: ParentHints) -> Self::Blueprint {
+        (self.factory)(&mut self.capture, layout_hints)
+    }
+}
+
+impl<Capture, F, Item> Resizable for ItemBox2<Capture, F, Item>
+where
+    F: Send + FnMut(&mut Capture, ParentHints) -> Item,
+    Capture: std::marker::Send,
+{
+    fn with_minimum_size(self, min_size: Extent2<f32>) -> Self {
+        Self {
+            hints: ChildHints {
+                minimum_size: min_size,
+            },
+            ..self
+        }
+    }
+}

@@ -3,7 +3,7 @@ use {
     ui_composer_basic_ui::items::Tap,
     ui_composer_core::app::composition::{
         effects::signal::SignalReactExt as _,
-        layout::{ItemBox, Resizable as _, hints::ParentHints},
+        layout::{ItemBox, ItemBox2, Resizable as _, hints::ParentHints},
     },
     ui_composer_geometry::RectExt as _,
     ui_composer_state::{effect::Effect, futures_signals::signal::Mutable},

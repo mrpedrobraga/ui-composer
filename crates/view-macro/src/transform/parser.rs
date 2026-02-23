@@ -60,6 +60,8 @@ impl Parse for Element {
             || lookahead.peek(Token![for])
         {
             children.push(input.parse()?);
+        } else if lookahead.peek(syn::token::Comma) {
+            input.parse::<syn::token::Comma>()?;
         }
 
         Ok(Element {
