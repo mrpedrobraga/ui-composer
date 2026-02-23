@@ -1,12 +1,11 @@
 #![allow(non_snake_case)]
 
 pub mod components;
-pub mod layout;
 pub mod primitives;
 
 pub mod prelude {
     /* Re-export layout items. */
-    pub use crate::layout::*;
+    pub use ui_composer_basic_ui::layout::*;
 
     /* Components. */
     pub use crate::components::button::*;
