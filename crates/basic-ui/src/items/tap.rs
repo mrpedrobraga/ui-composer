@@ -3,6 +3,7 @@ use ui_composer_core::app::composition::algebra::Bubble;
 use ui_composer_core::app::composition::elements::{Blueprint, Element};
 use ui_composer_input::event::{CursorEvent, Event, TouchStage};
 use ui_composer_state::effect::Effect;
+use ui_composer_state::futures_signals::signal::Mutable;
 use {
     ui_composer_input::event::{ButtonState, MouseButton},
     vek::{Rect, Vec2},
@@ -12,6 +13,9 @@ use {
 pub struct Tap<A: Effect> {
     pub rect: Rect<f32, f32>,
     pub tap_effect: A,
+    is_hovered_state: Mutable<bool>,
+    /// Todo: this shouldn't be saved per `Tap`,
+    /// instead, it should be provided to us in a cascading context.
     mouse_position_state: Option<Vec2<f32>>,
 }
 
@@ -24,6 +28,14 @@ where
             rect,
             mouse_position_state: None,
             tap_effect,
+            is_hovered_state: Mutable::new(false),
+        }
+    }
+
+    pub fn with_hover_state(self, is_hovered_state: Mutable<bool>) -> Self {
+        Self {
+            is_hovered_state,
+            ..self
         }
     }
 }
@@ -37,16 +49,22 @@ where
             Event::Cursor { id: _, event } => match event {
                 CursorEvent::Moved { position } => {
                     self.mouse_position_state = Some(*position);
+                    self.is_hovered_state
+                        .set(self.rect.contains_point(*position));
                     false
                 }
-                CursorEvent::Button(MouseButton::Left, ButtonState::Pressed)
+                CursorEvent::Exited => {
+                    self.is_hovered_state.set(false);
+                    false
+                }
+                CursorEvent::Button(
+                    MouseButton::Left,
+                    ButtonState::Pressed,
+                )
                 | CursorEvent::Touched {
                     stage: TouchStage::Started,
                     ..
-                } if self
-                    .mouse_position_state
-                    .is_some_and(|pos| self.rect.contains_point(pos)) =>
-                {
+                } if self.is_hovered_state.get() => {
                     self.tap_effect.apply();
                     true
                 }

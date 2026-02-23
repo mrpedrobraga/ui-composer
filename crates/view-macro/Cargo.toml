@@ -13,6 +13,7 @@ proc-macro = true
 quote = "1"
 proc-macro2 = "1.0"
 syn = "2.0.114"
+proc-macro-error2 = "2.0.1"
 
 [dev-dependencies]
 futures-signals = "0.3.34"

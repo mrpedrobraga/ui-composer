@@ -1,5 +1,7 @@
 use {
     proc_macro::TokenStream,
+    proc_macro_error2::emit_error,
+    quote::quote,
     syn::{Expr, Ident, Pat},
 };
 
@@ -7,8 +9,15 @@ pub mod codegen;
 pub mod parser;
 
 pub fn view_internal(input: TokenStream) -> TokenStream {
-    let component: ViewNode = syn::parse(input).unwrap();
-    component.to_tokens().into()
+    let res: Result<ViewNode, _> = syn::parse(input);
+
+    match res {
+        Ok(component) => component.to_tokens().into(),
+        Err(e) => {
+            emit_error!(e);
+            quote!().into()
+        }
+    }
 }
 
 enum ViewNode {

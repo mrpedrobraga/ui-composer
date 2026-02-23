@@ -196,9 +196,7 @@ fn test_blocks() {
 
     let derived = view! {
         column [
-            // This label never changes
             Label {{ "Message 1!" }}
-            // This one does in sync with `message_sig`
             for message in message_sig {
                 Label {{ message }}
             }

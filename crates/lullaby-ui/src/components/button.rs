@@ -1,6 +1,6 @@
 use {
     crate::{components::UI, list_internal, primitives::graphic::Graphic},
-    ui_composer_basic_ui::items::{Hover, Tap},
+    ui_composer_basic_ui::items::Tap,
     ui_composer_core::app::composition::{
         effects::signal::SignalReactExt as _,
         layout::{ItemBox, Resizable as _, hints::ParentHints},
@@ -23,8 +23,8 @@ pub fn Button(mut label: impl UI, effect: impl Effect + 'static) -> impl UI {
     let is_hovered: Mutable<bool> = Mutable::default();
 
     ItemBox::new(move |hx| {
-        let hover = Hover::new(hx.rect, is_hovered.clone());
-        let tap = Tap::new(hx.rect, effect.clone());
+        let tap = Tap::new(hx.rect, effect.clone())
+            .with_hover_state(is_hovered.clone());
 
         let rect = is_hovered
             .signal_ref(move |is_hovered| {
@@ -40,7 +40,7 @@ pub fn Button(mut label: impl UI, effect: impl Effect + 'static) -> impl UI {
             ..hx
         });
 
-        list_internal![hover, tap, rect, label]
+        list_internal![tap, rect, label]
     })
     .with_minimum_size(Extent2::new(15.0, 3.0))
 }

@@ -23,11 +23,11 @@ fn main() {
 fn Counter(counter: Mutable<i32>) -> impl TUI {
     let label = Label(counter.signal().map(|num| format!("Counter: {}", num)));
     let decr = Button(
-        Label(always("Take 1 \u{f067}".to_string())),
+        Label(always("Take 1".to_string())),
         counter.clone().effect(|e| *e -= 1),
     );
     let incr = Button(
-        Label(always("Add 1 \u{f056}".to_string())),
+        Label(always("Add 1".to_string())),
         counter.effect(|e| *e += 1),
     );
 

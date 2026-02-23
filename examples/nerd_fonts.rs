@@ -6,8 +6,7 @@ use ui_composer::list;
 use ui_composer::prelude::UIComposer;
 use ui_composer_core::app::composition::effects::signal::SignalReactExt;
 use ui_composer_core::app::composition::layout::{ItemBox, Resizable as _};
-use ui_composer_platform_tui::TUI;
-use ui_composer_platform_tui::Terminal;
+use ui_composer_platform_tui::{TUI, Terminal};
 use ui_composer_state::futures_signals::signal::{Signal, SignalExt};
 use ui_composer_view_macro::view;
 use vek::{Extent2, Rgba};
@@ -19,7 +18,7 @@ fn main() {
 }
 
 fn App() -> impl TUI {
-    let lab1 = Label("Hello, world!");
+    let lab1 = Label("I wanna code in \u{e781}.");
     let lab2 = Label("Hello, again...");
 
     view! {
@@ -47,7 +46,7 @@ fn Label(string: impl ToString) -> impl TUI {
             .with_rect(hx.rect)
             .with_color(TEXT_COLOR / 255.0)
     })
-    .with_minimum_size(Extent2::new(15.0, 1.0))
+    .with_minimum_size(Extent2::new(64.0, 1.0))
 }
 
 fn LabelReactive(
