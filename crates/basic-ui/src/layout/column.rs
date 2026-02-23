@@ -1,4 +1,6 @@
-use ui_composer_core::app::composition::layout::{hints::ParentHints, LayoutItem};
+use ui_composer_core::app::composition::layout::{
+    LayoutItem, hints::ParentHints,
+};
 use vek::{Extent2, Rect};
 
 /// A vertical, writing order stack of items.
@@ -9,7 +11,7 @@ use vek::{Extent2, Rect};
 ///
 /// The width of the container is the max width between the items.
 /// TODO: Allow to take more than two items.
-pub fn Column<A, B>(item_a: A, item_b: B) -> ColumnContainer<A, B> {
+pub fn column<A, B>(item_a: A, item_b: B) -> ColumnContainer<A, B> {
     ColumnContainer {
         item_a,
         item_b,
@@ -44,7 +46,7 @@ where
 
         // Adjust to stack vertically, considering the gap between the items
         Extent2::new(
-            a_size.w.max(b_size.w),         // Max width of the two items
+            a_size.w.max(b_size.w), // Max width of the two items
             a_size.h + self.gap + b_size.h, // Sum of heights with the gap in between
         )
     }

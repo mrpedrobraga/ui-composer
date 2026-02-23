@@ -1,11 +1,16 @@
 use {
-    ui_composer_core::app::composition::layout::{hints::ParentHints, LayoutItem},
+    ui_composer_core::app::composition::layout::{
+        LayoutItem, hints::ParentHints,
+    },
     vek::Extent2,
 };
 
 /// A container that scales its single item to a bigger size.
 /// You **can not** make the minimum size _lower_ than the original, however.
-pub fn WithSize<A>(suggested_size: Extent2<f32>, item: A) -> WithSizeContainer<A>
+pub fn with_size<A>(
+    suggested_size: Extent2<f32>,
+    item: A,
+) -> WithSizeContainer<A>
 where
     A: LayoutItem,
 {

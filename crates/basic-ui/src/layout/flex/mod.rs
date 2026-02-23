@@ -1,8 +1,10 @@
-use core::iter::{once, Chain, Once};
-use ui_composer_core::app::composition::layout::{hints::ParentHints, LayoutItem};
+use core::iter::{Chain, Once, once};
+use ui_composer_core::app::composition::layout::{
+    LayoutItem, hints::ParentHints,
+};
 use ui_composer_geometry::flow::{
-    arrangers::arrange_stretchy_rects_with_minimum_sizes_dirty_alloc, CartesianFlow,
-    CoordinateSystem as _, CurrentFlow, Flow, WritingFlow,
+    CartesianFlow, CoordinateSystem as _, CurrentFlow, Flow, WritingFlow,
+    arrangers::arrange_stretchy_rects_with_minimum_sizes_dirty_alloc,
 };
 use vek::{Extent2, Rect};
 
@@ -55,19 +57,23 @@ where
         let item_natural_sizes = self.items.get_natural_sizes();
 
         // TODO: Receive the parent hints from... well, the parent.
-        let flow_direction: CartesianFlow = self.flow_direction.as_cartesian(&CurrentFlow {
-            current_flow_direction: CartesianFlow::LeftToRight,
-            current_cross_flow_direction: CartesianFlow::TopToBottom,
-            current_writing_flow_direction: CartesianFlow::LeftToRight,
-            current_writing_cross_flow_direction: CartesianFlow::TopToBottom,
-        });
+        let flow_direction: CartesianFlow =
+            self.flow_direction.as_cartesian(&CurrentFlow {
+                current_flow_direction: CartesianFlow::LeftToRight,
+                current_cross_flow_direction: CartesianFlow::TopToBottom,
+                current_writing_flow_direction: CartesianFlow::LeftToRight,
+                current_writing_cross_flow_direction:
+                    CartesianFlow::TopToBottom,
+            });
 
         match flow_direction {
             CartesianFlow::LeftToRight | CartesianFlow::RightToLeft => {
-                item_natural_sizes.reduce(|a, b| Extent2::new(a.w + b.w, a.h.max(b.h)))
+                item_natural_sizes
+                    .reduce(|a, b| Extent2::new(a.w + b.w, a.h.max(b.h)))
             }
             CartesianFlow::TopToBottom | CartesianFlow::BottomToTop => {
-                item_natural_sizes.reduce(|a, b| Extent2::new(a.w.max(b.w), a.h + b.h))
+                item_natural_sizes
+                    .reduce(|a, b| Extent2::new(a.w.max(b.w), a.h + b.h))
             }
         }
         .unwrap_or_default()
@@ -77,26 +83,31 @@ where
         let item_min_sizes = self.items.get_minimum_sizes();
 
         // TODO: Receive the parent hints from... well, the parent.
-        let flow_direction: CartesianFlow = self.flow_direction.as_cartesian(&CurrentFlow {
-            current_flow_direction: CartesianFlow::LeftToRight,
-            current_cross_flow_direction: CartesianFlow::TopToBottom,
-            current_writing_flow_direction: CartesianFlow::LeftToRight,
-            current_writing_cross_flow_direction: CartesianFlow::TopToBottom,
-        });
+        let flow_direction: CartesianFlow =
+            self.flow_direction.as_cartesian(&CurrentFlow {
+                current_flow_direction: CartesianFlow::LeftToRight,
+                current_cross_flow_direction: CartesianFlow::TopToBottom,
+                current_writing_flow_direction: CartesianFlow::LeftToRight,
+                current_writing_cross_flow_direction:
+                    CartesianFlow::TopToBottom,
+            });
 
         match flow_direction {
             CartesianFlow::LeftToRight | CartesianFlow::RightToLeft => {
-                item_min_sizes.reduce(|a, b| Extent2::new(a.w + b.w, a.h.max(b.h)))
+                item_min_sizes
+                    .reduce(|a, b| Extent2::new(a.w + b.w, a.h.max(b.h)))
             }
             CartesianFlow::TopToBottom | CartesianFlow::BottomToTop => {
-                item_min_sizes.reduce(|a, b| Extent2::new(a.w.max(b.w), a.h + b.h))
+                item_min_sizes
+                    .reduce(|a, b| Extent2::new(a.w.max(b.w), a.h + b.h))
             }
         }
         .unwrap_or_default()
     }
 
     fn lay(&mut self, parent_hints: ParentHints) -> Self::Blueprint {
-        let flow_direction = self.flow_direction.as_cartesian(&parent_hints.current_flow);
+        let flow_direction =
+            self.flow_direction.as_cartesian(&parent_hints.current_flow);
         let minima = self
             .items
             .minima(flow_direction)
@@ -120,13 +131,18 @@ where
             &minima.into_inner().unwrap(),
             0.01,
         );*/
-        let main_axis_sizes = arrange_stretchy_rects_with_minimum_sizes_dirty_alloc(
-            parent_size,
-            weights.as_slice(),
-            minima.as_slice(),
-            0.01,
+        let main_axis_sizes =
+            arrange_stretchy_rects_with_minimum_sizes_dirty_alloc(
+                parent_size,
+                weights.as_slice(),
+                minima.as_slice(),
+                0.01,
+            );
+        let parent_hints = lay_sizes(
+            parent_hints,
+            flow_direction,
+            main_axis_sizes.into_iter(),
         );
-        let parent_hints = lay_sizes(parent_hints, flow_direction, main_axis_sizes.into_iter());
 
         self.items.lay(parent_hints)
     }
@@ -155,7 +171,9 @@ where
             },
             RightToLeft => ParentHints {
                 rect: Rect::new(
-                    container.rect.x + container.rect.w - *offset_from_start - current_element_size,
+                    container.rect.x + container.rect.w
+                        - *offset_from_start
+                        - current_element_size,
                     container.rect.y,
                     current_element_size,
                     container.rect.h,
@@ -174,7 +192,9 @@ where
             BottomToTop => ParentHints {
                 rect: Rect::new(
                     container.rect.x,
-                    container.rect.y + container.rect.w - *offset_from_start - current_element_size,
+                    container.rect.y + container.rect.w
+                        - *offset_from_start
+                        - current_element_size,
                     container.rect.w,
                     current_element_size,
                 ),
@@ -277,7 +297,10 @@ where
     }
 
     fn minima(&self, flow_direction: CartesianFlow) -> Self::Weights {
-        Iterator::chain(self.0.minima(flow_direction), self.1.minima(flow_direction))
+        Iterator::chain(
+            self.0.minima(flow_direction),
+            self.1.minima(flow_direction),
+        )
     }
 
     fn lay<I>(&mut self, mut parent_hints: I) -> Self::Content
