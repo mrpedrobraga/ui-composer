@@ -69,15 +69,21 @@ impl InlineItem for MonospaceText {
         cx: &mut InlineContext,
         _: ParentHints,
     ) -> Self::Blueprint {
+        let word_spacing = 1;
         let mut words_with_pos = Vec::new();
         let words = self.0.split_whitespace();
 
         for word in words {
-            let s = word.to_string();
-            let len = s.chars().count() as Offset;
+            let len = word.len() as Offset;
 
-            if cx.offset.x > 0 && cx.offset.x + len > cx.container_size.w {
+            if cx.offset.x > 0
+                && cx.offset.x + word_spacing + len > cx.container_size.w
+            {
                 cx.new_line();
+            }
+
+            if cx.offset.x > 0 {
+                cx.offset.x += word_spacing;
             }
 
             words_with_pos.push(
@@ -86,13 +92,13 @@ impl InlineItem for MonospaceText {
                     .with_rect(Rect::new(
                         cx.offset.x as f32,
                         cx.offset.y as f32,
-                        word.len() as f32,
+                        len as f32,
                         1.0,
                     ))
                     .with_color(Rgba::white()), //TODO: Get this colour from somewhere else.
             );
             cx.max_line_height = cx.max_line_height.max(1);
-            cx.offset.x += len + cx.inline_gap;
+            cx.offset.x += len;
         }
         words_with_pos
     }

@@ -1,6 +1,7 @@
 use super::{Blueprint, Element};
 use crate::app::composition::algebra::Semigroup;
 use crate::app::composition::elements::Environment;
+use crate::prelude::Empty;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
@@ -135,7 +136,7 @@ where
         env: &Env,
     ) -> Poll<Option<()>> {
         let items = unsafe { self.get_unchecked_mut() };
-        items.iter_mut().fold(Poll::Ready(Some(())), |acc, it| {
+        items.iter_mut().fold(Empty::empty(), |acc, it| {
             let pinned = unsafe { Pin::new_unchecked(it) };
             acc.combine(pinned.poll(cx, env))
         })

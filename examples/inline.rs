@@ -7,26 +7,30 @@ fn main() {
 
 fn app() -> impl TUI {
     inline_flow(list![
-        Inline(Square(Rgba::red())),
-        Inline(Square(Rgba::green())),
-        MonospaceText("Hello, there!".to_string()),
-        Inline(Square(Rgba::magenta())),
-        Inline(Square(Rgba::blue())),
-        Inline(Square(Rgba::red())),
-        Inline(Square(Rgba::green())),
-        Inline(Square(Rgba::magenta())),
-        Inline(Square(Rgba::blue())),
-        Inline(Square(Rgba::red())),
-        Inline(Square(Rgba::green())),
-        Inline(Square(Rgba::magenta())),
-        Inline(Square(Rgba::blue()))
+        Inline(Square(2.0, Rgba::red())),
+        Inline(Square(7.0, Rgba::green())),
+        MonospaceText(
+            "This is an amazing opportunity to show how cool layouting is!"
+                .to_string()
+        ),
+        Inline(Square(9.0, Rgba::magenta())),
+        Inline(Square(4.0, Rgba::blue())),
+        Inline(Square(5.0, Rgba::red())),
+        Inline(Square(7.0, Rgba::green())),
+        Inline(Square(2.0, Rgba::magenta())),
+        Inline(Square(1.0, Rgba::blue())),
+        MonospaceText("What the hell?".to_string()),
+        Inline(Square(1.0, Rgba::red())),
+        Inline(Square(3.0, Rgba::green())),
+        Inline(Square(5.0, Rgba::magenta())),
+        Inline(Square(4.0, Rgba::blue()))
     ])
 }
 
-fn Square(color: Rgba<f32>) -> impl TUI {
+fn Square(w: f32, color: Rgba<f32>) -> impl TUI {
     ItemBox::new(move |hx| Graphic {
         rect: hx.rect,
         color,
     })
-    .with_minimum_size(Extent2::new(16.0, 4.0))
+    .with_minimum_size(Extent2::new(w * 3.0, 4.0))
 }
