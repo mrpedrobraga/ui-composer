@@ -3,6 +3,7 @@ use {
     ui_composer_core::app::composition::layout::{
         LayoutItem, hints::ParentHints,
     },
+    ui_composer_geometry::RectExt,
     vek::{Extent2, Rect, Rgba, Vec2},
 };
 
@@ -10,7 +11,7 @@ type Offset = u32;
 
 pub struct InlineContext {
     pub offset: Vec2<Offset>,
-    pub container_size: Extent2<Offset>,
+    pub container_rect: Rect<Offset, Offset>,
     pub max_line_height: Offset,
     pub inline_gap: Offset,
     pub cross_axis_gap: Offset,
@@ -33,9 +34,12 @@ pub trait InlineItem {
     ) -> Self::Blueprint;
 }
 
-pub struct Inline<T>(pub T);
+pub fn inline<T>(item: T) -> InlineAdapter<T> {
+    InlineAdapter(item)
+}
+pub struct InlineAdapter<T>(pub T);
 
-impl<T: LayoutItem> InlineItem for Inline<T> {
+impl<T: LayoutItem> InlineItem for InlineAdapter<T> {
     type Blueprint = T::Blueprint;
 
     fn allocate(
@@ -46,7 +50,7 @@ impl<T: LayoutItem> InlineItem for Inline<T> {
         let size = self.0.get_natural_size();
         let (w, h) = (size.w as Offset, size.h as Offset);
 
-        if cx.offset.x > 0 && cx.offset.x + w > cx.container_size.w {
+        if cx.offset.x > 0 && cx.offset.x + w > cx.container_rect.w {
             cx.new_line();
         }
 
@@ -54,12 +58,13 @@ impl<T: LayoutItem> InlineItem for Inline<T> {
         let pos = cx.offset;
         cx.offset.x += w + cx.inline_gap;
 
-        let rect = Rect::new(pos.x as f32, pos.y as f32, size.w, size.h);
+        let rect = Rect::new(pos.x as f32, pos.y as f32, size.w, size.h)
+            .translated(cx.container_rect.position().as_());
         self.0.lay(ParentHints { rect, ..hints })
     }
 }
 
-pub struct MonospaceText(pub String);
+pub struct MonospaceText(pub String, pub Rgba<f32>);
 
 impl InlineItem for MonospaceText {
     type Blueprint = Vec<Text>;
@@ -77,7 +82,7 @@ impl InlineItem for MonospaceText {
             let len = word.len() as Offset;
 
             if cx.offset.x > 0
-                && cx.offset.x + word_spacing + len > cx.container_size.w
+                && cx.offset.x + word_spacing + len > cx.container_rect.w
             {
                 cx.new_line();
             }
@@ -89,13 +94,16 @@ impl InlineItem for MonospaceText {
             words_with_pos.push(
                 Text()
                     .with_text(word.to_string())
-                    .with_rect(Rect::new(
-                        cx.offset.x as f32,
-                        cx.offset.y as f32,
-                        len as f32,
-                        1.0,
-                    ))
-                    .with_color(Rgba::white()), //TODO: Get this colour from somewhere else.
+                    .with_rect(
+                        Rect::new(
+                            cx.offset.x as f32,
+                            cx.offset.y as f32,
+                            len as f32,
+                            1.0,
+                        )
+                        .translated(cx.container_rect.position().as_()),
+                    )
+                    .with_color(self.1),
             );
             cx.max_line_height = cx.max_line_height.max(1);
             cx.offset.x += len;
@@ -140,13 +148,13 @@ where
     }
 }
 
-pub struct InlineFlow<T: InlineItemList> {
+pub struct LinewiseFlow<T: InlineItemList> {
     pub items: T,
     pub inline_gap: Offset,
     pub cross_axis_gap: Offset,
 }
 
-impl<T: InlineItemList + Send> LayoutItem for InlineFlow<T> {
+impl<T: InlineItemList + Send> LayoutItem for LinewiseFlow<T> {
     type Blueprint = T::Blueprints;
 
     fn get_natural_size(&self) -> Extent2<f32> {
@@ -159,19 +167,19 @@ impl<T: InlineItemList + Send> LayoutItem for InlineFlow<T> {
 
     fn lay(&mut self, hints: ParentHints) -> Self::Blueprint {
         let mut cx = InlineContext {
-            container_size: hints.rect.extent().as_(),
+            container_rect: hints.rect.as_(),
             inline_gap: self.inline_gap,
             cross_axis_gap: self.cross_axis_gap,
             max_line_height: 1,
-            offset: Vec2::new(hints.rect.x as Offset, hints.rect.y as Offset),
+            offset: Vec2::new(0, 0),
         };
 
         self.items.allocate(&mut cx, hints)
     }
 }
 
-pub fn inline_flow<T: InlineItemList>(items: T) -> InlineFlow<T> {
-    InlineFlow {
+pub fn linewise_flow<T: InlineItemList>(items: T) -> LinewiseFlow<T> {
+    LinewiseFlow {
         items,
         inline_gap: 0,
         cross_axis_gap: 0,

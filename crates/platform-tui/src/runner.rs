@@ -1,3 +1,4 @@
+use crossterm::QueueableCommand;
 use crossterm::cursor::{
     Hide, RestorePosition, SavePosition, SetCursorStyle, Show,
 };
@@ -6,23 +7,25 @@ use crossterm::event::{
     EnableMouseCapture, Event as CrosstermEvent, EventStream, KeyCode,
 };
 use crossterm::terminal::{
-    disable_raw_mode, enable_raw_mode, DisableLineWrap,
-    EnableLineWrap, EnterAlternateScreen, LeaveAlternateScreen,
+    DisableLineWrap, EnableLineWrap, EnterAlternateScreen,
+    LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
 };
-use crossterm::QueueableCommand;
 use futures::executor::block_on;
 use futures::{StreamExt, join};
 use futures_signals::signal::SignalExt as _;
 use smol_str::ToSmolStr as _;
-use ui_composer_core::app::composition::algebra::Bubble as _;
-use ui_composer_core::app::composition::elements::{Blueprint, Environment};
-use ui_composer_input::event::{ButtonState, CursorEvent, DeviceId, Event, KeyEvent, KeyboardEvent, TouchStage};
-use ui_composer_core::app::runner::Runner;
-use ui_composer_core::app::runner::futures::AsyncExecutor;
-use vek::{Extent2, Vec2};
-use std::io::{stdout, Write};
+use std::io::{Write, stdout};
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
+use ui_composer_core::app::composition::algebra::Bubble as _;
+use ui_composer_core::app::composition::elements::{Blueprint, Environment};
+use ui_composer_core::app::runner::Runner;
+use ui_composer_core::app::runner::futures::AsyncExecutor;
+use ui_composer_input::event::{
+    ButtonState, CursorEvent, DeviceId, Event, KeyEvent, KeyboardEvent,
+    TouchStage,
+};
+use vek::{Extent2, Vec2};
 
 use crate::nodes::TerminalEffectVisitor;
 
@@ -53,6 +56,9 @@ where
         let app = blueprint.make(&env);
         let app = Arc::new(Mutex::new(app));
         let app_e = app.clone();
+
+        // Correction for the terminal's way of indexing.
+        let top_left_correction = Vec2::new(1.0, 1.0);
 
         let event_handler = async {
             let e_stream = EventStream::new();
@@ -105,9 +111,20 @@ where
                                 l.bubble(&mut Event::Cursor {
                                     id: DeviceId(0),
                                     event: CursorEvent::Moved {
-                                        // Remember that column and row are 1-indexed.
-                                        position: Vec2::new(m.column, m.row)
-                                            .as_(),
+                                        position: (Vec2::new(m.column, m.row)
+                                            .as_()
+                                            + top_left_correction),
+                                    },
+                                });
+                            }
+
+                            if m.kind.is_drag() {
+                                l.bubble(&mut Event::Cursor {
+                                    id: DeviceId(0),
+                                    event: CursorEvent::Moved {
+                                        position: (Vec2::new(m.column, m.row)
+                                            .as_()
+                                            + top_left_correction),
                                     },
                                 });
                             }

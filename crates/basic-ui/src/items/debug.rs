@@ -10,7 +10,7 @@ pub struct DebugSquare {
 }
 
 #[allow(non_snake_case)]
-pub fn DebugSquare() -> DebugSquare {
+pub fn ColorBox() -> DebugSquare {
     DebugSquare {
         ..Default::default()
     }

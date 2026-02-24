@@ -6,24 +6,29 @@ fn main() {
 }
 
 fn app() -> impl TUI {
+    let size = Extent2::new;
     view! (
-        inline_flow [
-            Inline { DebugSquare (size=Extent2::new(6.0, 4.0) color=Rgba::red()) }
-            Inline { DebugSquare (size=Extent2::new(21.0, 4.0) color=Rgba::green()) }
-            MonospaceText {{
-                "This is an amazing opportunity to show how cool layouting is!".to_string()
-            }}
-            Inline { DebugSquare (size=Extent2::new(27.0, 4.0) color=Rgba::magenta()) }
-            Inline { DebugSquare (size=Extent2::new(12.0, 4.0) color=Rgba::blue()) }
-            Inline { DebugSquare (size=Extent2::new(15.0, 4.0) color=Rgba::red()) }
-            Inline { DebugSquare (size=Extent2::new(21.0, 4.0) color=Rgba::green()) }
-            Inline { DebugSquare (size=Extent2::new(6.0, 4.0) color=Rgba::magenta()) }
-            Inline { DebugSquare (size=Extent2::new(3.0, 4.0) color=Rgba::blue()) }
-            MonospaceText {{ "What the hell?".to_string() }}
-            Inline { DebugSquare (size=Extent2::new(3.0, 4.0) color=Rgba::red()) }
-            Inline { DebugSquare (size=Extent2::new(9.0, 4.0) color=Rgba::green()) }
-            Inline { DebugSquare (size=Extent2::new(15.0, 4.0) color=Rgba::magenta()) }
-            Inline { DebugSquare (size=Extent2::new(12.0, 4.0) color=Rgba::blue()) }
+        linewise_flow [
+            inline ColorBox (size=size(6.0, 4.0) color=Rgba::red()),
+            inline ColorBox (size=size(21.0, 4.0) color=Rgba::green()),
+            MonospaceText {
+                {"This is an amazing opportunity to show how cool layouting is!".to_string()}
+                {Rgba::white()}
+            }
+            inline ColorBox (size=size(27.0, 4.0) color=Rgba::magenta()),
+            inline ColorBox (size=size(12.0, 4.0) color=Rgba::blue()),
+            inline ColorBox (size=size(15.0, 4.0) color=Rgba::red()),
+            inline ColorBox (size=size(21.0, 4.0) color=Rgba::green()),
+            inline ColorBox (size=size(6.0, 4.0) color=Rgba::magenta()),
+            inline ColorBox (size=size(3.0, 4.0) color=Rgba::blue()),
+            MonospaceText {
+                {"What the hell?".to_string()}
+                {Rgba::white()}
+            }
+            inline ColorBox (size=size(3.0, 4.0) color=Rgba::red()),
+            inline ColorBox (size=size(9.0, 4.0) color=Rgba::green()),
+            inline ColorBox (size=size(15.0, 4.0) color=Rgba::magenta()),
+            inline ColorBox (size=size(12.0, 4.0) color=Rgba::blue()),
         ]
     )
 }

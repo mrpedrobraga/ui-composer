@@ -15,7 +15,8 @@ use ui_composer_core::app::composition::elements::{Blueprint, Element};
 use ui_composer_core::app::composition::layout::hints::ParentHints;
 use ui_composer_core::app::composition::visit::DriveThru;
 use ui_composer_geometry::flow::{CartesianFlow, CurrentFlow};
-use ui_composer_input::event::Event;
+use ui_composer_input::event::{CursorEvent, Event};
+use ui_composer_state::Slot;
 use vek::{Extent2, Rect, Vec2};
 
 pub struct TerminalBlueprint<UI> {
@@ -60,6 +61,22 @@ where
             self.state.size.set(*new_size);
         };
 
+        if let Event::Cursor {
+            id: _,
+            event: CursorEvent::Moved { position },
+        } = cx
+        {
+            self.state.mouse_position.put(Some(*position));
+        }
+
+        if let Event::Cursor {
+            id: _,
+            event: CursorEvent::Exited,
+        } = cx
+        {
+            self.state.mouse_position.put(None);
+        }
+
         self.ui.bubble(cx)
     }
 }
@@ -96,6 +113,19 @@ where
                     canvas: &mut state.render_target,
                 };
                 ui_effects.drive_thru(&mut vis);
+
+                /* Draws a cute little mouse cursor... useful for troubleshooting certain interactions. */
+                // if let Some(mouse_position) = state.mouse_position.get() {
+                //     vis.canvas.put_pixel(
+                //         mouse_position.as_(),
+                //         TextModePixel {
+                //             bg_color: Rgba::zero(),
+                //             fg_color: Rgba::black(),
+                //             character: '\u{f01bf}',
+                //         },
+                //     )
+                // }
+
                 present_canvas_to_terminal(vis.canvas)
                     .expect("Failed to present canvas to terminal?");
 
