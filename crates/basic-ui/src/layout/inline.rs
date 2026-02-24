@@ -58,6 +58,10 @@ impl<T: LayoutItem> InlineItem for InlineAdapter<T> {
         let pos = cx.offset;
         cx.offset.x += w + cx.inline_gap;
 
+        // TODO: Use flow to select the proper axis to maintain vs the axis to stretch.
+        // Then, use the current line information so that inline items vertically grow to fill space.
+        let size = Extent2::new(size.w, size.h);
+
         let rect = Rect::new(pos.x as f32, pos.y as f32, size.w, size.h)
             .translated(cx.container_rect.position().as_());
         self.0.lay(ParentHints { rect, ..hints })
