@@ -149,13 +149,13 @@ pub fn test_simple() {
     #![allow(non_snake_case)]
 
     let _ui = view! {
-        flex (vertical_layout) [
-            Label {{ "Hello, world!" }}
+        flex {vertical_layout} [
+            Label (( "Hello, world!" ))
             row [
-                Label {{ "Click me:" }}
-                Button (effect=|| println!("Hello!")) {
-                    Label {{ "Click me!" }}
-                }
+                Label (( "Click me:" ))
+                Button {effect:|| println!("Hello!")} (
+                    Label (( "Click me!" ))
+                )
             ]
         ]
     };
@@ -164,18 +164,18 @@ pub fn test_simple() {
     let Mul = |a, b| a * b;
 
     let sum = view! {
-        Add {
-            {1}
-            Mul {
-                {2}
-                {3}
-            }
-        }
+        Add (
+            (1)
+            Mul (
+                (2)
+                (3)
+            )
+        )
     };
     dbg!(sum);
 
     let me_button =
-        view! { Button (effect=|| println!("I was clicked!")) {{()}} };
+        view! { Button {effect: || println!("I was clicked!")} ((())) };
     me_button.trigger();
 }
 
@@ -198,7 +198,7 @@ fn test_blocks() {
 
     let iterated = view! {
         for (l, r) in &collection {
-            Label {{ format!("The tuple has {} and {}", l, r) }}
+            Label (( format!("The tuple has {} and {}", l, r) ))
         }
     };
 
@@ -209,9 +209,9 @@ fn test_blocks() {
 
     let derived = view! {
         column [
-            Label {{ "Message 1!" }}
+            Label ("Message 1!")
             for message in message_sig {
-                Label {{ message }}
+                Label (( message ))
             }
         ]
     };

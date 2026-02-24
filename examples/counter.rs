@@ -15,9 +15,9 @@ fn Counter(counter: Mutable<i32>) -> impl TUI {
 
     view! {
         flex [
-            item {{decr}}
-            item {{label}}
-            item {{incr}}
+            item ((decr))
+            item ((label))
+            item ((incr))
         ]
     }
 }

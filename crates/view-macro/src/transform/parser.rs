@@ -12,12 +12,14 @@ impl Parse for ViewNode {
     fn parse(input: ParseStream) -> parse::Result<Self> {
         if input.peek(Token![for]) {
             Ok(ViewNode::ForExpr(input.parse()?))
-        } else if input.peek(syn::token::Brace) {
+        } else if input.peek(syn::token::Paren) {
             let content;
-            braced!(content in input);
+            parenthesized!(content in input);
             Ok(ViewNode::Block(content.parse()?))
-        } else {
+        } else if input.peek(syn::Ident) {
             Ok(ViewNode::Element(input.parse()?))
+        } else {
+            Ok(ViewNode::Block(input.parse()?))
         }
     }
 }
@@ -37,11 +39,13 @@ impl Parse for Element {
         let path: Path = input.parse()?;
 
         let mut attributes = Vec::new();
-        if input.peek(syn::token::Paren) {
+        if input.peek(syn::token::Brace) {
             let content;
-            parenthesized!(content in input);
+            braced!(content in input);
             while !content.is_empty() {
                 attributes.push(content.parse()?);
+
+                // TODO: Require a comma, unless it's the last item.
                 if content.peek(Token![,]) {
                     content.parse::<Token![,]>()?;
                 }
@@ -52,9 +56,9 @@ impl Parse for Element {
         let mut children_structure = ChildrenStructure::IndividualArguments;
 
         let lookahead = input.lookahead1();
-        if lookahead.peek(syn::token::Brace) {
+        if lookahead.peek(syn::token::Paren) {
             let content;
-            braced!(content in input);
+            parenthesized!(content in input);
             while !content.is_empty() {
                 children.push(content.parse()?);
             }
@@ -94,11 +98,11 @@ impl Parse for ForExpr {
         if input.parse::<Token![in]>().is_err() {
             emit_error!(input.span(), "expected `in`")
         };
+        // There's no `parse_without_eager_bracket` so we can't use square brackets.
         let expr = Expr::parse_without_eager_brace(input).unwrap_or_else(|e| {
             emit_error!(e);
             syn::parse_quote!(())
         });
-
         let content;
         braced!(content in input);
         let mut body = Vec::new();
@@ -114,8 +118,8 @@ impl Parse for Attribute {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let key: Ident = input.parse()?;
 
-        let value = if input.peek(Token![=]) {
-            input.parse::<Token![=]>()?;
+        let value = if input.peek(Token![:]) {
+            input.parse::<Token![:]>()?;
             Some(input.parse()?)
         } else {
             None

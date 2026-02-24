@@ -12,9 +12,9 @@ fn App() -> impl TUI {
     let lab2 = Label("Hello, again...");
 
     view! {
-        flex (vertical_flow) [
-            item {{lab1}}
-            item {{lab2}}
+        flex {vertical_flow} [
+            item ((lab1))
+            item ((lab2))
         ]
     }
 }

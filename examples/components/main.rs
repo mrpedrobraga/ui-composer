@@ -8,22 +8,22 @@ fn main() {
 fn app() -> impl UI {
     view! {
         center
-        with_size (size=Extent2::new(40.0, 0.0))
-        components {}
+        with_size {size: Extent2::new(40.0, 0.0)}
+        components ()
     }
 }
 
 fn components() -> impl UI {
     view! {
-        flex (vertical_flow) [
+        flex {vertical_flow} [
             /* Views */
-            item Label {{"A humble Label..."}}
+            item Label (("A humble Label..."))
 
             /* Effect triggers */
-            item Button {
-                Label {{"Click this button!"}}
-                {|| {}}
-            }
+            item Button (
+                Label (("Click this button!"))
+                (|| {})
+            )
         ]
     }
 }
