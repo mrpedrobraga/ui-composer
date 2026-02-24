@@ -25,59 +25,15 @@ impl<'fx> Apply<RenderText> for TerminalEffectVisitor<'fx> {
     fn visit(&mut self, RenderText(rect, text, color): &RenderText) {
         let rect = rect.as_::<usize, usize>();
 
-        let mut curr_x = 0;
-        let mut curr_y = 0;
-
-        for word in text.split_whitespace() {
-            let word_length = word.chars().count();
-
-            // If the word won't fit because it's too big for the space left,
-            // move the cursor to the start of the next line.
-            if curr_x > 0 && curr_x + word_length > rect.w {
-                curr_x = 0;
-                curr_y += 1;
-            }
-
-            // If we're out of lines, stop drawing!
-            if curr_y >= rect.h {
-                return;
-            }
-
-            // Then we draw the word character by character, wrapping lines if it doesn't fit.
-            // This wrapping behaviour is a fallback for words which are themselves too big to ever fit.
-            // "Supercalifragilisticexpialidocius."
-            for c in word.chars() {
-                if curr_x >= rect.w {
-                    curr_x = 0;
-                    curr_y += 1;
-                    if curr_y >= rect.h {
-                        return;
-                    }
-                }
-
-                self.canvas.put_pixel(
-                    vek::Vec2::new(rect.x + curr_x, rect.y + curr_y),
-                    TextModePixel {
-                        bg_color: Rgba::new_transparent(0.0, 0.0, 0.0),
-                        fg_color: *color,
-                        character: c,
-                    },
-                );
-                curr_x += 1;
-            }
-
-            // Put some whitespace between words if possible :-)
-            if curr_x < rect.w {
-                self.canvas.put_pixel(
-                    vek::Vec2::new(rect.x + curr_x, rect.y + curr_y),
-                    TextModePixel {
-                        bg_color: Rgba::new_transparent(0.0, 0.0, 0.0),
-                        fg_color: *color,
-                        character: ' ',
-                    },
-                );
-                curr_x += 1;
-            }
+        for (i, ch) in text.chars().enumerate() {
+            self.canvas.put_pixel(
+                vek::Vec2::new(rect.x + i, rect.y),
+                TextModePixel {
+                    bg_color: Rgba::new_transparent(0.0, 0.0, 0.0),
+                    fg_color: *color,
+                    character: ch,
+                },
+            );
         }
     }
 }

@@ -7,6 +7,7 @@ version = "0.1.0"
 name = "ui_composer_platform_tui"
 
 [dependencies]
+ui-composer-input = { path = "../input" }
 async-std = "1.13.2"
 crossterm = { version = "0.29.0", features = ["event-stream"] }
 futures = "0.3.32"
@@ -17,6 +18,5 @@ ui-composer-canvas = { path = "../canvas" }
 ui-composer-core = { path = "../core" }
 ui-composer-geometry = { path = "../geometry" }
 ui-composer-state = { path = "../state" }
-ui-composer-input = { path = "../input" }
-ui-composer-basic-ui = { path = "../basic-ui" }
+#ui-composer-basic-ui = { path = "../basic-ui" }
 vek = "0.17.2"

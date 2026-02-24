@@ -81,6 +81,18 @@ pub mod bubble {
         }
     }
 
+    impl<A, Down, Up> Bubble<Down, Up> for Vec<A>
+    where
+        A: Bubble<Down, Up>,
+        Up: Monoid,
+    {
+        fn bubble(&mut self, cx: &mut Down) -> Up {
+            self.iter_mut().fold(Empty::empty(), |acc, el| {
+                Semigroup::combine(acc, el.bubble(cx))
+            })
+        }
+    }
+
     impl<A, Down, Up> Bubble<Down, Up> for Option<A>
     where
         A: Bubble<Down, Up>,
@@ -116,7 +128,11 @@ pub mod gather {
     impl<Context, Item> Gather<Context, Item> for () {
         const SIZE: usize = 0;
 
-        fn gather(&mut self, #[expect(unused)] cx: &mut Context, acc: &mut [MaybeUninit<Item>]) {
+        fn gather(
+            &mut self,
+            #[expect(unused)] cx: &mut Context,
+            acc: &mut [MaybeUninit<Item>],
+        ) {
             debug_assert_eq!(acc.len(), 0);
         }
     }

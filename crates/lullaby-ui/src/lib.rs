@@ -1,7 +1,6 @@
 #![allow(non_snake_case)]
 
 pub mod components;
-pub mod primitives;
 
 pub mod prelude {
     /* Re-export layout items. */
@@ -13,8 +12,8 @@ pub mod prelude {
     pub use crate::components::panel_container::*;
 
     /* Primitives */
-    pub use crate::primitives::graphic::Graphic;
-    pub use crate::primitives::text::Text;
+    pub use ui_composer_basic_ui::primitives::graphic::Graphic;
+    pub use ui_composer_basic_ui::primitives::text::Text;
 }
 
 #[macro_export]

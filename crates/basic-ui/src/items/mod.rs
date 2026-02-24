@@ -6,3 +6,5 @@ pub use drag::*;
 pub use hover::*;
 pub use tap::*;
 pub use typing::*;
+
+pub mod implementations;

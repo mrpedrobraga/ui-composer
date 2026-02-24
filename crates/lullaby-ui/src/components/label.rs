@@ -1,5 +1,6 @@
 use {
-    crate::{components::UI, primitives::text::Text},
+    crate::components::UI,
+    ui_composer_basic_ui::primitives::text::Text,
     ui_composer_core::app::composition::layout::{ItemBox, Resizable as _},
     vek::{Extent2, Rgba},
 };

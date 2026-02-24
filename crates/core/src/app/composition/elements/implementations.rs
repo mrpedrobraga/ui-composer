@@ -44,7 +44,11 @@ where
         item.effect()
     }
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context, env: &Env) -> Poll<Option<()>> {
+    fn poll(
+        self: Pin<&mut Self>,
+        cx: &mut Context,
+        env: &Env,
+    ) -> Poll<Option<()>> {
         let mut_ref = unsafe { self.map_unchecked_mut(|e| &mut **e) };
         mut_ref.poll(cx, env)
     }
@@ -79,7 +83,11 @@ where
         (self.0.effect(), self.1.effect())
     }
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context, env: &Env) -> Poll<Option<()>> {
+    fn poll(
+        self: Pin<&mut Self>,
+        cx: &mut Context,
+        env: &Env,
+    ) -> Poll<Option<()>> {
         let (pinned_a, pinned_b) = {
             let mut_ref = unsafe { self.get_unchecked_mut() };
             let (a, b) = mut_ref;
@@ -94,6 +102,43 @@ where
         let poll_b = pinned_b.poll(cx, env);
 
         poll_a.combine(poll_b)
+    }
+}
+
+impl<A, Env: Environment> Blueprint<Env> for Vec<A>
+where
+    A: Blueprint<Env>,
+{
+    type Element = Vec<A::Element>;
+
+    fn make(self, env: &Env) -> Self::Element {
+        self.into_iter().map(|it| it.make(env)).collect()
+    }
+}
+
+impl<A, Env: Environment> Element<Env> for Vec<A>
+where
+    A: Element<Env>,
+{
+    type Effect<'fx>
+        = Vec<A::Effect<'fx>>
+    where
+        A: 'fx;
+
+    fn effect(&self) -> Self::Effect<'_> {
+        self.iter().map(|it| it.effect()).collect()
+    }
+
+    fn poll(
+        self: Pin<&mut Self>,
+        cx: &mut Context,
+        env: &Env,
+    ) -> Poll<Option<()>> {
+        let items = unsafe { self.get_unchecked_mut() };
+        items.iter_mut().fold(Poll::Ready(Some(())), |acc, it| {
+            let pinned = unsafe { Pin::new_unchecked(it) };
+            acc.combine(pinned.poll(cx, env))
+        })
     }
 }
 

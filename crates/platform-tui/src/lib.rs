@@ -2,7 +2,6 @@
 //!
 //! This module contains a [`Runner`] that can run applications in a terminal.
 
-pub mod blueprints;
 pub mod nodes;
 pub mod render;
 pub mod runner;

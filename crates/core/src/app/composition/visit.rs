@@ -61,6 +61,28 @@ pub mod implementations {
         }
     }
 
+    impl<T, V> DriveThru<V> for Vec<T>
+    where
+        T: DriveThru<V>,
+    {
+        fn drive_thru(&self, visitor: &mut V) {
+            for item in self {
+                item.drive_thru(visitor);
+            }
+        }
+    }
+
+    impl<T, V> DriveThruMut<V> for Vec<T>
+    where
+        T: DriveThruMut<V>,
+    {
+        fn drive_thru_mut(&mut self, visitor: &mut V) {
+            for item in self {
+                item.drive_thru_mut(visitor);
+            }
+        }
+    }
+
     impl<V, A> DriveThru<V> for Option<A>
     where
         A: DriveThru<V>,
