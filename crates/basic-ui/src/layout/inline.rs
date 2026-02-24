@@ -158,11 +158,13 @@ impl<T: InlineItemList + Send> LayoutItem for LinewiseFlow<T> {
     type Blueprint = T::Blueprints;
 
     fn get_natural_size(&self) -> Extent2<f32> {
-        Extent2::default() // Simplified for brevity
+        // TODO: Dynamic natural sizes.
+        Extent2::new(1.0, 1.0)
     }
 
     fn get_minimum_size(&self) -> Extent2<f32> {
-        Extent2::default()
+        // TODO: Dynamic minimum sizes.
+        Extent2::new(1.0, 1.0)
     }
 
     fn lay(&mut self, hints: ParentHints) -> Self::Blueprint {

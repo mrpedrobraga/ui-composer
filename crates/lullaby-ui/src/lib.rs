@@ -7,6 +7,7 @@ pub mod prelude {
     pub use ui_composer_basic_ui::layout::*;
 
     /* Components. */
+    pub use crate::components::UI;
     pub use crate::components::button::*;
     pub use crate::components::label::*;
     pub use crate::components::panel_container::*;
