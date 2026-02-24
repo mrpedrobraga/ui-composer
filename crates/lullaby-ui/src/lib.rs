@@ -3,20 +3,23 @@
 pub mod components;
 pub mod convert;
 
+pub use ui_composer_basic_ui::components::image::image;
 pub mod prelude {
     /* Re-export layout items. */
+    pub use ui_composer_basic_ui::components::*;
     pub use ui_composer_basic_ui::layout::*;
+
+    /* Primitives */
+    pub use ui_composer_basic_ui::interaction::*;
+    pub use ui_composer_basic_ui::primitives::graphic::Graphic;
+    pub use ui_composer_basic_ui::primitives::image_quad::ImageView;
+    pub use ui_composer_basic_ui::primitives::text::Text;
 
     /* Components. */
     pub use crate::components::Ui;
     pub use crate::components::button::*;
     pub use crate::components::label::*;
     pub use crate::components::panel_container::*;
-
-    /* Primitives */
-    pub use ui_composer_basic_ui::items::*;
-    pub use ui_composer_basic_ui::primitives::graphic::Graphic;
-    pub use ui_composer_basic_ui::primitives::text::Text;
 
     /* Traits */
     pub use crate::convert::ToDefaultUi;

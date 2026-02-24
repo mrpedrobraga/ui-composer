@@ -3350,6 +3350,7 @@ dependencies = [
 name = "ui-composer-basic-ui"
 version = "0.1.0"
 dependencies = [
+ "image",
  "ui-composer-core",
  "ui-composer-geometry",
  "ui-composer-input",

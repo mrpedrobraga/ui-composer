@@ -17,6 +17,9 @@ vek = "0.17.2"
 ui-composer-platform-tui = { path = "../platform-tui" }
 ui-composer-platform-winit = { path = "../platform-winit" }
 
+image = { version = "0.25.9", optional = true }
+
 [features]
-default = ["std"]
+default = ["std", "image"]
+image = ["dep:image"]
 std = []

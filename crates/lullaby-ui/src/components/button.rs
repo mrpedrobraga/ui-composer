@@ -1,6 +1,6 @@
 use {
     crate::{components::Ui, list_internal},
-    ui_composer_basic_ui::{items::Tap, primitives::graphic::Graphic},
+    ui_composer_basic_ui::{interaction::Tap, primitives::graphic::Graphic},
     ui_composer_core::app::composition::{
         effects::signal::IntoBlueprint as _,
         layout::{ItemBox, Resizable as _, hints::ParentHints},

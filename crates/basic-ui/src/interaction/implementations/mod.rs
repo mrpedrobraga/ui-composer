@@ -1,5 +1,5 @@
 use {
-    crate::items::{Hover, Tap, Typing},
+    crate::interaction::{Hover, Tap, Typing},
     ui_composer_core::prelude::{Blueprint, Element},
     ui_composer_platform_tui::runner::TerminalEnvironment,
     ui_composer_state::effect::Effect,
