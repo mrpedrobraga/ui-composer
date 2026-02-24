@@ -12,6 +12,7 @@ pub mod prelude {
     pub use crate::components::panel_container::*;
 
     /* Primitives */
+    pub use ui_composer_basic_ui::items::*;
     pub use ui_composer_basic_ui::primitives::graphic::Graphic;
     pub use ui_composer_basic_ui::primitives::text::Text;
 }
