@@ -9,8 +9,7 @@ pub mod codegen;
 pub mod parser;
 
 pub fn view_internal(input: TokenStream) -> TokenStream {
-    let res: Result<ViewNode, _> = syn::parse(input);
-
+    let res: Result<ViewNodes, _> = syn::parse(input);
     match res {
         Ok(component) => component.to_tokens().into(),
         Err(e) => {
@@ -28,6 +27,8 @@ enum ViewNode {
     // { expression }
     Block(Expr),
 }
+
+struct ViewNodes(Vec<ViewNode>);
 
 struct Element {
     path: syn::Path,

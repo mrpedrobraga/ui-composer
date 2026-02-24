@@ -1,4 +1,4 @@
-use crate::transform::ChildrenStructure;
+use crate::transform::{ChildrenStructure, ViewNodes};
 
 use super::{Attribute, Element, ForExpr, ViewNode};
 use proc_macro_error2::emit_error;
@@ -19,6 +19,16 @@ impl Parse for ViewNode {
         } else {
             Ok(ViewNode::Element(input.parse()?))
         }
+    }
+}
+
+impl Parse for ViewNodes {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let mut body = Vec::new();
+        while !input.is_empty() {
+            body.push(input.parse()?);
+        }
+        Ok(ViewNodes(body))
     }
 }
 

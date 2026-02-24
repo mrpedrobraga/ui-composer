@@ -7,8 +7,6 @@ pub type EvNum = f32;
 
 #[cfg(feature = "std")]
 pub type EvString = String;
-#[cfg(not(feature = "std"))]
-pub type EvString = nstr::String;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Event {

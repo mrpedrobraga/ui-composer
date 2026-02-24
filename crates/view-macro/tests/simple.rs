@@ -179,6 +179,19 @@ pub fn test_simple() {
     me_button.trigger();
 }
 
+/// Dummy trait so the tests work.
+/// In practice, there will be an IntoBlueprint trait in scope
+/// whenever you use `view` that adapts the monadic traits to implement `Blueprint`.
+trait IntoBlueprint {
+    fn into_blueprint(self) -> Self
+    where
+        Self: Sized,
+    {
+        self
+    }
+}
+impl<T> IntoBlueprint for T {}
+
 #[test]
 fn test_blocks() {
     let collection = [(1, 2), (3, 4)];

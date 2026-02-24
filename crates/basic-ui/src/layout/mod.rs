@@ -19,6 +19,10 @@ mod flex;
 #[doc(inline)]
 pub use flex::*;
 
+pub mod inline;
+#[doc(inline)]
+pub use inline::*;
+
 mod center;
 #[doc(inline)]
 pub use center::*;

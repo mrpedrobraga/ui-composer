@@ -1,10 +1,10 @@
 use {
-    crate::transform::ViewNode,
-    quote::{format_ident, quote},
+    crate::transform::{ChildrenStructure, Element, ViewNodes},
+    proc_macro2::TokenStream,
 };
 use {
-    crate::transform::{ChildrenStructure, Element},
-    proc_macro2::TokenStream,
+    crate::transform::{ForExpr, ViewNode},
+    quote::{format_ident, quote},
 };
 
 impl Element {
@@ -42,21 +42,39 @@ impl ViewNode {
         match self {
             ViewNode::Element(element) => element.to_tokens(),
             ViewNode::Block(expr) => quote! { #expr },
-            ViewNode::ForExpr(for_expr) => {
-                let pat = &for_expr.pat;
-                let expr = &for_expr.expr;
-                let body: Vec<_> =
-                    for_expr.body.iter().map(|i| i.to_tokens()).collect();
+            ViewNode::ForExpr(for_expr) => for_expr.to_tokens(),
+        }
+    }
+}
 
-                if body.len() > 1 {
-                    quote! {
-                        #expr.map(|#pat| list![ #(#body),* ])
-                    }
-                } else {
-                    quote! {
-                        #expr.map(|#pat| { #(#body),* })
-                    }
-                }
+impl ViewNodes {
+    pub fn to_tokens(&self) -> TokenStream {
+        let body: Vec<_> = self.0.iter().map(|i| i.to_tokens()).collect();
+        if body.len() > 1 {
+            quote! {
+                list![ #(#body),* ]
+            }
+        } else {
+            quote! {
+                #(#body),*
+            }
+        }
+    }
+}
+
+impl ForExpr {
+    pub fn to_tokens(&self) -> TokenStream {
+        let pat = &self.pat;
+        let expr = &self.expr;
+        let body: Vec<_> = self.body.iter().map(|i| i.to_tokens()).collect();
+
+        if body.len() > 1 {
+            quote! {
+                #expr.map(move |#pat| list![ #(#body),* ]).into_blueprint()
+            }
+        } else {
+            quote! {
+                #expr.map(move |#pat| { #(#body),* }).into_blueprint()
             }
         }
     }

@@ -8,7 +8,7 @@ name = "ui_composer_input"
 # crate-type = ["dylib"]
 
 [features]
-default = []
+default = ["std"]
 std = []
 
 [dependencies]
