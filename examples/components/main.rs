@@ -14,10 +14,14 @@ fn app() -> impl UI {
 }
 
 fn components() -> impl UI {
+    let dyn_item = Label("A third label").boxed();
+
     view! {
         flex {vertical_flow} [
             /* Views */
             item Label (("A humble Label..."))
+            item Box::new Label("Another label...")
+            item ((dyn_item))
 
             /* Effect triggers */
             item Button (

@@ -118,6 +118,22 @@ pub trait LayoutItem: Send {
             })
             .into_blueprint()
     }
+
+    /// Erases the type of the layout item, allocating it on the heap,
+    /// while remembering the type of `Blueprint` the item generates.
+    ///
+    /// This is useful wherever you need to pass two or more items of the same concrete type,
+    /// but would like to pass different UI... for example, you can call `boxed`
+    /// to return different UI from `match` arms.
+    ///
+    /// This obviously adds some indirection as well as some heap allocation
+    /// so make of that what you will.
+    fn boxed(self) -> Box<dyn LayoutItem<Blueprint = Self::Blueprint>>
+    where
+        Self: std::marker::Sized + 'static,
+    {
+        Box::new(self)
+    }
 }
 
 /// A quite interesting auxiliary trait that
