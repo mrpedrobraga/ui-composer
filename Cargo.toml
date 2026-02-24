@@ -15,6 +15,7 @@ members = [
     "crates/platform-winit",
     "crates/uix",
     "crates/view-macro",
+    "crates/derive-ui",
 
     # Design Libraries
     "crates/lullaby-ui",

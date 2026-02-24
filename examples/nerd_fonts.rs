@@ -7,7 +7,7 @@ fn main() {
     })
 }
 
-fn App() -> impl TUI {
+fn App() -> impl Tui {
     let lab1 = Label("I wanna code in \u{e781}.");
     let lab2 = Label("Hello, again...");
 

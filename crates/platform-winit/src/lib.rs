@@ -14,8 +14,8 @@ pub mod runner;
 pub mod window;
 mod winit_uic_conversion;
 
-pub trait WUI: CompatibleWith<WinitEnvironment> {}
-impl<T> WUI for T where T: CompatibleWith<WinitEnvironment> {}
+pub trait WinitUi: CompatibleWith<WinitEnvironment> {}
+impl<T> WinitUi for T where T: CompatibleWith<WinitEnvironment> {}
 
 pub trait WinitBlueprint:
     Blueprint<WinitEnvironment, Element: Send> + Send
@@ -28,6 +28,6 @@ impl<T> WinitBlueprint for T where
 
 #[doc(hidden)]
 pub mod prelude {
-    pub use crate::WUI;
+    pub use crate::WinitUi;
     pub use crate::runner::{WinitEnvironment, WinitRunner};
 }

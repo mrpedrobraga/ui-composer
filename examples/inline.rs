@@ -5,7 +5,7 @@ fn main() {
     UIComposer::run_tui(Terminal(app()))
 }
 
-fn app() -> impl TUI {
+fn app() -> impl Tui {
     let size = Extent2::new;
     view! (
         linewise_flow [

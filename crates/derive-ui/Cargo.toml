@@ -1,0 +1,16 @@
+[package]
+name = "ui-composer-derive-ui"
+version = "0.0.0"
+authors = ["mrpedrobraga <mrhenribraga@gmail.com>"]
+description = "A macro for easily deriving UI from data according to the Editor pattern!"
+keywords = ["template", "proc_macro", "procmacro"]
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1"
+proc-macro2 = "1.0"
+syn = "2.0.114"
+proc-macro-error2 = "2.0.1"

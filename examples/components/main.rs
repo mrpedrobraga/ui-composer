@@ -5,15 +5,15 @@ fn main() {
     UIComposer::run_tui(Terminal(app()));
 }
 
-fn app() -> impl UI {
+fn app() -> impl Ui {
     view! {
         center
         with_size {size: Extent2::new(40.0, 0.0)}
-        components ()
+        components
     }
 }
 
-fn components() -> impl UI {
+fn components() -> impl Ui {
     let dyn_item = Label("A third label").boxed();
 
     view! {

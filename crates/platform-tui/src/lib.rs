@@ -14,20 +14,20 @@ use {
     ui_composer_core::app::composition::{CompatibleWith, elements::Blueprint},
 };
 
-pub trait TUI: CompatibleWith<TerminalEnvironment> {}
-impl<T> TUI for T where T: CompatibleWith<TerminalEnvironment> {}
+pub trait Tui: CompatibleWith<TerminalEnvironment> {}
+impl<T> Tui for T where T: CompatibleWith<TerminalEnvironment> {}
 
-pub trait TUIBlueprint:
+pub trait TuiBlueprint:
     Blueprint<TerminalEnvironment, Element: Send> + Send
 {
 }
-impl<T> TUIBlueprint for T where
+impl<T> TuiBlueprint for T where
     T: Blueprint<TerminalEnvironment, Element: Send> + Send
 {
 }
 
 pub mod prelude {
-    pub use crate::TUI;
+    pub use crate::Tui;
     pub use crate::nodes::Terminal;
     pub use crate::runner::{TUIRunner, TerminalEnvironment};
 }

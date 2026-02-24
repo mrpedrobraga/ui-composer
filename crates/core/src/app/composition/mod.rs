@@ -5,6 +5,7 @@ use crate::app::composition::elements::{Blueprint, Environment};
 use layout::LayoutItem;
 
 pub mod algebra;
+pub mod convert;
 pub mod effects;
 pub mod elements;
 pub mod layout;

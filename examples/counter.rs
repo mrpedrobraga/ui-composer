@@ -7,7 +7,7 @@ fn main() {
     UIComposer::run_tui(Terminal(PanelContainer(center(Counter(counter)))))
 }
 
-fn Counter(counter: Mutable<i32>) -> impl TUI {
+fn Counter(counter: Mutable<i32>) -> impl Tui {
     let label =
         ReactiveLabel(counter.signal().map(|num| format!("Counter: {}", num)));
     let decr = Button(Label("Take 1"), counter.clone().effect(|e| *e -= 1));
@@ -24,7 +24,7 @@ fn Counter(counter: Mutable<i32>) -> impl TUI {
 
 fn ReactiveLabel(
     text_signal: impl Signal<Item = String> + Send + Sync,
-) -> impl TUI {
+) -> impl Tui {
     let text_signal = text_signal.broadcast();
 
     ItemBox::new(move |hx| {

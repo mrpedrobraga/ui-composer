@@ -1,13 +1,13 @@
 #![allow(non_snake_case)]
 use futures::FutureExt;
-use {chttp::ResponseExt, lullaby_ui::components::UI};
+use {chttp::ResponseExt, lullaby_ui::components::Ui};
 use {lullaby_ui::prelude::*, ui_composer::prelude::*};
 
 fn main() {
     UIComposer::run_tui(Terminal(center(TestingFuture())))
 }
 
-fn TestingFuture() -> impl UI {
+fn TestingFuture() -> impl Ui {
     ItemBox::new(|hx| {
         let fut = chttp::get_async(
             "https://baconipsum.com/api/?type=meat-and-filler&paras=1&format=text",

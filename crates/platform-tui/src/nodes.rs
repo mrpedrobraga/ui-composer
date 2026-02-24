@@ -1,4 +1,4 @@
-use crate::TUI;
+use crate::Tui;
 use crate::render::present_canvas_to_terminal;
 use crate::runner::TerminalEnvironment;
 use core::pin::Pin;
@@ -146,7 +146,7 @@ pub fn Terminal<UI>(
     React<impl Signal<Item = UI::Blueprint>, TerminalEnvironment>,
 >
 where
-    UI: TUI,
+    UI: Tui,
 {
     let size = crossterm::terminal::size()
         .map(|(x, y)| Extent2::new(x, y))

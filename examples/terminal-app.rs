@@ -12,7 +12,7 @@ fn main() {
     UIComposer::run_tui(Terminal(app))
 }
 
-fn Square(color: Rgba<f32>) -> impl TUI {
+fn Square(color: Rgba<f32>) -> impl Tui {
     ItemBox::new(move |hx| Graphic {
         rect: hx.rect,
         color,

@@ -33,7 +33,7 @@ fn main() {
 }
 
 /// A simple coloured square.
-fn Square(color: Rgba<f32>) -> impl TUI {
+fn Square(color: Rgba<f32>) -> impl Tui {
     uix! (
         <ItemBox::new minimum_size=Extent2::new(16.0, 2.0)>
             @move |hx| <Graphic color=color rect=hx.rect />

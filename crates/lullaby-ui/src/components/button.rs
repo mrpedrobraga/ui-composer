@@ -1,5 +1,5 @@
 use {
-    crate::{components::UI, list_internal},
+    crate::{components::Ui, list_internal},
     ui_composer_basic_ui::{items::Tap, primitives::graphic::Graphic},
     ui_composer_core::app::composition::{
         effects::signal::IntoBlueprint as _,
@@ -19,7 +19,7 @@ static BUTTON_TEXT_COLOR: Rgba<f32> = Rgba::new(175.0, 90.0, 16.0, 255.0);
 
 /// A simple button which can be clicked to trigger some `effect`.
 /// The button supports a `label` component which will be displayed inside the button
-pub fn Button(mut label: impl UI, effect: impl Effect + 'static) -> impl UI {
+pub fn Button(mut label: impl Ui, effect: impl Effect + 'static) -> impl Ui {
     let is_hovered: Mutable<bool> = Mutable::default();
 
     ItemBox::new(move |hx| {

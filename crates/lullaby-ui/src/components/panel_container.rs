@@ -1,5 +1,5 @@
 use {
-    crate::{components::UI, list_internal},
+    crate::{components::Ui, list_internal},
     ui_composer_basic_ui::primitives::graphic::Graphic,
     ui_composer_core::app::composition::layout::{ItemBox, Resizable as _},
     vek::Rgba,
@@ -9,7 +9,7 @@ static SURFACE_COLOR: Rgba<f32> = Rgba::new(255.0, 253.0, 248.0, 255.0);
 #[allow(unused)]
 static SURFACE_COLOR_2: Rgba<f32> = Rgba::new(255.0, 241.0, 231.0, 255.0);
 
-pub fn PanelContainer(mut child: impl UI) -> impl UI {
+pub fn PanelContainer(mut child: impl Ui) -> impl Ui {
     let min_size = child.get_minimum_size();
 
     ItemBox::new(move |hx| {

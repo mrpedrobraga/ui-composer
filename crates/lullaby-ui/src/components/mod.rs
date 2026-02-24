@@ -13,12 +13,12 @@ pub mod button;
 /* Containers */
 pub mod panel_container;
 
-pub trait UI: CompatibleWith<TerminalEnvironment>
+pub trait Ui: CompatibleWith<TerminalEnvironment>
 //+ CompatibleWith<WinitEnvironment>
 {
 }
 
-impl<Something> UI for Something where
+impl<Something> Ui for Something where
     Something: CompatibleWith<TerminalEnvironment> //+ CompatibleWith<WinitEnvironment>
 {
 }

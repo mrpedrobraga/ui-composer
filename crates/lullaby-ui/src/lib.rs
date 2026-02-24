@@ -1,13 +1,14 @@
 #![allow(non_snake_case)]
 
 pub mod components;
+pub mod convert;
 
 pub mod prelude {
     /* Re-export layout items. */
     pub use ui_composer_basic_ui::layout::*;
 
     /* Components. */
-    pub use crate::components::UI;
+    pub use crate::components::Ui;
     pub use crate::components::button::*;
     pub use crate::components::label::*;
     pub use crate::components::panel_container::*;
@@ -16,6 +17,9 @@ pub mod prelude {
     pub use ui_composer_basic_ui::items::*;
     pub use ui_composer_basic_ui::primitives::graphic::Graphic;
     pub use ui_composer_basic_ui::primitives::text::Text;
+
+    /* Traits */
+    pub use crate::convert::ToDefaultUi;
 }
 
 #[macro_export]
