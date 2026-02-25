@@ -156,13 +156,13 @@ where
         for y in rect.y..(rect.y + rect.h) {
             for x in rect.x..(rect.x + rect.w) {
                 // DEBUG: Draw hollow rectangles instead.
-                if !(x == rect.x
-                    || x == rect.x + rect.w - 1
-                    || y == rect.y
-                    || y == rect.y + rect.h - 1)
-                {
-                    continue;
-                }
+                // if !(x == rect.x
+                //     || x == rect.x + rect.w - 1
+                //     || y == rect.y
+                //     || y == rect.y + rect.h - 1)
+                // {
+                //     continue;
+                // }
 
                 self.put_pixel(Vec2::new(x, y), color.clone());
             }

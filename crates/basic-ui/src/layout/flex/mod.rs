@@ -4,7 +4,7 @@ use ui_composer_core::app::composition::layout::{
     hints::{ChildHints, ParentHints},
 };
 use ui_composer_geometry::flow::{
-    CartesianFlow, CoordinateSystem as _, CurrentFlow, Flow, WritingFlow,
+    CartesianFlow, CoordinateSystem as _, Flow, WritingFlow,
     arrangers::arrange_stretchy_rects_with_minimum_sizes_dirty_alloc,
 };
 use vek::{Extent2, Rect};
@@ -54,29 +54,33 @@ where
         let flow_direction =
             self.flow_direction.as_cartesian(&parent_hints.current_flow);
 
-        let mut min: Extent2<f32> = Extent2::zero();
-        let mut nat: Extent2<f32> = Extent2::zero();
+        let mut combined_minimum_sizes: Extent2<f32> = Extent2::zero();
+        let mut combined_natural_sizes: Extent2<f32> = Extent2::zero();
 
         for h in self.items.prepare(parent_hints) {
             match flow_direction {
                 CartesianFlow::LeftToRight | CartesianFlow::RightToLeft => {
-                    min.w += h.minimum_size.w;
-                    min.h = min.h.max(h.minimum_size.h);
-                    nat.w += h.natural_size.w;
-                    nat.h = nat.h.max(h.natural_size.h);
+                    combined_minimum_sizes.w += h.minimum_size.w;
+                    combined_minimum_sizes.h =
+                        combined_minimum_sizes.h.max(h.minimum_size.h);
+                    combined_natural_sizes.w += h.natural_size.w;
+                    combined_natural_sizes.h =
+                        combined_natural_sizes.h.max(h.natural_size.h);
                 }
                 CartesianFlow::TopToBottom | CartesianFlow::BottomToTop => {
-                    min.w = min.w.max(h.minimum_size.w);
-                    min.h += h.minimum_size.h;
-                    nat.w = nat.w.max(h.natural_size.w);
-                    nat.h += h.natural_size.h;
+                    combined_minimum_sizes.w =
+                        combined_minimum_sizes.w.max(h.minimum_size.w);
+                    combined_minimum_sizes.h += h.minimum_size.h;
+                    combined_natural_sizes.w =
+                        combined_natural_sizes.w.max(h.natural_size.w);
+                    combined_natural_sizes.h += h.natural_size.h;
                 }
             }
         }
 
         ChildHints {
-            minimum_size: min,
-            natural_size: nat,
+            minimum_size: combined_minimum_sizes,
+            natural_size: combined_natural_sizes,
         }
     }
 
@@ -100,17 +104,17 @@ where
                 0.01,
             );
 
-        let parent_hints_iter = lay_sizes(
+        let parent_hints_iter = allocate_rects(
             parent_hints,
             flow_direction,
             main_axis_sizes.into_iter(),
         );
 
-        self.items.lay(parent_hints_iter)
+        self.items.place(parent_hints_iter)
     }
 }
 
-fn lay_sizes<S>(
+fn allocate_rects<S>(
     container: ParentHints,
     flow_direction: CartesianFlow,
     sizes: S,
@@ -198,11 +202,16 @@ pub trait FlexItemList {
 
     fn prepare(
         &mut self,
-        parent_hints: ParentHints,
+        expected_parent_hints: ParentHints,
     ) -> impl Iterator<Item = ChildHints>;
     fn weights(&self) -> Self::Weights;
+    /// NOTE: This must be called after `prepare` has been called,
+    /// since it access from the cache.
+    ///
+    /// The reason why I don't do an assertion is because it's layout,
+    /// we'd rather it break visually than crash the whole program.
     fn minima(&self, flow_direction: CartesianFlow) -> Self::Minima;
-    fn lay<I>(&mut self, hx: I) -> Self::Content
+    fn place<I>(&mut self, parent_hints: I) -> Self::Content
     where
         I: Iterator<Item = ParentHints>;
 }
@@ -237,7 +246,7 @@ where
         }
     }
 
-    fn lay<I>(&mut self, mut hx: I) -> Self::Content
+    fn place<I>(&mut self, mut hx: I) -> Self::Content
     where
         I: Iterator<Item = ParentHints>,
     {
@@ -274,13 +283,13 @@ where
             .chain(self.1.minima(flow_direction))
     }
 
-    fn lay<I>(&mut self, mut parent_hints: I) -> Self::Content
+    fn place<I>(&mut self, mut parent_hints: I) -> Self::Content
     where
         I: Iterator<Item = ParentHints>,
     {
         (
-            self.0.lay(parent_hints.next().into_iter()),
-            self.1.lay(parent_hints),
+            self.0.place(parent_hints.next().into_iter()),
+            self.1.place(parent_hints),
         )
     }
 }

@@ -2,7 +2,7 @@
 use {lullaby_ui::prelude::*, ui_composer::prelude::*};
 
 fn main() {
-    UIComposer::run_tui(Terminal(app()))
+    UIComposer::run_tui(Terminal(center(app())))
 }
 
 fn app() -> impl Tui {

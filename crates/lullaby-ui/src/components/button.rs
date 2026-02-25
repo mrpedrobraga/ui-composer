@@ -35,10 +35,13 @@ pub fn Button(mut label: impl Ui, effect: impl Effect + 'static) -> impl Ui {
                 }
             })
             .into_blueprint();
-        let label = label.place(ParentHints {
+
+        let label_hints = ParentHints {
             rect: hx.rect.expand_from_center(-1.0, -1.0, -1.0, -1.0),
             ..hx
-        });
+        };
+        let _ = label.prepare(label_hints);
+        let label = label.place(label_hints);
 
         list_internal![tap, rect, label]
     })

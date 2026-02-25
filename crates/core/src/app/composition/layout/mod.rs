@@ -190,7 +190,7 @@ where
         Self {
             hints: ChildHints {
                 minimum_size: min_size,
-                ..self.hints
+                natural_size: min_size,
             },
             ..self
         }
