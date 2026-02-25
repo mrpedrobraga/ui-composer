@@ -14,9 +14,9 @@ pub struct ImageView {
     resized: Option<Extent2<f32>>,
 }
 
-pub fn Image(image: DynamicImage) -> ImageView {
+pub fn Image(image: Arc<DynamicImage>) -> ImageView {
     ImageView {
-        image: Arc::new(image),
+        image,
         resized: None,
     }
 }
