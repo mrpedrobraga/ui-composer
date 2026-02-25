@@ -1,6 +1,6 @@
 use crate::Tui;
 use crate::render::present_canvas_to_terminal;
-use crate::runner::TerminalEnvironment;
+use crate::runner::{TerminalBlueprintResources, TerminalEnvironment};
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use futures_signals::signal::Mutable;
@@ -19,9 +19,9 @@ use ui_composer_input::event::{CursorEvent, Event};
 use ui_composer_state::Slot;
 use vek::{Extent2, Rect, Vec2};
 
-pub struct TerminalBlueprint<UI> {
+pub struct TerminalBlueprint<UiBlueprint> {
     pub(crate) state: TerminalState,
-    pub(crate) ui: UI,
+    pub(crate) ui: UiBlueprint,
 }
 
 pub struct TerminalState {
@@ -30,13 +30,14 @@ pub struct TerminalState {
     pub render_target: PixelCanvas<TextModePixel>,
 }
 
-impl<UI> Blueprint<TerminalEnvironment> for TerminalBlueprint<UI>
+impl<UiBlueprint> Blueprint<TerminalEnvironment>
+    for TerminalBlueprint<UiBlueprint>
 where
-    UI: Blueprint<TerminalEnvironment> + Send,
+    UiBlueprint: Blueprint<TerminalEnvironment> + Send,
 {
-    type Element = TerminalElement<UI::Element>;
+    type Element = TerminalElement<UiBlueprint::Element>;
 
-    fn make(self, env: &TerminalEnvironment) -> Self::Element {
+    fn make(self, env: &TerminalBlueprintResources) -> Self::Element {
         TerminalElement {
             state: self.state,
             ui: self.ui.make(env),
@@ -45,15 +46,15 @@ where
 }
 
 #[pin_project(project = TerminalElementProj)]
-pub struct TerminalElement<UI> {
+pub struct TerminalElement<UiElement> {
     pub state: TerminalState,
     #[pin]
-    pub ui: UI,
+    pub ui: UiElement,
 }
 
-impl<UI> Bubble<Event, bool> for TerminalElement<UI>
+impl<UiElement> Bubble<Event, bool> for TerminalElement<UiElement>
 where
-    UI: Bubble<Event, bool>,
+    UiElement: Bubble<Event, bool>,
 {
     fn bubble(&mut self, cx: &mut Event) -> bool {
         if let Event::Resized(new_size) = cx {
@@ -81,14 +82,14 @@ where
     }
 }
 
-impl<UI> Element<TerminalEnvironment> for TerminalElement<UI>
+impl<UiElement> Element<TerminalEnvironment> for TerminalElement<UiElement>
 where
-    UI: Element<TerminalEnvironment>,
+    UiElement: Element<TerminalEnvironment>,
 {
     type Effect<'a>
         = ()
     where
-        UI: 'a;
+        UiElement: 'a;
 
     fn effect(&self) -> Self::Effect<'_> {
         todo!()
@@ -97,7 +98,7 @@ where
     fn poll(
         self: Pin<&mut Self>,
         cx: &mut Context,
-        env: &TerminalEnvironment,
+        env: &TerminalBlueprintResources,
     ) -> Poll<Option<()>> {
         let TerminalElementProj { state, mut ui } = self.project();
 
@@ -140,13 +141,13 @@ pub struct TerminalEffectVisitor<'fx> {
 }
 
 #[allow(non_snake_case)]
-pub fn Terminal<UI>(
-    mut ui: UI,
+pub fn Terminal<UiBlueprint>(
+    mut ui: UiBlueprint,
 ) -> TerminalBlueprint<
-    React<impl Signal<Item = UI::Blueprint>, TerminalEnvironment>,
+    React<impl Signal<Item = UiBlueprint::Blueprint>, TerminalEnvironment>,
 >
 where
-    UI: Tui,
+    UiBlueprint: Tui,
 {
     let size = crossterm::terminal::size()
         .map(|(x, y)| Extent2::new(x, y))

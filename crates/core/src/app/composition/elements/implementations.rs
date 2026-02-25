@@ -10,7 +10,7 @@ use std::task::{Context, Poll};
 impl<Env: Environment> Blueprint<Env> for () {
     type Element = ();
 
-    fn make(self, _: &Env) -> Self::Element {}
+    fn make(self, _: &Env::BlueprintResources<'_>) -> Self::Element {}
 }
 
 impl<Env: Environment> Element<Env> for () {
@@ -26,7 +26,7 @@ where
 {
     type Element = Box<A::Element>;
 
-    fn make(self, env: &Env) -> Self::Element {
+    fn make(self, env: &Env::BlueprintResources<'_>) -> Self::Element {
         Box::new(A::make(*self, env))
     }
 }
@@ -48,7 +48,7 @@ where
     fn poll(
         self: Pin<&mut Self>,
         cx: &mut Context,
-        env: &Env,
+        env: &Env::BlueprintResources<'_>,
     ) -> Poll<Option<()>> {
         let mut_ref = unsafe { self.map_unchecked_mut(|e| &mut **e) };
         mut_ref.poll(cx, env)
@@ -64,7 +64,7 @@ where
 {
     type Element = (A::Element, B::Element);
 
-    fn make(self, env: &Env) -> Self::Element {
+    fn make(self, env: &Env::BlueprintResources<'_>) -> Self::Element {
         (self.0.make(env), self.1.make(env))
     }
 }
@@ -87,7 +87,7 @@ where
     fn poll(
         self: Pin<&mut Self>,
         cx: &mut Context,
-        env: &Env,
+        env: &Env::BlueprintResources<'_>,
     ) -> Poll<Option<()>> {
         let (pinned_a, pinned_b) = {
             let mut_ref = unsafe { self.get_unchecked_mut() };
@@ -112,7 +112,7 @@ where
 {
     type Element = Vec<A::Element>;
 
-    fn make(self, env: &Env) -> Self::Element {
+    fn make(self, env: &Env::BlueprintResources<'_>) -> Self::Element {
         self.into_iter().map(|it| it.make(env)).collect()
     }
 }
@@ -133,7 +133,7 @@ where
     fn poll(
         self: Pin<&mut Self>,
         cx: &mut Context,
-        env: &Env,
+        env: &Env::BlueprintResources<'_>,
     ) -> Poll<Option<()>> {
         let items = unsafe { self.get_unchecked_mut() };
         items.iter_mut().fold(Empty::empty(), |acc, it| {
@@ -151,7 +151,7 @@ where
 {
     type Element = Option<A::Element>;
 
-    fn make(self, env: &Env) -> Self::Element {
+    fn make(self, env: &Env::BlueprintResources<'_>) -> Self::Element {
         self.map(|x| x.make(env))
     }
 }

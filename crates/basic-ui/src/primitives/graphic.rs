@@ -8,7 +8,7 @@ use ui_composer_input::event::Event;
 use ui_composer_platform_tui::{
     canvas::{Canvas as _, TextModePixel},
     nodes::TerminalEffectVisitor,
-    runner::TerminalEnvironment,
+    runner::{TerminalBlueprintResources, TerminalEnvironment},
 };
 use vek::{Rect, Rgba};
 
@@ -94,7 +94,7 @@ impl Bubble<Event, bool> for Graphic {
 impl Blueprint<TerminalEnvironment> for Graphic {
     type Element = Self;
 
-    fn make(self, _: &TerminalEnvironment) -> Self::Element {
+    fn make(self, _: &TerminalBlueprintResources) -> Self::Element {
         self
     }
 }

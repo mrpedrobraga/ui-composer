@@ -1,14 +1,16 @@
 use {
     crate::interaction::{Hover, Tap, Typing},
     ui_composer_core::prelude::{Blueprint, Element},
-    ui_composer_platform_tui::runner::TerminalEnvironment,
+    ui_composer_platform_tui::runner::{
+        TerminalBlueprintResources, TerminalEnvironment,
+    },
     ui_composer_state::effect::Effect,
 };
 
 impl Blueprint<TerminalEnvironment> for Hover {
     type Element = Self;
 
-    fn make(self, _: &TerminalEnvironment) -> Self::Element {
+    fn make(self, _: &TerminalBlueprintResources) -> Self::Element {
         self
     }
 }
@@ -25,7 +27,7 @@ where
 {
     type Element = Self;
 
-    fn make(self, _: &TerminalEnvironment) -> Self::Element {
+    fn make(self, _: &TerminalBlueprintResources) -> Self::Element {
         self
     }
 }
@@ -42,7 +44,7 @@ where
 impl Blueprint<TerminalEnvironment> for Typing {
     type Element = Self;
 
-    fn make(self, _: &TerminalEnvironment) -> Self::Element {
+    fn make(self, _: &TerminalBlueprintResources) -> Self::Element {
         self
     }
 }

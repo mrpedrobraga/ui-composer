@@ -4,7 +4,9 @@ use {
     image::{DynamicImage, GenericImageView},
     std::sync::Arc,
     ui_composer_core::prelude::{Blueprint, LayoutItem},
-    ui_composer_platform_tui::runner::TerminalEnvironment,
+    ui_composer_platform_tui::runner::{
+        TerminalBlueprintResources, TerminalEnvironment,
+    },
     vek::{Extent2, Rect},
 };
 
@@ -67,7 +69,7 @@ pub struct ImageViewBlueprint {
 impl Blueprint<TerminalEnvironment> for ImageViewBlueprint {
     type Element = ImageViewElementTerminal;
 
-    fn make(self, _: &TerminalEnvironment) -> Self::Element {
+    fn make(self, _: &TerminalBlueprintResources) -> Self::Element {
         ImageViewElementTerminal::new(self.rect, self.image)
     }
 }

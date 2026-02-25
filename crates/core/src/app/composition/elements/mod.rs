@@ -23,7 +23,7 @@ where
     Env: Environment,
 {
     type Element: Element<Env>;
-    fn make(self, env: &Env) -> Self::Element;
+    fn make(self, env: &Env::BlueprintResources<'_>) -> Self::Element;
 }
 
 pub trait Element<Env: Environment>: Bubble<Event, bool> {
@@ -36,12 +36,13 @@ pub trait Element<Env: Environment>: Bubble<Event, bool> {
     fn poll(
         self: Pin<&mut Self>,
         #[expect(unused)] cx: &mut Context,
-        #[expect(unused)] env: &Env,
+        #[expect(unused)] env: &Env::BlueprintResources<'_>,
     ) -> Poll<Option<()>> {
         Poll::Ready(None)
     }
 }
 
 pub trait Environment {
+    type BlueprintResources<'make>;
     type EffectVisitor<'fx>;
 }

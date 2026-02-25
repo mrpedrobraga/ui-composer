@@ -30,8 +30,10 @@ use vek::{Extent2, Vec2};
 use crate::nodes::TerminalEffectVisitor;
 
 pub struct TerminalEnvironment;
+pub struct TerminalBlueprintResources;
 
 impl Environment for TerminalEnvironment {
+    type BlueprintResources<'make> = TerminalBlueprintResources;
     type EffectVisitor<'fx> = TerminalEffectVisitor<'fx>;
 }
 
@@ -52,8 +54,10 @@ where
     fn run(blueprint: Self::AppBlueprint) {
         Self::grab_terminal(&mut stdout()).unwrap();
 
+        #[allow(unused)]
         let env = TerminalEnvironment;
-        let app = blueprint.make(&env);
+        let res = TerminalBlueprintResources;
+        let app = blueprint.make(&res);
         let app = Arc::new(Mutex::new(app));
         let app_e = app.clone();
 
@@ -143,7 +147,7 @@ where
                 })
                 .await;
         };
-        let async_handler = AsyncExecutor::new(app, env, || {}).to_future();
+        let async_handler = AsyncExecutor::new(app, res, || {}).to_future();
         let processes = async { join!(event_handler, async_handler) };
         block_on(processes);
 

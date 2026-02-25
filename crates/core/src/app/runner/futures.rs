@@ -21,33 +21,33 @@ type Own<A> = std::sync::Arc<std::sync::Mutex<A>>;
 
 /// Has a reference to a runner, serving as an Executor for its [`Future`]s and [`Signal`]s.
 #[pin_project(project=AsyncExecutorProj)]
-pub struct AsyncExecutor<Env: Environment, App: Element<Env>, Callback> {
+pub struct AsyncExecutor<'exec, Env: Environment, App: Element<Env>, Callback> {
     #[pin]
     element: Own<App>,
-    environment: Env,
+    blueprint_resources: Env::BlueprintResources<'exec>,
     first_tick: bool,
     callback: Callback,
 }
 
-impl<Env: Environment, App: Element<Env>, Callback>
-    AsyncExecutor<Env, App, Callback>
+impl<'exec, Env: Environment, App: Element<Env>, Callback>
+    AsyncExecutor<'exec, Env, App, Callback>
 {
     pub fn new(
         element: Own<App>,
-        environment: Env,
+        environment: Env::BlueprintResources<'exec>,
         callback: Callback,
     ) -> Self {
         AsyncExecutor {
             element,
-            environment,
+            blueprint_resources: environment,
             first_tick: true,
             callback,
         }
     }
 }
 
-impl<Env: Environment, App: Element<Env>, Callback: FnMut()> Signal
-    for AsyncExecutor<Env, App, Callback>
+impl<'exec, Env: Environment, App: Element<Env>, Callback: FnMut()> Signal
+    for AsyncExecutor<'exec, Env, App, Callback>
 {
     type Item = ();
 
@@ -57,7 +57,7 @@ impl<Env: Environment, App: Element<Env>, Callback: FnMut()> Signal
     ) -> Poll<Option<Self::Item>> {
         let AsyncExecutorProj {
             element,
-            environment,
+            blueprint_resources,
             first_tick,
             callback,
         } = self.project();
@@ -67,7 +67,8 @@ impl<Env: Environment, App: Element<Env>, Callback: FnMut()> Signal
                 unsafe { Pin::new_unchecked(element_borrow.deref_mut()) };
 
             // Because of how signals work internally, we must yield at least once.
-            let inner_poll = pinned_element.poll(cx, environment);
+
+            let inner_poll = pinned_element.poll(cx, blueprint_resources);
             if let Poll::Ready(None) = inner_poll
                 && *first_tick
             {

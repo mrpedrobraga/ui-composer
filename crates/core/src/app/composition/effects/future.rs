@@ -26,7 +26,7 @@ where
 {
     type Element = Self;
 
-    fn make(self, _: &Env) -> Self::Element {
+    fn make(self, _: &Env::BlueprintResources<'_>) -> Self::Element {
         self
     }
 }
@@ -64,7 +64,7 @@ where
     fn poll(
         self: Pin<&mut Self>,
         cx: &mut Context,
-        env: &Env,
+        env: &Env::BlueprintResources<'_>,
     ) -> Poll<Option<()>> {
         let this = self.project();
 

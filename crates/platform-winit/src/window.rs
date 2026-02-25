@@ -6,9 +6,11 @@
 
 use pin_project::pin_project;
 use ui_composer_input::event::Event;
+use winit::dpi::PhysicalSize;
+use winit::window::{Window, WindowAttributes};
 
 use crate::gpu::{Gpu, RenderTarget};
-use crate::runner::WinitEnvironment;
+use crate::runner::{WinitBlueprintResources, WinitEnvironment};
 use std::sync::Arc;
 use std::task::Poll;
 use ui_composer_core::app::composition::algebra::Bubble;
@@ -18,15 +20,30 @@ pub struct WindowBlueprint<UiBlueprint> {
     ui: UiBlueprint,
 }
 
+pub fn window<A>(ui: A) -> WindowBlueprint<A> {
+    WindowBlueprint { ui }
+}
+
 impl<UiBlueprint> Blueprint<WinitEnvironment> for WindowBlueprint<UiBlueprint>
 where
     UiBlueprint: Blueprint<WinitEnvironment>,
 {
     type Element = WindowElement<UiBlueprint::Element>;
 
-    fn make(self, env: &WinitEnvironment) -> Self::Element {
+    fn make(self, env: &WinitBlueprintResources<'_>) -> Self::Element {
+        // TODO: Allow different attributes to be specified.
+        // Ideally, the user would be able to pass `Mutable`s
+        // that the window would poll for reactivity!
+        let window_attributes = WindowAttributes::default()
+            .with_title("Hello, world!")
+            .with_inner_size(PhysicalSize::new(300, 300));
+        let window = env.winit_requester.request_window(window_attributes);
+
+        dbg!(window.title());
+
         WindowElement {
             ui: self.ui.make(env),
+            window,
         }
     }
 }
@@ -35,6 +52,7 @@ where
 pub struct WindowElement<Ui> {
     #[pin]
     ui: Ui,
+    window: Arc<Window>,
 }
 
 impl<Ui> Bubble<Event, bool> for WindowElement<Ui> {
@@ -72,9 +90,16 @@ where
     fn poll(
         self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context,
-        env: &WinitEnvironment,
+        env: &WinitBlueprintResources<'_>,
     ) -> std::task::Poll<Option<()>> {
-        let WindowElementProj { ui } = self.project();
+        let WindowElementProj { ui, .. } = self.project();
+
+        /*
+            TODO: Windows will futurely have some internal state
+            for their titles, size, visibility, should-close, etc.
+
+            So we need to poll those states, too.
+        */
 
         let inner_poll: Poll<Option<_>> = ui.poll(cx, env);
 
@@ -128,7 +153,8 @@ impl WindowRenderTarget {
             dimension: wgpu::TextureDimension::D2,
             // TODO: Maybe use ints for depth in 2D?
             format: wgpu::TextureFormat::Depth32Float,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                | wgpu::TextureUsages::TEXTURE_BINDING,
             view_formats: &[],
         })
     }

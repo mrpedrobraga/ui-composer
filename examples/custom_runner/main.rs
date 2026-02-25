@@ -6,6 +6,7 @@ use ui_composer::prelude::*;
 /// An environment identifies a platform for which you can develop apps.
 pub struct ExampleEnvironment;
 impl Environment for ExampleEnvironment {
+    type BlueprintResources<'make> = ();
     type EffectVisitor<'fx> = ();
 }
 
@@ -26,10 +27,12 @@ where
     /// 2. Poll async elements;
     fn run(ui: Self::AppBlueprint) {
         // Environment is created.
+        #[allow(unused)]
         let env = ExampleEnvironment;
+        let res = ();
 
         // App blueprint is *made* into an app.
-        let app = ui.make(&env);
+        let app = ui.make(&res);
         let app = Arc::new(Mutex::new(app));
 
         println!("[Example] Starting...");
@@ -38,7 +41,7 @@ where
         let tasks = async move {
             // One of them should be an `AsyncExecutor`,
             // which polls the app's futures, streams and signals.
-            AsyncExecutor::new(app, env, || {
+            AsyncExecutor::new(app, res, || {
                 println!("[Example] There was an UI update!")
             })
             .to_future()
