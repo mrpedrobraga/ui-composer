@@ -1,5 +1,6 @@
 use ui_composer_core::app::composition::layout::{
-    LayoutItem, hints::ParentHints,
+    LayoutItem,
+    hints::{ChildHints, ParentHints},
 };
 use vek::{Extent2, Rect};
 
@@ -11,11 +12,13 @@ use vek::{Extent2, Rect};
 ///
 /// The width of the container is the max width between the items.
 /// TODO: Allow to take more than two items.
-pub fn column<A, B>(item_a: A, item_b: B) -> ColumnContainer<A, B> {
+pub fn column<A, B>((item_a, item_b): (A, B)) -> ColumnContainer<A, B> {
     ColumnContainer {
         item_a,
         item_b,
         gap: 0.0,
+        __item_a_hints_cache: ChildHints::default(),
+        __item_b_hints_cache: ChildHints::default(),
     }
 }
 
@@ -23,6 +26,8 @@ pub struct ColumnContainer<A, B> {
     pub item_a: A,
     pub item_b: B,
     pub gap: f32,
+    __item_a_hints_cache: ChildHints,
+    __item_b_hints_cache: ChildHints,
 }
 
 impl<A, B> ColumnContainer<A, B> {
@@ -39,41 +44,37 @@ where
 {
     type Blueprint = (A::Blueprint, B::Blueprint);
 
-    fn get_natural_size(&self) -> Extent2<f32> {
-        let a_size = self.item_a.get_natural_size();
+    fn prepare(
+        &mut self,
+        parent_hints: ParentHints,
+    ) -> ui_composer_core::app::composition::layout::hints::ChildHints {
+        let a = self.item_a.prepare(parent_hints);
+        let b = self.item_b.prepare(parent_hints);
 
-        let b_size = self.item_b.get_natural_size();
+        self.__item_a_hints_cache = a;
+        self.__item_b_hints_cache = b;
 
-        // Adjust to stack vertically, considering the gap between the items
-        Extent2::new(
-            a_size.w.max(b_size.w), // Max width of the two items
-            a_size.h + self.gap + b_size.h, // Sum of heights with the gap in between
-        )
-    }
-
-    fn get_minimum_size(&self) -> Extent2<f32> {
-        let a_size = self.item_a.get_minimum_size();
-
-        let b_size = self.item_b.get_minimum_size();
-
-        // Minimum size also stacks vertically
-        Extent2::new(
-            a_size.w.max(b_size.w),         // Max width
-            a_size.h + self.gap + b_size.h, // Min height with gap
-        )
+        let minimum_size = Extent2::new(
+            a.minimum_size.w.max(b.minimum_size.w), // Max width
+            a.minimum_size.h + self.gap + b.minimum_size.h, // Min height with gap
+        );
+        let natural_size = Extent2::new(
+            a.natural_size.w.max(b.natural_size.w), // Max width
+            a.natural_size.h + self.gap + b.natural_size.h, // Min height with gap
+        );
+        ChildHints {
+            minimum_size,
+            natural_size,
+        }
     }
 
     fn place(&mut self, parent_hints: ParentHints) -> Self::Blueprint {
-        let a_size = self.item_a.get_natural_size();
-
-        let b_size = self.item_b.get_natural_size();
-
         let a = self.item_a.place(ParentHints {
             rect: Rect::new(
                 parent_hints.rect.x,
                 parent_hints.rect.y,
                 parent_hints.rect.w,
-                a_size.h,
+                self.__item_a_hints_cache.natural_size.h,
             ),
             ..parent_hints
         });
@@ -81,9 +82,11 @@ where
         let b = self.item_b.place(ParentHints {
             rect: Rect::new(
                 parent_hints.rect.x,
-                parent_hints.rect.y + a_size.h + self.gap,
+                parent_hints.rect.y
+                    + self.__item_a_hints_cache.natural_size.h
+                    + self.gap,
                 parent_hints.rect.w,
-                b_size.h,
+                self.__item_b_hints_cache.natural_size.h,
             ),
             ..parent_hints
         });

@@ -83,23 +83,15 @@ mod implementations;
 pub trait LayoutItem: Send {
     type Blueprint;
 
-    /// The size this component prefers to be at. It's usually its minimum size.
-    ///
-    /// DEPRECATED: Instead of a callback, [Self::lay] will have a "natural size"
-    /// reverse [Signal] in its child hints.
-    fn get_natural_size(&self) -> Extent2<f32>;
-
-    /// The size this component prefers to be at. It's usually its minimum size.
-    ///
-    /// DEPRECATED: Instead of a callback, [Self::lay] will have a "minimum size"
-    /// reverse [Signal] in its child hints.
-    fn get_minimum_size(&self) -> Extent2<f32>;
-
-    // Prepares an item to be laid out.
-    // fn prepare(&self, parent_hints: ParentHints) -> ChildHints;
+    /// Prepares the item for laying out.
+    fn prepare(&mut self, expected_parent_hints: ParentHints) -> ChildHints;
 
     /// Renders the content of this layout item with a specific rect.
-    fn place(&mut self, parent_hints: ParentHints) -> Self::Blueprint;
+    fn place(
+        &mut self,
+        // TODO: Reflect on whether it's necessary to pass any context when calling `place`.
+        parent_hints: ParentHints,
+    ) -> Self::Blueprint;
 
     /// Creates a reactive Element that resizes its content to fit `rect_signal`.
     fn place_reactive<Sig, Env: Environment>(
@@ -181,12 +173,8 @@ where
 {
     type Blueprint = Item;
 
-    fn get_natural_size(&self) -> Extent2<f32> {
-        self.get_minimum_size()
-    }
-
-    fn get_minimum_size(&self) -> Extent2<f32> {
-        self.hints.minimum_size
+    fn prepare(&mut self, _: ParentHints) -> ChildHints {
+        self.hints
     }
 
     fn place(&mut self, layout_hints: ParentHints) -> Self::Blueprint {
@@ -240,12 +228,8 @@ where
 {
     type Blueprint = Item;
 
-    fn get_natural_size(&self) -> Extent2<f32> {
-        self.get_minimum_size()
-    }
-
-    fn get_minimum_size(&self) -> Extent2<f32> {
-        self.hints.minimum_size
+    fn prepare(&mut self, _: ParentHints) -> ChildHints {
+        self.hints
     }
 
     fn place(&mut self, layout_hints: ParentHints) -> Self::Blueprint {

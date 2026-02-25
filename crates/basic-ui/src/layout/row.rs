@@ -1,5 +1,6 @@
 use ui_composer_core::app::composition::layout::{
-    LayoutItem, hints::ParentHints,
+    LayoutItem,
+    hints::{ChildHints, ParentHints},
 };
 use vek::{Extent2, Rect};
 
@@ -16,6 +17,8 @@ pub fn row<A, B>((item_a, item_b): (A, B)) -> RowContainer<A, B> {
         item_a,
         item_b,
         gap: 0.0,
+        __item_a_hints_cache: ChildHints::default(),
+        __item_b_hints_cache: ChildHints::default(),
     }
 }
 
@@ -23,6 +26,8 @@ pub struct RowContainer<A, B> {
     pub item_a: A,
     pub item_b: B,
     pub gap: f32,
+    __item_a_hints_cache: ChildHints,
+    __item_b_hints_cache: ChildHints,
 }
 
 impl<A, B> RowContainer<A, B> {
@@ -38,29 +43,33 @@ where
 {
     type Blueprint = (A::Blueprint, B::Blueprint);
 
-    fn get_natural_size(&self) -> Extent2<f32> {
-        let a_size = self.item_a.get_natural_size();
-        let b_size = self.item_b.get_natural_size();
+    fn prepare(&mut self, parent_hints: ParentHints) -> ChildHints {
+        let a = self.item_a.prepare(parent_hints);
+        let b = self.item_b.prepare(parent_hints);
 
-        Extent2::new(a_size.w + self.gap + b_size.w, a_size.h.max(b_size.h))
-    }
+        self.__item_a_hints_cache = a;
+        self.__item_b_hints_cache = b;
 
-    fn get_minimum_size(&self) -> Extent2<f32> {
-        let a_size = self.item_a.get_minimum_size();
-        let b_size = self.item_b.get_minimum_size();
-
-        Extent2::new(a_size.w + self.gap + b_size.w, a_size.h.max(b_size.h))
+        let minimum_size = Extent2::new(
+            a.minimum_size.w + self.gap + b.minimum_size.w, // Min width with gap
+            a.minimum_size.h.max(b.minimum_size.h),         // Max height
+        );
+        let natural_size = Extent2::new(
+            a.natural_size.w + self.gap + b.natural_size.w, // Min width with gap
+            a.natural_size.h.max(b.natural_size.h),         // Max height
+        );
+        ChildHints {
+            minimum_size,
+            natural_size,
+        }
     }
 
     fn place(&mut self, parent_hints: ParentHints) -> Self::Blueprint {
-        let a_size = self.item_a.get_natural_size();
-        let b_size = self.item_b.get_natural_size();
-
         let a = self.item_a.place(ParentHints {
             rect: Rect::new(
                 parent_hints.rect.x,
                 parent_hints.rect.y,
-                a_size.w,
+                self.__item_a_hints_cache.natural_size.w,
                 parent_hints.rect.h,
             ),
             ..parent_hints
@@ -68,9 +77,11 @@ where
 
         let b = self.item_b.place(ParentHints {
             rect: Rect::new(
-                parent_hints.rect.x + a_size.w + self.gap,
+                parent_hints.rect.x
+                    + self.__item_a_hints_cache.natural_size.w
+                    + self.gap,
                 parent_hints.rect.y,
-                b_size.w,
+                self.__item_b_hints_cache.natural_size.w,
                 parent_hints.rect.h,
             ),
             ..parent_hints

@@ -1,6 +1,7 @@
 use {
     ui_composer_core::app::composition::layout::{
-        LayoutItem, hints::ParentHints,
+        LayoutItem,
+        hints::{ChildHints, ParentHints},
     },
     vek::Extent2,
 };
@@ -43,20 +44,21 @@ where
 {
     type Blueprint = A::Blueprint;
 
-    fn get_natural_size(&self) -> Extent2<f32> {
-        let inner_size = self.item.get_natural_size();
-        Extent2::new(
-            f32::max(self.suggested_size.w, inner_size.w),
-            f32::max(self.suggested_size.h, inner_size.h),
-        )
-    }
-
-    fn get_minimum_size(&self) -> Extent2<f32> {
-        let inner_size = self.item.get_minimum_size();
-        Extent2::new(
-            f32::max(self.suggested_size.w, inner_size.w),
-            f32::max(self.suggested_size.h, inner_size.h),
-        )
+    fn prepare(
+        &mut self,
+        parent_hints: ParentHints,
+    ) -> ui_composer_core::app::composition::layout::hints::ChildHints {
+        let inner = self.item.prepare(parent_hints);
+        ChildHints {
+            minimum_size: Extent2::new(
+                f32::max(self.suggested_size.w, inner.minimum_size.w),
+                f32::max(self.suggested_size.h, inner.minimum_size.h),
+            ),
+            natural_size: Extent2::new(
+                f32::max(self.suggested_size.w, inner.natural_size.w),
+                f32::max(self.suggested_size.h, inner.natural_size.h),
+            ),
+        }
     }
 
     fn place(&mut self, layout_hints: ParentHints) -> Self::Blueprint {

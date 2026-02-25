@@ -165,7 +165,7 @@ where
         .size
         .signal()
         .map(move |terminal_size| {
-            ui.place(ParentHints {
+            let parent_hints = ParentHints {
                 rect: Rect::new(0.0, 0.0, terminal_size.w, terminal_size.h),
                 // TODO: Turn these into signals, maybe?
                 current_flow: CurrentFlow {
@@ -175,7 +175,11 @@ where
                     current_writing_cross_flow_direction:
                         CartesianFlow::TopToBottom,
                 },
-            })
+            };
+            // TODO: Listen to and respect the child hints.
+            #[allow(unused)]
+            let child_hints = ui.prepare(parent_hints);
+            ui.place(parent_hints)
         })
         .into_blueprint();
 

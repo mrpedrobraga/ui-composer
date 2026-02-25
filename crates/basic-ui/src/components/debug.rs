@@ -1,21 +1,24 @@
-use ui_composer_core::prelude::LayoutItem;
+use ui_composer_core::{
+    app::composition::layout::hints::{ChildHints, ParentHints},
+    prelude::LayoutItem,
+};
 use vek::{Extent2, Rgba};
 
 use crate::primitives::graphic::Graphic;
 
 #[derive(Default)]
-pub struct DebugSquare {
+pub struct ColorBox {
     size: Extent2<f32>,
     color: Rgba<f32>,
 }
 
 #[allow(non_snake_case)]
-pub fn ColorBox() -> DebugSquare {
-    DebugSquare {
+pub fn ColorBox() -> ColorBox {
+    ColorBox {
         ..Default::default()
     }
 }
-impl DebugSquare {
+impl ColorBox {
     pub fn with_color(self, color: Rgba<f32>) -> Self {
         Self { color, ..self }
     }
@@ -25,21 +28,17 @@ impl DebugSquare {
     }
 }
 
-impl LayoutItem for DebugSquare {
+impl LayoutItem for ColorBox {
     type Blueprint = Graphic;
 
-    fn get_natural_size(&self) -> Extent2<f32> {
-        self.size
+    fn prepare(&mut self, _: ParentHints) -> ChildHints {
+        ChildHints {
+            minimum_size: self.size,
+            natural_size: self.size,
+        }
     }
 
-    fn get_minimum_size(&self) -> Extent2<f32> {
-        self.size
-    }
-
-    fn place(
-        &mut self,
-        parent_hints: ui_composer_core::app::composition::layout::hints::ParentHints,
-    ) -> Self::Blueprint {
+    fn place(&mut self, parent_hints: ParentHints) -> Self::Blueprint {
         Graphic {
             rect: parent_hints.rect,
             color: self.color,

@@ -1,7 +1,8 @@
 use {
     crate::primitives::text::Text,
     ui_composer_core::app::composition::layout::{
-        LayoutItem, hints::ParentHints,
+        LayoutItem,
+        hints::{ChildHints, ParentHints},
     },
     ui_composer_geometry::RectExt,
     vek::{Extent2, Rect, Rgba, Vec2},
@@ -47,7 +48,8 @@ impl<T: LayoutItem> InlineItem for InlineAdapter<T> {
         cx: &mut InlineContext,
         hints: ParentHints,
     ) -> Self::Blueprint {
-        let size = self.0.get_natural_size();
+        let inner_hints = self.0.prepare(hints);
+        let size = inner_hints.natural_size;
         let (w, h) = (size.w as Offset, size.h as Offset);
 
         if cx.offset.x > 0 && cx.offset.x + w > cx.container_rect.w {
@@ -161,14 +163,17 @@ pub struct LinewiseFlow<T: InlineItemList> {
 impl<T: InlineItemList + Send> LayoutItem for LinewiseFlow<T> {
     type Blueprint = T::Blueprints;
 
-    fn get_natural_size(&self) -> Extent2<f32> {
-        // TODO: Dynamic natural sizes.
-        Extent2::new(1.0, 1.0)
-    }
+    fn prepare(
+        &mut self,
+        _parent_hints: ParentHints,
+    ) -> ui_composer_core::app::composition::layout::hints::ChildHints {
+        // TODO: Actually do the whole layouting stage of allocating stops here!
+        // This way we can give the parent information about the size of the `InlineFlow`.
 
-    fn get_minimum_size(&self) -> Extent2<f32> {
-        // TODO: Dynamic minimum sizes.
-        Extent2::new(1.0, 1.0)
+        ChildHints {
+            minimum_size: Extent2::new(1.0, 1.0),
+            natural_size: Extent2::new(1.0, 1.0),
+        }
     }
 
     fn place(&mut self, hints: ParentHints) -> Self::Blueprint {

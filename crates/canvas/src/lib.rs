@@ -88,15 +88,22 @@ impl Pixel for TextModePixel {
         }
 
         // This simulates looking at the under pixel through the top pixel as if it were translucent.
-        let bg_color = lerp(under_pixel.bg_color, self.bg_color, self.bg_color.a);
+        let bg_color =
+            lerp(under_pixel.bg_color, self.bg_color, self.bg_color.a);
 
         let (character, fg_color) = if self.character == ' ' {
             // If this pixel has no character, we just show the character underneath,
             // but tinted with our pixel's background colour.
-            (under_pixel.character, lerp(under_pixel.fg_color, self.bg_color, self.bg_color.a))
+            (
+                under_pixel.character,
+                lerp(under_pixel.fg_color, self.bg_color, self.bg_color.a),
+            )
         } else {
             // Unless we show our own character.
-            (self.character, lerp(bg_color, self.fg_color, self.fg_color.a))
+            (
+                self.character,
+                lerp(bg_color, self.fg_color, self.fg_color.a),
+            )
         };
 
         TextModePixel {
@@ -137,8 +144,9 @@ where
     fn put_pixel(&mut self, position: Vec2<usize>, new_pixel: P) {
         if position.x < self.size.w
             && position.y < self.size.h
-            && let Some(pixel) =
-                self.back_buffer.get_mut(position.y * self.size.w + position.x)
+            && let Some(pixel) = self
+                .back_buffer
+                .get_mut(position.y * self.size.w + position.x)
         {
             *pixel = new_pixel.blend_normal(pixel);
         }
@@ -148,9 +156,13 @@ where
         for y in rect.y..(rect.y + rect.h) {
             for x in rect.x..(rect.x + rect.w) {
                 // DEBUG: Draw hollow rectangles instead.
-                // if !(x == rect.x || x == rect.x + rect.w - 1 || y == rect.y || y == rect.y + rect.h - 1) {
-                //     continue;
-                // }
+                if !(x == rect.x
+                    || x == rect.x + rect.w - 1
+                    || y == rect.y
+                    || y == rect.y + rect.h - 1)
+                {
+                    continue;
+                }
 
                 self.put_pixel(Vec2::new(x, y), color.clone());
             }

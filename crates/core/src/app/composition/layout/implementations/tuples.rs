@@ -1,19 +1,18 @@
 use crate::app::composition::layout::LayoutItem;
-use crate::app::composition::layout::hints::ParentHints;
+use crate::app::composition::layout::hints::{ChildHints, ParentHints};
 use vek::Extent2;
 
 impl LayoutItem for () {
     type Blueprint = ();
 
-    fn get_natural_size(&self) -> Extent2<f32> {
-        self.get_minimum_size()
+    fn prepare(&mut self, _: ParentHints) -> ChildHints {
+        ChildHints {
+            minimum_size: Extent2::zero(),
+            natural_size: Extent2::zero(),
+        }
     }
 
-    fn get_minimum_size(&self) -> Extent2<f32> {
-        Extent2::zero()
-    }
-
-    fn place(&mut self, _layout_hints: ParentHints) -> Self::Blueprint {}
+    fn place(&mut self, _: ParentHints) -> Self::Blueprint {}
 }
 
 impl<A, B> LayoutItem for (A, B)
@@ -23,16 +22,22 @@ where
 {
     type Blueprint = (A::Blueprint, B::Blueprint);
 
-    fn get_natural_size(&self) -> Extent2<f32> {
-        let a = self.0.get_natural_size();
-        let b = self.1.get_natural_size();
-        Extent2::new(a.w.max(b.w), a.w.max(b.h))
-    }
-
-    fn get_minimum_size(&self) -> Extent2<f32> {
-        let a = self.0.get_minimum_size();
-        let b = self.1.get_minimum_size();
-        Extent2::new(a.w.max(b.w), a.w.max(b.h))
+    fn prepare(
+        &mut self,
+        parent_hints: ParentHints,
+    ) -> crate::app::composition::layout::hints::ChildHints {
+        let a = self.0.prepare(parent_hints);
+        let b = self.0.prepare(parent_hints);
+        ChildHints {
+            minimum_size: Extent2::new(
+                a.minimum_size.w.max(b.minimum_size.w),
+                a.minimum_size.h.max(b.minimum_size.h),
+            ),
+            natural_size: Extent2::new(
+                a.natural_size.w.max(b.natural_size.w),
+                a.natural_size.h.max(b.natural_size.h),
+            ),
+        }
     }
 
     fn place(&mut self, parent_hints: ParentHints) -> Self::Blueprint {
@@ -46,12 +51,8 @@ where
 {
     type Blueprint = A::Blueprint;
 
-    fn get_natural_size(&self) -> Extent2<f32> {
-        self.as_ref().get_natural_size()
-    }
-
-    fn get_minimum_size(&self) -> Extent2<f32> {
-        self.as_ref().get_minimum_size()
+    fn prepare(&mut self, parent_hints: ParentHints) -> ChildHints {
+        self.as_mut().prepare(parent_hints)
     }
 
     fn place(&mut self, parent_hints: ParentHints) -> Self::Blueprint {

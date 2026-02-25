@@ -3,7 +3,10 @@ use {
     crate::primitives::image_quad::ImageViewElementTerminal,
     image::{DynamicImage, GenericImageView},
     std::sync::Arc,
-    ui_composer_core::prelude::{Blueprint, LayoutItem},
+    ui_composer_core::{
+        app::composition::layout::hints::{ChildHints, ParentHints},
+        prelude::{Blueprint, LayoutItem},
+    },
     ui_composer_platform_tui::runner::{
         TerminalBlueprintResources, TerminalEnvironment,
     },
@@ -35,18 +38,16 @@ impl ImageView {
 impl LayoutItem for ImageView {
     type Blueprint = ImageViewBlueprint;
 
-    fn get_natural_size(&self) -> vek::Extent2<f32> {
-        self.resized.unwrap_or_else(|| {
+    fn prepare(&mut self, _: ParentHints) -> ChildHints {
+        let size = self.resized.unwrap_or_else(|| {
             let (w, h) = self.image.dimensions();
             Extent2::new(w, h).as_()
-        })
-    }
+        });
 
-    fn get_minimum_size(&self) -> vek::Extent2<f32> {
-        self.resized.unwrap_or_else(|| {
-            let (w, h) = self.image.dimensions();
-            Extent2::new(w, h).as_()
-        })
+        ChildHints {
+            minimum_size: size,
+            natural_size: size,
+        }
     }
 
     fn place(

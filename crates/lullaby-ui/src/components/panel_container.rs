@@ -1,7 +1,9 @@
 use {
-    crate::{components::Ui, list_internal},
+    crate::list_internal,
     ui_composer_basic_ui::primitives::graphic::Graphic,
-    ui_composer_core::app::composition::layout::{ItemBox, Resizable as _},
+    ui_composer_core::{
+        app::composition::layout::hints::ParentHints, prelude::LayoutItem,
+    },
     vek::Rgba,
 };
 
@@ -9,14 +11,34 @@ static SURFACE_COLOR: Rgba<f32> = Rgba::new(255.0, 253.0, 248.0, 255.0);
 #[allow(unused)]
 static SURFACE_COLOR_2: Rgba<f32> = Rgba::new(255.0, 241.0, 231.0, 255.0);
 
-pub fn PanelContainer(mut child: impl Ui) -> impl Ui {
-    let min_size = child.get_minimum_size();
+pub fn PanelContainer<Item>(item: Item) -> PanelContainer<Item> {
+    PanelContainer { item }
+}
 
-    ItemBox::new(move |hx| {
-        let rect = Graphic::new(hx.rect, SURFACE_COLOR / 255.0);
-        let c = child.place(hx);
+pub struct PanelContainer<Item> {
+    item: Item,
+}
+impl<Item> LayoutItem for PanelContainer<Item>
+where
+    Item: LayoutItem,
+{
+    type Blueprint = (Graphic, Item::Blueprint);
 
-        list_internal![rect, c]
-    })
-    .with_minimum_size(min_size)
+    fn prepare(
+        &mut self,
+        expected_parent_hints: ParentHints,
+    ) -> ui_composer_core::app::composition::layout::hints::ChildHints {
+        self.item.prepare(expected_parent_hints)
+    }
+
+    fn place(
+        &mut self,
+        // TODO: Reflect on whether it's necessary to pass any context when calling `place`.
+        parent_hints: ParentHints,
+    ) -> Self::Blueprint {
+        list_internal![
+            Graphic::new(parent_hints.rect, SURFACE_COLOR / 255.0),
+            self.item.place(parent_hints)
+        ]
+    }
 }
