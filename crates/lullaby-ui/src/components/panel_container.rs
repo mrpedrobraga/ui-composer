@@ -14,7 +14,7 @@ pub fn PanelContainer(mut child: impl Ui) -> impl Ui {
 
     ItemBox::new(move |hx| {
         let rect = Graphic::new(hx.rect, SURFACE_COLOR / 255.0);
-        let c = child.lay(hx);
+        let c = child.place(hx);
 
         list_internal![rect, c]
     })

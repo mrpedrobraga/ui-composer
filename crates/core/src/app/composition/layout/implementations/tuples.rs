@@ -13,7 +13,7 @@ impl LayoutItem for () {
         Extent2::zero()
     }
 
-    fn lay(&mut self, _layout_hints: ParentHints) -> Self::Blueprint {}
+    fn place(&mut self, _layout_hints: ParentHints) -> Self::Blueprint {}
 }
 
 impl<A, B> LayoutItem for (A, B)
@@ -35,8 +35,8 @@ where
         Extent2::new(a.w.max(b.w), a.w.max(b.h))
     }
 
-    fn lay(&mut self, parent_hints: ParentHints) -> Self::Blueprint {
-        (self.0.lay(parent_hints), self.1.lay(parent_hints))
+    fn place(&mut self, parent_hints: ParentHints) -> Self::Blueprint {
+        (self.0.place(parent_hints), self.1.place(parent_hints))
     }
 }
 
@@ -54,7 +54,7 @@ where
         self.as_ref().get_minimum_size()
     }
 
-    fn lay(&mut self, parent_hints: ParentHints) -> Self::Blueprint {
-        self.as_mut().lay(parent_hints)
+    fn place(&mut self, parent_hints: ParentHints) -> Self::Blueprint {
+        self.as_mut().place(parent_hints)
     }
 }

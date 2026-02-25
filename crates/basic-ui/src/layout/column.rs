@@ -63,12 +63,12 @@ where
         )
     }
 
-    fn lay(&mut self, parent_hints: ParentHints) -> Self::Blueprint {
+    fn place(&mut self, parent_hints: ParentHints) -> Self::Blueprint {
         let a_size = self.item_a.get_natural_size();
 
         let b_size = self.item_b.get_natural_size();
 
-        let a = self.item_a.lay(ParentHints {
+        let a = self.item_a.place(ParentHints {
             rect: Rect::new(
                 parent_hints.rect.x,
                 parent_hints.rect.y,
@@ -78,7 +78,7 @@ where
             ..parent_hints
         });
 
-        let b = self.item_b.lay(ParentHints {
+        let b = self.item_b.place(ParentHints {
             rect: Rect::new(
                 parent_hints.rect.x,
                 parent_hints.rect.y + a_size.h + self.gap,

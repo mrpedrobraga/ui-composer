@@ -36,7 +36,7 @@ impl LayoutItem for DebugSquare {
         self.size
     }
 
-    fn lay(
+    fn place(
         &mut self,
         parent_hints: ui_composer_core::app::composition::layout::hints::ParentHints,
     ) -> Self::Blueprint {

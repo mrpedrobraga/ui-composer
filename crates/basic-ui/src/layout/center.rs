@@ -30,7 +30,7 @@ where
         self.item.get_minimum_size()
     }
 
-    fn lay(&mut self, layout_hints: ParentHints) -> Self::Blueprint {
+    fn place(&mut self, layout_hints: ParentHints) -> Self::Blueprint {
         let my_rect = layout_hints.rect;
         let item_size = self.item.get_natural_size();
         let item_position = my_rect.position() + (my_rect.extent() - item_size) / 2.0;
@@ -42,6 +42,6 @@ where
             ..layout_hints
         };
 
-        self.item.lay(inner_hints)
+        self.item.place(inner_hints)
     }
 }

@@ -105,7 +105,7 @@ where
         .unwrap_or_default()
     }
 
-    fn lay(&mut self, parent_hints: ParentHints) -> Self::Blueprint {
+    fn place(&mut self, parent_hints: ParentHints) -> Self::Blueprint {
         let flow_direction =
             self.flow_direction.as_cartesian(&parent_hints.current_flow);
         let minima = self
@@ -271,7 +271,7 @@ where
     where
         I: Iterator<Item = ParentHints>,
     {
-        self.item.lay(hx.next().unwrap()) //NOTE: Make sure to send an element or else...
+        self.item.place(hx.next().unwrap()) //NOTE: Make sure to send an element or else...
     }
 }
 

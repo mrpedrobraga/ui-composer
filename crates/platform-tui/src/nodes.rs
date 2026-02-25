@@ -165,7 +165,7 @@ where
         .size
         .signal()
         .map(move |terminal_size| {
-            ui.lay(ParentHints {
+            ui.place(ParentHints {
                 rect: Rect::new(0.0, 0.0, terminal_size.w, terminal_size.h),
                 // TODO: Turn these into signals, maybe?
                 current_flow: CurrentFlow {

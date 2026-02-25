@@ -64,7 +64,7 @@ impl<T: LayoutItem> InlineItem for InlineAdapter<T> {
 
         let rect = Rect::new(pos.x as f32, pos.y as f32, size.w, size.h)
             .translated(cx.container_rect.position().as_());
-        self.0.lay(ParentHints { rect, ..hints })
+        self.0.place(ParentHints { rect, ..hints })
     }
 }
 
@@ -171,7 +171,7 @@ impl<T: InlineItemList + Send> LayoutItem for LinewiseFlow<T> {
         Extent2::new(1.0, 1.0)
     }
 
-    fn lay(&mut self, hints: ParentHints) -> Self::Blueprint {
+    fn place(&mut self, hints: ParentHints) -> Self::Blueprint {
         let mut cx = InlineContext {
             container_rect: hints.rect.as_(),
             inline_gap: self.inline_gap,

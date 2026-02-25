@@ -29,7 +29,7 @@ fn ReactiveLabel(
 
     ItemBox::new(move |hx| {
         let text = text_signal
-            .signal_ref(move |text| Label(text.clone()).lay(hx))
+            .signal_ref(move |text| Label(text.clone()).place(hx))
             .into_blueprint();
 
         list![text]

@@ -39,8 +39,6 @@ where
             .with_inner_size(PhysicalSize::new(300, 300));
         let window = env.winit_requester.request_window(window_attributes);
 
-        dbg!(window.title());
-
         WindowElement {
             ui: self.ui.make(env),
             window,
@@ -92,7 +90,7 @@ where
         cx: &mut std::task::Context,
         env: &WinitBlueprintResources<'_>,
     ) -> std::task::Poll<Option<()>> {
-        let WindowElementProj { ui, .. } = self.project();
+        let WindowElementProj { ui, window } = self.project();
 
         /*
             TODO: Windows will futurely have some internal state
@@ -107,8 +105,10 @@ where
             Poll::Pending => Poll::Pending,
             Poll::Ready(Some(_)) => {
                 /*
-                    TODO: Element changed! Re-render!
+                    TODO: Actually draw stuff to the window.
                 */
+                window.request_redraw();
+
                 Poll::Ready(Some(()))
             }
             Poll::Ready(None) => Poll::Ready(None),

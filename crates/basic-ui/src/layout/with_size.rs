@@ -59,7 +59,7 @@ where
         )
     }
 
-    fn lay(&mut self, layout_hints: ParentHints) -> Self::Blueprint {
-        self.item.lay(layout_hints)
+    fn place(&mut self, layout_hints: ParentHints) -> Self::Blueprint {
+        self.item.place(layout_hints)
     }
 }

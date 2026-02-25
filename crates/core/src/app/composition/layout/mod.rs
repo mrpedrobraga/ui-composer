@@ -95,11 +95,14 @@ pub trait LayoutItem: Send {
     /// reverse [Signal] in its child hints.
     fn get_minimum_size(&self) -> Extent2<f32>;
 
+    // Prepares an item to be laid out.
+    // fn prepare(&self, parent_hints: ParentHints) -> ChildHints;
+
     /// Renders the content of this layout item with a specific rect.
-    fn lay(&mut self, parent_hints: ParentHints) -> Self::Blueprint;
+    fn place(&mut self, parent_hints: ParentHints) -> Self::Blueprint;
 
     /// Creates a reactive Element that resizes its content to fit `rect_signal`.
-    fn lay_reactive<Sig, Env: Environment>(
+    fn place_reactive<Sig, Env: Environment>(
         mut self,
         rect_signal: Sig,
         parent_hints: ParentHints,
@@ -111,7 +114,7 @@ pub trait LayoutItem: Send {
     {
         rect_signal
             .map(move |rect| {
-                self.lay(ParentHints {
+                self.place(ParentHints {
                     rect,
                     ..parent_hints
                 })
@@ -186,7 +189,7 @@ where
         self.hints.minimum_size
     }
 
-    fn lay(&mut self, layout_hints: ParentHints) -> Self::Blueprint {
+    fn place(&mut self, layout_hints: ParentHints) -> Self::Blueprint {
         (self.factory)(layout_hints)
     }
 }
@@ -199,6 +202,7 @@ where
         Self {
             hints: ChildHints {
                 minimum_size: min_size,
+                ..self.hints
             },
             ..self
         }
@@ -244,7 +248,7 @@ where
         self.hints.minimum_size
     }
 
-    fn lay(&mut self, layout_hints: ParentHints) -> Self::Blueprint {
+    fn place(&mut self, layout_hints: ParentHints) -> Self::Blueprint {
         (self.factory)(&mut self.capture, layout_hints)
     }
 }
@@ -258,6 +262,7 @@ where
         Self {
             hints: ChildHints {
                 minimum_size: min_size,
+                ..self.hints
             },
             ..self
         }

@@ -37,6 +37,7 @@ pub struct ParentHints {
 /// The child hints struct.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct ChildHints {
-    // TODO: Turn this into a signal or a state.
+    // TODO: Turn thse into signals or states.
     pub minimum_size: Extent2<f32>,
+    pub natural_size: Extent2<f32>,
 }
