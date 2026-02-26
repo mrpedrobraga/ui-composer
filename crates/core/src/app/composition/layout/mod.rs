@@ -188,7 +188,6 @@ where
         Self {
             hints: ChildHints {
                 minimum_size: min_size,
-                natural_size: min_size,
             },
             ..self
         }
@@ -244,7 +243,6 @@ where
         Self {
             hints: ChildHints {
                 minimum_size: min_size,
-                ..self.hints
             },
             ..self
         }

@@ -34,7 +34,6 @@ impl LayoutItem for ColorBox {
     fn prepare(&mut self, _: ParentHints) -> ChildHints {
         ChildHints {
             minimum_size: self.size,
-            natural_size: self.size,
         }
     }
 

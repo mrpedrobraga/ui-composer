@@ -9,7 +9,6 @@ impl LayoutItem for () {
     fn prepare(&mut self, _: ParentHints) -> ChildHints {
         ChildHints {
             minimum_size: Size2::ZERO,
-            natural_size: Size2::ZERO,
         }
     }
 
@@ -31,7 +30,6 @@ where
         let b = self.0.prepare(parent_hints);
         ChildHints {
             minimum_size: a.minimum_size.max(b.minimum_size),
-            natural_size: a.natural_size.max(b.natural_size),
         }
     }
 

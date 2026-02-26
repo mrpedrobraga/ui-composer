@@ -40,5 +40,4 @@ pub struct ParentHints {
 #[derive(Debug, Clone, Copy, Default)]
 pub struct ChildHints {
     pub minimum_size: Size2,
-    pub natural_size: Size2,
 }

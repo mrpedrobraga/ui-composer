@@ -67,14 +67,7 @@ where
             a.minimum_size.width.max(b.minimum_size.width), // Max width
             a.minimum_size.height + self.gap + b.minimum_size.height, // Min height with gap
         );
-        let natural_size = Size2::new(
-            a.natural_size.width.max(b.natural_size.width), // Max width
-            a.natural_size.height + self.gap + b.natural_size.height, // Min height with gap
-        );
-        ChildHints {
-            minimum_size,
-            natural_size,
-        }
+        ChildHints { minimum_size }
     }
 
     fn place(&mut self, parent_hints: ParentHints) -> Self::Blueprint {
@@ -83,7 +76,7 @@ where
                 parent_hints.rect.origin,
                 Size2::new(
                     parent_hints.rect.size.width,
-                    self.__item_a_hints_cache.natural_size.height,
+                    self.__item_a_hints_cache.minimum_size.height,
                 ),
             ),
             ..parent_hints
@@ -93,11 +86,11 @@ where
             rect: Rect::new(
                 parent_hints.rect.origin.translate(Vector2::new(
                     0.0,
-                    self.__item_a_hints_cache.natural_size.height + self.gap,
+                    self.__item_a_hints_cache.minimum_size.height + self.gap,
                 )),
                 Size2::new(
                     parent_hints.rect.size.width,
-                    self.__item_b_hints_cache.natural_size.height,
+                    self.__item_b_hints_cache.minimum_size.height,
                 ),
             ),
             ..parent_hints

@@ -44,10 +44,7 @@ impl LayoutItem for ImageView {
             Size2::<f32>::new(w as f32, h as f32)
         });
 
-        ChildHints {
-            minimum_size: size,
-            natural_size: size,
-        }
+        ChildHints { minimum_size: size }
     }
 
     fn place(

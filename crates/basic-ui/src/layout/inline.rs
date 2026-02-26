@@ -82,7 +82,7 @@ impl<T: LayoutItem> InlineItem for InlineAdapter<T> {
         hints: ParentHints,
     ) -> Self::Blueprint {
         let inner_hints = self.0.prepare(hints);
-        let size = inner_hints.natural_size;
+        let size = inner_hints.minimum_size;
         let (w, h) = (size.width as Offset, size.height as Offset);
 
         if cx.offset.x > 0 && cx.offset.x + w > cx.container_rect.width() {
@@ -105,7 +105,7 @@ impl<T: LayoutItem> InlineItem for InlineAdapter<T> {
 
     fn measure(&mut self, cx: &mut MeasureContext, hints: ParentHints) {
         let inner_hints = self.0.prepare(hints);
-        let size = inner_hints.natural_size;
+        let size = inner_hints.minimum_size;
         let (w, h) = (size.width as Offset, size.height as Offset);
 
         if cx.offset.x > 0 && cx.offset.x + w > cx.container_width {
@@ -257,24 +257,11 @@ impl<T: InlineItemList + Send> LayoutItem for LinewiseFlow<T> {
         let height_when_min_w = height_whem_min_w_cx.offset.y
             + height_whem_min_w_cx.max_line_height;
 
-        let mut nat_cx = MeasureContext {
-            container_width: parent_hints.rect.size.width as Offset,
-            inline_gap: self.inline_gap,
-            cross_axis_gap: self.cross_axis_gap,
-            max_line_height: 1,
-            offset: Vector2::new(0, 0),
-            max_width_reached: 0,
-        };
-        self.items.measure(&mut nat_cx, parent_hints);
-        let nat_w = nat_cx.max_width_reached;
-        let nat_h = nat_cx.offset.y + nat_cx.max_line_height;
-
         ChildHints {
             minimum_size: Size2::new(
                 true_min_w as f32,
                 height_when_min_w as f32,
             ),
-            natural_size: Size2::new(nat_w as f32, nat_h as f32),
         }
     }
 

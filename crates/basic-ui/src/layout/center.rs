@@ -37,7 +37,7 @@ where
 
     fn place(&mut self, parent_hints: ParentHints) -> Self::Blueprint {
         let my_rect = parent_hints.rect;
-        let item_size = self._item_hints_cache.natural_size;
+        let item_size = self._item_hints_cache.minimum_size;
         let item_position =
             my_rect.origin + (my_rect.size - item_size).to_vector() / 2.0;
 

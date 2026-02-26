@@ -49,7 +49,6 @@ where
         let inner = self.item.prepare(parent_hints);
         ChildHints {
             minimum_size: self.suggested_size.max(inner.minimum_size),
-            natural_size: self.suggested_size.max(inner.natural_size),
         }
     }
 

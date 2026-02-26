@@ -92,29 +92,21 @@ where
         );
 
         let mut combined_minimum_sizes: Size2 = Size2::ZERO;
-        let mut combined_natural_sizes: Size2 = Size2::ZERO;
 
         for h in self.items.prepare(allocated_hints_iter) {
             if flow_direction.is_horizontal() {
                 combined_minimum_sizes.width += h.minimum_size.width;
                 combined_minimum_sizes.height =
                     combined_minimum_sizes.height.max(h.minimum_size.height);
-                combined_natural_sizes.width += h.natural_size.width;
-                combined_natural_sizes.height =
-                    combined_natural_sizes.height.max(h.natural_size.height);
             } else {
                 combined_minimum_sizes.width =
                     combined_minimum_sizes.width.max(h.minimum_size.width);
                 combined_minimum_sizes.height += h.minimum_size.height;
-                combined_natural_sizes.width =
-                    combined_natural_sizes.width.max(h.natural_size.width);
-                combined_natural_sizes.height += h.natural_size.height;
             }
         }
 
         ChildHints {
             minimum_size: combined_minimum_sizes,
-            natural_size: combined_natural_sizes,
         }
     }
 
