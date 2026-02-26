@@ -233,9 +233,6 @@ impl<T: InlineItemList + Send> LayoutItem for LinewiseFlow<T> {
     type Blueprint = T::Blueprints;
 
     fn prepare(&mut self, parent_hints: ParentHints) -> ChildHints {
-        // PASS 1: Find the Intrinsic Minimum Width
-        // By setting width to 0, we force a wrap before every single word/item.
-        // The max_width_reached will flawlessly capture the widest unbreakable element.
         let mut min_w_cx = MeasureContext {
             container_width: 0,
             inline_gap: self.inline_gap,
@@ -247,10 +244,7 @@ impl<T: InlineItemList + Send> LayoutItem for LinewiseFlow<T> {
         self.items.measure(&mut min_w_cx, parent_hints);
         let true_min_w = min_w_cx.max_width_reached;
 
-        // PASS 2: Find the Minimum Height at that Width
-        // Now that we know the container will never be smaller than `true_min_w`,
-        // we run it again to see how many short words can pack into that width.
-        let mut min_h_cx = MeasureContext {
+        let mut height_whem_min_w_cx = MeasureContext {
             container_width: true_min_w,
             inline_gap: self.inline_gap,
             cross_axis_gap: self.cross_axis_gap,
@@ -258,11 +252,10 @@ impl<T: InlineItemList + Send> LayoutItem for LinewiseFlow<T> {
             offset: Vec2::new(0, 0),
             max_width_reached: 0,
         };
-        self.items.measure(&mut min_h_cx, parent_hints);
-        let true_min_h = min_h_cx.offset.y + min_h_cx.max_line_height;
+        self.items.measure(&mut height_whem_min_w_cx, parent_hints);
+        let height_when_min_w = height_whem_min_w_cx.offset.y
+            + height_whem_min_w_cx.max_line_height;
 
-        // PASS 3: Calculate Natural Size (fit-content)
-        // We use the parent's actual suggestion to find the preferred layout.
         let mut nat_cx = MeasureContext {
             container_width: parent_hints.rect.w as Offset,
             inline_gap: self.inline_gap,
@@ -276,7 +269,10 @@ impl<T: InlineItemList + Send> LayoutItem for LinewiseFlow<T> {
         let nat_h = nat_cx.offset.y + nat_cx.max_line_height;
 
         ChildHints {
-            minimum_size: Extent2::new(true_min_w as f32, true_min_h as f32),
+            minimum_size: Extent2::new(
+                true_min_w as f32,
+                height_when_min_w as f32,
+            ),
             natural_size: Extent2::new(nat_w as f32, nat_h as f32),
         }
     }

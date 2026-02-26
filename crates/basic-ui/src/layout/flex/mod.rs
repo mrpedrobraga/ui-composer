@@ -54,18 +54,32 @@ where
         let flow_direction =
             self.flow_direction.as_cartesian(&parent_hints.current_flow);
 
-        let base_hints_iter = std::iter::repeat_n(parent_hints, ItemList::SIZE);
+        let mock_size = if flow_direction.is_horizontal() {
+            Extent2::new(0.0, parent_hints.rect.h)
+        } else {
+            Extent2::new(parent_hints.rect.w, 0.0)
+        };
+
+        let base_hints = ParentHints {
+            rect: Rect::new(
+                parent_hints.rect.x,
+                parent_hints.rect.y,
+                mock_size.w,
+                mock_size.h,
+            ),
+            ..parent_hints
+        };
+        let base_hints_iter = std::iter::repeat_n(base_hints, ItemList::SIZE);
         let _ = self.items.prepare(base_hints_iter).count();
 
         let minima = self.items.minima(flow_direction).collect::<Vec<_>>();
         let weights = self.items.weights().collect::<Vec<_>>();
 
-        use CartesianFlow::*;
-        let parent_size = match flow_direction {
-            LeftToRight | RightToLeft => parent_hints.rect.w,
-            TopToBottom | BottomToTop => parent_hints.rect.h,
+        let parent_size = if flow_direction.is_horizontal() {
+            parent_hints.rect.w
+        } else {
+            parent_hints.rect.h
         };
-
         let main_axis_sizes =
             arrange_stretchy_rects_with_minimum_sizes_dirty_alloc(
                 parent_size,
@@ -84,23 +98,20 @@ where
         let mut combined_natural_sizes: Extent2<f32> = Extent2::zero();
 
         for h in self.items.prepare(allocated_hints_iter) {
-            match flow_direction {
-                LeftToRight | RightToLeft => {
-                    combined_minimum_sizes.w += h.minimum_size.w;
-                    combined_minimum_sizes.h =
-                        combined_minimum_sizes.h.max(h.minimum_size.h);
-                    combined_natural_sizes.w += h.natural_size.w;
-                    combined_natural_sizes.h =
-                        combined_natural_sizes.h.max(h.natural_size.h);
-                }
-                TopToBottom | BottomToTop => {
-                    combined_minimum_sizes.w =
-                        combined_minimum_sizes.w.max(h.minimum_size.w);
-                    combined_minimum_sizes.h += h.minimum_size.h;
-                    combined_natural_sizes.w =
-                        combined_natural_sizes.w.max(h.natural_size.w);
-                    combined_natural_sizes.h += h.natural_size.h;
-                }
+            if flow_direction.is_horizontal() {
+                combined_minimum_sizes.w += h.minimum_size.w;
+                combined_minimum_sizes.h =
+                    combined_minimum_sizes.h.max(h.minimum_size.h);
+                combined_natural_sizes.w += h.natural_size.w;
+                combined_natural_sizes.h =
+                    combined_natural_sizes.h.max(h.natural_size.h);
+            } else {
+                combined_minimum_sizes.w =
+                    combined_minimum_sizes.w.max(h.minimum_size.w);
+                combined_minimum_sizes.h += h.minimum_size.h;
+                combined_natural_sizes.w =
+                    combined_natural_sizes.w.max(h.natural_size.w);
+                combined_natural_sizes.h += h.natural_size.h;
             }
         }
 

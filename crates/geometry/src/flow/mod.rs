@@ -61,12 +61,19 @@ pub enum CartesianFlow {
 
 impl CartesianFlow {
     // Inverts this flow.
-    fn inverse(&self) -> Self {
+    pub fn invert(&self) -> Self {
         match self {
             Self::LeftToRight => Self::RightToLeft,
             Self::RightToLeft => Self::LeftToRight,
             Self::TopToBottom => Self::BottomToTop,
             Self::BottomToTop => Self::TopToBottom,
+        }
+    }
+
+    pub fn is_horizontal(&self) -> bool {
+        match self {
+            CartesianFlow::LeftToRight | CartesianFlow::RightToLeft => true,
+            CartesianFlow::TopToBottom | CartesianFlow::BottomToTop => false,
         }
     }
 }
@@ -251,8 +258,12 @@ impl CoordinateSystem for CartesianFlow {
 impl CoordinateSystem for RelativeFlow {
     fn get_axis(&self, parent_hints: &CurrentFlow) -> Vec2<f32> {
         match self {
-            Self::MainAxisForward => parent_hints.current_flow_direction.get_axis(parent_hints),
-            Self::MainAxisBackwards => -parent_hints.current_flow_direction.get_axis(parent_hints),
+            Self::MainAxisForward => {
+                parent_hints.current_flow_direction.get_axis(parent_hints)
+            }
+            Self::MainAxisBackwards => {
+                -parent_hints.current_flow_direction.get_axis(parent_hints)
+            }
             Self::CrossAxisForward => parent_hints
                 .current_cross_flow_direction
                 .get_axis(parent_hints),
@@ -281,7 +292,9 @@ impl CoordinateSystem for RelativeFlow {
 
     fn get_origin(&self, parent_hints: &CurrentFlow) -> Vec2<f32> {
         match self {
-            Self::MainAxisForward => parent_hints.current_flow_direction.get_origin(parent_hints),
+            Self::MainAxisForward => {
+                parent_hints.current_flow_direction.get_origin(parent_hints)
+            }
             Self::MainAxisBackwards => {
                 -parent_hints.current_flow_direction.get_origin(parent_hints)
             }
@@ -302,14 +315,14 @@ impl CoordinateSystem for RelativeFlow {
             Self::MainAxisBackwards => parent_hints
                 .current_flow_direction
                 .as_cartesian(parent_hints)
-                .inverse(),
+                .invert(),
             Self::CrossAxisForward => parent_hints
                 .current_cross_flow_direction
                 .as_cartesian(parent_hints),
             Self::CrossAxisBackwards => parent_hints
                 .current_cross_flow_direction
                 .as_cartesian(parent_hints)
-                .inverse(),
+                .invert(),
         }
     }
 }
@@ -374,14 +387,14 @@ impl CoordinateSystem for WritingFlow {
             Self::WritingAxisBackwards => parent_hints
                 .current_writing_flow_direction
                 .as_cartesian(parent_hints)
-                .inverse(),
+                .invert(),
             Self::WritingCrossAxisForward => parent_hints
                 .current_writing_cross_flow_direction
                 .as_cartesian(parent_hints),
             Self::WritingCrossAxisBackwards => parent_hints
                 .current_writing_cross_flow_direction
                 .as_cartesian(parent_hints)
-                .inverse(),
+                .invert(),
         }
     }
 }
