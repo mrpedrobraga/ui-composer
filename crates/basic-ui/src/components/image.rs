@@ -7,16 +7,16 @@ use {
         app::composition::layout::hints::{ChildHints, ParentHints},
         prelude::{Blueprint, LayoutItem},
     },
+    ui_composer_math::prelude::{Rect, Size2},
     ui_composer_platform_tui::runner::{
         TerminalBlueprintResources, TerminalEnvironment,
     },
-    vek::{Extent2, Rect},
 };
 
 pub struct ImageView {
     // TODO: Find a replacement for #![no_std]!
     image: Arc<DynamicImage>,
-    resized: Option<Extent2<f32>>,
+    resized: Option<Size2>,
 }
 
 pub fn Image(image: Arc<DynamicImage>) -> ImageView {
@@ -27,7 +27,7 @@ pub fn Image(image: Arc<DynamicImage>) -> ImageView {
 }
 
 impl ImageView {
-    pub fn with_resized(self, resized: Extent2<f32>) -> Self {
+    pub fn with_resized(self, resized: Size2) -> Self {
         Self {
             resized: Some(resized),
             ..self
@@ -41,7 +41,7 @@ impl LayoutItem for ImageView {
     fn prepare(&mut self, _: ParentHints) -> ChildHints {
         let size = self.resized.unwrap_or_else(|| {
             let (w, h) = self.image.dimensions();
-            Extent2::new(w, h).as_()
+            Size2::<f32>::new(w as f32, h as f32)
         });
 
         ChildHints {
@@ -64,7 +64,7 @@ impl LayoutItem for ImageView {
 pub struct ImageViewBlueprint {
     // TODO: Find a replacement for #![no_std]!
     pub image: Arc<DynamicImage>,
-    pub rect: Rect<f32, f32>,
+    pub rect: Rect,
 }
 
 impl Blueprint<TerminalEnvironment> for ImageViewBlueprint {

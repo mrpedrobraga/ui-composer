@@ -8,19 +8,19 @@ use ui_composer_core::app::composition::{
     visit::{Apply, DriveThru},
 };
 use ui_composer_input::event::Event;
+use ui_composer_math::prelude::{Rect, Srgba};
 use ui_composer_platform_tui::{
     canvas::{Canvas as _, TextModePixel},
     nodes::TerminalEffectVisitor,
     runner::TerminalEnvironment,
 };
-use vek::{Rect, Rgba};
 
 use crate::components::ImageViewBlueprint;
 
 /// An effect that describes rendering of a quad in the terminal.
 #[derive(Debug)]
 pub struct RenderImageQuad(
-    pub Rect<f32, f32>,
+    pub Rect,
     // TODO: Maybe use a & instead of an arc here.
     pub std::sync::Arc<DynamicImage>,
 );
@@ -37,12 +37,13 @@ impl<'fx> Apply<RenderImageQuad> for TerminalEffectVisitor<'fx> {
             let (x, y) = (x as u32, y as u32);
             let pixel = image.get_pixel(x, y);
             TextModePixel {
-                bg_color: Rgba::new(
-                    pixel.0[0], pixel.0[1], pixel.0[2], pixel.0[3],
-                )
-                .as_()
-                    / 255.0, // TODO: Verify if I really need to normalize it.
-                fg_color: Rgba::zero(),
+                bg_color: Srgba::new(
+                    pixel.0[0] as f32,
+                    pixel.0[1] as f32,
+                    pixel.0[2] as f32,
+                    pixel.0[3] as f32,
+                ) / 255.0, // TODO: Verify if I really need to normalize it.
+                fg_color: Srgba::new(0.0, 0.0, 0.0, 0.0),
                 character: ' ',
             }
         });
@@ -73,7 +74,7 @@ pub fn ImageView() -> ImageViewBlueprint {
 /// A simple image
 pub struct ImageViewElementTerminal {
     image: std::sync::Arc<DynamicImage>,
-    rect: Rect<f32, f32>,
+    rect: Rect,
 }
 impl Element<TerminalEnvironment> for ImageViewElementTerminal {
     type Effect<'fx>
@@ -87,10 +88,7 @@ impl Element<TerminalEnvironment> for ImageViewElementTerminal {
 }
 
 impl ImageViewElementTerminal {
-    pub fn new(
-        rect: Rect<f32, f32>,
-        image: std::sync::Arc<DynamicImage>,
-    ) -> Self {
+    pub fn new(rect: Rect, image: std::sync::Arc<DynamicImage>) -> Self {
         Self { rect, image }
     }
 
@@ -100,7 +98,7 @@ impl ImageViewElementTerminal {
     }
 
     /// Adapts this graphic with a new rect!
-    pub fn with_rect(self, rect: Rect<f32, f32>) -> Self {
+    pub fn with_rect(self, rect: Rect) -> Self {
         Self { rect, ..self }
     }
 }

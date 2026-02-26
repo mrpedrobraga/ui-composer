@@ -13,5 +13,5 @@ std = []
 
 [dependencies]
 smol_str = "0.3.5"
-vek = "0.17.2"
 nstr = "0.3.2"
+ui-composer-math = { path = "../math" }

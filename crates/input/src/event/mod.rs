@@ -1,6 +1,6 @@
 use {
     smol_str::SmolStr,
-    vek::{Extent2, Vec2},
+    ui_composer_math::prelude::{Point2, Size2, Vector2},
 };
 
 pub type EvNum = f32;
@@ -20,7 +20,7 @@ pub enum Event {
     /// The app became (or ceased to be) focused.
     FocusStateChanged(bool),
     /// The app's render target has been resized.
-    Resized(Extent2<EvNum>),
+    Resized(Size2<EvNum>),
     /// The app's scale factor changed due to OS settings or being moved between monitors.
     ScaleFactorChanged(EvNum),
     /// The app's theme changed
@@ -47,7 +47,7 @@ pub struct DeviceId(pub i32);
 #[non_exhaustive]
 pub enum CursorEvent {
     Moved {
-        position: Vec2<EvNum>,
+        position: Point2<EvNum>,
     },
     Entered,
     Exited,
@@ -71,7 +71,7 @@ pub enum CursorEvent {
         ///
         /// If a user pans with their fingers to the right,
         /// the content should follow in that direction.
-        translation: Vec2<EvNum>,
+        translation: Vector2<EvNum>,
         stage: TouchStage,
     },
     Rotated {
@@ -121,9 +121,9 @@ pub enum TouchStage {
 #[derive(Debug, Clone, PartialEq)]
 pub enum ScrollOffset {
     // Scroll offset in lines.
-    Lines(Vec2<EvNum>),
+    Lines(Vector2<EvNum>),
     // Scroll offset in pixels.
-    Pixels(Vec2<EvNum>),
+    Pixels(Vector2<EvNum>),
 }
 /// Events for dragging files into your application.
 #[cfg(feature = "std")]

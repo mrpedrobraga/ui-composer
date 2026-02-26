@@ -8,5 +8,6 @@ name = "ui_composer_math"
 
 [dependencies]
 arrayvec = "0.7.6"
+glamour = "0.18.0"
 num-traits = "0.2.19"
-vek = "0.17.2"
+palette = "0.7.6"

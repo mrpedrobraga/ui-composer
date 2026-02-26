@@ -2,7 +2,7 @@ use ui_composer_core::app::composition::layout::{
     LayoutItem,
     hints::{ChildHints, ParentHints},
 };
-use vek::Rect;
+use ui_composer_math::prelude::Rect;
 
 /// A container that, as it is reshaped, keeps its item at its natural size and centered in the available space.
 pub fn center<A>(item: A) -> CenterContainer<A>
@@ -39,14 +39,9 @@ where
         let my_rect = parent_hints.rect;
         let item_size = self._item_hints_cache.natural_size;
         let item_position =
-            my_rect.position() + (my_rect.extent() - item_size) / 2.0;
+            my_rect.origin + (my_rect.size - item_size).to_vector() / 2.0;
 
-        let item_rect = Rect::new(
-            item_position.x,
-            item_position.y,
-            item_size.w,
-            item_size.h,
-        );
+        let item_rect = Rect::new(item_position, item_size);
 
         let inner_hints = ParentHints {
             rect: item_rect,

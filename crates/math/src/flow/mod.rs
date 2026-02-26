@@ -30,7 +30,7 @@
 //! This should be your last resort — it's absolute flow. Use it only for things that absolutely
 //! require things to be shown the same way for everybody. Compasses, drawings, etc.
 
-use vek::{Mat3, Vec2};
+use glamour::{Matrix3, Vector2, Vector3};
 
 pub mod arrangers;
 
@@ -135,28 +135,28 @@ pub struct CurrentFlow {
 
 impl CurrentFlow {
     /// Returns the geometric axis related to the current writing order.
-    pub fn writing_axis(&self) -> Vec2<f32> {
+    pub fn writing_axis(&self) -> Vector2 {
         self.current_writing_flow_direction.get_axis(self)
     }
 
     /// Returns the geometric axis related to the current paragraph order.
-    pub fn writing_cross_axis(&self) -> Vec2<f32> {
+    pub fn writing_cross_axis(&self) -> Vector2 {
         self.current_writing_cross_flow_direction.get_axis(self)
     }
 
     /// Returns the starting point of the writing context (usually top left or top right).
-    pub fn writing_origin(&self) -> Vec2<f32> {
+    pub fn writing_origin(&self) -> Vector2 {
         self.current_writing_flow_direction.get_origin(self)
     }
 
     /// Returns the starting point of the writing context (usually top left or top right).
     /// Probably the same value as [`Self::writing_origin`], so you should likely use that.
-    pub fn writing_cross_origin(&self) -> Vec2<f32> {
+    pub fn writing_cross_origin(&self) -> Vector2 {
         self.current_writing_cross_flow_direction.get_origin(self)
     }
 
     /// Returns the coordinate system associated with the writing flow.
-    pub fn writing_coordinate_system(&self) -> Mat3<f32> {
+    pub fn writing_coordinate_system(&self) -> Matrix3<f32> {
         self.current_writing_flow_direction.get_matrix(self)
     }
 }
@@ -167,21 +167,25 @@ impl CurrentFlow {
 /// Notably, [`Flow`] implements this.
 pub trait CoordinateSystem {
     /// The direction of flow, in cartesian x = left to right, y = top to bottom;
-    fn get_axis(&self, parent_hints: &CurrentFlow) -> Vec2<f32>;
+    fn get_axis(&self, parent_hints: &CurrentFlow) -> Vector2;
 
     /// The direction of cross flow, in cartesian x = left to right, y = top to bottom;
-    fn get_cross_axis(&self, parent_hints: &CurrentFlow) -> Vec2<f32>;
+    fn get_cross_axis(&self, parent_hints: &CurrentFlow) -> Vector2;
 
     /// The start of the flow, in cartesian x = left to right, y = top to bottom;
-    fn get_origin(&self, parent_hints: &CurrentFlow) -> Vec2<f32>;
+    fn get_origin(&self, parent_hints: &CurrentFlow) -> Vector2;
 
     /// A matrix representing the coordinate system. Useful for graphics and math.
-    fn get_matrix(&self, parent_hints: &CurrentFlow) -> Mat3<f32> {
+    fn get_matrix(&self, parent_hints: &CurrentFlow) -> Matrix3<f32> {
         let wo = self.get_origin(parent_hints);
         let wx = self.get_axis(parent_hints);
         let wy = self.get_cross_axis(parent_hints);
 
-        Mat3::new(wx.x, wx.y, 0.0, wy.x, wy.y, 0.0, wo.x, wo.y, 1.0)
+        Matrix3 {
+            x_axis: Vector3::new(wx.x, wx.y, 0.0),
+            y_axis: Vector3::new(wy.x, wy.y, 0.0),
+            z_axis: Vector3::new(wo.x, wo.y, 1.0),
+        }
     }
 
     /// Transforming into cartesian flow direction!
@@ -189,7 +193,7 @@ pub trait CoordinateSystem {
 }
 
 impl CoordinateSystem for Flow {
-    fn get_axis(&self, parent_hints: &CurrentFlow) -> Vec2<f32> {
+    fn get_axis(&self, parent_hints: &CurrentFlow) -> Vector2 {
         match self {
             Flow::Cartesian(flow) => flow.get_axis(parent_hints),
             Flow::Relative(flow) => flow.get_axis(parent_hints),
@@ -197,7 +201,7 @@ impl CoordinateSystem for Flow {
         }
     }
 
-    fn get_cross_axis(&self, parent_hints: &CurrentFlow) -> Vec2<f32> {
+    fn get_cross_axis(&self, parent_hints: &CurrentFlow) -> Vector2 {
         match self {
             Flow::Cartesian(flow) => flow.get_cross_axis(parent_hints),
             Flow::Relative(flow) => flow.get_cross_axis(parent_hints),
@@ -205,7 +209,7 @@ impl CoordinateSystem for Flow {
         }
     }
 
-    fn get_origin(&self, parent_hints: &CurrentFlow) -> Vec2<f32> {
+    fn get_origin(&self, parent_hints: &CurrentFlow) -> Vector2 {
         match self {
             Flow::Cartesian(flow) => flow.get_origin(parent_hints),
             Flow::Relative(flow) => flow.get_origin(parent_hints),
@@ -223,30 +227,30 @@ impl CoordinateSystem for Flow {
 }
 
 impl CoordinateSystem for CartesianFlow {
-    fn get_axis(&self, _parent_hints: &CurrentFlow) -> Vec2<f32> {
+    fn get_axis(&self, _parent_hints: &CurrentFlow) -> Vector2 {
         match self {
-            CartesianFlow::LeftToRight => Vec2::unit_x(),
-            CartesianFlow::RightToLeft => -Vec2::unit_x(),
-            CartesianFlow::TopToBottom => Vec2::unit_y(),
-            CartesianFlow::BottomToTop => -Vec2::unit_y(),
+            CartesianFlow::LeftToRight => Vector2::X,
+            CartesianFlow::RightToLeft => Vector2::NEG_X,
+            CartesianFlow::TopToBottom => Vector2::Y,
+            CartesianFlow::BottomToTop => Vector2::NEG_Y,
         }
     }
 
-    fn get_cross_axis(&self, _parent_hints: &CurrentFlow) -> Vec2<f32> {
+    fn get_cross_axis(&self, _parent_hints: &CurrentFlow) -> Vector2 {
         match self {
-            CartesianFlow::LeftToRight => Vec2::unit_y(),
-            CartesianFlow::RightToLeft => -Vec2::unit_y(),
-            CartesianFlow::TopToBottom => Vec2::unit_x(),
-            CartesianFlow::BottomToTop => -Vec2::unit_x(),
+            CartesianFlow::LeftToRight => Vector2::Y,
+            CartesianFlow::RightToLeft => Vector2::NEG_Y,
+            CartesianFlow::TopToBottom => Vector2::X,
+            CartesianFlow::BottomToTop => Vector2::NEG_X,
         }
     }
 
-    fn get_origin(&self, _parent_hints: &CurrentFlow) -> Vec2<f32> {
+    fn get_origin(&self, _parent_hints: &CurrentFlow) -> Vector2 {
         match self {
-            CartesianFlow::LeftToRight => Vec2::zero(),
-            CartesianFlow::RightToLeft => Vec2::unit_x(),
-            CartesianFlow::TopToBottom => Vec2::zero(),
-            CartesianFlow::BottomToTop => Vec2::unit_y(),
+            CartesianFlow::LeftToRight => Vector2::ZERO,
+            CartesianFlow::RightToLeft => Vector2::X,
+            CartesianFlow::TopToBottom => Vector2::ZERO,
+            CartesianFlow::BottomToTop => Vector2::Y,
         }
     }
 
@@ -256,7 +260,7 @@ impl CoordinateSystem for CartesianFlow {
 }
 
 impl CoordinateSystem for RelativeFlow {
-    fn get_axis(&self, parent_hints: &CurrentFlow) -> Vec2<f32> {
+    fn get_axis(&self, parent_hints: &CurrentFlow) -> Vector2 {
         match self {
             Self::MainAxisForward => {
                 parent_hints.current_flow_direction.get_axis(parent_hints)
@@ -273,7 +277,7 @@ impl CoordinateSystem for RelativeFlow {
         }
     }
 
-    fn get_cross_axis(&self, parent_hints: &CurrentFlow) -> Vec2<f32> {
+    fn get_cross_axis(&self, parent_hints: &CurrentFlow) -> Vector2 {
         match self {
             Self::MainAxisForward => parent_hints
                 .current_flow_direction
@@ -290,7 +294,7 @@ impl CoordinateSystem for RelativeFlow {
         }
     }
 
-    fn get_origin(&self, parent_hints: &CurrentFlow) -> Vec2<f32> {
+    fn get_origin(&self, parent_hints: &CurrentFlow) -> Vector2 {
         match self {
             Self::MainAxisForward => {
                 parent_hints.current_flow_direction.get_origin(parent_hints)
@@ -328,7 +332,7 @@ impl CoordinateSystem for RelativeFlow {
 }
 
 impl CoordinateSystem for WritingFlow {
-    fn get_axis(&self, parent_hints: &CurrentFlow) -> Vec2<f32> {
+    fn get_axis(&self, parent_hints: &CurrentFlow) -> Vector2 {
         match self {
             Self::WritingAxisForward => parent_hints
                 .current_writing_flow_direction
@@ -345,7 +349,7 @@ impl CoordinateSystem for WritingFlow {
         }
     }
 
-    fn get_cross_axis(&self, parent_hints: &CurrentFlow) -> Vec2<f32> {
+    fn get_cross_axis(&self, parent_hints: &CurrentFlow) -> Vector2 {
         match self {
             Self::WritingAxisForward => parent_hints
                 .current_writing_flow_direction
@@ -362,7 +366,7 @@ impl CoordinateSystem for WritingFlow {
         }
     }
 
-    fn get_origin(&self, parent_hints: &CurrentFlow) -> Vec2<f32> {
+    fn get_origin(&self, parent_hints: &CurrentFlow) -> Vector2 {
         match self {
             Self::WritingAxisForward => parent_hints
                 .current_writing_flow_direction

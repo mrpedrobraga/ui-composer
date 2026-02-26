@@ -41,8 +41,6 @@ ui-composer-view-macro = { path = "crates/view-macro" }
 [dev-dependencies]
 ui-composer-macros = { path = "crates/macros" }
 
-vek = "*"
-
 lullaby-ui = { path = "crates/lullaby-ui" }
 futures = "*"
 chttp = "*"

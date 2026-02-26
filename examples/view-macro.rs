@@ -2,14 +2,14 @@
 use lullaby_ui::prelude::*;
 use ui_composer::prelude::*;
 
-static SURFACE_COLOR: Rgba<f32> = Rgba::new(255.0, 253.0, 248.0, 255.0);
-static SURFACE_COLOR_2: Rgba<f32> = Rgba::new(255.0, 241.0, 231.0, 255.0);
+static SURFACE_COLOR: Srgba = Srgba::new(255.0, 253.0, 248.0, 255.0);
+static SURFACE_COLOR_2: Srgba = Srgba::new(255.0, 241.0, 231.0, 255.0);
 
-static BUTTON_COLOR: Rgba<f32> = Rgba::new(255.0, 217.0, 179.0, 255.0);
-static BUTTON_COLOR_HOVER: Rgba<f32> = Rgba::new(235.0, 189.0, 143.0, 255.0);
+static BUTTON_COLOR: Srgba = Srgba::new(255.0, 217.0, 179.0, 255.0);
+static BUTTON_COLOR_HOVER: Srgba = Srgba::new(235.0, 189.0, 143.0, 255.0);
 
 fn main() {
-    let size = Extent2::new(4.0, 4.0);
+    let size = Size2::new(4.0, 4.0);
 
     UIComposer::run_tui(view! (
         Terminal (

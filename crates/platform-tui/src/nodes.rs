@@ -16,8 +16,8 @@ use ui_composer_core::app::composition::layout::hints::ParentHints;
 use ui_composer_core::app::composition::visit::DriveThru;
 use ui_composer_input::event::{CursorEvent, Event};
 use ui_composer_math::flow::{CartesianFlow, CurrentFlow};
+use ui_composer_math::prelude::{Point2, Rect, Size2};
 use ui_composer_state::Slot;
-use vek::{Extent2, Rect, Vec2};
 
 pub struct TerminalBlueprint<UiBlueprint> {
     pub(crate) state: TerminalState,
@@ -25,8 +25,8 @@ pub struct TerminalBlueprint<UiBlueprint> {
 }
 
 pub struct TerminalState {
-    pub size: Mutable<Extent2<f32>>,
-    pub mouse_position: Mutable<Option<Vec2<f32>>>,
+    pub size: Mutable<Size2>,
+    pub mouse_position: Mutable<Option<Point2>>,
     pub render_target: PixelCanvas<TextModePixel>,
 }
 
@@ -120,8 +120,8 @@ where
                 //     vis.canvas.put_pixel(
                 //         mouse_position.as_(),
                 //         TextModePixel {
-                //             bg_color: Rgba::zero(),
-                //             fg_color: Rgba::black(),
+                //             bg_color: Srgba::zero(),
+                //             fg_color: Srgba::black(),
                 //             character: '\u{f01bf}',
                 //         },
                 //     )
@@ -150,8 +150,8 @@ where
     UiBlueprint: Tui,
 {
     let size = crossterm::terminal::size()
-        .map(|(x, y)| Extent2::new(x, y))
-        .unwrap_or(Extent2::new(8, 8));
+        .map(|(x, y)| Size2::<u16>::new(x, y))
+        .unwrap_or(Size2::new(8, 8));
 
     let render_target = PixelCanvas::new(size.as_());
 
@@ -166,7 +166,7 @@ where
         .signal()
         .map(move |terminal_size| {
             let parent_hints = ParentHints {
-                rect: Rect::new(0.0, 0.0, terminal_size.w, terminal_size.h),
+                rect: Rect::new(Point2::ZERO, terminal_size),
                 // TODO: Turn these into signals, maybe?
                 current_flow: CurrentFlow {
                     current_flow_direction: CartesianFlow::LeftToRight,
@@ -180,10 +180,8 @@ where
             #[allow(unused)]
             let child_hints = ui.prepare(parent_hints);
             let clamped_rect = Rect::new(
-                0.0,
-                0.0,
-                parent_hints.rect.w.max(child_hints.minimum_size.w),
-                parent_hints.rect.h.max(child_hints.minimum_size.h),
+                Point2::ZERO,
+                parent_hints.rect.size.max(child_hints.minimum_size),
             );
             ui.place(ParentHints {
                 rect: clamped_rect,

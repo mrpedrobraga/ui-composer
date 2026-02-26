@@ -4,14 +4,17 @@
 //! These functions are supposed to be incredibly optimized for inlining and
 //! no_std environments.
 
-use arrayvec::ArrayVec;
+use glamour::Vector2;
 use num_traits::Float;
-use vek::{Extent2, Rect, Vec2};
+use {
+    arrayvec::ArrayVec,
+    glamour::{Rect, Size2},
+};
 
 /// Struct that can be used to allocate rects for layout items in
 /// simple stacks.
 pub struct RectStackArranger {
-    offset: Vec2<f32>,
+    offset: Vector2,
 }
 
 impl RectStackArranger {
@@ -20,23 +23,23 @@ impl RectStackArranger {
         sizes: I,
         gap: f32,
         vertical: bool,
-    ) -> impl Iterator<Item = Rect<f32, f32>>
+    ) -> impl Iterator<Item = Rect>
     where
-        I: Iterator<Item = Extent2<f32>>,
+        I: Iterator<Item = Size2>,
     {
         sizes.scan(
             RectStackArranger {
-                offset: Vec2::zero(),
+                offset: Vector2::ZERO,
             },
-            move |cx, item| {
-                let rect = Rect::new(cx.offset.x, cx.offset.y, item.w, item.h);
+            move |cx, item_size| {
+                let rect = Rect::new(cx.offset.to_point(), item_size);
 
                 // TODO: Use a [`CoordinateSystemProvider`] for this.
                 if vertical {
-                    cx.offset.y += item.h;
+                    cx.offset.y += item_size.height;
                     cx.offset.y += gap;
                 } else {
-                    cx.offset.x += item.w;
+                    cx.offset.x += item_size.width;
                     cx.offset.x += gap;
                 }
 
@@ -154,7 +157,7 @@ pub fn arrange_stretchy_rects_with_minimum_sizes<
     // but binary search is Good Enough.
     let mut lower_bound = Num::zero();
     let mut upper_bound = container_size;
-    
+
     let mut equilibrium = Num::zero();
     // Find the value for equilibrium in up to 64 iterations.
     // Okay maybe later I'll replace this with something else.
@@ -214,7 +217,9 @@ pub fn arrange_stretchy_rects_with_minimum_sizes<
     pixel_element_sizes
 }
 
-pub fn arrange_stretchy_rects_with_minimum_sizes_dirty_alloc<Num: Float + core::iter::Sum>(
+pub fn arrange_stretchy_rects_with_minimum_sizes_dirty_alloc<
+    Num: Float + core::iter::Sum,
+>(
     t: Num,
     w: &[Num],
     m: &[Num],
@@ -237,7 +242,9 @@ pub fn arrange_stretchy_rects_with_minimum_sizes_dirty_alloc<Num: Float + core::
     for _ in 0..32 {
         equ = (equ_0 + equ_1) / Num::from(2).unwrap();
 
-        let sum: Num = w.iter().zip(m.iter())
+        let sum: Num = w
+            .iter()
+            .zip(m.iter())
             .map(|(&weight, &min)| {
                 let scaled = weight * t_inv_w * equ;
                 if scaled > min { scaled } else { min }
@@ -256,7 +263,9 @@ pub fn arrange_stretchy_rects_with_minimum_sizes_dirty_alloc<Num: Float + core::
     }
 
     let mut s_off_px = Num::zero();
-    let mut res: Vec<Num> = w.iter().zip(m.iter())
+    let mut res: Vec<Num> = w
+        .iter()
+        .zip(m.iter())
         .scan(Num::zero(), |s_off, (&weight, &min)| {
             let float_size = min.max(weight * t_inv_w * equ);
             *s_off = *s_off + float_size;
@@ -269,18 +278,24 @@ pub fn arrange_stretchy_rects_with_minimum_sizes_dirty_alloc<Num: Float + core::
 
     let diff = t.round() - s_off_px;
     if diff != Num::zero()
-        && let Some(last) = res.last_mut() {
-            *last = *last + diff;
-        }
+        && let Some(last) = res.last_mut()
+    {
+        *last = *last + diff;
+    }
 
     res
 }
 
-pub fn arrange_stretchy_rects_with_minimum_sizes_dirty_alloc_alt<Num: Float + core::iter::Sum>(
+pub fn arrange_stretchy_rects_with_minimum_sizes_dirty_alloc_alt<
+    Num: Float + core::iter::Sum,
+>(
     t: Num,
     w: &[Num],
     m: &[Num],
 ) -> Vec<Num> {
     let x = (t - m.iter().copied().sum()) / w.iter().copied().sum();
-    m.iter().zip(w.iter()).map(|(m, w)| *m + *w * Num::max(x, Num::zero())).collect()
+    m.iter()
+        .zip(w.iter())
+        .map(|(m, w)| *m + *w * Num::max(x, Num::zero()))
+        .collect()
 }

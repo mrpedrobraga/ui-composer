@@ -8,7 +8,6 @@ fn main() {
 fn app() -> impl Ui {
     view! {
         center
-        with_size {size: Extent2::new(40.0, 0.0)}
         components
     }
 }

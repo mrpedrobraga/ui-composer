@@ -19,4 +19,3 @@ ui-composer-core = { path = "../core" }
 ui-composer-math = { path = "../math" }
 ui-composer-state = { path = "../state" }
 #ui-composer-basic-ui = { path = "../basic-ui" }
-vek = "0.17.2"

@@ -1,4 +1,4 @@
-use vek::Extent2;
+use ui_composer_math::prelude::Size2;
 
 pub struct Gpu {
     pub device: wgpu::Device,
@@ -49,5 +49,5 @@ impl Gpu {
 
 #[allow(async_fn_in_trait)]
 pub trait RenderTarget {
-    async fn resize(&mut self, gpu: &Gpu, new_size: Extent2<u32>);
+    async fn resize(&mut self, gpu: &Gpu, new_size: Size2<u32>);
 }

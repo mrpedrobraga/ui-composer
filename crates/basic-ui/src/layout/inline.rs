@@ -4,8 +4,7 @@ use {
         LayoutItem,
         hints::{ChildHints, ParentHints},
     },
-    ui_composer_math::RectExt,
-    vek::{Extent2, Rect, Rgba, Vec2},
+    ui_composer_math::prelude::{Rect, Size2, Srgba, Vector2},
 };
 
 type Offset = u32;
@@ -13,8 +12,8 @@ type Offset = u32;
 // --- Contexts ---
 
 pub struct InlineContext {
-    pub offset: Vec2<Offset>,
-    pub container_rect: Rect<Offset, Offset>,
+    pub offset: Vector2<Offset>,
+    pub container_rect: Rect<Offset>,
     pub max_line_height: Offset,
     pub inline_gap: Offset,
     pub cross_axis_gap: Offset,
@@ -29,7 +28,7 @@ impl InlineContext {
 }
 
 pub struct MeasureContext {
-    pub offset: Vec2<Offset>,
+    pub offset: Vector2<Offset>,
     pub container_width: Offset,
     pub max_line_height: Offset,
     pub inline_gap: Offset,
@@ -84,9 +83,9 @@ impl<T: LayoutItem> InlineItem for InlineAdapter<T> {
     ) -> Self::Blueprint {
         let inner_hints = self.0.prepare(hints);
         let size = inner_hints.natural_size;
-        let (w, h) = (size.w as Offset, size.h as Offset);
+        let (w, h) = (size.width as Offset, size.height as Offset);
 
-        if cx.offset.x > 0 && cx.offset.x + w > cx.container_rect.w {
+        if cx.offset.x > 0 && cx.offset.x + w > cx.container_rect.width() {
             cx.new_line();
         }
 
@@ -94,17 +93,20 @@ impl<T: LayoutItem> InlineItem for InlineAdapter<T> {
         let pos = cx.offset;
         cx.offset.x += w + cx.inline_gap;
 
-        let size = Extent2::new(size.w, size.h);
-        let rect = Rect::new(pos.x as f32, pos.y as f32, size.w, size.h)
-            .translated(cx.container_rect.position().as_());
+        let size = Size2::new(w, h);
+        let rect = Rect::new(pos.into(), size)
+            .translate(cx.container_rect.origin.into());
 
-        self.0.place(ParentHints { rect, ..hints })
+        self.0.place(ParentHints {
+            rect: rect.as_::<f32>(),
+            ..hints
+        })
     }
 
     fn measure(&mut self, cx: &mut MeasureContext, hints: ParentHints) {
         let inner_hints = self.0.prepare(hints);
         let size = inner_hints.natural_size;
-        let (w, h) = (size.w as Offset, size.h as Offset);
+        let (w, h) = (size.width as Offset, size.height as Offset);
 
         if cx.offset.x > 0 && cx.offset.x + w > cx.container_width {
             cx.new_line();
@@ -116,7 +118,7 @@ impl<T: LayoutItem> InlineItem for InlineAdapter<T> {
     }
 }
 
-pub struct MonospaceText(pub String, pub Rgba<f32>);
+pub struct MonospaceText(pub String, pub Srgba);
 
 impl InlineItem for MonospaceText {
     type Blueprint = Vec<Text>;
@@ -134,7 +136,8 @@ impl InlineItem for MonospaceText {
             let len = word.len() as Offset;
 
             if cx.offset.x > 0
-                && cx.offset.x + word_spacing + len > cx.container_rect.w
+                && cx.offset.x + word_spacing + len
+                    > cx.container_rect.size.width
             {
                 cx.new_line();
             }
@@ -147,13 +150,11 @@ impl InlineItem for MonospaceText {
                 Text()
                     .with_text(word.to_string())
                     .with_rect(
+                        // TODO: Lines might have different heights?
                         Rect::new(
-                            cx.offset.x as f32,
-                            cx.offset.y as f32,
-                            len as f32,
-                            1.0,
-                        )
-                        .translated(cx.container_rect.position().as_()),
+                            (cx.container_rect.origin + cx.offset).as_::<f32>(),
+                            Size2::new(len as f32, 1.0),
+                        ),
                     )
                     .with_color(self.1),
             );
@@ -238,7 +239,7 @@ impl<T: InlineItemList + Send> LayoutItem for LinewiseFlow<T> {
             inline_gap: self.inline_gap,
             cross_axis_gap: self.cross_axis_gap,
             max_line_height: 1,
-            offset: Vec2::new(0, 0),
+            offset: Vector2::new(0, 0),
             max_width_reached: 0,
         };
         self.items.measure(&mut min_w_cx, parent_hints);
@@ -249,7 +250,7 @@ impl<T: InlineItemList + Send> LayoutItem for LinewiseFlow<T> {
             inline_gap: self.inline_gap,
             cross_axis_gap: self.cross_axis_gap,
             max_line_height: 1,
-            offset: Vec2::new(0, 0),
+            offset: Vector2::new(0, 0),
             max_width_reached: 0,
         };
         self.items.measure(&mut height_whem_min_w_cx, parent_hints);
@@ -257,11 +258,11 @@ impl<T: InlineItemList + Send> LayoutItem for LinewiseFlow<T> {
             + height_whem_min_w_cx.max_line_height;
 
         let mut nat_cx = MeasureContext {
-            container_width: parent_hints.rect.w as Offset,
+            container_width: parent_hints.rect.size.width as Offset,
             inline_gap: self.inline_gap,
             cross_axis_gap: self.cross_axis_gap,
             max_line_height: 1,
-            offset: Vec2::new(0, 0),
+            offset: Vector2::new(0, 0),
             max_width_reached: 0,
         };
         self.items.measure(&mut nat_cx, parent_hints);
@@ -269,11 +270,11 @@ impl<T: InlineItemList + Send> LayoutItem for LinewiseFlow<T> {
         let nat_h = nat_cx.offset.y + nat_cx.max_line_height;
 
         ChildHints {
-            minimum_size: Extent2::new(
+            minimum_size: Size2::new(
                 true_min_w as f32,
                 height_when_min_w as f32,
             ),
-            natural_size: Extent2::new(nat_w as f32, nat_h as f32),
+            natural_size: Size2::new(nat_w as f32, nat_h as f32),
         }
     }
 
@@ -283,7 +284,7 @@ impl<T: InlineItemList + Send> LayoutItem for LinewiseFlow<T> {
             inline_gap: self.inline_gap,
             cross_axis_gap: self.cross_axis_gap,
             max_line_height: 1,
-            offset: Vec2::new(0, 0),
+            offset: Vector2::new(0, 0),
         };
 
         self.items.allocate(&mut cx, hints)

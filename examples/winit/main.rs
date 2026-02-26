@@ -15,11 +15,11 @@ fn App() -> impl Blueprint<WinitEnvironment, Element: Send> + Send {
     // (
     //     Graphic {
     //         rect: Rect::new(0.0, 0.0, 20.0, 20.0),
-    //         color: Rgba::new(0.0, 0.0, 1.0, 1.0),
+    //         color: Srgba::new(0.0, 0.0, 1.0, 1.0),
     //     },
     //     Graphic {
     //         rect: Rect::new(0.0, 0.0, 20.0, 20.0),
-    //         color: Rgba::new(0.0, 0.0, 1.0, 1.0),
+    //         color: Srgba::new(0.0, 0.0, 1.0, 1.0),
     //     },
     // )
 }

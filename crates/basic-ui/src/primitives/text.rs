@@ -5,17 +5,17 @@ use ui_composer_core::app::composition::{
     visit::{Apply, DriveThru},
 };
 use ui_composer_input::event::Event;
+use ui_composer_math::prelude::{Point2, Rect, Srgba};
 use ui_composer_platform_tui::{
     canvas::{Canvas as _, TextModePixel},
     nodes::TerminalEffectVisitor,
     runner::{TerminalBlueprintResources, TerminalEnvironment},
 };
 use ui_composer_platform_winit::runner::WinitEnvironment;
-use vek::{Rect, Rgba};
 
 /// An effect that describes rendering some text in the terminal.
 #[derive(Debug)]
-pub struct RenderText(pub Rect<f32, f32>, pub String, pub Rgba<f32>);
+pub struct RenderText(pub Rect, pub String, pub Srgba);
 
 impl ElementEffect<WinitEnvironment> for RenderText {}
 
@@ -23,13 +23,13 @@ impl ElementEffect<TerminalEnvironment> for RenderText {}
 
 impl<'fx> Apply<RenderText> for TerminalEffectVisitor<'fx> {
     fn visit(&mut self, RenderText(rect, text, color): &RenderText) {
-        let rect = rect.as_::<usize, usize>();
+        let rect = rect.as_::<u32>();
 
         for (i, ch) in text.chars().enumerate() {
             self.canvas.put_pixel(
-                vek::Vec2::new(rect.x + i, rect.y),
+                Point2::new(rect.origin.x + i as u32, rect.origin.y),
                 TextModePixel {
-                    bg_color: Rgba::new_transparent(0.0, 0.0, 0.0),
+                    bg_color: Srgba::new(0.0, 0.0, 0.0, 0.0),
                     fg_color: *color,
                     character: ch,
                 },
@@ -50,26 +50,26 @@ pub fn Text() -> Text {
     Text {
         rect: Rect::default(),
         text: String::new(),
-        color: Rgba::default(),
+        color: Srgba::default(),
     }
 }
 
 /// A simple coloured graphic.
 #[derive(Default, Clone, PartialEq)]
 pub struct Text {
-    pub rect: Rect<f32, f32>,
+    pub rect: Rect,
     pub text: String,
-    pub color: Rgba<f32>,
+    pub color: Srgba,
 }
 
 impl Text {
     /// Adapts this Text with a new colour!
-    pub fn with_color(self, color: Rgba<f32>) -> Self {
+    pub fn with_color(self, color: Srgba) -> Self {
         Self { color, ..self }
     }
 
     /// Adapts this Text with a new rect!
-    pub fn with_rect(self, rect: Rect<f32, f32>) -> Self {
+    pub fn with_rect(self, rect: Rect) -> Self {
         Self { rect, ..self }
     }
 

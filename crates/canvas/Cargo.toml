@@ -8,4 +8,4 @@ name = "ui_composer_canvas"
 
 [dependencies]
 image = "0.25.9"
-vek = "0.17.2"
+ui-composer-math = { path = "../math" }

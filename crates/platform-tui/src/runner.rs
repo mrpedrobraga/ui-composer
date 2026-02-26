@@ -25,7 +25,7 @@ use ui_composer_input::event::{
     ButtonState, CursorEvent, DeviceId, Event, KeyEvent, KeyboardEvent,
     TouchStage,
 };
-use vek::{Extent2, Vec2};
+use ui_composer_math::prelude::{Point2, Size2, Vector2};
 
 use crate::nodes::TerminalEffectVisitor;
 
@@ -62,7 +62,7 @@ where
         let app_e = app.clone();
 
         // Correction for the terminal's way of indexing.
-        let top_left_correction = Vec2::new(1.0, 1.0);
+        let top_left_correction = Vector2::new(1.0, 1.0);
 
         let event_handler = async {
             let e_stream = EventStream::new();
@@ -83,7 +83,7 @@ where
                             event
                         {
                             let mut l = app_e.lock().unwrap();
-                            l.bubble(&mut Event::Resized(Extent2::new(
+                            l.bubble(&mut Event::Resized(Size2::new(
                                 new_width as f32,
                                 new_height as f32,
                             )));
@@ -115,8 +115,10 @@ where
                                 l.bubble(&mut Event::Cursor {
                                     id: DeviceId(0),
                                     event: CursorEvent::Moved {
-                                        position: (Vec2::new(m.column, m.row)
-                                            .as_()
+                                        position: (Point2::<u16>::new(
+                                            m.column, m.row,
+                                        )
+                                        .as_()
                                             + top_left_correction),
                                     },
                                 });
@@ -126,8 +128,10 @@ where
                                 l.bubble(&mut Event::Cursor {
                                     id: DeviceId(0),
                                     event: CursorEvent::Moved {
-                                        position: (Vec2::new(m.column, m.row)
-                                            .as_()
+                                        position: (Point2::<u16>::new(
+                                            m.column, m.row,
+                                        )
+                                        .as_()
                                             + top_left_correction),
                                     },
                                 });

@@ -9,11 +9,11 @@ name = "ui_composer_platform_winit"
 [dependencies]
 ui-composer-core = { path = "../core" }
 ui-composer-input = { path = "../input", features = ["std"] }
+ui-composer-math = { path = "../math" }
 #ui-composer-basic-ui = { path = "../basic-ui" }
 wgpu = "28.0.0"
 winit = "0.30.12"
 futures = "0.3.32"
 futures-signals = "0.3.34"
 pin-project = "1.1.10"
-vek = "0.17.2"
 smol_str = "0.3.5"

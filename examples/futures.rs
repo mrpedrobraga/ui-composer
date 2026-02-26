@@ -21,15 +21,15 @@ fn TestingFuture() -> impl Ui {
         (
             Graphic {
                 rect: hx.rect,
-                color: Rgba::white(),
+                color: Srgba::new(1.0, 1.0, 1.0, 1.0),
             },
             fut.map(move |text| Text {
-                rect: hx.rect.expand_from_center(-1.0, -1.0, 0.0, 0.0),
+                rect: hx.rect.inflate(Size2::new(-1.0, 0.0)),
                 text,
-                color: Rgba::red(),
+                color: Srgba::new(1.0, 0.0, 0.0, 1.0),
             })
             .into_blueprint(),
         )
     })
-    .with_minimum_size(Extent2::new(32.0, 16.0))
+    .with_minimum_size(Size2::new(64.0, 16.0))
 }

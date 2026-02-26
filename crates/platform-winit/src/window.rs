@@ -6,6 +6,7 @@
 
 use pin_project::pin_project;
 use ui_composer_input::event::Event;
+use ui_composer_math::prelude::Size2;
 use winit::dpi::PhysicalSize;
 use winit::window::{Window, WindowAttributes};
 
@@ -118,7 +119,7 @@ where
 
 /// The render target a window will draw to in order to show its elements in a [window](winit::window::Window).
 pub struct WindowRenderTarget {
-    pub size: vek::Extent2<u32>,
+    pub size: Size2<u32>,
     pub surface: wgpu::Surface<'static>,
     pub depth_texture: wgpu::Texture,
 }
@@ -127,7 +128,7 @@ impl WindowRenderTarget {
     /// Creates a new `RenderTarget` which renders to a window.
     pub fn new(gpu: &Gpu, window: Arc<winit::window::Window>) -> Self {
         let size = window.inner_size();
-        let size = vek::Extent2::new(size.width, size.height);
+        let size = Size2::new(size.width, size.height);
         let surface = wgpu::Instance::default()
             .create_surface(window)
             .expect("Failed to create surface for window!");
@@ -140,12 +141,12 @@ impl WindowRenderTarget {
         }
     }
 
-    fn new_depth_texture(gpu: &Gpu, size: &vek::Extent2<u32>) -> wgpu::Texture {
+    fn new_depth_texture(gpu: &Gpu, size: &Size2<u32>) -> wgpu::Texture {
         gpu.device.create_texture(&wgpu::TextureDescriptor {
             label: Some("UI Composer Winit Window Depth Texture."),
             size: wgpu::Extent3d {
-                width: size.w,
-                height: size.h,
+                width: size.width,
+                height: size.height,
                 depth_or_array_layers: 1,
             },
             mip_level_count: 1,
@@ -161,7 +162,7 @@ impl WindowRenderTarget {
 }
 
 impl RenderTarget for WindowRenderTarget {
-    async fn resize(&mut self, gpu: &Gpu, new_size: vek::Extent2<u32>) {
+    async fn resize(&mut self, gpu: &Gpu, new_size: Size2<u32>) {
         let adapter = wgpu::Instance::default()
             .request_adapter(&wgpu::RequestAdapterOptions {
                 compatible_surface: Some(&self.surface),
@@ -171,7 +172,7 @@ impl RenderTarget for WindowRenderTarget {
             .expect("Failed to request new adapter!");
         let surface_config = self
             .surface
-            .get_default_config(&adapter, new_size.w, new_size.h)
+            .get_default_config(&adapter, new_size.width, new_size.height)
             .expect("Failed to get new configuration for surface.");
         self.surface.configure(&gpu.device, &surface_config);
         self.depth_texture = Self::new_depth_texture(gpu, &new_size);

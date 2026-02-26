@@ -4,12 +4,12 @@ use {
     ui_composer_core::{
         app::composition::layout::hints::ParentHints, prelude::LayoutItem,
     },
-    vek::Rgba,
+    ui_composer_math::prelude::Srgba,
 };
 
-static SURFACE_COLOR: Rgba<f32> = Rgba::new(255.0, 253.0, 248.0, 255.0);
+static SURFACE_COLOR: Srgba = Srgba::new(255.0, 253.0, 248.0, 255.0);
 #[allow(unused)]
-static SURFACE_COLOR_2: Rgba<f32> = Rgba::new(255.0, 241.0, 231.0, 255.0);
+static SURFACE_COLOR_2: Srgba = Srgba::new(255.0, 241.0, 231.0, 255.0);
 
 pub fn PanelContainer<Item>(item: Item) -> PanelContainer<Item> {
     PanelContainer { item }

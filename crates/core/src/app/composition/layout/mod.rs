@@ -64,11 +64,9 @@
 
 use crate::app::composition::effects::signal::{IntoBlueprint as _, React};
 use crate::app::composition::elements::{Blueprint, Environment};
+use futures_signals::signal::{Signal, SignalExt};
 use hints::{ChildHints, ParentHints};
-use {
-    futures_signals::signal::{Signal, SignalExt},
-    vek::{Extent2, Rect},
-};
+use ui_composer_math::prelude::{Rect, Size2};
 
 pub mod hints;
 mod implementations;
@@ -100,7 +98,7 @@ pub trait LayoutItem: Send {
         parent_hints: ParentHints,
     ) -> React<impl Signal<Item = Self::Blueprint>, Env>
     where
-        Sig: Signal<Item = Rect<f32, f32>> + Send,
+        Sig: Signal<Item = Rect> + Send,
         Self: Sized + Send,
         Self::Blueprint: Blueprint<Env>,
     {
@@ -144,7 +142,7 @@ pub trait LayoutItem: Send {
 /// edited. Use it like `impl UI + Resizable`.
 pub trait Resizable: LayoutItem {
     /// Consumes this [`ItemBox`] and returns a similar one with the minimum size set.
-    fn with_minimum_size(self, min_size: Extent2<f32>) -> Self;
+    fn with_minimum_size(self, min_size: Size2) -> Self;
 }
 
 pub struct ItemBox<Factory, Item>
@@ -186,7 +184,7 @@ impl<F, Item> Resizable for ItemBox<F, Item>
 where
     F: Send + FnMut(ParentHints) -> Item,
 {
-    fn with_minimum_size(self, min_size: Extent2<f32>) -> Self {
+    fn with_minimum_size(self, min_size: Size2) -> Self {
         Self {
             hints: ChildHints {
                 minimum_size: min_size,
@@ -242,7 +240,7 @@ where
     F: Send + FnMut(&mut Capture, ParentHints) -> Item,
     Capture: std::marker::Send,
 {
-    fn with_minimum_size(self, min_size: Extent2<f32>) -> Self {
+    fn with_minimum_size(self, min_size: Size2) -> Self {
         Self {
             hints: ChildHints {
                 minimum_size: min_size,

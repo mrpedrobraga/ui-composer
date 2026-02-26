@@ -1,33 +1,40 @@
-use ui_composer_input::event::{CursorEvent, EvNum, Event};
-use winit::event::ElementState;
 use {
     smol_str::SmolStr,
     ui_composer_input::event::{
-        ButtonState, DeviceId, FileDragAndDropEvent, ImeEvent, KeyEvent, KeyboardEvent,
-        MouseButton, ScrollOffset, ThemeType, TouchStage,
+        ButtonState, DeviceId, FileDragAndDropEvent, ImeEvent, KeyEvent,
+        KeyboardEvent, MouseButton, ScrollOffset, ThemeType, TouchStage,
     },
-    vek::{Extent2, Vec2},
+    ui_composer_math::prelude::Vector2,
     winit::event::{MouseScrollDelta, TouchPhase, WindowEvent},
 };
+use {
+    ui_composer_input::event::{CursorEvent, EvNum, Event},
+    ui_composer_math::prelude::Size2,
+};
+use {ui_composer_math::prelude::Point2, winit::event::ElementState};
 
 pub fn into_event(value: WindowEvent) -> Result<Event, ()> {
     match value {
         // MARK: App
         WindowEvent::CloseRequested => Ok(Event::CloseRequested),
-        WindowEvent::Resized(physical_size) => Ok(Event::Resized(Extent2 {
-            w: physical_size.width as EvNum,
-            h: physical_size.height as EvNum,
+        WindowEvent::Resized(physical_size) => Ok(Event::Resized(Size2 {
+            width: physical_size.width as EvNum,
+            height: physical_size.height as EvNum,
         })),
-        WindowEvent::ThemeChanged(theme) => Ok(Event::ThemeTypeChanged(match theme {
-            winit::window::Theme::Light => ThemeType::Light,
-            winit::window::Theme::Dark => ThemeType::Light,
-        })),
+        WindowEvent::ThemeChanged(theme) => {
+            Ok(Event::ThemeTypeChanged(match theme {
+                winit::window::Theme::Light => ThemeType::Light,
+                winit::window::Theme::Dark => ThemeType::Light,
+            }))
+        }
         WindowEvent::RedrawRequested => Ok(Event::RedrawRequested),
         WindowEvent::ScaleFactorChanged {
             scale_factor,
             inner_size_writer: _,
         } => Ok(Event::ScaleFactorChanged(scale_factor as EvNum)),
-        WindowEvent::Focused(is_focused) => Ok(Event::FocusStateChanged(is_focused)),
+        WindowEvent::Focused(is_focused) => {
+            Ok(Event::FocusStateChanged(is_focused))
+        }
 
         // MARK: Cursor and Gestures
         WindowEvent::CursorMoved {
@@ -36,7 +43,7 @@ pub fn into_event(value: WindowEvent) -> Result<Event, ()> {
         } => Ok(Event::Cursor {
             id: DeviceId(0),
             event: CursorEvent::Moved {
-                position: Vec2 {
+                position: Point2 {
                     x: position.x as EvNum,
                     y: position.y as EvNum,
                 },
@@ -59,11 +66,17 @@ pub fn into_event(value: WindowEvent) -> Result<Event, ()> {
             event: CursorEvent::Scroll(
                 match delta {
                     MouseScrollDelta::LineDelta(column_delta, row_delta) => {
-                        ScrollOffset::Lines(Vec2::new(column_delta, row_delta))
+                        ScrollOffset::Lines(Vector2::new(
+                            column_delta,
+                            row_delta,
+                        ))
                     }
-                    MouseScrollDelta::PixelDelta(physical_position) => ScrollOffset::Pixels(
-                        Vec2::new(physical_position.x as f32, physical_position.y as f32),
-                    ),
+                    MouseScrollDelta::PixelDelta(physical_position) => {
+                        ScrollOffset::Pixels(Vector2::new(
+                            physical_position.x as f32,
+                            physical_position.y as f32,
+                        ))
+                    }
                 },
                 into_to_touch_stage(phase),
             ),
@@ -81,11 +94,15 @@ pub fn into_event(value: WindowEvent) -> Result<Event, ()> {
                     winit::event::MouseButton::Middle => MouseButton::Middle,
                     winit::event::MouseButton::Back => MouseButton::Back,
                     winit::event::MouseButton::Forward => MouseButton::Forward,
-                    winit::event::MouseButton::Other(id) => MouseButton::Other(id),
+                    winit::event::MouseButton::Other(id) => {
+                        MouseButton::Other(id)
+                    }
                 },
                 match state {
                     winit::event::ElementState::Pressed => ButtonState::Pressed,
-                    winit::event::ElementState::Released => ButtonState::Released,
+                    winit::event::ElementState::Released => {
+                        ButtonState::Released
+                    }
                 },
             ),
         }),
@@ -125,7 +142,7 @@ pub fn into_event(value: WindowEvent) -> Result<Event, ()> {
         } => Ok(Event::Cursor {
             id: DeviceId(0),
             event: CursorEvent::Panned {
-                translation: Vec2 {
+                translation: Vector2 {
                     x: delta.x,
                     y: delta.y,
                 },
@@ -152,7 +169,9 @@ pub fn into_event(value: WindowEvent) -> Result<Event, ()> {
         WindowEvent::HoveredFile(path_buf) => {
             Ok(Event::File(FileDragAndDropEvent::Hovered(path_buf)))
         }
-        WindowEvent::HoveredFileCancelled => Ok(Event::File(FileDragAndDropEvent::Cancelled)),
+        WindowEvent::HoveredFileCancelled => {
+            Ok(Event::File(FileDragAndDropEvent::Cancelled))
+        }
         WindowEvent::DroppedFile(path_buf) => {
             Ok(Event::File(FileDragAndDropEvent::Dropped(path_buf)))
         }
@@ -186,7 +205,9 @@ pub fn into_event(value: WindowEvent) -> Result<Event, ()> {
             axis: _,
             value: _,
         } => unimplemented!(),
-        WindowEvent::Occluded(is_occluded) => Ok(Event::OcclusionStateChanged(is_occluded)),
+        WindowEvent::Occluded(is_occluded) => {
+            Ok(Event::OcclusionStateChanged(is_occluded))
+        }
 
         // MARK: Unsupported
         WindowEvent::ModifiersChanged(_modifiers) => Err(()),

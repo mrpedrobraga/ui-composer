@@ -2,14 +2,14 @@ use ui_composer_core::{
     app::composition::layout::hints::{ChildHints, ParentHints},
     prelude::LayoutItem,
 };
-use vek::{Extent2, Rgba};
+use ui_composer_math::prelude::{Size2, Srgba};
 
 use crate::primitives::graphic::Graphic;
 
 #[derive(Default)]
 pub struct ColorBox {
-    size: Extent2<f32>,
-    color: Rgba<f32>,
+    size: Size2,
+    color: Srgba,
 }
 
 #[allow(non_snake_case)]
@@ -19,11 +19,11 @@ pub fn ColorBox() -> ColorBox {
     }
 }
 impl ColorBox {
-    pub fn with_color(self, color: Rgba<f32>) -> Self {
+    pub fn with_color(self, color: Srgba) -> Self {
         Self { color, ..self }
     }
 
-    pub fn with_size(self, size: Extent2<f32>) -> Self {
+    pub fn with_size(self, size: Size2) -> Self {
         Self { size, ..self }
     }
 }

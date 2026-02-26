@@ -83,7 +83,7 @@ fn PersonFormEditor(person_form: PersonForm, send_fx: impl Effect) -> impl UI {
     // notice how instead of using CSS we *compose* layout by using newtypes.
     Center(
         WithSize(
-            Extent2::new(300.0, 300.0),
+            Size2::new(300.0, 300.0),
             Flex![
                 [ _ ] Label("Log in!"),
                 [ _ ] Row![ Label("Name"), TextEdit(form.name) ],

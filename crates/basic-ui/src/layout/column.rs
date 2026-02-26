@@ -4,7 +4,7 @@ use ui_composer_core::app::composition::layout::{
     LayoutItem,
     hints::{ChildHints, ParentHints},
 };
-use vek::{Extent2, Rect};
+use ui_composer_math::prelude::{Rect, Size2, Vector2};
 
 /// A vertical, writing order stack of items.
 ///
@@ -52,10 +52,8 @@ where
     ) -> ui_composer_core::app::composition::layout::hints::ChildHints {
         let inner_hints = ParentHints {
             rect: Rect::new(
-                parent_hints.rect.x,
-                parent_hints.rect.y,
-                parent_hints.rect.w,
-                f32::INFINITY,
+                parent_hints.rect.origin,
+                Size2::new(parent_hints.rect.size.width, f32::INFINITY),
             ),
             ..parent_hints
         };
@@ -65,13 +63,13 @@ where
         self.__item_a_hints_cache = a;
         self.__item_b_hints_cache = b;
 
-        let minimum_size = Extent2::new(
-            a.minimum_size.w.max(b.minimum_size.w), // Max width
-            a.minimum_size.h + self.gap + b.minimum_size.h, // Min height with gap
+        let minimum_size = Size2::new(
+            a.minimum_size.width.max(b.minimum_size.width), // Max width
+            a.minimum_size.height + self.gap + b.minimum_size.height, // Min height with gap
         );
-        let natural_size = Extent2::new(
-            a.natural_size.w.max(b.natural_size.w), // Max width
-            a.natural_size.h + self.gap + b.natural_size.h, // Min height with gap
+        let natural_size = Size2::new(
+            a.natural_size.width.max(b.natural_size.width), // Max width
+            a.natural_size.height + self.gap + b.natural_size.height, // Min height with gap
         );
         ChildHints {
             minimum_size,
@@ -82,22 +80,25 @@ where
     fn place(&mut self, parent_hints: ParentHints) -> Self::Blueprint {
         let a = self.item_a.place(ParentHints {
             rect: Rect::new(
-                parent_hints.rect.x,
-                parent_hints.rect.y,
-                parent_hints.rect.w,
-                self.__item_a_hints_cache.natural_size.h,
+                parent_hints.rect.origin,
+                Size2::new(
+                    parent_hints.rect.size.width,
+                    self.__item_a_hints_cache.natural_size.height,
+                ),
             ),
             ..parent_hints
         });
 
         let b = self.item_b.place(ParentHints {
             rect: Rect::new(
-                parent_hints.rect.x,
-                parent_hints.rect.y
-                    + self.__item_a_hints_cache.natural_size.h
-                    + self.gap,
-                parent_hints.rect.w,
-                self.__item_b_hints_cache.natural_size.h,
+                parent_hints.rect.origin.translate(Vector2::new(
+                    0.0,
+                    self.__item_a_hints_cache.natural_size.height + self.gap,
+                )),
+                Size2::new(
+                    parent_hints.rect.size.width,
+                    self.__item_b_hints_cache.natural_size.height,
+                ),
             ),
             ..parent_hints
         });

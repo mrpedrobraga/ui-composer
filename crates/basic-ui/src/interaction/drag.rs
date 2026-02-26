@@ -1,11 +1,17 @@
 #![allow(unused)]
 
-use {ui_composer_core::app::composition::algebra::Bubble, ui_composer_input::event::CursorEvent};
-use {ui_composer_input::event::Event, vek::Vec2};
+use {
+    ui_composer_core::app::composition::algebra::Bubble,
+    ui_composer_input::event::CursorEvent,
+    ui_composer_math::{
+        glamour::Contains,
+        prelude::{Point2, Vector2},
+    },
+};
+use {ui_composer_input::event::Event, ui_composer_math::prelude::Rect};
 use {
     ui_composer_input::event::{ButtonState, MouseButton},
     ui_composer_state::futures_signals::signal::Mutable,
-    vek::Rect,
 };
 
 #[derive(Default, Debug, Copy, Clone, PartialEq)]
@@ -19,20 +25,20 @@ pub enum DragState {
 /// An Interactor that handles a user dragging the window.
 #[derive(Debug, Clone)]
 pub struct Drag {
-    rect: Rect<f32, f32>,
+    rect: Rect,
     drag_state: Mutable<DragState>,
-    mouse_position: Mutable<Vec2<f32>>,
+    mouse_position: Mutable<Point2>,
 
     // The thing we actually care about...
-    displacement: Mutable<Vec2<f32>>,
+    displacement: Mutable<Vector2>,
 }
 
 impl Drag {
     pub fn new(
-        rect: Rect<f32, f32>,
+        rect: Rect,
         drag_state: Mutable<DragState>,
-        mouse_position: Mutable<Vec2<f32>>,
-        displacement: Mutable<Vec2<f32>>,
+        mouse_position: Mutable<Point2>,
+        displacement: Mutable<Vector2>,
     ) -> Self {
         Self {
             rect,
@@ -50,20 +56,20 @@ impl Bubble<Event, bool> for Drag {
             match (event, self.drag_state.get()) {
                 (CursorEvent::Moved { position }, DragState::None) => {
                     self.mouse_position.set(*position);
-                    if self.rect.contains_point(*position) {
+                    if self.rect.contains(position) {
                         self.drag_state.set(DragState::Hovering);
                     }
                     true
                 }
                 (CursorEvent::Moved { position }, DragState::Hovering) => {
                     self.mouse_position.set(*position);
-                    if !self.rect.contains_point(*position) {
+                    if !self.rect.contains(position) {
                         self.drag_state.set(DragState::None);
                     }
                     false
                 }
                 (CursorEvent::Moved { position }, DragState::Dragging) => {
-                    if self.rect.contains_point(*position) {
+                    if self.rect.contains(position) {
                         let delta = *position - self.mouse_position.get();
                         *self.displacement.lock_mut() += delta;
                     } else {
@@ -74,12 +80,17 @@ impl Bubble<Event, bool> for Drag {
                     self.mouse_position.set(*position);
                     true
                 }
-                (CursorEvent::Exited, DragState::Dragging | DragState::Hovering) => {
+                (
+                    CursorEvent::Exited,
+                    DragState::Dragging | DragState::Hovering,
+                ) => {
                     self.drag_state.set(DragState::None);
                     false
                 }
                 (CursorEvent::Button(button, state), DragState::Hovering) => {
-                    if let (MouseButton::Left, ButtonState::Pressed) = (button, state) {
+                    if let (MouseButton::Left, ButtonState::Pressed) =
+                        (button, state)
+                    {
                         self.drag_state.set(DragState::Dragging);
                         true
                     } else {
@@ -87,7 +98,9 @@ impl Bubble<Event, bool> for Drag {
                     }
                 }
                 (CursorEvent::Button(button, state), DragState::Dragging) => {
-                    if let (MouseButton::Left, ButtonState::Released) = (button, state) {
+                    if let (MouseButton::Left, ButtonState::Released) =
+                        (button, state)
+                    {
                         self.drag_state.set(DragState::Hovering);
                         true
                     } else {

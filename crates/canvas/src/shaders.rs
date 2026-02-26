@@ -1,19 +1,21 @@
-use image::RgbaImage;
-use std::sync::OnceLock;
-use vek::{Rgba, Vec2, Vec3};
+use {
+    image::RgbaImage,
+    ui_composer_math::prelude::{Srgba, Vector2},
+};
+use {std::sync::OnceLock, ui_composer_math::prelude::Vector3};
 
 use crate::PixelShaderInput;
 
-pub fn funky(PixelShaderInput { uv, time, .. }: PixelShaderInput) -> Rgba<f32> {
+pub fn funky(PixelShaderInput { uv, time, .. }: PixelShaderInput) -> Srgba {
     // Center the coordinates (-1.0 to 1.0) and adjust for typical terminal aspect ratio
-    let p = uv * 2.0 - Vec2::new(1.0, 1.0);
+    let p = uv * 2.0 - Vector2::<f32>::new(1.0, 1.0);
 
     // Create some "wobble" using sine waves and time
-    let mut color = Vec3::new(0.0, 0.0, 0.0);
+    let mut color = Vector3::<f32>::new(0.0, 0.0, 0.0);
 
     for i in 1..4 {
         let i_f = i as f32;
-        let uv_wobble = Vec2::new(
+        let uv_wobble = Vector2::<f32>::new(
             p.x + 0.7 / i_f * (i_f * p.y + time + 0.3 * i_f).sin(),
             p.y + 0.4 / i_f * (i_f * p.x + time + 0.5 * i_f).cos(),
         );
@@ -30,7 +32,7 @@ pub fn funky(PixelShaderInput { uv, time, .. }: PixelShaderInput) -> Rgba<f32> {
     }
 
     // Normalize and return
-    Rgba::new(
+    Srgba::new(
         (color.x * 0.5 + 0.5).clamp(0.0, 1.0),
         (color.y * 0.5 + 0.5).clamp(0.0, 1.0),
         (color.z * 0.5 + 0.5).clamp(0.0, 1.0),
@@ -48,7 +50,7 @@ fn get_image() -> &'static RgbaImage {
     })
 }
 
-pub fn image(PixelShaderInput { uv, .. }: PixelShaderInput) -> Rgba<f32> {
+pub fn image(PixelShaderInput { uv, .. }: PixelShaderInput) -> Srgba {
     let img = get_image();
     let (w, h) = img.dimensions();
 
@@ -57,7 +59,7 @@ pub fn image(PixelShaderInput { uv, .. }: PixelShaderInput) -> Rgba<f32> {
 
     let pixel = img.get_pixel(x, y);
 
-    Rgba::new(
+    Srgba::new(
         pixel[0] as f32 / 255.0,
         pixel[1] as f32 / 255.0,
         pixel[2] as f32 / 255.0,

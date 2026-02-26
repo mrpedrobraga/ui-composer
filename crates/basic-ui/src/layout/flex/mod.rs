@@ -3,11 +3,13 @@ use ui_composer_core::app::composition::layout::{
     LayoutItem,
     hints::{ChildHints, ParentHints},
 };
-use ui_composer_math::flow::{
-    CartesianFlow, CoordinateSystem as _, Flow, WritingFlow,
-    arrangers::arrange_stretchy_rects_with_minimum_sizes_dirty_alloc,
+use ui_composer_math::{
+    flow::{
+        CartesianFlow, CoordinateSystem as _, Flow, WritingFlow,
+        arrangers::arrange_stretchy_rects_with_minimum_sizes_dirty_alloc,
+    },
+    prelude::{Rect, Size2, Vector2},
 };
-use vek::{Extent2, Rect};
 
 #[allow(non_snake_case)]
 #[inline(always)]
@@ -55,18 +57,13 @@ where
             self.flow_direction.as_cartesian(&parent_hints.current_flow);
 
         let mock_size = if flow_direction.is_horizontal() {
-            Extent2::new(0.0, parent_hints.rect.h)
+            Size2::new(0.0, parent_hints.rect.size.height)
         } else {
-            Extent2::new(parent_hints.rect.w, 0.0)
+            Size2::new(parent_hints.rect.size.width, 0.0)
         };
 
         let base_hints = ParentHints {
-            rect: Rect::new(
-                parent_hints.rect.x,
-                parent_hints.rect.y,
-                mock_size.w,
-                mock_size.h,
-            ),
+            rect: Rect::new(parent_hints.rect.origin, mock_size),
             ..parent_hints
         };
         let base_hints_iter = std::iter::repeat_n(base_hints, ItemList::SIZE);
@@ -76,9 +73,9 @@ where
         let weights = self.items.weights().collect::<Vec<_>>();
 
         let parent_size = if flow_direction.is_horizontal() {
-            parent_hints.rect.w
+            parent_hints.rect.size.width
         } else {
-            parent_hints.rect.h
+            parent_hints.rect.size.height
         };
         let main_axis_sizes =
             arrange_stretchy_rects_with_minimum_sizes_dirty_alloc(
@@ -94,24 +91,24 @@ where
             main_axis_sizes.into_iter(),
         );
 
-        let mut combined_minimum_sizes: Extent2<f32> = Extent2::zero();
-        let mut combined_natural_sizes: Extent2<f32> = Extent2::zero();
+        let mut combined_minimum_sizes: Size2 = Size2::ZERO;
+        let mut combined_natural_sizes: Size2 = Size2::ZERO;
 
         for h in self.items.prepare(allocated_hints_iter) {
             if flow_direction.is_horizontal() {
-                combined_minimum_sizes.w += h.minimum_size.w;
-                combined_minimum_sizes.h =
-                    combined_minimum_sizes.h.max(h.minimum_size.h);
-                combined_natural_sizes.w += h.natural_size.w;
-                combined_natural_sizes.h =
-                    combined_natural_sizes.h.max(h.natural_size.h);
+                combined_minimum_sizes.width += h.minimum_size.width;
+                combined_minimum_sizes.height =
+                    combined_minimum_sizes.height.max(h.minimum_size.height);
+                combined_natural_sizes.width += h.natural_size.width;
+                combined_natural_sizes.height =
+                    combined_natural_sizes.height.max(h.natural_size.height);
             } else {
-                combined_minimum_sizes.w =
-                    combined_minimum_sizes.w.max(h.minimum_size.w);
-                combined_minimum_sizes.h += h.minimum_size.h;
-                combined_natural_sizes.w =
-                    combined_natural_sizes.w.max(h.natural_size.w);
-                combined_natural_sizes.h += h.natural_size.h;
+                combined_minimum_sizes.width =
+                    combined_minimum_sizes.width.max(h.minimum_size.width);
+                combined_minimum_sizes.height += h.minimum_size.height;
+                combined_natural_sizes.width =
+                    combined_natural_sizes.width.max(h.natural_size.width);
+                combined_natural_sizes.height += h.natural_size.height;
             }
         }
 
@@ -129,8 +126,8 @@ where
 
         use CartesianFlow::*;
         let parent_size = match flow_direction {
-            LeftToRight | RightToLeft => parent_hints.rect.w,
-            TopToBottom | BottomToTop => parent_hints.rect.h,
+            LeftToRight | RightToLeft => parent_hints.rect.size.width,
+            TopToBottom | BottomToTop => parent_hints.rect.size.height,
         };
 
         let main_axis_sizes =
@@ -165,41 +162,51 @@ where
         let item_hints = match flow_direction {
             LeftToRight => ParentHints {
                 rect: Rect::new(
-                    container.rect.x + *offset_from_start,
-                    container.rect.y,
-                    current_element_size,
-                    container.rect.h,
+                    container
+                        .rect
+                        .origin
+                        .translate(Vector2::new(*offset_from_start, 0.0)),
+                    Size2::new(
+                        current_element_size,
+                        container.rect.size.height,
+                    ),
                 ),
                 ..container
             },
             RightToLeft => ParentHints {
                 rect: Rect::new(
-                    container.rect.x + container.rect.w
-                        - *offset_from_start
-                        - current_element_size,
-                    container.rect.y,
-                    current_element_size,
-                    container.rect.h,
+                    container.rect.origin.translate(Vector2::new(
+                        container.rect.size.width
+                            - *offset_from_start
+                            - current_element_size,
+                        0.0,
+                    )),
+                    Size2::new(
+                        current_element_size,
+                        container.rect.size.height,
+                    ),
                 ),
                 ..container
             },
             TopToBottom => ParentHints {
                 rect: Rect::new(
-                    container.rect.x,
-                    container.rect.y + *offset_from_start,
-                    container.rect.w,
-                    current_element_size,
+                    container
+                        .rect
+                        .origin
+                        .translate(Vector2::new(0.0, *offset_from_start)),
+                    Size2::new(container.rect.size.width, current_element_size),
                 ),
                 ..container
             },
             BottomToTop => ParentHints {
                 rect: Rect::new(
-                    container.rect.x,
-                    container.rect.y + container.rect.h
-                        - *offset_from_start
-                        - current_element_size,
-                    container.rect.w,
-                    current_element_size,
+                    container.rect.origin.translate(Vector2::new(
+                        0.0,
+                        container.rect.size.height
+                            - *offset_from_start
+                            - current_element_size,
+                    )),
+                    Size2::new(container.rect.size.width, current_element_size),
                 ),
                 ..container
             },
@@ -285,8 +292,12 @@ where
     fn minima(&self, flow_direction: CartesianFlow) -> Once<f32> {
         use CartesianFlow::*;
         match flow_direction {
-            LeftToRight | RightToLeft => once(self._hints_cache.minimum_size.w),
-            TopToBottom | BottomToTop => once(self._hints_cache.minimum_size.h),
+            LeftToRight | RightToLeft => {
+                once(self._hints_cache.minimum_size.width)
+            }
+            TopToBottom | BottomToTop => {
+                once(self._hints_cache.minimum_size.height)
+            }
         }
     }
 

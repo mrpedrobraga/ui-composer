@@ -5,16 +5,16 @@ use ui_composer_core::app::composition::{
     visit::{Apply, DriveThru},
 };
 use ui_composer_input::event::Event;
+use ui_composer_math::prelude::{Mix, Rect, Srgba};
 use ui_composer_platform_tui::{
     canvas::{Canvas as _, TextModePixel},
     nodes::TerminalEffectVisitor,
     runner::{TerminalBlueprintResources, TerminalEnvironment},
 };
-use vek::{Rect, Rgba};
 
 /// An effect that describes rendering of a quad in the terminal.
 #[derive(Debug)]
-pub struct RenderQuad(pub Rect<f32, f32>, pub Rgba<f32>);
+pub struct RenderQuad(pub Rect, pub Srgba);
 
 //impl ElementEffect<WinitEnvironment> for RenderQuad {}
 
@@ -25,7 +25,7 @@ impl<'fx> Apply<RenderQuad> for TerminalEffectVisitor<'fx> {
             rect.as_(),
             TextModePixel {
                 bg_color: *color,
-                fg_color: Rgba::new_transparent(0.0, 0.0, 0.0),
+                fg_color: Srgba::new(0.0, 0.0, 0.0, 0.0),
                 character: ' ',
             },
         );
@@ -49,19 +49,19 @@ where
 pub fn Graphic() -> Graphic {
     Graphic {
         rect: Rect::default(),
-        color: Rgba::default(),
+        color: Srgba::default(),
     }
 }
 
 /// A simple coloured graphic.
 #[derive(Default, Clone, Copy, PartialEq)]
 pub struct Graphic {
-    pub rect: Rect<f32, f32>,
-    pub color: Rgba<f32>,
+    pub rect: Rect,
+    pub color: Srgba,
 }
 
-impl From<Rect<f32, f32>> for Graphic {
-    fn from(value: Rect<f32, f32>) -> Self {
+impl From<Rect> for Graphic {
+    fn from(value: Rect) -> Self {
         Graphic {
             rect: value,
             ..Default::default()
@@ -70,17 +70,17 @@ impl From<Rect<f32, f32>> for Graphic {
 }
 
 impl Graphic {
-    pub fn new(rect: Rect<f32, f32>, color: Rgba<f32>) -> Self {
+    pub fn new(rect: Rect, color: Srgba) -> Self {
         Self { rect, color }
     }
 
     /// Adapts this graphic with a new colour!
-    pub fn with_color(self, color: Rgba<f32>) -> Self {
+    pub fn with_color(self, color: Srgba) -> Self {
         Self { color, ..self }
     }
 
     /// Adapts this graphic with a new rect!
-    pub fn with_rect(self, rect: Rect<f32, f32>) -> Self {
+    pub fn with_rect(self, rect: Rect) -> Self {
         Self { rect, ..self }
     }
 }
@@ -110,18 +110,8 @@ impl Element<TerminalEnvironment> for Graphic {
 impl ui_composer_state::effect::animation::Lerp for Graphic {
     fn linear_interpolate(self, other: Self, t: f32) -> Self {
         Graphic {
-            rect: Rect {
-                x: self.rect.x.linear_interpolate(other.rect.x, t),
-                y: self.rect.y.linear_interpolate(other.rect.y, t),
-                w: self.rect.w.linear_interpolate(other.rect.w, t),
-                h: self.rect.h.linear_interpolate(other.rect.h, t),
-            },
-            color: Rgba {
-                r: self.color.r.linear_interpolate(other.color.r, t),
-                g: self.color.g.linear_interpolate(other.color.g, t),
-                b: self.color.b.linear_interpolate(other.color.b, t),
-                a: self.color.a.linear_interpolate(other.color.a, t),
-            },
+            rect: self.rect.lerp(other.rect, t),
+            color: self.color.mix(other.color, t),
         }
     }
 }

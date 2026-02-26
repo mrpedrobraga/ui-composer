@@ -38,5 +38,5 @@ fn ReactiveLabel(
 
         list![text]
     })
-    .with_minimum_size(Extent2::new(15.0, 1.0))
+    .with_minimum_size(Size2::new(15.0, 1.0))
 }

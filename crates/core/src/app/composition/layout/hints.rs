@@ -24,20 +24,21 @@
 //! 2. Perform layout calculations;
 //! 3. Generate parent hints, likely in order, while calling [`LayoutItem::lay`] on them.;
 //!
-use ui_composer_math::flow::CurrentFlow;
-use vek::{Extent2, Rect};
+use ui_composer_math::{
+    flow::CurrentFlow,
+    prelude::{Rect, Size2},
+};
 
 /// The parent hints struct.
 #[derive(Debug, Clone, Copy)]
 pub struct ParentHints {
-    pub rect: Rect<f32, f32>,
+    pub rect: Rect,
     pub current_flow: CurrentFlow,
 }
 
 /// The child hints struct.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct ChildHints {
-    // TODO: Turn thse into signals or states.
-    pub minimum_size: Extent2<f32>,
-    pub natural_size: Extent2<f32>,
+    pub minimum_size: Size2,
+    pub natural_size: Size2,
 }

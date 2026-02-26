@@ -12,7 +12,6 @@ ui-composer-math = { path = "../math" }
 ui-composer-state = { path = "../state" }
 ui-composer-input = { path = "../input" }
 ui-composer-core = { path = "../core" }
-vek = "0.17.2"
 
 ui-composer-platform-tui = { path = "../platform-tui" }
 ui-composer-platform-winit = { path = "../platform-winit" }

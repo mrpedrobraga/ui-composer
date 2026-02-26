@@ -11,14 +11,14 @@ fn app() -> impl Ui {
     view! {
         column [
             center flex {vertical_flow} [
-                item ColorBox {color: Rgba::red()} ()
-                item {grow: 1.0} linewise_flow ((MonospaceText(t.clone(), Rgba::white())))
-                item ColorBox {color: Rgba::blue()} ()
+                item ColorBox {color: Srgba::new(1.0, 0.0, 0.0, 1.0)} ()
+                item {grow: 1.0} linewise_flow ((MonospaceText(t.clone(), Srgba::new(1.0, 1.0, 0.0, 1.0))))
+                item ColorBox {color: Srgba::new(0.0, 0.0, 1.0, 1.0)} ()
             ]
             center flex {vertical_flow} [
-                item ColorBox {color: Rgba::yellow()} ()
-                item {grow: 1.0} linewise_flow ((MonospaceText(t.clone(), Rgba::blue())))
-                item ColorBox {color: Rgba::green()} ()
+                item ColorBox {color: Srgba::new(1.0, 1.0, 0.0, 1.0)} ()
+                item {grow: 1.0} linewise_flow ((MonospaceText(t.clone(), Srgba::new(1.0, 0.0, 1.0, 1.0))))
+                item ColorBox {color: Srgba::new(0.0, 1.0, 0.0, 1.0)} ()
             ]
         ]
     }

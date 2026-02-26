@@ -1,29 +1,28 @@
 #![allow(unused)]
 use ui_composer_core::app::composition::algebra::Bubble;
 use ui_composer_core::app::composition::elements::{Blueprint, Element};
+use ui_composer_input::event::{ButtonState, MouseButton};
 use ui_composer_input::event::{CursorEvent, Event, TouchStage};
+use ui_composer_math::glamour::Contains;
+use ui_composer_math::prelude::{Point2, Rect};
 use ui_composer_state::effect::Effect;
 use ui_composer_state::futures_signals::signal::Mutable;
-use {
-    ui_composer_input::event::{ButtonState, MouseButton},
-    vek::{Rect, Vec2},
-};
 
 /// An Interactor that handles a user hovering over it with a cursor.
 pub struct Tap<A: Effect> {
-    pub rect: Rect<f32, f32>,
+    pub rect: Rect,
     pub tap_effect: A,
     is_hovered_state: Mutable<bool>,
     /// Todo: this shouldn't be saved per `Tap`,
     /// instead, it should be provided to us in a cascading context.
-    mouse_position_state: Option<Vec2<f32>>,
+    mouse_position_state: Option<Point2>,
 }
 
 impl<Fx> Tap<Fx>
 where
     Fx: Effect,
 {
-    pub fn new(rect: Rect<f32, f32>, tap_effect: Fx) -> Self {
+    pub fn new(rect: Rect, tap_effect: Fx) -> Self {
         Self {
             rect,
             mouse_position_state: None,
@@ -49,8 +48,7 @@ where
             Event::Cursor { id: _, event } => match event {
                 CursorEvent::Moved { position } => {
                     self.mouse_position_state = Some(*position);
-                    self.is_hovered_state
-                        .set(self.rect.contains_point(*position));
+                    self.is_hovered_state.set(self.rect.contains(position));
                     false
                 }
                 CursorEvent::Exited => {

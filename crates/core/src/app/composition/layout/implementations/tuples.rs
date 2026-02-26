@@ -1,14 +1,15 @@
+use ui_composer_math::prelude::Size2;
+
 use crate::app::composition::layout::LayoutItem;
 use crate::app::composition::layout::hints::{ChildHints, ParentHints};
-use vek::Extent2;
 
 impl LayoutItem for () {
     type Blueprint = ();
 
     fn prepare(&mut self, _: ParentHints) -> ChildHints {
         ChildHints {
-            minimum_size: Extent2::zero(),
-            natural_size: Extent2::zero(),
+            minimum_size: Size2::ZERO,
+            natural_size: Size2::ZERO,
         }
     }
 
@@ -29,14 +30,8 @@ where
         let a = self.0.prepare(parent_hints);
         let b = self.0.prepare(parent_hints);
         ChildHints {
-            minimum_size: Extent2::new(
-                a.minimum_size.w.max(b.minimum_size.w),
-                a.minimum_size.h.max(b.minimum_size.h),
-            ),
-            natural_size: Extent2::new(
-                a.natural_size.w.max(b.natural_size.w),
-                a.natural_size.h.max(b.natural_size.h),
-            ),
+            minimum_size: a.minimum_size.max(b.minimum_size),
+            natural_size: a.natural_size.max(b.natural_size),
         }
     }
 
