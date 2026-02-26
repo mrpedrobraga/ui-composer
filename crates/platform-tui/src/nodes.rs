@@ -179,7 +179,16 @@ where
             // TODO: Listen to and respect the child hints.
             #[allow(unused)]
             let child_hints = ui.prepare(parent_hints);
-            ui.place(parent_hints)
+            let clamped_rect = Rect::new(
+                0.0,
+                0.0,
+                parent_hints.rect.w.max(child_hints.minimum_size.w),
+                parent_hints.rect.h.max(child_hints.minimum_size.h),
+            );
+            ui.place(ParentHints {
+                rect: clamped_rect,
+                ..parent_hints
+            })
         })
         .into_blueprint();
 

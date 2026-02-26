@@ -2,7 +2,7 @@
 use {lullaby_ui::prelude::*, ui_composer::prelude::*};
 
 pub fn main() {
-    let use_macro = true;
+    let use_macro = false;
 
     if use_macro {
         UIComposer::run_tui(Terminal(app_with_macro()));
@@ -12,41 +12,15 @@ pub fn main() {
 }
 
 fn app() -> impl Ui {
-    flex(list![
-        item(
-            ColorBox()
-                .with_color(Rgba::red())
-                .with_size(Extent2::new(30.0, 10.0))
-        ),
-        item(
-            flex(list![
-                item(
-                    ColorBox()
-                        .with_color(Rgba::cyan())
-                        .with_size(Extent2::new(25.0, 10.0))
-                ),
-                item(center(
-                    ColorBox()
-                        .with_color(Rgba::yellow())
-                        .with_size(Extent2::new(10.0, 10.0))
-                ))
-                .with_grow(1.0),
-                item(
-                    ColorBox()
-                        .with_color(Rgba::magenta())
-                        .with_size(Extent2::new(20.0, 10.0))
-                )
-                .with_grow(2.0),
-            ])
-            .with_vertical_flow()
-        )
-        .with_grow(1.0),
-        item(
-            ColorBox()
-                .with_color(Rgba::blue())
-                .with_size(Extent2::new(20.0, 10.0))
-        ),
-    ])
+    let t = "The quick brown fox jumps and jumps and keeps going on and on man it really does go on forever and ever...".to_string();
+
+    view! {
+        center flex [
+            item ColorBox {color: Rgba::red()} ()
+            item {grow: 1.0} linewise_flow MonospaceText ((t) (Rgba::white()))
+            item ColorBox {color: Rgba::blue()} ()
+        ]
+    }
 }
 
 fn app_with_macro() -> impl Ui {

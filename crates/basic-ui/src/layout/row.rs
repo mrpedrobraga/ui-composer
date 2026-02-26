@@ -1,3 +1,5 @@
+use core::f32;
+
 use ui_composer_core::app::composition::layout::{
     LayoutItem,
     hints::{ChildHints, ParentHints},
@@ -44,8 +46,17 @@ where
     type Blueprint = (A::Blueprint, B::Blueprint);
 
     fn prepare(&mut self, parent_hints: ParentHints) -> ChildHints {
-        let a = self.item_a.prepare(parent_hints);
-        let b = self.item_b.prepare(parent_hints);
+        let inner_hints = ParentHints {
+            rect: Rect::new(
+                parent_hints.rect.x,
+                parent_hints.rect.y,
+                f32::INFINITY,
+                parent_hints.rect.h,
+            ),
+            ..parent_hints
+        };
+        let a = self.item_a.prepare(inner_hints);
+        let b = self.item_b.prepare(inner_hints);
 
         self.__item_a_hints_cache = a;
         self.__item_b_hints_cache = b;

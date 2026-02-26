@@ -54,12 +54,38 @@ where
         let flow_direction =
             self.flow_direction.as_cartesian(&parent_hints.current_flow);
 
+        let base_hints_iter = std::iter::repeat_n(parent_hints, ItemList::SIZE);
+        let _ = self.items.prepare(base_hints_iter).count();
+
+        let minima = self.items.minima(flow_direction).collect::<Vec<_>>();
+        let weights = self.items.weights().collect::<Vec<_>>();
+
+        use CartesianFlow::*;
+        let parent_size = match flow_direction {
+            LeftToRight | RightToLeft => parent_hints.rect.w,
+            TopToBottom | BottomToTop => parent_hints.rect.h,
+        };
+
+        let main_axis_sizes =
+            arrange_stretchy_rects_with_minimum_sizes_dirty_alloc(
+                parent_size,
+                weights.as_slice(),
+                minima.as_slice(),
+                0.01,
+            );
+
+        let allocated_hints_iter = allocate_rects(
+            parent_hints,
+            flow_direction,
+            main_axis_sizes.into_iter(),
+        );
+
         let mut combined_minimum_sizes: Extent2<f32> = Extent2::zero();
         let mut combined_natural_sizes: Extent2<f32> = Extent2::zero();
 
-        for h in self.items.prepare(parent_hints) {
+        for h in self.items.prepare(allocated_hints_iter) {
             match flow_direction {
-                CartesianFlow::LeftToRight | CartesianFlow::RightToLeft => {
+                LeftToRight | RightToLeft => {
                     combined_minimum_sizes.w += h.minimum_size.w;
                     combined_minimum_sizes.h =
                         combined_minimum_sizes.h.max(h.minimum_size.h);
@@ -67,7 +93,7 @@ where
                     combined_natural_sizes.h =
                         combined_natural_sizes.h.max(h.natural_size.h);
                 }
-                CartesianFlow::TopToBottom | CartesianFlow::BottomToTop => {
+                TopToBottom | BottomToTop => {
                     combined_minimum_sizes.w =
                         combined_minimum_sizes.w.max(h.minimum_size.w);
                     combined_minimum_sizes.h += h.minimum_size.h;
@@ -200,17 +226,17 @@ pub trait FlexItemList {
     type Minima: Iterator<Item = f32>;
     const SIZE: usize;
 
-    fn prepare(
+    fn prepare<I>(
         &mut self,
-        expected_parent_hints: ParentHints,
-    ) -> impl Iterator<Item = ChildHints>;
+        expected_parent_hints: I,
+    ) -> impl Iterator<Item = ChildHints>
+    where
+        I: Iterator<Item = ParentHints>;
+
     fn weights(&self) -> Self::Weights;
-    /// NOTE: This must be called after `prepare` has been called,
-    /// since it access from the cache.
-    ///
-    /// The reason why I don't do an assertion is because it's layout,
-    /// we'd rather it break visually than crash the whole program.
+
     fn minima(&self, flow_direction: CartesianFlow) -> Self::Minima;
+
     fn place<I>(&mut self, parent_hints: I) -> Self::Content
     where
         I: Iterator<Item = ParentHints>;
@@ -225,11 +251,18 @@ where
     type Minima = Once<f32>;
     const SIZE: usize = 1;
 
-    fn prepare(
+    fn prepare<I>(
         &mut self,
-        parent_hints: ParentHints,
-    ) -> impl Iterator<Item = ChildHints> {
-        let hints = self.item.prepare(parent_hints);
+        mut parent_hints: I,
+    ) -> impl Iterator<Item = ChildHints>
+    where
+        I: Iterator<Item = ParentHints>,
+    {
+        let hints = self.item.prepare(
+            parent_hints
+                .next()
+                .expect("Iterator underflow in FlexItem::prepare"),
+        );
         self._hints_cache = hints;
         once(hints)
     }
@@ -250,7 +283,8 @@ where
     where
         I: Iterator<Item = ParentHints>,
     {
-        self.item.place(hx.next().unwrap())
+        self.item
+            .place(hx.next().expect("Iterator underflow in FlexItem::place"))
     }
 }
 
@@ -264,13 +298,17 @@ where
     type Minima = Chain<A::Minima, B::Minima>;
     const SIZE: usize = A::SIZE + B::SIZE;
 
-    fn prepare(
+    fn prepare<I>(
         &mut self,
-        parent_hints: ParentHints,
-    ) -> impl Iterator<Item = ChildHints> {
-        self.0
-            .prepare(parent_hints)
-            .chain(self.1.prepare(parent_hints))
+        mut parent_hints: I,
+    ) -> impl Iterator<Item = ChildHints>
+    where
+        I: Iterator<Item = ParentHints>,
+    {
+        // Use collect into a Vec to avoid borrowing issues while chaining iterators
+        let a: Vec<_> = self.0.prepare(&mut parent_hints).collect();
+        let b: Vec<_> = self.1.prepare(parent_hints).collect();
+        a.into_iter().chain(b)
     }
 
     fn weights(&self) -> Self::Weights {
@@ -287,9 +325,8 @@ where
     where
         I: Iterator<Item = ParentHints>,
     {
-        (
-            self.0.place(parent_hints.next().into_iter()),
-            self.1.place(parent_hints),
-        )
+        let a = self.0.place(&mut parent_hints);
+        let b = self.1.place(parent_hints);
+        (a, b)
     }
 }

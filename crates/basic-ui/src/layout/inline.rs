@@ -10,6 +10,8 @@ use {
 
 type Offset = u32;
 
+// --- Contexts ---
+
 pub struct InlineContext {
     pub offset: Vec2<Offset>,
     pub container_rect: Rect<Offset, Offset>,
@@ -26,6 +28,25 @@ impl InlineContext {
     }
 }
 
+pub struct MeasureContext {
+    pub offset: Vec2<Offset>,
+    pub container_width: Offset,
+    pub max_line_height: Offset,
+    pub inline_gap: Offset,
+    pub cross_axis_gap: Offset,
+    pub max_width_reached: Offset, // Tracks the widest line encountered
+}
+
+impl MeasureContext {
+    pub fn new_line(&mut self) {
+        self.offset.y += self.max_line_height + self.cross_axis_gap;
+        self.offset.x = 0;
+        self.max_line_height = 1;
+    }
+}
+
+// --- Traits ---
+
 pub trait InlineItem {
     type Blueprint;
     fn allocate(
@@ -33,7 +54,20 @@ pub trait InlineItem {
         cx: &mut InlineContext,
         hints: ParentHints,
     ) -> Self::Blueprint;
+    fn measure(&mut self, cx: &mut MeasureContext, hints: ParentHints);
 }
+
+pub trait InlineItemList {
+    type Blueprints;
+    fn allocate(
+        &mut self,
+        cx: &mut InlineContext,
+        hints: ParentHints,
+    ) -> Self::Blueprints;
+    fn measure(&mut self, cx: &mut MeasureContext, hints: ParentHints);
+}
+
+// --- Implementations ---
 
 pub fn inline<T>(item: T) -> InlineAdapter<T> {
     InlineAdapter(item)
@@ -60,13 +94,25 @@ impl<T: LayoutItem> InlineItem for InlineAdapter<T> {
         let pos = cx.offset;
         cx.offset.x += w + cx.inline_gap;
 
-        // TODO: Use flow to select the proper axis to maintain vs the axis to stretch.
-        // Then, use the current line information so that inline items vertically grow to fill space.
         let size = Extent2::new(size.w, size.h);
-
         let rect = Rect::new(pos.x as f32, pos.y as f32, size.w, size.h)
             .translated(cx.container_rect.position().as_());
+
         self.0.place(ParentHints { rect, ..hints })
+    }
+
+    fn measure(&mut self, cx: &mut MeasureContext, hints: ParentHints) {
+        let inner_hints = self.0.prepare(hints);
+        let size = inner_hints.natural_size;
+        let (w, h) = (size.w as Offset, size.h as Offset);
+
+        if cx.offset.x > 0 && cx.offset.x + w > cx.container_width {
+            cx.new_line();
+        }
+
+        cx.max_line_height = cx.max_line_height.max(h);
+        cx.offset.x += w + cx.inline_gap;
+        cx.max_width_reached = cx.max_width_reached.max(cx.offset.x);
     }
 }
 
@@ -116,15 +162,29 @@ impl InlineItem for MonospaceText {
         }
         words_with_pos
     }
-}
 
-pub trait InlineItemList {
-    type Blueprints;
-    fn allocate(
-        &mut self,
-        cx: &mut InlineContext,
-        hints: ParentHints,
-    ) -> Self::Blueprints;
+    fn measure(&mut self, cx: &mut MeasureContext, _: ParentHints) {
+        let word_spacing = 1;
+        let words = self.0.split_whitespace();
+
+        for word in words {
+            let len = word.len() as Offset;
+
+            if cx.offset.x > 0
+                && cx.offset.x + word_spacing + len > cx.container_width
+            {
+                cx.new_line();
+            }
+
+            if cx.offset.x > 0 {
+                cx.offset.x += word_spacing;
+            }
+
+            cx.max_line_height = cx.max_line_height.max(1);
+            cx.offset.x += len;
+            cx.max_width_reached = cx.max_width_reached.max(cx.offset.x);
+        }
+    }
 }
 
 impl<A: InlineItem> InlineItemList for A {
@@ -134,7 +194,10 @@ impl<A: InlineItem> InlineItemList for A {
         cx: &mut InlineContext,
         hints: ParentHints,
     ) -> Self::Blueprints {
-        self.allocate(cx, hints)
+        InlineItem::allocate(self, cx, hints)
+    }
+    fn measure(&mut self, cx: &mut MeasureContext, hints: ParentHints) {
+        InlineItem::measure(self, cx, hints)
     }
 }
 
@@ -152,7 +215,13 @@ where
     ) -> Self::Blueprints {
         (self.0.allocate(cx, hints), self.1.allocate(cx, hints))
     }
+    fn measure(&mut self, cx: &mut MeasureContext, hints: ParentHints) {
+        self.0.measure(cx, hints);
+        self.1.measure(cx, hints);
+    }
 }
+
+// --- The Flow Container ---
 
 pub struct LinewiseFlow<T: InlineItemList> {
     pub items: T,
@@ -163,16 +232,52 @@ pub struct LinewiseFlow<T: InlineItemList> {
 impl<T: InlineItemList + Send> LayoutItem for LinewiseFlow<T> {
     type Blueprint = T::Blueprints;
 
-    fn prepare(
-        &mut self,
-        _parent_hints: ParentHints,
-    ) -> ui_composer_core::app::composition::layout::hints::ChildHints {
-        // TODO: Actually do the whole layouting stage of allocating stops here!
-        // This way we can give the parent information about the size of the `InlineFlow`.
+    fn prepare(&mut self, parent_hints: ParentHints) -> ChildHints {
+        // PASS 1: Find the Intrinsic Minimum Width
+        // By setting width to 0, we force a wrap before every single word/item.
+        // The max_width_reached will flawlessly capture the widest unbreakable element.
+        let mut min_w_cx = MeasureContext {
+            container_width: 0,
+            inline_gap: self.inline_gap,
+            cross_axis_gap: self.cross_axis_gap,
+            max_line_height: 1,
+            offset: Vec2::new(0, 0),
+            max_width_reached: 0,
+        };
+        self.items.measure(&mut min_w_cx, parent_hints);
+        let true_min_w = min_w_cx.max_width_reached;
+
+        // PASS 2: Find the Minimum Height at that Width
+        // Now that we know the container will never be smaller than `true_min_w`,
+        // we run it again to see how many short words can pack into that width.
+        let mut min_h_cx = MeasureContext {
+            container_width: true_min_w,
+            inline_gap: self.inline_gap,
+            cross_axis_gap: self.cross_axis_gap,
+            max_line_height: 1,
+            offset: Vec2::new(0, 0),
+            max_width_reached: 0,
+        };
+        self.items.measure(&mut min_h_cx, parent_hints);
+        let true_min_h = min_h_cx.offset.y + min_h_cx.max_line_height;
+
+        // PASS 3: Calculate Natural Size (fit-content)
+        // We use the parent's actual suggestion to find the preferred layout.
+        let mut nat_cx = MeasureContext {
+            container_width: parent_hints.rect.w as Offset,
+            inline_gap: self.inline_gap,
+            cross_axis_gap: self.cross_axis_gap,
+            max_line_height: 1,
+            offset: Vec2::new(0, 0),
+            max_width_reached: 0,
+        };
+        self.items.measure(&mut nat_cx, parent_hints);
+        let nat_w = nat_cx.max_width_reached;
+        let nat_h = nat_cx.offset.y + nat_cx.max_line_height;
 
         ChildHints {
-            minimum_size: Extent2::new(1.0, 1.0),
-            natural_size: Extent2::new(1.0, 1.0),
+            minimum_size: Extent2::new(true_min_w as f32, true_min_h as f32),
+            natural_size: Extent2::new(nat_w as f32, nat_h as f32),
         }
     }
 
