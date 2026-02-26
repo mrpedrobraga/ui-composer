@@ -14,7 +14,7 @@ pin-project = "1.1.10"
 smol_str = "0.3.5"
 spin = "0.10.0"
 vek = "0.17.2"
-ui-composer-geometry = { path = "../geometry" }
+ui-composer-math = { path = "../math" }
 ui-composer-state = { path = "../state" }
 ui-composer-input = { path = "../input" }
 

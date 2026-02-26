@@ -20,7 +20,7 @@ pub use ui_composer_platform_tui::prelude::*;
 pub use ui_composer_platform_winit::prelude::*;
 
 /* Geometry */
-pub use ui_composer_geometry::prelude::*;
+pub use ui_composer_math::prelude::*;
 
 /* State */
 pub use ui_composer_state::prelude::*;

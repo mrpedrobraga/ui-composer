@@ -7,7 +7,7 @@ version = "0.1.0"
 members = [
     "crates/input",
     "crates/core",
-    "crates/geometry",
+    "crates/math",
     "crates/state",
     "crates/canvas",
     "crates/macros",
@@ -33,7 +33,7 @@ ui-composer-core = { path = "crates/core" }
 ui-composer-platform-tui = { path = "crates/platform-tui" }
 ui-composer-platform-winit = { path = "crates/platform-winit" }
 ui-composer-state = { path = "crates/state" }
-ui-composer-geometry = { path = "crates/geometry" }
+ui-composer-math = { path = "crates/math" }
 ui-composer-basic-ui = { path = "crates/basic-ui" }
 uix = { path = "crates/uix" }
 ui-composer-view-macro = { path = "crates/view-macro" }

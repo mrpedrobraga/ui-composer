@@ -3,7 +3,7 @@ use ui_composer_core::app::composition::layout::{
     LayoutItem,
     hints::{ChildHints, ParentHints},
 };
-use ui_composer_geometry::flow::{
+use ui_composer_math::flow::{
     CartesianFlow, CoordinateSystem as _, Flow, WritingFlow,
     arrangers::arrange_stretchy_rects_with_minimum_sizes_dirty_alloc,
 };

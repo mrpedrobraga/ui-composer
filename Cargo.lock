@@ -1812,8 +1812,8 @@ version = "0.1.0"
 dependencies = [
  "ui-composer-basic-ui",
  "ui-composer-core",
- "ui-composer-geometry",
  "ui-composer-input",
+ "ui-composer-math",
  "ui-composer-platform-tui",
  "ui-composer-platform-winit",
  "ui-composer-state",
@@ -3336,8 +3336,8 @@ dependencies = [
  "lullaby-ui",
  "ui-composer-basic-ui",
  "ui-composer-core",
- "ui-composer-geometry",
  "ui-composer-macros",
+ "ui-composer-math",
  "ui-composer-platform-tui",
  "ui-composer-platform-winit",
  "ui-composer-state",
@@ -3352,8 +3352,8 @@ version = "0.1.0"
 dependencies = [
  "image",
  "ui-composer-core",
- "ui-composer-geometry",
  "ui-composer-input",
+ "ui-composer-math",
  "ui-composer-platform-tui",
  "ui-composer-platform-winit",
  "ui-composer-state",
@@ -3377,8 +3377,8 @@ dependencies = [
  "pin-project",
  "smol_str 0.3.5",
  "spin",
- "ui-composer-geometry",
  "ui-composer-input",
+ "ui-composer-math",
  "ui-composer-state",
  "vek",
 ]
@@ -3391,15 +3391,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "ui-composer-geometry"
-version = "0.1.0"
-dependencies = [
- "arrayvec",
- "num-traits",
- "vek",
 ]
 
 [[package]]
@@ -3423,6 +3414,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ui-composer-math"
+version = "0.1.0"
+dependencies = [
+ "arrayvec",
+ "num-traits",
+ "vek",
+]
+
+[[package]]
 name = "ui-composer-platform-tui"
 version = "0.1.0"
 dependencies = [
@@ -3434,8 +3434,8 @@ dependencies = [
  "smol_str 0.3.5",
  "ui-composer-canvas",
  "ui-composer-core",
- "ui-composer-geometry",
  "ui-composer-input",
+ "ui-composer-math",
  "ui-composer-state",
  "vek",
 ]

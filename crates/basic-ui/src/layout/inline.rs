@@ -4,7 +4,7 @@ use {
         LayoutItem,
         hints::{ChildHints, ParentHints},
     },
-    ui_composer_geometry::RectExt,
+    ui_composer_math::RectExt,
     vek::{Extent2, Rect, Rgba, Vec2},
 };
 

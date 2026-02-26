@@ -10,7 +10,7 @@ name = "lullaby_ui"
 [dependencies]
 vek = "0.17.2"
 ui-composer-core = { path = "../core" }
-ui-composer-geometry = { path = "../geometry" }
+ui-composer-math = { path = "../math" }
 ui-composer-input = { path = "../input" }
 ui-composer-basic-ui = { path = "../basic-ui" }
 ui-composer-state = { path = "../state" }

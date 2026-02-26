@@ -5,7 +5,7 @@ use {
         effects::signal::IntoBlueprint as _,
         layout::{ItemBox, Resizable as _, hints::ParentHints},
     },
-    ui_composer_geometry::RectExt as _,
+    ui_composer_math::RectExt as _,
     ui_composer_state::{effect::Effect, futures_signals::signal::Mutable},
     vek::{Extent2, Rgba},
 };

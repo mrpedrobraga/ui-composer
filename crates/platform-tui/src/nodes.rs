@@ -14,8 +14,8 @@ use ui_composer_core::app::composition::effects::signal::{
 use ui_composer_core::app::composition::elements::{Blueprint, Element};
 use ui_composer_core::app::composition::layout::hints::ParentHints;
 use ui_composer_core::app::composition::visit::DriveThru;
-use ui_composer_geometry::flow::{CartesianFlow, CurrentFlow};
 use ui_composer_input::event::{CursorEvent, Event};
+use ui_composer_math::flow::{CartesianFlow, CurrentFlow};
 use ui_composer_state::Slot;
 use vek::{Extent2, Rect, Vec2};
 

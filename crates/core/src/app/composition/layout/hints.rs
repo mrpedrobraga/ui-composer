@@ -24,7 +24,7 @@
 //! 2. Perform layout calculations;
 //! 3. Generate parent hints, likely in order, while calling [`LayoutItem::lay`] on them.;
 //!
-use ui_composer_geometry::flow::CurrentFlow;
+use ui_composer_math::flow::CurrentFlow;
 use vek::{Extent2, Rect};
 
 /// The parent hints struct.
