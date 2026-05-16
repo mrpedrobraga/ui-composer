@@ -3,7 +3,7 @@ use {
     ui_composer_basic_ui::{interaction::Tap, primitives::graphic::Graphic},
     ui_composer_core::app::composition::{
         effects::signal::IntoBlueprint as _,
-        layout::{ItemBox, Resizable as _, hints::ParentHints},
+        layout::{hints::ParentHints, ItemBox, Resizable as _},
     },
     ui_composer_math::prelude::{Size2, Srgba},
     ui_composer_state::{effect::Effect, futures_signals::signal::Mutable},
@@ -22,8 +22,7 @@ pub fn Button(mut label: impl Ui, effect: impl Effect + 'static) -> impl Ui {
     let is_hovered: Mutable<bool> = Mutable::default();
 
     ItemBox::new(move |hx| {
-        let tap = Tap::new(hx.rect, effect.clone())
-            .with_hover_state(is_hovered.clone());
+        let tap = Tap::new(hx.rect, effect.clone()).with_hover_state(is_hovered.clone());
 
         let rect = is_hovered
             .signal_ref(move |is_hovered| {

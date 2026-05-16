@@ -1,4 +1,4 @@
-use futures::channel::mpsc::Sender;
+use futures::channel::mpsc::{self, Sender};
 use futures::channel::oneshot;
 use futures::executor::block_on;
 use futures::{SinkExt, StreamExt, join};
@@ -47,8 +47,7 @@ where
         std::thread::scope(move |scope| {
             // TODO: Decide how wide to make the throat of this channel.
             // This decision should probably come from benchmarking?
-            let (event_sink, event_source) =
-                futures::channel::mpsc::channel::<Event>(32);
+            let (event_sink, event_source) = mpsc::channel::<Event>(32);
 
             /*
                 Initialize thread that will receive events from winit.

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="ALL" />
+  </component>
+  <component name="CargoProjects">
+    <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="f8bfae86-6291-4001-b15c-49e3723195b2" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/crates/lullaby-ui/src/components/button.rs" beforeDir="false" afterPath="$PROJECT_DIR$/crates/lullaby-ui/src/components/button.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/crates/platform-winit/src/runner.rs" beforeDir="false" afterPath="$PROJECT_DIR$/crates/platform-winit/src/runner.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/custom_runner/main.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/nerd_fonts.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/obligarory_reactive_counter.rs" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MacroExpansionManager">
+    <option name="directoryName" value="JMKERMtH" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "customColor": "",
+  "associatedIndex": 2
+}]]></component>
+  <component name="ProjectId" id="3BnqRLhIerDczgQtVDP7XwHHFMp" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.rust.reset.selective.auto.import": "true",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "main",
+    "junie.onboarding.icon.badge.shown": "true",
+    "nodejs_package_manager_path": "npm",
+    "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
+    "org.rust.first.attach.projects": "true",
+    "to.speed.mode.migration.done": "true",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RustProjectSettings">
+    <option name="toolchainHomeDirectory" value="$USER_HOME$/.cargo/bin" />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="f8bfae86-6291-4001-b15c-49e3723195b2" name="Changes" comment="" />
+      <created>1775135173371</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1775135173371</updated>
+      <workItem from="1775135176596" duration="9000" />
+    </task>
+    <servers />
+  </component>
+</project>
