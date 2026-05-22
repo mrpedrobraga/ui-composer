@@ -19,7 +19,7 @@ use winit::window::{Window, WindowAttributes, WindowId};
 // TODO: Add things to this Environment that elements might want to use.
 // In mind I have a GPU allocator for allocating images and textures.
 // This is probably how one requests a window, too.
-pub struct WinitEnvironment {}
+pub struct WinitEnvironment;
 
 impl Environment for WinitEnvironment {
     type BlueprintResources<'make> = WinitBlueprintResources<'make>;

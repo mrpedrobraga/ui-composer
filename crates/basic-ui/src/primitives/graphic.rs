@@ -11,6 +11,7 @@ use ui_composer_platform_tui::{
     nodes::TerminalEffectVisitor,
     runner::{TerminalBlueprintResources, TerminalEnvironment},
 };
+use ui_composer_platform_winit::runner::{WinitBlueprintResources, WinitEnvironment};
 
 /// An effect that describes rendering of a quad in the terminal.
 #[derive(Debug)]
@@ -113,5 +114,21 @@ impl ui_composer_state::effect::animation::Lerp for Graphic {
             rect: self.rect.lerp(other.rect, t),
             color: self.color.mix(other.color, t),
         }
+    }
+}
+
+impl Blueprint<WinitEnvironment> for Graphic {
+    type Element = Self;
+
+    fn make(self, _: &WinitBlueprintResources<'_>) -> Self::Element {
+        self
+    }
+}
+
+impl Element<WinitEnvironment> for Graphic {
+    type Effect<'fx> = RenderQuad;
+
+    fn effect(&self) -> Self::Effect<'_> {
+        RenderQuad(self.rect, self.color)
     }
 }
