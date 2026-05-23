@@ -108,6 +108,7 @@ where
                 /*
                     TODO: Actually draw stuff to the window.
                 */
+                println!("Requesting redraw?");
                 window.request_redraw();
 
                 Poll::Ready(Some(()))

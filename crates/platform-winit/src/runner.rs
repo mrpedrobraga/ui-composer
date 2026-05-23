@@ -26,8 +26,6 @@ impl Environment for WinitEnvironment {
     type EffectVisitor<'fx> = ();
 }
 
-pub type Share<T> = Arc<Mutex<T>>;
-
 pub struct WinitRunner<AppBlueprint>
 where
     AppBlueprint: Blueprint<WinitEnvironment>,
@@ -47,7 +45,7 @@ where
         std::thread::scope(move |scope| {
             // TODO: Decide how wide to make the throat of this channel.
             // This decision should probably come from benchmarking?
-            let (event_sink, event_source) = mpsc::channel::<Event>(32);
+            let (event_tx, event_rx) = mpsc::channel::<Event>(32);
 
             /*
                 Initialize thread that will receive events from winit.
@@ -72,10 +70,10 @@ where
                 let app2 = app.clone();
 
                 let event_handler = async move {
-                    let mut tap = event_source;
+                    let mut event_rx = event_rx;
                     let app2 = app2;
 
-                    while let Some(event) = tap.next().await {
+                    while let Some(event) = event_rx.next().await {
                         let _lock = app2.lock().expect(
                             "[Event] Failed to lock app to send event.",
                         );
@@ -100,7 +98,7 @@ where
                 It must run on the main thread, and it IS blocking...
                 And thus we _must_ create a new thread if we want any futures/signals to be polled.
             */
-            let mut winit_app_handler = WinitAppHandler { event_sink };
+            let mut winit_app_handler = WinitAppHandler { event_tx };
 
             /*
                 Create event loop and run the handler.
@@ -116,7 +114,7 @@ where
 }
 
 pub struct WinitAppHandler {
-    event_sink: Sender<Event>,
+    event_tx: Sender<Event>,
 }
 impl ApplicationHandler<WinitUicRequest> for WinitAppHandler {
     fn resumed(&mut self, _: &ActiveEventLoop) {}
@@ -127,10 +125,11 @@ impl ApplicationHandler<WinitUicRequest> for WinitAppHandler {
         _: WindowId,
         event: WindowEvent,
     ) {
+        println!("Window event received? {:?}", &event);
         let uic_event = crate::winit_uic_conversion::into_event(event)
             .expect("Unrecognized event.");
         //TODO: Restructure how the event loop sends events.
-        block_on(self.event_sink.send(uic_event))
+        block_on(self.event_tx.send(uic_event))
             .expect("[Winit] Failed to send event though channel.");
     }
 
