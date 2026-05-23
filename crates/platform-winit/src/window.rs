@@ -62,7 +62,11 @@ impl<Ui> Bubble<Event, bool> for WindowElement<Ui> {
                 true
             }
             Event::CloseRequested => false,
-            Event::RedrawRequested => false,
+            Event::RedrawRequested => {
+                tracing::debug!("[Window] Ignoring redraw request.");
+
+                false
+            },
             Event::OcclusionStateChanged(_) => false,
             Event::FocusStateChanged(_) => false,
             Event::ScaleFactorChanged(_) => false,
@@ -108,7 +112,6 @@ where
                 /*
                     TODO: Actually draw stuff to the window.
                 */
-                println!("Requesting redraw?");
                 window.request_redraw();
 
                 Poll::Ready(Some(()))

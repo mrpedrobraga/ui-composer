@@ -44,6 +44,8 @@ ui-composer-macros = { path = "crates/macros" }
 lullaby-ui = { path = "crates/lullaby-ui" }
 futures = "*"
 chttp = "*"
+tracing-subscriber = "0.3.23"
+tracing = "0.1.44"
 
 [profile.dev]
 opt-level = 1

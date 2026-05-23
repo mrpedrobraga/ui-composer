@@ -1,2 +1,2 @@
 dev:
-  cargo run --example counter
+  cargo run --example winit

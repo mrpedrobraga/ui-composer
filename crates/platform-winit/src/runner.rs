@@ -5,7 +5,10 @@ use futures::{SinkExt, StreamExt, join};
 use futures_signals::signal::SignalExt;
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
-use ui_composer_core::app::composition::elements::{Blueprint, Environment};
+use ui_composer_core::app::composition::algebra::Bubble;
+use ui_composer_core::app::composition::elements::{
+    Blueprint, Element, Environment,
+};
 use ui_composer_core::app::runner::Runner;
 use ui_composer_core::app::runner::futures::AsyncExecutor;
 use ui_composer_input::event::Event;
@@ -35,12 +38,15 @@ where
 
 impl<AppBlueprint> Runner for WinitRunner<AppBlueprint>
 where
-    AppBlueprint: Blueprint<WinitEnvironment, Element: Send + 'static> + Send,
+    AppBlueprint: Blueprint<
+            WinitEnvironment,
+            Element: Element<WinitEnvironment> + Send + 'static,
+        > + Send,
 {
     type AppBlueprint = AppBlueprint;
 
     fn run(app_blueprint: Self::AppBlueprint) {
-        println!("[Winit] Initializing.");
+        println!("[Winit Runner] Initializing.");
 
         std::thread::scope(move |scope| {
             // TODO: Decide how wide to make the throat of this channel.
@@ -52,7 +58,7 @@ where
             */
             let e_loop = EventLoop::with_user_event()
                 .build()
-                .expect("[Winit] Failed to create event loop");
+                .expect("[Winit Runner] Failed to create event loop");
             let proxy = e_loop.create_proxy();
 
             scope.spawn(move || {
@@ -73,12 +79,28 @@ where
                     let mut event_rx = event_rx;
                     let app2 = app2;
 
-                    while let Some(event) = event_rx.next().await {
-                        let _lock = app2.lock().expect(
-                            "[Event] Failed to lock app to send event.",
-                        );
-                        /* Push event down app! */
-                        println!("A new event arrived! {:?}", event);
+                    while let Some(mut event) = event_rx.next().await {
+                        let span = tracing::debug_span!("event handler");
+                        span.in_scope(|| {
+                            let mut _lock = app2.lock().expect(
+                                "[Event Handler] Failed to lock app to send event.",
+                            );
+
+                            /* Push event down app! */
+                            tracing::debug!(
+                                "[Event Handler] New event `{event:?}`. Broadcasting."
+                            );
+                            // TODO: Use something with a little more data than a bool.
+                            let event_was_handled = _lock.bubble(&mut event);
+                            tracing::debug!(
+                                "[Event Handler] The event was {}.",
+                                if event_was_handled {
+                                    "handled"
+                                } else {
+                                    "not handled"
+                                }
+                            );
+                        });
                     }
                 };
 
@@ -88,6 +110,9 @@ where
                 let async_handler =
                     AsyncExecutor::new(app, res, || {}).to_future();
 
+                // TODO: Think very well about how these two tasks will coordinate,
+                // such that one doesn't hog all the resources when running on a single-threaded
+                // environment.
                 let processes = async { join!(async_handler, event_handler) };
 
                 block_on(processes);
@@ -106,10 +131,10 @@ where
             e_loop.set_control_flow(ControlFlow::Wait);
             e_loop
                 .run_app(&mut winit_app_handler)
-                .expect("[Winit] Failed to run event loop...");
+                .expect("[Winit Runner] Failed to run event loop...");
         });
 
-        println!("[Winit] All processes finished. Shutting down.");
+        println!("[Winit Runner] All processes finished. Shutting down.");
     }
 }
 
@@ -125,16 +150,16 @@ impl ApplicationHandler<WinitUicRequest> for WinitAppHandler {
         _: WindowId,
         event: WindowEvent,
     ) {
-        println!("Window event received? {:?}", &event);
+        tracing::debug!("[Winit App Handler] Window Event {event:?}.");
         let uic_event = crate::winit_uic_conversion::into_event(event)
             .expect("Unrecognized event.");
         //TODO: Restructure how the event loop sends events.
         block_on(self.event_tx.send(uic_event))
-            .expect("[Winit] Failed to send event though channel.");
+            .expect("[Winit App Handler] Failed to send event though channel.");
     }
 
     fn exiting(&mut self, _: &ActiveEventLoop) {
-        println!("[Winit] Goodbye!")
+        tracing::debug!("[Winit App Handler] Exiting.")
     }
 
     fn user_event(
@@ -149,7 +174,7 @@ impl ApplicationHandler<WinitUicRequest> for WinitAppHandler {
             } => {
                 let window = event_loop
                     .create_window(attributes)
-                    .expect("Failed to create window");
+                    .expect("[Winit App Handler] Failed to create window");
                 let _ = response.send(Arc::new(window));
             }
         }
@@ -179,9 +204,9 @@ impl WinitRequester {
             .send_event(WinitUicRequest::CreateWindow { attributes, tx })
             .is_err()
         {
-            panic!("event loop isn't running")
+            panic!("[Winit Channel] event loop isn't running")
         }
 
-        block_on(rx).expect("to receive a window")
+        block_on(rx).expect("[Winit Channel] to receive a window")
     }
 }

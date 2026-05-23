@@ -2,7 +2,10 @@
 
 use ui_composer_basic_ui::primitives::graphic::Graphic;
 use ui_composer_core::app::composition::elements::Blueprint;
-use ui_composer_math::{glamour::{Point2, Rect, Size2}, palette::Srgba};
+use ui_composer_math::{
+    glamour::{Point2, Rect, Size2},
+    palette::Srgba,
+};
 use ui_composer_platform_winit::runner::WinitEnvironment;
 use {
     ui_composer::prelude::UIComposer,
@@ -10,6 +13,11 @@ use {
 };
 
 fn main() {
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .without_time()
+        .init();
+
     UIComposer::run_winit(window(App()))
 }
 
