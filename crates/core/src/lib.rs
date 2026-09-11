@@ -1,3 +1,13 @@
+//! # UI Composer Core
+//! 
+//! > [!NOTE]
+//! > To learn about UI Composer as a library, see the workspace readme.
+//! 
+//! This crate contains the basic concepts for the "composition"-based architecture
+//! UI Composer makes use of everywhere.
+//! 
+//! To start, check the documentation for [`app`].
+
 pub mod app;
 
 pub mod prelude {

@@ -1,11 +1,27 @@
+//! # Effects
+//! 
+//! UI Composer as a library takes a lot from functional programming languages.
+//! Famously, FPs are said to have "no side effects."
+//! 
+//! This is a misrepresentation of them — they do have effects, but they are reified
+//! into values which can be held and manipulated.
+//! 
+//! This module's main trait, [`ElementEffect`], represents such an effect.
+//! 
+//! For the purpose of UI, it represents the effects the items have on the computer.
+//! For example, an "Image" value existing in the app causes the effect of rendering a picture,
+//! an "Audio" value causes the effect of some sound playing, etc.
+
+/// For handling the effects of state that will change later.
 pub mod future;
+
+/// For handling the effects of state that changes dynamically.
 pub mod signal;
 
-/// An effect that some element of a structure might produce.
-///
-/// For example, a `Graphic` might imply a rectangle should be drawn at some place on-screen.
-/// Depending on the effect handler, this might result in quad instances being sent to the GPU
-/// or rectangles drawn on the terminal or pixels in a GameBoy screen.
+/// Represents the "effect" an element in the application has on its environment.
+/// For example, an "Image" value existing in the app causes the effect of rendering a picture.
+/// 
+/// See the [module-level documentation][self].
 #[diagnostic::on_unimplemented(
     message = "{Self} is not an effect applicable to {Env}."
 )]

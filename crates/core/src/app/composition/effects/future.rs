@@ -1,13 +1,23 @@
+//! # Effects/Future
+//! 
+//! A `Future<Output = T>` is "a `T` that will appear later."
+//! In classic functorial fashion, if `T` is an UI element with an effect,
+//! `Future<Output = T>` is _also_ an element.
+//! 
+//! [`ReactOnce`] wraps the future so it can hold onto the `T` it resolves to.
+
 use crate::app::composition::algebra::Bubble;
 use crate::app::composition::elements::Environment;
 use ui_composer_input::event::Event;
-
 use super::super::elements::{Blueprint, Element};
 use pin_project::pin_project;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+/// Wraps a future, holding onto the elements it produces.
+/// 
+/// Notably implements `Blueprint` and `Element.`
 #[pin_project]
 #[must_use = "ReactOnce does nothing unless polled"]
 pub struct ReactOnce<Fut, Env: Environment>
@@ -92,13 +102,24 @@ where
     }
 }
 
-/*
-    This is necessary while we don't have `min_specialization`.
-
-    We can't implement `Blueprint` for all futures without problems,
-    so we need to a type this crate owns.
-*/
-
+/// Handy trait for transforming a Future into a `Blueprint` for an environment.
+/// 
+/// ```no_run
+/// let my_future = async { Text("Hello, World!") };
+/// 
+/// // Currently, you can't do this, because `Blueprint` isn't implemented for `Future`.
+/// let bp: Blueprint<Env> = my_future;
+/// // Do this instead:
+/// let bp: Blueprint<Env> = my_future.into_blueprint();
+/// ```
+/// 
+/// We can't implement `Blueprint` for all futures without problems,
+/// so we need to a type this crate owns.
+/// 
+/// The automatic implementation that produces a [`ReactOnce`] without a held item.
+/// 
+/// This will no longer be a kink when `min_specialization` gets stabilized.
+/// When it does, you'll be able to directly use a future directly wherever a `Blueprint` is required.
 pub trait IntoBlueprint<Env: Environment> {
     type Output: Blueprint<Env>;
 

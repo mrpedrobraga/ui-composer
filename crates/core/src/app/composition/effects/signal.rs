@@ -1,3 +1,11 @@
+//! # Effects/Signal
+//! 
+//! A `Signal<Item = T>` is "a `T` that will appear later."
+//! In classic functorial fashion, if `T` is an UI element with an effect,
+//! `Signal<Item = T>` is _also_ an element.
+//! 
+//! [`React`] wraps the signal so it can hold onto the `T` it resolves to.
+
 use crate::app::composition::algebra::{Bubble, Semigroup as _};
 use crate::app::composition::elements::{Blueprint, Element, Environment};
 use futures_signals::signal::Signal;
@@ -6,6 +14,9 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 use ui_composer_input::event::Event;
 
+/// Wraps a signal, holding onto the elements it produces.
+/// 
+/// Notably implements `Blueprint` and `Element.`
 #[pin_project]
 #[must_use = "React does nothing unless polled"]
 pub struct React<Sig, Env: Environment>
@@ -93,13 +104,25 @@ where
     }
 }
 
-/*
-    This is necessary while we don't have `min_specialization`.
-
-    We can't implement `Blueprint` for all futures without problems,
-    so we need to a type this crate owns.
-*/
-
+/// Handy trait for transforming a Signal into a `Blueprint` for an environment.
+/// 
+/// ```no_run
+/// let my_state = Mutable::new(Text("Hello, World!"));
+/// let my_signal = my_state.signal();
+/// 
+/// // Currently, you can't do this, because `Blueprint` isn't implemented for `Signal`.
+/// let bp: Blueprint<Env> = my_signal;
+/// // Do this instead:
+/// let bp: Blueprint<Env> = my_signal.into_blueprint();
+/// ```
+/// 
+/// We can't implement `Blueprint` for all signals without problems,
+/// so we need to a type this crate owns.
+/// 
+/// The automatic implementation that produces a [`React`] without a held item.
+/// 
+/// This will no longer be a kink when `min_specialization` gets stabilized.
+/// When it does, you'll be able to directly use a future directly wherever a `Signal` is required.
 pub trait IntoBlueprint<Env: Environment> {
     type Output: Blueprint<Env>;
 

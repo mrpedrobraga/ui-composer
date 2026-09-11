@@ -1,6 +1,6 @@
 use crate::app::composition::algebra::{Bubble, Empty, Gather, Semigroup};
 
-/* Combine */
+/* bool */
 
 impl Semigroup for bool {
     fn combine(self, other: Self) -> Self {
@@ -13,6 +13,8 @@ impl Empty for bool {
         false
     }
 }
+
+/* Poll<Option<()>> */
 
 impl Semigroup for std::task::Poll<Option<()>> {
     fn combine(self, other: Self) -> Self {
