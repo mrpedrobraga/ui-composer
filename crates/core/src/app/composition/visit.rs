@@ -14,6 +14,11 @@ pub trait ApplyMut<T> {
     fn visit_mut(&mut self, node: &mut T);
 }
 
+/// Trait for a visitor which can visit a `T` at compile time.
+pub trait ApplyStatic<T, Acc> {
+    type Output;
+}
+
 /// Trait for structures that can be driven through and, potentially, visited.
 pub trait DriveThru<V> {
     fn drive_thru(&self, visitor: &mut V);
@@ -24,8 +29,29 @@ pub trait DriveThruMut<V> {
     fn drive_thru_mut(&mut self, visitor: &mut V);
 }
 
+/// Trait for structures that can be driven through and, potentially, visited at compile time.
+pub trait DriveThruStatic<V, Acc> {
+    type OutputAcc;
+}
+
 pub mod implementations {
-    use super::{DriveThru, DriveThruMut};
+    use super::{ApplyStatic, DriveThru, DriveThruMut, DriveThruStatic};
+
+    #[allow(non_local_definitions)]
+    impl<V, Acc> DriveThruStatic<V, Acc> for typenum::UTerm
+    where
+        V: ApplyStatic<typenum::UTerm, Acc>,
+    {
+        type OutputAcc = V::Output;
+    }
+
+    #[allow(non_local_definitions)]
+    impl<V, U, B, Acc> DriveThruStatic<V, Acc> for typenum::UInt<U, B>
+    where
+        V: ApplyStatic<typenum::UInt<U, B>, Acc>,
+    {
+        type OutputAcc = V::Output;
+    }
 
     impl<V> DriveThru<V> for () {
         fn drive_thru(&self, _: &mut V) {
@@ -37,6 +63,10 @@ pub mod implementations {
         fn drive_thru_mut(&mut self, _: &mut V) {
             /* Nothing to visit!  */
         }
+    }
+
+    impl<V, Acc> DriveThruStatic<V, Acc> for () {
+        type OutputAcc = Acc;
     }
 
     impl<V, A, B> DriveThru<V> for (A, B)
@@ -59,6 +89,14 @@ pub mod implementations {
             self.0.drive_thru_mut(visitor);
             self.1.drive_thru_mut(visitor);
         }
+    }
+
+    impl<V, Acc, A, B> DriveThruStatic<V, Acc> for (A, B)
+    where
+        A: DriveThruStatic<V, Acc>,
+        B: DriveThruStatic<V, A::OutputAcc>,
+    {
+        type OutputAcc = B::OutputAcc;
     }
 
     impl<T, V> DriveThru<V> for Vec<T>
@@ -157,4 +195,29 @@ fn test_visit_mut() {
     let mut inc = Incrementor {};
     structure.drive_thru_mut(&mut inc);
     assert_eq!(structure, (2, (3, 4)));
+}
+
+#[test]
+fn test_visit_static() {
+    use typenum::*;
+
+    struct SumVisitor;
+    impl<U, Acc> ApplyStatic<U, Acc> for SumVisitor
+    where
+        U: Unsigned,
+        Acc: Unsigned + std::ops::Add<U>,
+        Sum<Acc, U>: Unsigned,
+    {
+        type Output = Sum<Acc, U>;
+    }
+
+    macro_rules! apply {
+        ( $t:ty, $v:ty, $acc_initial:ty ) => {
+            <$t as DriveThruStatic<$v, $acc_initial>>::OutputAcc
+        }
+    }
+
+    type MyStructure = (U1, (U2, U3));
+    type MyStructureSum = apply!(MyStructure, SumVisitor, U0);
+    assert_eq!(<MyStructureSum as Unsigned>::to_usize(), 6);
 }
