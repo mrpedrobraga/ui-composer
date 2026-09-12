@@ -78,7 +78,7 @@ pub fn into_event(value: WindowEvent) -> Result<Event, ()> {
                         ))
                     }
                 },
-                into_to_touch_stage(phase),
+                into_touch_stage(phase),
             ),
         }),
         WindowEvent::MouseInput {
@@ -110,7 +110,7 @@ pub fn into_event(value: WindowEvent) -> Result<Event, ()> {
             id: DeviceId(0),
             event: CursorEvent::Touched {
                 finger_id: touch.id as u32,
-                stage: into_to_touch_stage(touch.phase),
+                stage: into_touch_stage(touch.phase),
             },
         }),
         WindowEvent::TouchpadPressure {
@@ -132,7 +132,7 @@ pub fn into_event(value: WindowEvent) -> Result<Event, ()> {
             id: DeviceId(0),
             event: CursorEvent::Pinched {
                 scaling: delta as EvNum,
-                stage: into_to_touch_stage(phase),
+                stage: into_touch_stage(phase),
             },
         }),
         WindowEvent::PanGesture {
@@ -146,7 +146,7 @@ pub fn into_event(value: WindowEvent) -> Result<Event, ()> {
                     x: delta.x,
                     y: delta.y,
                 },
-                stage: into_to_touch_stage(phase),
+                stage: into_touch_stage(phase),
             },
         }),
         WindowEvent::DoubleTapGesture { device_id: _ } => Ok(Event::Cursor {
@@ -161,7 +161,7 @@ pub fn into_event(value: WindowEvent) -> Result<Event, ()> {
             id: DeviceId(0),
             event: CursorEvent::Rotated {
                 angle: delta,
-                stage: into_to_touch_stage(phase),
+                stage: into_touch_stage(phase),
             },
         }),
 
@@ -220,7 +220,7 @@ pub fn into_event(value: WindowEvent) -> Result<Event, ()> {
     }
 }
 
-fn into_to_touch_stage(value: TouchPhase) -> TouchStage {
+fn into_touch_stage(value: TouchPhase) -> TouchStage {
     match value {
         TouchPhase::Started => TouchStage::Started,
         TouchPhase::Moved => TouchStage::Moved,

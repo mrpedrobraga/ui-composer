@@ -20,6 +20,7 @@ use winit::event_loop::{
 use winit::window::{Window, WindowAttributes, WindowId};
 
 use crate::gpu::Gpu;
+use crate::window::WindowEffectVisitor;
 
 // TODO: Add things to this Environment that elements might want to use.
 // In mind I have a GPU allocator for allocating images and textures.
@@ -28,7 +29,7 @@ pub struct WinitEnvironment;
 
 impl Environment for WinitEnvironment {
     type BlueprintResources<'make> = WinitBlueprintResources<'make>;
-    type EffectVisitor<'fx> = ();
+    type EffectVisitor<'fx> = WindowEffectVisitor;
 }
 
 pub struct WinitRunner<AppBlueprint>

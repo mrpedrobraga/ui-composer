@@ -11,7 +11,7 @@ use ui_composer_platform_tui::{
     items::TerminalEffectVisitor,
     runner::{TerminalBlueprintResources, TerminalEnvironment},
 };
-use ui_composer_platform_winit::runner::{WinitBlueprintResources, WinitEnvironment};
+use ui_composer_platform_winit::{runner::{WinitBlueprintResources, WinitEnvironment}, window::WindowEffectVisitor};
 
 /// An effect that describes rendering of a quad in the terminal.
 #[derive(Debug)]
@@ -30,6 +30,12 @@ impl<'fx> Apply<RenderQuad> for TerminalEffectVisitor<'fx> {
                 character: ' ',
             },
         );
+    }
+}
+impl Apply<RenderQuad> for WindowEffectVisitor {
+    fn visit(&mut self, quad: &RenderQuad) {
+        /* Do nothing for now */
+        println!("OMG WE HAVE TO RENDER A QUAD {:#?}!!!", quad);
     }
 }
 impl Apply<RenderQuad> for () {

@@ -4,14 +4,24 @@
 //! Every time they change (in response to an event or a future or signal yielding),
 //! it will render them to its [WindowRenderTarget].
 
+use futures_signals::signal::{Mutable, Signal, SignalExt as _};
 use pin_project::pin_project;
+use ui_composer_core::app::composition::effects::signal::{
+    IntoBlueprint as _, React,
+};
+use ui_composer_core::app::composition::layout::hints::ParentHints;
+use ui_composer_core::app::composition::visit::DriveThru;
 use ui_composer_input::event::Event;
+use ui_composer_math::flow::{CartesianFlow, CurrentFlow};
+use ui_composer_math::glamour::{Point2, Rect};
 use ui_composer_math::prelude::Size2;
 use winit::dpi::PhysicalSize;
 use winit::window::{Window, WindowAttributes};
 
+use crate::WinitUi;
 use crate::gpu::{Gpu, RenderTarget};
 use crate::runner::{WinitBlueprintResources, WinitEnvironment};
+use std::fmt::Debug;
 use std::sync::Arc;
 use std::task::Poll;
 use ui_composer_core::app::composition::algebra::Bubble;
@@ -19,15 +29,99 @@ use ui_composer_core::app::composition::elements::{Blueprint, Element};
 
 pub struct WindowBlueprint<UiBlueprint> {
     ui: UiBlueprint,
+    state: WindowState,
 }
 
-pub fn window<A>(ui: A) -> WindowBlueprint<A> {
-    WindowBlueprint { ui }
+pub struct WindowState {
+    pub size: Mutable<Size2>,
+    pub mouse_position: Mutable<Option<Point2>>,
+}
+
+impl Default for WindowState {
+    fn default() -> Self {
+        Self {
+            size: Mutable::new(Size2::new(640.0, 360.0)),
+            mouse_position: Default::default(),
+        }
+    }
+}
+
+pub struct WindowRuntimeState {
+    pub size: Mutable<Size2>,
+    pub mouse_position: Mutable<Option<Point2>>,
+    gpu: Gpu,
+    render_target: WindowRenderTarget,
+    window: Arc<Window>,
+}
+
+impl WindowRuntimeState {
+    pub fn from_blueprint(
+        blueprint: WindowState,
+        env: &WinitBlueprintResources,
+    ) -> Self {
+        let window_attributes = WindowAttributes::default()
+            .with_title("Hello, world!")
+            .with_inner_size(PhysicalSize::new(640, 360));
+        let window = env.winit_requester.request_window(window_attributes);
+
+        let gpu = env.gpu.clone();
+        let render_target = WindowRenderTarget::new(&gpu, window.clone());
+
+        Self {
+            size: blueprint.size,
+            mouse_position: blueprint.mouse_position,
+            gpu,
+            window,
+            render_target,
+        }
+    }
+}
+
+#[allow(non_snake_case)]
+pub fn Window<UiBlueprint>(
+    mut ui: UiBlueprint,
+) -> WindowBlueprint<
+    React<impl Signal<Item = UiBlueprint::Blueprint>, WinitEnvironment>,
+>
+where
+    UiBlueprint: WinitUi,
+{
+    let state = WindowState::default();
+    let reshape_signal = state.size.signal();
+    let ui = reshape_signal
+        .map(move |window_size| {
+            let parent_hints = ParentHints {
+                rect: Rect::new(Point2::ZERO, window_size),
+                // TODO: Turn these into signals, maybe?
+                current_flow: CurrentFlow {
+                    current_flow_direction: CartesianFlow::LeftToRight,
+                    current_cross_flow_direction: CartesianFlow::TopToBottom,
+                    current_writing_flow_direction: CartesianFlow::LeftToRight,
+                    current_writing_cross_flow_direction:
+                        CartesianFlow::TopToBottom,
+                },
+            };
+            // TODO: Listen to and respect the child hints;
+            #[allow(unused)]
+            let child_hints = ui.prepare(parent_hints);
+            let clamped_rect = Rect::new(
+                Point2::ZERO,
+                parent_hints.rect.size.max(child_hints.minimum_size),
+            );
+            ui.place(ParentHints {
+                rect: clamped_rect,
+                ..parent_hints
+            })
+        })
+        .into_blueprint();
+
+    WindowBlueprint { ui, state }
 }
 
 impl<UiBlueprint> Blueprint<WinitEnvironment> for WindowBlueprint<UiBlueprint>
 where
     UiBlueprint: Blueprint<WinitEnvironment>,
+    // for<'fx> <UiBlueprint::Element as Element<WinitEnvironment>>::Effect<'fx>: Debug,
 {
     type Element = WindowElement<UiBlueprint::Element>;
 
@@ -35,19 +129,12 @@ where
         // TODO: Allow different attributes to be specified.
         // Ideally, the user would be able to pass `Mutable`s
         // that the window would poll for reactivity!
-        let window_attributes = WindowAttributes::default()
-            .with_title("Hello, world!")
-            .with_inner_size(PhysicalSize::new(300, 300));
-        let window = env.winit_requester.request_window(window_attributes);
 
-        let gpu = env.gpu.clone();
-        let render_target = WindowRenderTarget::new(&gpu, window.clone());
+        let state = WindowRuntimeState::from_blueprint(self.state, env);
 
         WindowElement {
             ui: self.ui.make(env),
-            window,
-            render_target,
-            gpu,
+            state,
         }
     }
 }
@@ -56,20 +143,21 @@ where
 pub struct WindowElement<Ui> {
     #[pin]
     ui: Ui,
-    window: Arc<Window>,
-    gpu: Gpu,
-    render_target: WindowRenderTarget,
+    state: WindowRuntimeState,
 }
 
 impl<Ui> WindowElement<Ui> {
     pub async fn resize(&mut self, new_size: Size2) {
-        self.render_target.resize(&self.gpu, new_size.as_()).await;
+        self.state
+            .render_target
+            .resize(&self.state.gpu, new_size.as_())
+            .await;
     }
 
     pub fn redraw(&mut self) {
         tracing::debug!("Redrawing!");
         if let Ok(current_texture) =
-            self.render_target.surface.get_current_texture()
+            self.state.render_target.surface.get_current_texture()
         {
             current_texture.present();
         }
@@ -85,7 +173,7 @@ impl<Ui> Bubble<Event, bool> for WindowElement<Ui> {
             }
             Event::CloseRequested => {
                 std::process::exit(1);
-            },
+            }
             Event::RedrawRequested => {
                 self.redraw();
                 true
@@ -105,6 +193,7 @@ impl<Ui> Bubble<Event, bool> for WindowElement<Ui> {
 impl<Ui> Element<WinitEnvironment> for WindowElement<Ui>
 where
     Ui: Element<WinitEnvironment>,
+    // for<'fx> Ui::Effect<'fx>: Debug
 {
     type Effect<'a>
         = ()
@@ -118,7 +207,7 @@ where
         cx: &mut std::task::Context,
         env: &WinitBlueprintResources<'_>,
     ) -> std::task::Poll<Option<()>> {
-        let WindowElementProj { ui, window, .. } = self.project();
+        let WindowElementProj { mut ui, state, .. } = self.project();
 
         /*
             TODO: Windows will futurely have some internal state
@@ -127,15 +216,17 @@ where
             So we need to poll those states, too.
         */
 
-        let inner_poll: Poll<Option<_>> = ui.poll(cx, env);
+        let inner_poll: Poll<Option<_>> = ui.as_mut().poll(cx, env);
 
         match inner_poll {
             Poll::Pending => Poll::Pending,
             Poll::Ready(Some(_)) => {
-                /*
-                    TODO: Actually draw stuff to the window.
-                */
-                window.request_redraw();
+                let ui_effects = ui.effect();
+                // dbg!(&ui_effects);
+                let mut visitor = WindowEffectVisitor {};
+                ui_effects.drive_thru(&mut visitor);
+
+                state.window.request_redraw();
 
                 Poll::Ready(Some(()))
             }
@@ -143,6 +234,8 @@ where
         }
     }
 }
+
+pub struct WindowEffectVisitor {}
 
 /// The render target a window will draw to in order to show its elements in a [window](winit::window::Window).
 pub struct WindowRenderTarget {
@@ -157,7 +250,8 @@ impl WindowRenderTarget {
         let size = window.inner_size();
         let size = Size2::new(size.width, size.height);
         println!("Creating surface?");
-        let surface = gpu.instance
+        let surface = gpu
+            .instance
             .create_surface(window)
             .expect("Failed to create surface for window!");
         let surface_config = wgpu::SurfaceConfiguration {
@@ -168,7 +262,7 @@ impl WindowRenderTarget {
             present_mode: wgpu::PresentMode::AutoVsync,
             desired_maximum_frame_latency: 2,
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
-            view_formats: vec![ ],
+            view_formats: vec![],
         };
         println!("Configuring surface?");
         surface.configure(&gpu.device, &surface_config);
@@ -222,7 +316,7 @@ impl RenderTarget for WindowRenderTarget {
             present_mode: wgpu::PresentMode::AutoVsync,
             desired_maximum_frame_latency: 2,
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
-            view_formats: vec![ ],
+            view_formats: vec![],
         };
         println!("Reconfiguring surface?");
         self.surface.configure(&gpu.device, &surface_config);
