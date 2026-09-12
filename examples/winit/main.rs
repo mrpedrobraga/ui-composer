@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use ui_composer_basic_ui::primitives::graphic::Graphic;
-use ui_composer_core::app::composition::{layout::{ItemBox}};
+use ui_composer_core::app::composition::layout::ItemBox;
 use ui_composer_math::{
     glamour::{Point2, Rect, Size2},
     palette::Srgba,
@@ -20,16 +20,19 @@ fn main() {
     UIComposer::run_winit(Window(App()))
 }
 
-fn App() -> ItemBox<impl FnMut(ui_composer_core::app::composition::layout::hints::ParentHints) -> (Graphic, Graphic), (Graphic, Graphic)> {
-    ItemBox::new(|hints| {
-        App2()
-    })
+fn App() -> ItemBox<
+    impl FnMut(
+        ui_composer_core::app::composition::layout::hints::ParentHints,
+    ) -> (Graphic, Graphic),
+    (Graphic, Graphic),
+> {
+    ItemBox::new(|hints| App2(hints.rect))
 }
 
-fn App2() -> (Graphic, Graphic)  {
+fn App2(rect: Rect) -> (Graphic, Graphic) {
     (
         Graphic {
-            rect: Rect::new(Point2::new(0.0, 0.0), Size2::new(20.0, 20.0)),
+            rect,
             color: Srgba::new(0.0, 0.0, 1.0, 1.0),
         },
         Graphic {

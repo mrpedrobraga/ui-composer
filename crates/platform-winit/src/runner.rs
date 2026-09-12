@@ -20,7 +20,7 @@ use winit::event_loop::{
 use winit::window::{Window, WindowAttributes, WindowId};
 
 use crate::gpu::Gpu;
-use crate::window::WindowEffectVisitor;
+use crate::window::effect_handling::WindowEffectVisitor;
 
 // TODO: Add things to this Environment that elements might want to use.
 // In mind I have a GPU allocator for allocating images and textures.
@@ -29,7 +29,7 @@ pub struct WinitEnvironment;
 
 impl Environment for WinitEnvironment {
     type BlueprintResources<'make> = WinitBlueprintResources<'make>;
-    type EffectVisitor<'fx> = WindowEffectVisitor;
+    type EffectVisitor<'fx> = WindowEffectVisitor<'fx>;
 }
 
 pub struct WinitRunner<AppBlueprint>
@@ -89,6 +89,12 @@ where
                     while let Some(mut event) = event_rx.next().await {
                         let span = tracing::debug_span!("event handler");
                         span.in_scope(async || {
+                            if let Event::Resized(_) = event {
+                                while let Ok(Event::Resized(newer_size)) = event_rx.try_recv() {
+                                    event = Event::Resized(newer_size);
+                                }
+                            }
+                            
                             let mut _lock = app2.lock().await;
 
                             /* Push event down app! */
@@ -97,6 +103,7 @@ where
                             );
                             // TODO: Use something with a little more data than a bool.
                             let event_was_handled = _lock.bubble(&mut event).await;
+                           
                             tracing::debug!(
                                 "[Event Handler] The event was {}.",
                                 if event_was_handled {

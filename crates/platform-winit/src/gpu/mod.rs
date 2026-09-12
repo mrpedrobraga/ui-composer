@@ -1,5 +1,3 @@
-use ui_composer_math::prelude::Size2;
-
 #[derive(Clone)]
 pub struct Gpu {
     pub instance: wgpu::Instance,
@@ -35,7 +33,7 @@ impl Gpu {
             .request_device(&wgpu::DeviceDescriptor {
                 label: Some("UI Composer Winit Main Device"),
                 required_features: wgpu::Features::empty(),
-                required_limits: wgpu::Limits::downlevel_webgl2_defaults()
+                required_limits: wgpu::Limits::defaults()
                     .using_resolution(adapter.limits()),
                 memory_hints: wgpu::MemoryHints::Performance,
                 // TODO: Handle tracing, probably!
@@ -45,11 +43,10 @@ impl Gpu {
             .await
             .expect("Failed to create device and queue!");
 
-        Gpu { instance, device, queue }
+        Gpu {
+            instance,
+            device,
+            queue,
+        }
     }
-}
-
-#[allow(async_fn_in_trait)]
-pub trait RenderTarget {
-    async fn resize(&mut self, gpu: &Gpu, new_size: Size2<u32>);
 }

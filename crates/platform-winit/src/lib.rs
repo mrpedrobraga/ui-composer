@@ -9,9 +9,9 @@ use {
 };
 
 pub mod gpu;
-pub mod render;
 pub mod runner;
 pub mod window;
+pub mod render;
 mod winit_uic_conversion;
 
 pub trait WinitUi: CompatibleWith<WinitEnvironment> {}

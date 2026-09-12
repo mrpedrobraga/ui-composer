@@ -4,11 +4,19 @@
 //! Every time they change (in response to an event or a future or signal yielding),
 //! it will render them to its [WindowRenderTarget].
 
+use crate::WinitUi;
+use crate::gpu::{Gpu};
+use crate::render::{render, RenderPipeline, RenderResources, RenderTarget, TextureSet};
+use crate::runner::{WinitBlueprintResources, WinitEnvironment};
 use futures_signals::signal::{Mutable, Signal, SignalExt as _};
 use pin_project::pin_project;
+use std::sync::Arc;
+use std::task::Poll;
+use ui_composer_core::app::composition::algebra::Bubble;
 use ui_composer_core::app::composition::effects::signal::{
     IntoBlueprint as _, React,
 };
+use ui_composer_core::app::composition::elements::{Blueprint, Element};
 use ui_composer_core::app::composition::layout::hints::ParentHints;
 use ui_composer_core::app::composition::visit::DriveThru;
 use ui_composer_input::event::Event;
@@ -18,14 +26,9 @@ use ui_composer_math::prelude::Size2;
 use winit::dpi::PhysicalSize;
 use winit::window::{Window, WindowAttributes};
 
-use crate::WinitUi;
-use crate::gpu::{Gpu, RenderTarget};
-use crate::runner::{WinitBlueprintResources, WinitEnvironment};
-use std::fmt::Debug;
-use std::sync::Arc;
-use std::task::Poll;
-use ui_composer_core::app::composition::algebra::Bubble;
-use ui_composer_core::app::composition::elements::{Blueprint, Element};
+use self::effect_handling::WindowEffectVisitor;
+
+pub mod effect_handling;
 
 pub struct WindowBlueprint<UiBlueprint> {
     ui: UiBlueprint,
@@ -49,8 +52,9 @@ impl Default for WindowState {
 pub struct WindowRuntimeState {
     pub size: Mutable<Size2>,
     pub mouse_position: Mutable<Option<Point2>>,
-    gpu: Gpu,
+    render_resources: RenderResources,
     render_target: WindowRenderTarget,
+    pub render_pipeline: RenderPipeline,
     window: Arc<Window>,
 }
 
@@ -66,13 +70,16 @@ impl WindowRuntimeState {
 
         let gpu = env.gpu.clone();
         let render_target = WindowRenderTarget::new(&gpu, window.clone());
+        let render_pipeline = RenderPipeline::new(&gpu, wgpu::TextureFormat::Bgra8UnormSrgb);
+        let render_resources = RenderResources::new(gpu, &render_pipeline);
 
         Self {
             size: blueprint.size,
             mouse_position: blueprint.mouse_position,
-            gpu,
+            render_resources,
             window,
             render_target,
+            render_pipeline
         }
     }
 }
@@ -148,19 +155,20 @@ pub struct WindowElement<Ui> {
 
 impl<Ui> WindowElement<Ui> {
     pub async fn resize(&mut self, new_size: Size2) {
+        if new_size.width == 0.0 || new_size.height == 0.0 || self.state.size.get() == new_size {
+            return;
+        }
         self.state
             .render_target
-            .resize(&self.state.gpu, new_size.as_())
+            .resize(&self.state.render_resources.gpu, new_size.as_())
             .await;
+        self.state.size.set(new_size);
     }
 
     pub fn redraw(&mut self) {
         tracing::debug!("Redrawing!");
-        if let Ok(current_texture) =
-            self.state.render_target.surface.get_current_texture()
-        {
-            current_texture.present();
-        }
+        self.state.render_resources.sync(&self.state.render_resources.gpu);
+        render(&self.state.render_target, &self.state.render_pipeline, &self.state.render_resources);
     }
 }
 
@@ -169,6 +177,7 @@ impl<Ui> Bubble<Event, bool> for WindowElement<Ui> {
         match cx {
             Event::Resized(new_size) => {
                 self.resize(*new_size).await;
+                self.state.window.request_redraw();
                 true
             }
             Event::CloseRequested => {
@@ -221,10 +230,14 @@ where
         match inner_poll {
             Poll::Pending => Poll::Pending,
             Poll::Ready(Some(_)) => {
+                let quads = &mut state.render_resources.quads;
+                // TODO: No cleanup will be needed when we have a sized buffer.
+                quads.clear();
                 let ui_effects = ui.effect();
                 // dbg!(&ui_effects);
-                let mut visitor = WindowEffectVisitor {};
+                let mut visitor = WindowEffectVisitor { quads };
                 ui_effects.drive_thru(&mut visitor);
+                drop(ui_effects);
 
                 state.window.request_redraw();
 
@@ -234,8 +247,6 @@ where
         }
     }
 }
-
-pub struct WindowEffectVisitor {}
 
 /// The render target a window will draw to in order to show its elements in a [window](winit::window::Window).
 pub struct WindowRenderTarget {
@@ -249,7 +260,6 @@ impl WindowRenderTarget {
     pub fn new(gpu: &Gpu, window: Arc<winit::window::Window>) -> Self {
         let size = window.inner_size();
         let size = Size2::new(size.width, size.height);
-        println!("Creating surface?");
         let surface = gpu
             .instance
             .create_surface(window)
@@ -264,7 +274,6 @@ impl WindowRenderTarget {
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
             view_formats: vec![],
         };
-        println!("Configuring surface?");
         surface.configure(&gpu.device, &surface_config);
         let depth_texture = Self::new_depth_texture(gpu, &size);
 
@@ -318,9 +327,19 @@ impl RenderTarget for WindowRenderTarget {
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
             view_formats: vec![],
         };
-        println!("Reconfiguring surface?");
         self.surface.configure(&gpu.device, &surface_config);
         self.depth_texture = Self::new_depth_texture(gpu, &new_size);
         self.size = new_size;
+    }
+
+    fn texture_set(&self) -> TextureSet {
+        let surface_texture = self.surface.get_current_texture().unwrap();
+        let albedo = surface_texture.texture.clone();
+
+        TextureSet {
+            surface_texture: Some(surface_texture),
+            albedo,
+            depth: self.depth_texture.clone(),
+        }
     }
 }

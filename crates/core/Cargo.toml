@@ -16,6 +16,7 @@ spin = "0.10.0"
 ui-composer-math = { path = "../math" }
 ui-composer-state = { path = "../state" }
 ui-composer-input = { path = "../input" }
+typenum = "1.20.1"
 
 [features]
 default = ["std"]
