@@ -1,6 +1,8 @@
 use ui_composer_math::prelude::Size2;
 
+#[derive(Clone)]
 pub struct Gpu {
+    pub instance: wgpu::Instance,
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
 }
@@ -43,7 +45,7 @@ impl Gpu {
             .await
             .expect("Failed to create device and queue!");
 
-        Gpu { device, queue }
+        Gpu { instance, device, queue }
     }
 }
 
