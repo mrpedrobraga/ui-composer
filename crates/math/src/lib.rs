@@ -1,4 +1,4 @@
-//! # Geometry
+//! # UI Composer Math
 //!
 //! Mathematical utilities for laying out things in space.
 

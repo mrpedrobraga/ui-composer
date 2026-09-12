@@ -1,5 +1,4 @@
-use lullaby_ui::image::{self, GenericImageView};
-use {lullaby_ui::prelude::*, ui_composer::prelude::*};
+use {lullaby_ui::prelude::{*, image::GenericImageView}, ui_composer::prelude::*};
 
 fn main() {
     UIComposer::run_tui(Terminal(app()));

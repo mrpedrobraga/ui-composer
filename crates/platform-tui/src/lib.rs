@@ -2,11 +2,11 @@
 //!
 //! This module contains a [`Runner`] that can run applications in a terminal.
 
-pub mod nodes;
+pub mod items;
 pub mod render;
 pub mod runner;
 
-pub use nodes::Terminal;
+pub use items::Terminal;
 pub use ui_composer_canvas as canvas;
 
 use {
@@ -28,6 +28,6 @@ impl<T> TuiBlueprint for T where
 
 pub mod prelude {
     pub use crate::Tui;
-    pub use crate::nodes::Terminal;
+    pub use crate::items::Terminal;
     pub use crate::runner::{TUIRunner, TerminalEnvironment};
 }

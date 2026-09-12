@@ -3527,7 +3527,6 @@ dependencies = [
  "tracing-subscriber",
  "ui-composer-basic-ui",
  "ui-composer-core",
- "ui-composer-macros",
  "ui-composer-math",
  "ui-composer-platform-tui",
  "ui-composer-platform-winit",
@@ -3588,17 +3587,6 @@ dependencies = [
  "nstr",
  "smol_str 0.3.5",
  "ui-composer-math",
-]
-
-[[package]]
-name = "ui-composer-macros"
-version = "0.1.0"
-dependencies = [
- "futures",
- "futures-signals",
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]

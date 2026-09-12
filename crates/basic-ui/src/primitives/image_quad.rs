@@ -11,7 +11,7 @@ use ui_composer_input::event::Event;
 use ui_composer_math::prelude::{Rect, Srgba};
 use ui_composer_platform_tui::{
     canvas::{Canvas as _, TextModePixel},
-    nodes::TerminalEffectVisitor,
+    items::TerminalEffectVisitor,
     runner::TerminalEnvironment,
 };
 

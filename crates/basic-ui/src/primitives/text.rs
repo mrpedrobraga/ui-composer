@@ -8,7 +8,7 @@ use ui_composer_input::event::Event;
 use ui_composer_math::prelude::{Point2, Rect, Srgba};
 use ui_composer_platform_tui::{
     canvas::{Canvas as _, TextModePixel},
-    nodes::TerminalEffectVisitor,
+    items::TerminalEffectVisitor,
     runner::{TerminalBlueprintResources, TerminalEnvironment},
 };
 use ui_composer_platform_winit::runner::WinitEnvironment;

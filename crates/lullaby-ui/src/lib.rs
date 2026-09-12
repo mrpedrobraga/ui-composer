@@ -3,11 +3,11 @@
 pub mod components;
 pub mod convert;
 
-pub use ui_composer_basic_ui::components::image::image;
 pub mod prelude {
     /* Re-export layout items. */
     pub use ui_composer_basic_ui::components::*;
     pub use ui_composer_basic_ui::layout::*;
+    pub use ui_composer_basic_ui::components::image::image;
 
     /* Primitives */
     pub use ui_composer_basic_ui::interaction::*;

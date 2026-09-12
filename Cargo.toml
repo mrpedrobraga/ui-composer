@@ -10,7 +10,6 @@ members = [
     "crates/math",
     "crates/state",
     "crates/canvas",
-    "crates/macros",
     "crates/platform-tui",
     "crates/platform-winit",
     "crates/uix",
@@ -39,7 +38,7 @@ uix = { path = "crates/uix" }
 ui-composer-view-macro = { path = "crates/view-macro" }
 
 [dev-dependencies]
-ui-composer-macros = { path = "crates/macros" }
+# ui-composer-macros = { path = "crates/macros" }
 
 lullaby-ui = { path = "crates/lullaby-ui" }
 futures = "*"

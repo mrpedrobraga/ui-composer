@@ -8,16 +8,16 @@ fn main() {
 }
 
 fn Counter(counter: Mutable<i32>) -> impl Tui {
-    let label =
+    let txt_count =
         ReactiveLabel(counter.signal().map(|num| format!("Counter: {}", num)));
-    let decr = Button(Label("Take 1"), counter.clone().effect(|e| *e -= 1));
-    let incr = Button(Label("Add 1"), counter.effect(|e| *e += 1));
+    let btn_decrement = Button(Label("Take 1"), counter.clone().effect(|e| *e -= 1));
+    let btn_increment = Button(Label("Add 1"), counter.effect(|e| *e += 1));
 
     view! {
         flex [
-            item ((decr))
-            item center ((label))
-            item ((incr))
+            item ((btn_decrement))
+            item center ((txt_count))
+            item ((btn_increment))
         ]
     }
 }

@@ -27,7 +27,7 @@ use ui_composer_input::event::{
 };
 use ui_composer_math::prelude::{Point2, Size2, Vector2};
 
-use crate::nodes::TerminalEffectVisitor;
+use crate::items::TerminalEffectVisitor;
 
 pub struct TerminalEnvironment;
 pub struct TerminalBlueprintResources;
