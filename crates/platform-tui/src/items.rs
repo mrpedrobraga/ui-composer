@@ -56,7 +56,7 @@ impl<UiElement> Bubble<Event, bool> for TerminalElement<UiElement>
 where
     UiElement: Bubble<Event, bool>,
 {
-    fn bubble(&mut self, cx: &mut Event) -> bool {
+    async fn bubble(&mut self, cx: &mut Event) -> bool {
         if let Event::Resized(new_size) = cx {
             self.state.render_target.resize(new_size.as_());
             self.state.size.set(*new_size);
@@ -78,7 +78,7 @@ where
             self.state.mouse_position.put(None);
         }
 
-        self.ui.bubble(cx)
+        self.ui.bubble(cx).await
     }
 }
 

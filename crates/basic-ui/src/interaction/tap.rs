@@ -43,7 +43,7 @@ impl<A> Bubble<Event, bool> for Tap<A>
 where
     A: Effect + Send + Sync,
 {
-    fn bubble(&mut self, event: &mut Event) -> bool {
+    async fn bubble(&mut self, event: &mut Event) -> bool {
         match event {
             Event::Cursor { id: _, event } => match event {
                 CursorEvent::Moved { position } => {

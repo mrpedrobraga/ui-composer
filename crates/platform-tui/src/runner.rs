@@ -16,7 +16,7 @@ use futures_signals::signal::SignalExt as _;
 use smol_str::ToSmolStr as _;
 use std::io::{Write, stdout};
 use std::marker::PhantomData;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc};
 use ui_composer_core::app::composition::algebra::Bubble as _;
 use ui_composer_core::app::composition::elements::{Blueprint, Environment};
 use ui_composer_core::app::runner::Runner;
@@ -58,7 +58,7 @@ where
         let env = TerminalEnvironment;
         let res = TerminalBlueprintResources;
         let app = blueprint.make(&res);
-        let app = Arc::new(Mutex::new(app));
+        let app = Arc::new(futures::lock::Mutex::new(app));
         let app_e = app.clone();
 
         // Correction for the terminal's way of indexing.
@@ -82,15 +82,15 @@ where
                         if let CrosstermEvent::Resize(new_width, new_height) =
                             event
                         {
-                            let mut l = app_e.lock().unwrap();
+                            let mut l = app_e.lock().await;
                             l.bubble(&mut Event::Resized(Size2::new(
                                 new_width as f32,
                                 new_height as f32,
-                            )));
+                            ))).await;
                         }
 
                         if let CrosstermEvent::Key(k) = event {
-                            let mut l = app_e.lock().unwrap();
+                            let mut l = app_e.lock().await;
                             l.bubble(&mut Event::Keyboard {
                                 id: DeviceId(0),
                                 event: KeyboardEvent::Key(KeyEvent {
@@ -105,11 +105,11 @@ where
                                         ButtonState::Released
                                     },
                                 }),
-                            });
+                            }).await;
                         }
 
                         if let CrosstermEvent::Mouse(m) = event {
-                            let mut l = app_e.lock().unwrap();
+                            let mut l = app_e.lock().await;
 
                             if m.kind.is_moved() {
                                 l.bubble(&mut Event::Cursor {
@@ -121,7 +121,7 @@ where
                                         .as_()
                                             + top_left_correction),
                                     },
-                                });
+                                }).await;
                             }
 
                             if m.kind.is_drag() {
@@ -134,7 +134,7 @@ where
                                         .as_()
                                             + top_left_correction),
                                     },
-                                });
+                                }).await;
                             }
 
                             if m.kind.is_down() {
@@ -144,7 +144,7 @@ where
                                         finger_id: 0,
                                         stage: TouchStage::Started,
                                     },
-                                });
+                                }).await;
                             }
                         }
                     }

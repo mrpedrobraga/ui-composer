@@ -42,7 +42,7 @@ pub mod bubble {
     where
         Up: Empty,
     {
-        fn bubble(&mut self, #[allow(unused)] cx: &mut Down) -> Up {
+        async fn bubble(&mut self, #[allow(unused)] cx: &mut Down) -> Up {
             Empty::empty()
         }
     }
@@ -53,8 +53,8 @@ pub mod bubble {
         A: Bubble<Down, Up>,
         Up: Semigroup,
     {
-        fn bubble(&mut self, cx: &mut Down) -> Up {
-            self.as_mut().bubble(cx)
+        async fn bubble(&mut self, cx: &mut Down) -> Up {
+            self.as_mut().bubble(cx).await
         }
     }
 
@@ -64,9 +64,9 @@ pub mod bubble {
         B: Bubble<Down, Up>,
         Up: Semigroup,
     {
-        fn bubble(&mut self, cx: &mut Down) -> Up {
-            let a = self.0.bubble(cx);
-            let b = self.1.bubble(cx);
+        async fn bubble(&mut self, cx: &mut Down) -> Up {
+            let a = self.0.bubble(cx).await;
+            let b = self.1.bubble(cx).await;
             a.combine(b)
         }
     }
@@ -76,10 +76,12 @@ pub mod bubble {
         A: Bubble<Down, Up>,
         Up: Monoid,
     {
-        fn bubble(&mut self, cx: &mut Down) -> Up {
-            self.iter_mut().fold(Empty::empty(), |acc, el| {
-                Semigroup::combine(acc, el.bubble(cx))
-            })
+        async fn bubble(&mut self, cx: &mut Down) -> Up {
+            let mut acc = Empty::empty();
+            for el in self.iter_mut() {
+                acc = Semigroup::combine(acc, el.bubble(cx).await);
+            }
+            acc
         }
     }
 
@@ -88,10 +90,12 @@ pub mod bubble {
         A: Bubble<Down, Up>,
         Up: Monoid,
     {
-        fn bubble(&mut self, cx: &mut Down) -> Up {
-            self.iter_mut().fold(Empty::empty(), |acc, el| {
-                Semigroup::combine(acc, el.bubble(cx))
-            })
+        async fn bubble(&mut self, cx: &mut Down) -> Up {
+            let mut acc = Empty::empty();
+            for el in self.iter_mut() {
+                acc = Semigroup::combine(acc, el.bubble(cx).await);
+            }
+            acc
         }
     }
 
@@ -100,10 +104,10 @@ pub mod bubble {
         A: Bubble<Down, Up>,
         Up: Empty,
     {
-        fn bubble(&mut self, cx: &mut Down) -> Up {
+        async fn bubble(&mut self, cx: &mut Down) -> Up {
             match self {
                 None => Up::empty(),
-                Some(inner) => inner.bubble(cx),
+                Some(inner) => inner.bubble(cx).await,
             }
         }
     }
@@ -114,10 +118,10 @@ pub mod bubble {
         E: Bubble<Down, Up>,
         Up: Empty,
     {
-        fn bubble(&mut self, cx: &mut Down) -> Up {
+        async fn bubble(&mut self, cx: &mut Down) -> Up {
             match self {
-                Err(inner) => inner.bubble(cx),
-                Ok(inner) => inner.bubble(cx),
+                Err(inner) => inner.bubble(cx).await,
+                Ok(inner) => inner.bubble(cx).await,
             }
         }
     }

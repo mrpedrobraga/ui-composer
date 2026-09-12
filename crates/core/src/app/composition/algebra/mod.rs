@@ -33,7 +33,7 @@ pub trait Bubble<Down, Up> {
     /// If called recursively on a "tree" structure where the nodes
     /// have several children, it's expected that Down will be either split or cloned,
     /// and that Up will be [`Semigroup::combine`]d.
-    fn bubble(&mut self, cx: &mut Down) -> Up;
+    async fn bubble(&mut self, cx: &mut Down) -> Up;
 }
 
 /// Type for something that can bubble a value down its structure (anamorphism)

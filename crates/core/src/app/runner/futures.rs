@@ -17,7 +17,7 @@ use std::ops::DerefMut;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-type Own<A> = std::sync::Arc<std::sync::Mutex<A>>;
+type Own<A> = std::sync::Arc<futures::lock::Mutex<A>>;
 
 /// Has a reference to a runner, serving as an Executor for its [`Future`]s and [`Signal`]s.
 #[pin_project(project=AsyncExecutorProj)]
@@ -62,7 +62,7 @@ impl<'exec, Env: Environment, App: Element<Env>, Callback: FnMut()> Signal
             callback,
         } = self.project();
 
-        if let Ok(mut element_borrow) = element.lock() {
+        if let Some(mut element_borrow) = element.try_lock() {
             
             let pinned_element =
             unsafe { Pin::new_unchecked(element_borrow.deref_mut()) };

@@ -16,7 +16,7 @@ impl Typing {
 }
 
 impl Bubble<Event, bool> for Typing {
-    fn bubble(&mut self, event: &mut Event) -> bool {
+    async fn bubble(&mut self, event: &mut Event) -> bool {
         if let Event::Keyboard {
             event:
                 KeyboardEvent::Key(KeyEvent {

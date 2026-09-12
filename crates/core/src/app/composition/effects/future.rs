@@ -45,11 +45,12 @@ impl<Fut, Env: Environment> Bubble<Event, bool> for ReactOnce<Fut, Env>
 where
     Fut: Future<Output: Blueprint<Env>>,
 {
-    fn bubble(&mut self, cx: &mut Event) -> bool {
-        self.element
-            .as_mut()
-            .map(|e| e.bubble(cx))
-            .unwrap_or_default()
+    async fn bubble(&mut self, cx: &mut Event) -> bool {
+        if let Some(e) = self.element.as_mut() {
+            e.bubble(cx).await
+        } else {
+            false
+        }
     }
 }
 

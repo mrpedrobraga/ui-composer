@@ -1,6 +1,6 @@
 use chttp::ResponseExt;
 use std::marker::PhantomData;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc};
 use ui_composer::prelude::*;
 
 /// An environment identifies a platform for which you can develop apps.
@@ -33,7 +33,7 @@ where
 
         // App blueprint is *made* into an app.
         let app = ui.make(&res);
-        let app = Arc::new(Mutex::new(app));
+        let app = Arc::new(futures::lock::Mutex::new(app));
 
         println!("[Example] Starting...");
 

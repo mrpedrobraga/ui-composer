@@ -104,7 +104,7 @@ impl ImageViewElementTerminal {
 }
 
 impl Bubble<Event, bool> for ImageViewElementTerminal {
-    fn bubble(&mut self, _: &mut Event) -> bool {
+    async fn bubble(&mut self, _: &mut Event) -> bool {
         Empty::empty()
     }
 }

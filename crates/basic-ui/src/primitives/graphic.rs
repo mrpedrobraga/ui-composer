@@ -87,7 +87,7 @@ impl Graphic {
 }
 
 impl Bubble<Event, bool> for Graphic {
-    fn bubble(&mut self, _: &mut Event) -> bool {
+    async fn bubble(&mut self, _: &mut Event) -> bool {
         Empty::empty()
     }
 }

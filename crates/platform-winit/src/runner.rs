@@ -4,7 +4,7 @@ use futures::executor::block_on;
 use futures::{SinkExt, StreamExt, join};
 use futures_signals::signal::SignalExt;
 use std::marker::PhantomData;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc};
 use ui_composer_core::app::composition::algebra::Bubble;
 use ui_composer_core::app::composition::elements::{
     Blueprint, Element, Environment,
@@ -18,6 +18,8 @@ use winit::event_loop::{
     ActiveEventLoop, ControlFlow, EventLoop, EventLoopProxy,
 };
 use winit::window::{Window, WindowAttributes, WindowId};
+
+use crate::gpu::Gpu;
 
 // TODO: Add things to this Environment that elements might want to use.
 // In mind I have a GPU allocator for allocating images and textures.
@@ -61,6 +63,9 @@ where
                 .expect("[Winit Runner] Failed to create event loop");
             let proxy = e_loop.create_proxy();
 
+            let gpu = block_on(Gpu::new());
+            let gpu2 = gpu.clone();
+
             scope.spawn(move || {
                 // NOTE: Because of winit's very model where it monopolises the main thread,
                 // the app blueprint is sent to the ApplicationHandler to be made,
@@ -69,10 +74,11 @@ where
                 let app = {
                     let res = WinitBlueprintResources {
                         winit_requester: &winit_requester,
+                        gpu: gpu2
                     };
                     app_blueprint.make(&res)
                 };
-                let app = Arc::new(Mutex::new(app));
+                let app = Arc::new(futures::lock::Mutex::new(app));
                 let app2 = app.clone();
 
                 let event_handler = async move {
@@ -81,17 +87,15 @@ where
 
                     while let Some(mut event) = event_rx.next().await {
                         let span = tracing::debug_span!("event handler");
-                        span.in_scope(|| {
-                            let mut _lock = app2.lock().expect(
-                                "[Event Handler] Failed to lock app to send event.",
-                            );
+                        span.in_scope(async || {
+                            let mut _lock = app2.lock().await;
 
                             /* Push event down app! */
                             tracing::debug!(
                                 "[Event Handler] New event `{event:?}`. Broadcasting."
                             );
                             // TODO: Use something with a little more data than a bool.
-                            let event_was_handled = _lock.bubble(&mut event);
+                            let event_was_handled = _lock.bubble(&mut event).await;
                             tracing::debug!(
                                 "[Event Handler] The event was {}.",
                                 if event_was_handled {
@@ -100,12 +104,13 @@ where
                                     "not handled"
                                 }
                             );
-                        });
+                        }).await;
                     }
                 };
 
                 let res = WinitBlueprintResources {
                     winit_requester: &winit_requester,
+                    gpu
                 };
                 let async_handler =
                     AsyncExecutor::new(app, res, || {}).to_future();
@@ -151,11 +156,13 @@ impl ApplicationHandler<WinitUicRequest> for WinitAppHandler {
         event: WindowEvent,
     ) {
         tracing::debug!("[Winit App Handler] Window Event {event:?}.");
-        let uic_event = crate::winit_uic_conversion::into_event(event)
-            .expect("Unrecognized event.");
         //TODO: Restructure how the event loop sends events.
-        block_on(self.event_tx.send(uic_event))
-            .expect("[Winit App Handler] Failed to send event though channel.");
+        if let Ok(uic_event) = crate::winit_uic_conversion::into_event(event) {
+            block_on(self.event_tx.send(uic_event))
+                .expect("[Winit App Handler] Failed to send event though channel.");
+        } else {
+            tracing::warn!("Unrecognized event.");
+        }
     }
 
     fn exiting(&mut self, _: &ActiveEventLoop) {
@@ -183,6 +190,7 @@ impl ApplicationHandler<WinitUicRequest> for WinitAppHandler {
 
 pub struct WinitBlueprintResources<'make> {
     pub(crate) winit_requester: &'make WinitRequester,
+    pub(crate) gpu: Gpu,
 }
 
 pub(crate) struct WinitRequester {

@@ -26,7 +26,7 @@ impl Hover {
 }
 
 impl Bubble<Event, bool> for Hover {
-    fn bubble(&mut self, event: &mut Event) -> bool {
+    async fn bubble(&mut self, event: &mut Event) -> bool {
         match event {
             Event::Cursor { id, event } => match event {
                 CursorEvent::Moved { position } => {

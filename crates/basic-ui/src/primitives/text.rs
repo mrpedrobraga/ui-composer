@@ -80,7 +80,7 @@ impl Text {
 }
 
 impl Bubble<Event, bool> for Text {
-    fn bubble(&mut self, _: &mut Event) -> bool {
+    async fn bubble(&mut self, _: &mut Event) -> bool {
         Empty::empty()
     }
 }

@@ -51,7 +51,7 @@ impl Drag {
 }
 
 impl Bubble<Event, bool> for Drag {
-    fn bubble(&mut self, event: &mut Event) -> bool {
+    async fn bubble(&mut self, event: &mut Event) -> bool {
         if let Event::Cursor { id, event } = event {
             match (event, self.drag_state.get()) {
                 (CursorEvent::Moved { position }, DragState::None) => {
