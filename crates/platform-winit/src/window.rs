@@ -40,9 +40,14 @@ where
             .with_inner_size(PhysicalSize::new(300, 300));
         let window = env.winit_requester.request_window(window_attributes);
 
+        let gpu = futures::executor::block_on(Gpu::new());
+        let render_target = WindowRenderTarget::new(&gpu, window.clone());
+
         WindowElement {
             ui: self.ui.make(env),
             window,
+            render_target,
+            gpu,
         }
     }
 }
@@ -52,20 +57,34 @@ pub struct WindowElement<Ui> {
     #[pin]
     ui: Ui,
     window: Arc<Window>,
+    render_target: WindowRenderTarget,
+    gpu: Gpu
+}
+
+impl<Ui> WindowElement<Ui> {
+    pub async fn resize(&mut self, new_size: Size2) {
+        self.render_target.resize(&self.gpu, new_size.as_()).await;
+    }
+
+    pub fn redraw(&mut self) {
+        tracing::debug!("Redrawing!");
+        if let Ok(current_texture) = self.render_target.surface.get_current_texture() {
+            current_texture.present();
+        }
+    }
 }
 
 impl<Ui> Bubble<Event, bool> for WindowElement<Ui> {
     fn bubble(&mut self, cx: &mut Event) -> bool {
         match cx {
-            Event::Resized(_extent2) => {
-                /* Store and broadcast this change by setting the window's state. */
+            Event::Resized(new_size) => {
+                futures::executor::block_on(self.resize(*new_size));
                 true
             }
             Event::CloseRequested => false,
             Event::RedrawRequested => {
-                tracing::debug!("[Window] Ignoring redraw request.");
-
-                false
+                self.redraw();
+                true
             },
             Event::OcclusionStateChanged(_) => false,
             Event::FocusStateChanged(_) => false,
@@ -95,7 +114,7 @@ where
         cx: &mut std::task::Context,
         env: &WinitBlueprintResources<'_>,
     ) -> std::task::Poll<Option<()>> {
-        let WindowElementProj { ui, window } = self.project();
+        let WindowElementProj { ui, window, .. } = self.project();
 
         /*
             TODO: Windows will futurely have some internal state
