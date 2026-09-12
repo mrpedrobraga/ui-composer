@@ -62,6 +62,7 @@ where
             let e_loop = EventLoop::with_user_event()
                 .build()
                 .expect("[Winit Runner] Failed to create event loop");
+            e_loop.set_control_flow(ControlFlow::Wait);
             let proxy = e_loop.create_proxy();
 
             let gpu = block_on(Gpu::new());
@@ -85,6 +86,7 @@ where
                 let event_handler = async move {
                     let mut event_rx = event_rx;
                     let app2 = app2;
+                    let mut event_no = 0;
 
                     while let Some(mut event) = event_rx.next().await {
                         let span = tracing::debug_span!("event handler");
@@ -97,13 +99,15 @@ where
                             
                             let mut _lock = app2.lock().await;
 
-                            /* Push event down app! */
                             tracing::debug!(
-                                "[Event Handler] New event `{event:?}`. Broadcasting."
+                                "[Event Handler] Received event no {event_no} `{event:?}`. Broadcasting."
                             );
                             // TODO: Use something with a little more data than a bool.
                             let event_was_handled = _lock.bubble(&mut event).await;
                            
+                            /* Push event down app! */
+                            event_no += 1;
+
                             tracing::debug!(
                                 "[Event Handler] The event was {}.",
                                 if event_was_handled {
@@ -136,7 +140,7 @@ where
                 It must run on the main thread, and it IS blocking...
                 And thus we _must_ create a new thread if we want any futures/signals to be polled.
             */
-            let mut winit_app_handler = WinitAppHandler { event_tx };
+            let mut winit_app_handler = WinitAppHandler { state: (0,), event_tx };
 
             /*
                 Create event loop and run the handler.
@@ -152,6 +156,7 @@ where
 }
 
 pub struct WinitAppHandler {
+    state: (i32,),
     event_tx: Sender<Event>,
 }
 impl ApplicationHandler<WinitUicRequest> for WinitAppHandler {
@@ -166,8 +171,17 @@ impl ApplicationHandler<WinitUicRequest> for WinitAppHandler {
         tracing::debug!("[Winit App Handler] Window Event {event:?}.");
         //TODO: Restructure how the event loop sends events.
         if let Ok(uic_event) = crate::winit_uic_conversion::into_event(event) {
-            block_on(self.event_tx.send(uic_event))
-                .expect("[Winit App Handler] Failed to send event though channel.");
+            tracing::debug!("[Winit App Handler] Sending event no {} `{:?}`.", self.state.0, uic_event);
+            
+            // if let Event::Resized(new_size) = uic_event {
+            //     println!("Resized events can be sent directly?");
+            //     return;
+            // }
+            
+            // block_on(self.event_tx.send(uic_event))
+            //     .expect("[Winit App Handler] Failed to send event though channel.");
+            let _ = self.event_tx.try_send(uic_event);
+            self.state.0 += 1;
         } else {
             tracing::warn!("Unrecognized event.");
         }

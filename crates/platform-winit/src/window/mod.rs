@@ -5,9 +5,12 @@
 //! it will render them to its [WindowRenderTarget].
 
 use crate::WinitUi;
-use crate::gpu::{Gpu};
-use crate::render::{render, RenderPipeline, RenderResources, RenderTarget, TextureSet};
+use crate::gpu::Gpu;
+use crate::render::{
+    RenderPipeline, RenderResources, RenderTarget, TextureSet, render,
+};
 use crate::runner::{WinitBlueprintResources, WinitEnvironment};
+use core::panic;
 use futures_signals::signal::{Mutable, Signal, SignalExt as _};
 use pin_project::pin_project;
 use std::sync::Arc;
@@ -70,7 +73,8 @@ impl WindowRuntimeState {
 
         let gpu = env.gpu.clone();
         let render_target = WindowRenderTarget::new(&gpu, window.clone());
-        let render_pipeline = RenderPipeline::new(&gpu, wgpu::TextureFormat::Bgra8UnormSrgb);
+        let render_pipeline =
+            RenderPipeline::new(&gpu, wgpu::TextureFormat::Bgra8UnormSrgb);
         let render_resources = RenderResources::new(gpu, &render_pipeline);
 
         Self {
@@ -79,7 +83,7 @@ impl WindowRuntimeState {
             render_resources,
             window,
             render_target,
-            render_pipeline
+            render_pipeline,
         }
     }
 }
@@ -154,21 +158,30 @@ pub struct WindowElement<Ui> {
 }
 
 impl<Ui> WindowElement<Ui> {
-    pub async fn resize(&mut self, new_size: Size2) {
-        if new_size.width == 0.0 || new_size.height == 0.0 || self.state.size.get() == new_size {
+    pub fn resize(&mut self, new_size: Size2) {
+        if new_size.width == 0.0
+            || new_size.height == 0.0
+            || self.state.size.get() == new_size
+        {
             return;
         }
+        self.state.render_resources.uniforms.resize(new_size);
+        self.state.size.set(new_size);
         self.state
             .render_target
-            .resize(&self.state.render_resources.gpu, new_size.as_())
-            .await;
-        self.state.size.set(new_size);
+            .resize(&self.state.render_resources.gpu, new_size.as_());
     }
 
     pub fn redraw(&mut self) {
         tracing::debug!("Redrawing!");
-        self.state.render_resources.sync(&self.state.render_resources.gpu);
-        render(&self.state.render_target, &self.state.render_pipeline, &self.state.render_resources);
+        self.state
+            .render_resources
+            .sync(&self.state.render_resources.gpu);
+        render(
+            &self.state.render_target,
+            &self.state.render_pipeline,
+            &self.state.render_resources,
+        );
     }
 }
 
@@ -176,8 +189,7 @@ impl<Ui> Bubble<Event, bool> for WindowElement<Ui> {
     async fn bubble(&mut self, cx: &mut Event) -> bool {
         match cx {
             Event::Resized(new_size) => {
-                self.resize(*new_size).await;
-                self.state.window.request_redraw();
+                self.resize(*new_size);
                 true
             }
             Event::CloseRequested => {
@@ -273,6 +285,7 @@ impl WindowRenderTarget {
             desired_maximum_frame_latency: 2,
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
             view_formats: vec![],
+            color_space: wgpu::SurfaceColorSpace::Auto,
         };
         surface.configure(&gpu.device, &surface_config);
         let depth_texture = Self::new_depth_texture(gpu, &size);
@@ -305,18 +318,7 @@ impl WindowRenderTarget {
 }
 
 impl RenderTarget for WindowRenderTarget {
-    async fn resize(&mut self, gpu: &Gpu, new_size: Size2<u32>) {
-        // let adapter = wgpu::Instance::default()
-        //     .request_adapter(&wgpu::RequestAdapterOptions {
-        //         compatible_surface: Some(&self.surface),
-        //         ..Default::default()
-        //     })
-        //     .await
-        //     .expect("Failed to request new adapter!");
-        // let surface_config = self
-        //     .surface
-        //     .get_default_config(&adapter, new_size.width, new_size.height)
-        //     .expect("Failed to get new configuration for surface.");
+    fn resize(&mut self, gpu: &Gpu, new_size: Size2<u32>) {
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: wgpu::TextureFormat::Bgra8UnormSrgb,
@@ -326,6 +328,7 @@ impl RenderTarget for WindowRenderTarget {
             desired_maximum_frame_latency: 2,
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
             view_formats: vec![],
+            color_space: wgpu::SurfaceColorSpace::Auto,
         };
         self.surface.configure(&gpu.device, &surface_config);
         self.depth_texture = Self::new_depth_texture(gpu, &new_size);
@@ -333,13 +336,20 @@ impl RenderTarget for WindowRenderTarget {
     }
 
     fn texture_set(&self) -> TextureSet {
-        let surface_texture = self.surface.get_current_texture().unwrap();
-        let albedo = surface_texture.texture.clone();
+        let surface_texture = self.surface.get_current_texture();
+        match surface_texture {
+            wgpu::CurrentSurfaceTexture::Success(surface_texture) => {
+                let albedo = surface_texture.texture.clone();
 
-        TextureSet {
-            surface_texture: Some(surface_texture),
-            albedo,
-            depth: self.depth_texture.clone(),
+                TextureSet {
+                    surface_texture: Some(surface_texture),
+                    albedo,
+                    depth: self.depth_texture.clone(),
+                }
+            }
+            _ => {
+                panic!("No surface available?");
+            }
         }
     }
 }

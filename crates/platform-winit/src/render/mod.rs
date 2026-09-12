@@ -1,11 +1,11 @@
 use ui_composer_math::glamour::{Matrix4, Size2};
-use wgpu::util::DeviceExt;
+use wgpu::{util::DeviceExt};
 
 use crate::{gpu::Gpu, window::effect_handling::QuadInstance};
 
 #[allow(async_fn_in_trait)]
 pub trait RenderTarget {
-    async fn resize(&mut self, gpu: &Gpu, new_size: Size2<u32>);
+    fn resize(&mut self, gpu: &Gpu, new_size: Size2<u32>);
 
     /// Returns a texture set useful for rendering!
     fn texture_set(&self) -> TextureSet;
@@ -107,14 +107,15 @@ impl RenderPipelineUniforms {
     pub fn new() -> Self {
         Self {
             view_matrix: ui_composer_math::glamour::Matrix4::orthographic_rh(
-                0.0,
-                640_f32,
-                360_f32,
-                0.0,
-                -1.0,
-                1.0,
+                0.0, 640_f32, 360_f32, 0.0, -1.0, 1.0,
             ),
         }
+    }
+
+    pub fn resize(&mut self, new_size: Size2) {
+        self.view_matrix = ui_composer_math::glamour::Matrix4::orthographic_rh(
+            0.0, new_size.width, new_size.height, 0.0, -1.0, 1.0,
+        );
     }
 }
 
@@ -157,7 +158,7 @@ impl RenderPipeline {
         let pipeline_layout = gpu.device.create_pipeline_layout(
             &wgpu::PipelineLayoutDescriptor {
                 label: Some("Quads Render Pipeline Layout"),
-                bind_group_layouts: &[&bind_group_layout],
+                bind_group_layouts: &[Some(&bind_group_layout)],
                 immediate_size: 0,
             },
         );
@@ -195,8 +196,8 @@ impl RenderPipeline {
                 },
                 depth_stencil: Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth32Float,
-                    depth_write_enabled: true, //Some(true),
-                    depth_compare: wgpu::CompareFunction::LessEqual, //Some(wgpu::CompareFunction::Less),
+                    depth_write_enabled: Some(true),
+                    depth_compare: Some(wgpu::CompareFunction::LessEqual),
                     stencil: wgpu::StencilState::default(),
                     bias: wgpu::DepthBiasState::default(),
                 }),
@@ -255,8 +256,7 @@ pub fn render<R>(
 
     // Present the texture!
     if let Some(surface_texture) = surface_texture {
-        surface_texture.present();
-        println!("Presenting!")
+        resources.gpu.queue.present(surface_texture);
     }
 }
 

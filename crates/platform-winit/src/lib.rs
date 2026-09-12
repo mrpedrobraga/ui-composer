@@ -14,6 +14,9 @@ pub mod window;
 pub mod render;
 mod winit_uic_conversion;
 
+pub use winit;
+pub use wgpu;
+
 pub trait WinitUi: CompatibleWith<WinitEnvironment> {}
 impl<T> WinitUi for T where T: CompatibleWith<WinitEnvironment> {}
 

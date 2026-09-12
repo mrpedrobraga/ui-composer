@@ -37,19 +37,18 @@ impl<'fx> Apply<RenderQuad> for TerminalEffectVisitor<'fx> {
         );
     }
 }
-impl<'fx> Apply<RenderQuad> for WindowEffectVisitor<'fx> {
-    fn visit(&mut self, RenderQuad(Rect { origin, size }, color): &RenderQuad) {
-        /* Do nothing for now */
-        self.quads.push(QuadInstance {
+impl RenderQuad {
+    pub fn as_quad_instance(&self) -> QuadInstance {
+        QuadInstance {
             matrix: Matrix4::from_cols_array(&[
                 // xx, xy, xz, xw,
-                size.width,
+                self.0.width(),
                 0.0,
                 0.0,
                 0.0, 
                 // yx, yy, yz, yw,
                 0.0,
-                size.height,
+                self.0.height(),
                 0.0,
                 0.0, 
                 // zx, zy, zz, zw,
@@ -58,18 +57,24 @@ impl<'fx> Apply<RenderQuad> for WindowEffectVisitor<'fx> {
                 1.0,
                 0.0,
                 // wx, wy, wz, ww 
-                origin.x,
-                origin.y,
+                self.0.origin.x,
+                self.0.origin.y,
                 0.0,
                 1.0, 
             ]),
             color: Vector4 {
-                x: color.red,
-                y: color.green,
-                z: color.blue,
-                w: color.alpha,
+                x: self.1.red,
+                y: self.1.green,
+                z: self.1.blue,
+                w: self.1.alpha,
             },
-        })
+        }
+    }
+}
+impl<'fx> Apply<RenderQuad> for WindowEffectVisitor<'fx> {
+    fn visit(&mut self, render_quad: &RenderQuad) {
+        /* Do nothing for now */
+        self.quads.push(render_quad.as_quad_instance())
     }
 }
 impl Apply<RenderQuad> for () {

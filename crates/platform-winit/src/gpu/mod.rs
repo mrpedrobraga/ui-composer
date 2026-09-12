@@ -22,6 +22,7 @@ impl Gpu {
                 force_fallback_adapter: false,
                 // TODO: Allow hinting of a compatible surface. In WebGPU, this is strictly required!
                 compatible_surface: None,
+                apply_limit_buckets: false,
             })
             .await
             .expect("Failed to acquire adapter!");
