@@ -148,7 +148,7 @@ impl<Ui> WindowElement<Ui> {
     }
 }
 
-impl<Ui> Bubble<Event, bool> for WindowElement<Ui> {
+impl<Ui: Element<WinitEnvironment>> Bubble<Event, bool> for WindowElement<Ui> {
     async fn bubble(&mut self, cx: &mut Event) -> bool {
         match cx {
             Event::Resized(_new_size) => {
@@ -161,6 +161,13 @@ impl<Ui> Bubble<Event, bool> for WindowElement<Ui> {
             }
             Event::RedrawRequested => {
                 if self.state.needs_redrawing {
+                    let quads = &mut self.state.render_resources.quads;
+                    // TODO: No cleanup will be needed when we have a sized buffer.
+                    quads.clear();
+                    let ui_effects = self.ui.effect();
+                    let mut visitor = WindowEffectVisitor { quads };
+                    ui_effects.drive_thru(&mut visitor);
+                    drop(ui_effects);
                     self.redraw();
                     self.state.needs_redrawing = false;
                 }
@@ -245,7 +252,7 @@ where
         match inner_poll {
             Poll::Pending => Poll::Pending,
             Poll::Ready(Some(_)) => {
-                sync_effects(ui, state);
+                // sync_effects(ui, state);
                 Poll::Ready(Some(()))
             }
             Poll::Ready(None) => Poll::Ready(None),
@@ -253,19 +260,19 @@ where
     }
 }
 
-fn sync_effects<Ui: Element<WinitEnvironment>>(
-    ui: std::pin::Pin<&mut Ui>,
-    state: &mut WindowRuntimeState,
-) {
-    let quads = &mut state.render_resources.quads;
-    // TODO: No cleanup will be needed when we have a sized buffer.
-    quads.clear();
-    let ui_effects = ui.effect();
-    let mut visitor = WindowEffectVisitor { quads };
-    ui_effects.drive_thru(&mut visitor);
-    drop(ui_effects);
-    state.needs_redrawing = true;
-}
+// fn sync_effects<Ui: Element<WinitEnvironment>>(
+//     ui: std::pin::Pin<&mut Ui>,
+//     state: &mut WindowRuntimeState,
+// ) {
+//     let quads = &mut state.render_resources.quads;
+//     // TODO: No cleanup will be needed when we have a sized buffer.
+//     quads.clear();
+//     let ui_effects = ui.effect();
+//     let mut visitor = WindowEffectVisitor { quads };
+//     ui_effects.drive_thru(&mut visitor);
+//     drop(ui_effects);
+//     state.needs_redrawing = true;
+// }
 
 /// The render target a window will draw to in order to show its elements in a [window](winit::window::Window).
 pub struct WindowRenderTarget {

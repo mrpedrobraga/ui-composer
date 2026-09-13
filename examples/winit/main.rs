@@ -34,7 +34,7 @@ fn AppContent(rect: Rect) -> Vec<Graphic> {
     let mut velocity = Vector2::<f32>::new(1.0, 1.0);
     let mut position = Point2::<f32>::new(0.0, 0.0);
 
-    (0..100)
+    (0..99)
         .map(|i| {
             position += velocity * 10.0;
             if position.x < 0.0 {
@@ -59,5 +59,10 @@ fn AppContent(rect: Rect) -> Vec<Graphic> {
                 color: colors[i % colors.len()],
             }
         })
+        .chain(std::iter::once(Graphic {
+            rect,
+            color: Srgba::new(0.2, 0.3, 0.9, 1.0),
+        }))
+        .rev()
         .collect()
 }
