@@ -13,7 +13,10 @@ fn main() {
     //     .without_time()
     //     .init();
 
-    UIComposer::run_winit(Window(App()))
+    let app = App();
+    let window = Window(app);
+
+    WinitRunner::run(window);
 }
 
 fn App() -> impl WinitUi {

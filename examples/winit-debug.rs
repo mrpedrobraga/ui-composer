@@ -3,6 +3,7 @@ use ui_composer_basic_ui::primitives::graphic::Graphic;
 use ui_composer_core::app::composition::elements::Element;
 use ui_composer_math::palette::Srgba;
 use ui_composer_platform_winit::runner::WinitEnvironment;
+use ui_composer_platform_winit::window::render_target::WindowRenderTarget;
 use winit::application::ApplicationHandler;
 use winit::dpi::PhysicalSize;
 use winit::event::WindowEvent::{CloseRequested, RedrawRequested, Resized};
@@ -13,7 +14,6 @@ use ui_composer_math::glamour::{Point2, Rect, Vector2};
 use ui_composer_math::prelude::Size2;
 use ui_composer_platform_winit::gpu::Gpu;
 use ui_composer_platform_winit::render::{render, RenderPipeline, RenderResources, RenderTarget};
-use ui_composer_platform_winit::window::WindowRenderTarget;
 use ui_composer_platform_winit::{wgpu, winit};
 
 #[allow(non_snake_case)]
