@@ -54,9 +54,11 @@ pub struct WindowRuntimeState {
     pub app_size: AppSize,
     pub window_size: Mutable<Size2>,
     pub mouse_position: Mutable<Option<Point2>>,
+    pub needs_redrawing: bool,
     render_resources: RenderResources,
     render_target: WindowRenderTarget,
     pub render_pipeline: RenderPipeline,
+    #[allow(unused)]
     window: Arc<Window>,
 }
 
@@ -151,13 +153,17 @@ impl<Ui> Bubble<Event, bool> for WindowElement<Ui> {
         match cx {
             Event::Resized(_new_size) => {
                 // self.resize(*new_size);
+                self.state.needs_redrawing = true;
                 true
             }
             Event::CloseRequested => {
                 std::process::exit(1);
             }
             Event::RedrawRequested => {
-                self.redraw();
+                if self.state.needs_redrawing {
+                    self.redraw();
+                    self.state.needs_redrawing = false;
+                }
                 true
             }
             Event::OcclusionStateChanged(_) => false,
@@ -194,6 +200,7 @@ impl WindowRuntimeState {
             window,
             render_target,
             render_pipeline,
+            needs_redrawing: true,
         }
     }
 
@@ -248,7 +255,8 @@ where
                 ui_effects.drive_thru(&mut visitor);
                 drop(ui_effects);
 
-                state.window.request_redraw();
+                state.needs_redrawing = true;
+                //state.window.request_redraw();
 
                 Poll::Ready(Some(()))
             }

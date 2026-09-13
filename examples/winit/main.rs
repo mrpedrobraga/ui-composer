@@ -6,7 +6,6 @@ use ui_composer_core::app::composition::layout::item_box;
 use ui_composer_math::glamour::Rect;
 use ui_composer_platform_winit::window::Window;
 use ui_composer_platform_winit::WinitUi;
-use ui_composer_view_macro::view;
 
 fn main() {
     // tracing_subscriber::fmt()
@@ -21,11 +20,44 @@ fn App() -> impl WinitUi {
     item_box(|hints| AppContent(hints.rect))
 }
 
-fn AppContent(rect: Rect) -> (Graphic, Graphic) {
-    let thin_rect = Rect::new(Point2::new(0.0, 128.0), Size2::new(100.0, 20.0));
+#[allow(non_snake_case)]
+fn AppContent(rect: Rect) -> Vec<Graphic> {
+    let colors = [
+        Srgba::new(1.0, 1.0, 0.0, 1.0),
+        Srgba::new(0.0, 1.0, 0.0, 1.0),
+        Srgba::new(0.0, 1.0, 1.0, 1.0),
+        Srgba::new(0.0, 0.0, 1.0, 1.0),
+        Srgba::new(0.0, 0.0, 0.0, 1.0),
+        Srgba::new(1.0, 0.0, 0.0, 1.0),
+    ];
 
-    view! {
-        Graphic { rect: rect, color: Srgba::new(0.0, 0.0, 1.0, 1.0) },
-        Graphic { rect: thin_rect, color: Srgba::new(1.0, 1.0, 0.2, 1.0) },
-    }
+    let mut velocity = Vector2::<f32>::new(1.0, 1.0);
+    let mut position = Point2::<f32>::new(0.0, 0.0);
+
+    (0..100)
+        .map(|i| {
+            position += velocity * 10.0;
+            if position.x < 0.0 {
+                velocity.x = 1.0
+            };
+            if position.y < 0.0 {
+                velocity.y = 1.0
+            };
+            if position.x > rect.size.width {
+                velocity.x = -1.0
+            };
+            if position.y > rect.size.height {
+                velocity.y = -1.0
+            };
+            let size = Size2::<f32>::new(20.0, 20.0);
+
+            Graphic {
+                rect: Rect {
+                    origin: position,
+                    size,
+                },
+                color: colors[i % colors.len()],
+            }
+        })
+        .collect()
 }

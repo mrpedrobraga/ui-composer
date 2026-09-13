@@ -39,7 +39,7 @@ impl RenderResources {
                 contents: bytemuck::cast_slice(&[uniforms]),
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             });
-        let quads = vec![QuadInstance::default(); 2];
+        let quads = vec![QuadInstance::default(); 100];
         let quads_buffer = gpu
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -110,10 +110,10 @@ impl RenderPipelineUniforms {
     pub fn resize(&mut self, new_size: Size2) {
         let pan = Vector2::<f32>::new(0.0, 0.0);
         self.view_matrix = Matrix4::from_cols(
-            Vector4::X * (1.0 / new_size.width),
-            Vector4::Y * (1.0 / new_size.height),
+            Vector4::X * (2.0 / new_size.width),
+            Vector4::Y * (-2.0 / new_size.height),
             Vector4::Z,
-            Vector4::new(pan.x, pan.y, 0.0, 1.0),
+            Vector4::new(-1.0 + pan.x, 1.0 + pan.y, 0.0, 1.0),
         );
     }
 }

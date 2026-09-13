@@ -120,12 +120,8 @@ where
                     }
                 };
 
-                let mut s = 0;
                 let async_handler =
-                    AsyncExecutor::new(app, app_making_resources, || {
-                        println!("S = {}!", s);
-                        s += 1;
-                    }).to_future();
+                    AsyncExecutor::new(app, app_making_resources, || {}).to_future();
 
                 // TODO: Think very well about how these two tasks will coordinate,
                 // such that one doesn't hog all the resources when running on a single-threaded
@@ -174,10 +170,9 @@ impl ApplicationHandler<WinitUicRequest> for WinitAppHandler {
         if let Ok(uic_event) = crate::winit_uic_conversion::into_event(event) {
             tracing::debug!("[Winit App Handler] Sending event no {} `{:?}`.", self.state.0, uic_event);
             self.state.0 += 1;
-            
+
             if let Event::Resized(new_size) = uic_event {
                 self.window_size_mutable.set(new_size);
-                return;
             }
             
             // block_on(self.event_tx.send(uic_event))

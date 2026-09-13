@@ -9,7 +9,7 @@ use winit::event::WindowEvent::{CloseRequested, RedrawRequested, Resized};
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
 use winit::window::{Window, WindowAttributes, WindowId};
 
-use ui_composer_math::glamour::{Point2, Rect};
+use ui_composer_math::glamour::{Point2, Rect, Vector2};
 use ui_composer_math::prelude::Size2;
 use ui_composer_platform_winit::gpu::Gpu;
 use ui_composer_platform_winit::render::{render, RenderPipeline, RenderResources, RenderTarget};
@@ -17,17 +17,45 @@ use ui_composer_platform_winit::window::WindowRenderTarget;
 use ui_composer_platform_winit::{wgpu, winit};
 
 #[allow(non_snake_case)]
-fn App2(rect: Rect) -> (Graphic, Graphic) {
-    (
-        Graphic {
-            rect,
-            color: Srgba::new(0.0, 0.0, 1.0, 1.0),
-        },
-        Graphic {
-            rect: Rect::new(Point2::new(10.0, 10.0), Size2::new(20.0, 20.0)),
-            color: Srgba::new(1.0, 1.0, 0.0, 1.0),
-        },
-    )
+fn AppContent(rect: Rect) -> Vec<Graphic> {
+    let colors = [
+        Srgba::new(1.0, 1.0, 0.0, 1.0),
+        Srgba::new(0.0, 1.0, 0.0, 1.0),
+        Srgba::new(0.0, 1.0, 1.0, 1.0),
+        Srgba::new(0.0, 0.0, 1.0, 1.0),
+        Srgba::new(0.0, 0.0, 0.0, 1.0),
+        Srgba::new(1.0, 0.0, 0.0, 1.0),
+    ];
+
+    let mut velocity = Vector2::<f32>::new(1.0, 1.0);
+    let mut position = Point2::<f32>::new(0.0, 0.0);
+
+    (0..100)
+        .map(|i| {
+            position += velocity * 10.0;
+            if position.x < 0.0 {
+                velocity.x = 1.0
+            };
+            if position.y < 0.0 {
+                velocity.y = 1.0
+            };
+            if position.x > rect.size.width {
+                velocity.x = -1.0
+            };
+            if position.y > rect.size.height {
+                velocity.y = -1.0
+            };
+            let size = Size2::<f32>::new(20.0, 20.0);
+
+            Graphic {
+                rect: Rect {
+                    origin: position,
+                    size,
+                },
+                color: colors[i % colors.len()],
+            }
+        })
+        .collect()
 }
 
 pub struct DirectWindowApp {
@@ -50,14 +78,15 @@ impl DirectWindowApp {
     fn update_graphics(&mut self, width: f32, height: f32) {
         if let Some(res) = &mut self.render_resources {
             let rect = Rect::new(Point2::ZERO, Size2::new(width, height));
-            let (g1, g2) = App2(rect);
+            let graphics = AppContent(rect);
 
             res.quads.clear();
             // Push graphics/quads into res.quads depending on your quad struct definition
-            res.quads
-                .push(Element::<WinitEnvironment>::effect(&g1).as_quad_instance());
-            res.quads
-                .push(Element::<WinitEnvironment>::effect(&g2).as_quad_instance());
+            res.quads.extend(
+                graphics
+                    .into_iter()
+                    .map(|q| <Graphic as Element<WinitEnvironment>>::effect(&q).as_quad_instance()),
+            );
         }
     }
 }
@@ -142,10 +171,10 @@ impl ApplicationHandler for DirectWindowApp {
 }
 
 fn main() {
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
-        .without_time()
-        .init();
+    // tracing_subscriber::fmt()
+    //     .with_max_level(tracing::Level::DEBUG)
+    //     .without_time()
+    //     .init();
 
     let event_loop = EventLoop::new().expect("Failed to create event loop");
     event_loop.set_control_flow(ControlFlow::Wait);
