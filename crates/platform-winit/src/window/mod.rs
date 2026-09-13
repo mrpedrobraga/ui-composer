@@ -218,7 +218,6 @@ impl WindowRuntimeState {
 impl<Ui> Element<WinitEnvironment> for WindowElement<Ui>
 where
     Ui: Element<WinitEnvironment>,
-    // for<'fx> Ui::Effect<'fx>: Debug
 {
     type Effect<'a>
         = ()
@@ -246,23 +245,26 @@ where
         match inner_poll {
             Poll::Pending => Poll::Pending,
             Poll::Ready(Some(_)) => {
-                let quads = &mut state.render_resources.quads;
-                // TODO: No cleanup will be needed when we have a sized buffer.
-                quads.clear();
-                let ui_effects = ui.effect();
-                // dbg!(&ui_effects);
-                let mut visitor = WindowEffectVisitor { quads };
-                ui_effects.drive_thru(&mut visitor);
-                drop(ui_effects);
-
-                state.needs_redrawing = true;
-                //state.window.request_redraw();
-
+                sync_effects(ui, state);
                 Poll::Ready(Some(()))
             }
             Poll::Ready(None) => Poll::Ready(None),
         }
     }
+}
+
+fn sync_effects<Ui: Element<WinitEnvironment>>(
+    ui: std::pin::Pin<&mut Ui>,
+    state: &mut WindowRuntimeState,
+) {
+    let quads = &mut state.render_resources.quads;
+    // TODO: No cleanup will be needed when we have a sized buffer.
+    quads.clear();
+    let ui_effects = ui.effect();
+    let mut visitor = WindowEffectVisitor { quads };
+    ui_effects.drive_thru(&mut visitor);
+    drop(ui_effects);
+    state.needs_redrawing = true;
 }
 
 /// The render target a window will draw to in order to show its elements in a [window](winit::window::Window).
