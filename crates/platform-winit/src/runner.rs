@@ -1,8 +1,9 @@
 use futures::channel::mpsc::{self, Sender};
 use futures::channel::oneshot;
 use futures::executor::block_on;
-use futures::{SinkExt, StreamExt, join};
-use futures_signals::signal::SignalExt;
+use futures::{StreamExt, join};
+use futures_signals::signal::{Mutable, SignalExt};
+use ui_composer_math::glamour::Size2;
 use std::marker::PhantomData;
 use std::sync::{Arc};
 use ui_composer_core::app::composition::algebra::Bubble;
@@ -68,6 +69,9 @@ where
             let gpu = block_on(Gpu::new());
             let gpu2 = gpu.clone();
 
+            let window_size_mutable = Mutable::new(Size2 { width: 640_f32, height: 360_f32 });
+            let window_size_mutable2 = window_size_mutable.clone();
+
             scope.spawn(move || {
                 // NOTE: Because of winit's very model where it monopolises the main thread,
                 // the app blueprint is sent to the ApplicationHandler to be made,
@@ -76,7 +80,8 @@ where
                 let app = {
                     let res = WinitBlueprintResources {
                         winit_requester: &winit_requester,
-                        gpu: gpu2
+                        gpu: gpu2,
+                        window_size_mutable: window_size_mutable2.clone()
                     };
                     app_blueprint.make(&res)
                 };
@@ -90,13 +95,7 @@ where
 
                     while let Some(mut event) = event_rx.next().await {
                         let span = tracing::debug_span!("event handler");
-                        span.in_scope(async || {
-                            if let Event::Resized(_) = event {
-                                while let Ok(Event::Resized(newer_size)) = event_rx.try_recv() {
-                                    event = Event::Resized(newer_size);
-                                }
-                            }
-                            
+                        span.in_scope(async || {                            
                             let mut _lock = app2.lock().await;
 
                             tracing::debug!(
@@ -122,7 +121,8 @@ where
 
                 let res = WinitBlueprintResources {
                     winit_requester: &winit_requester,
-                    gpu
+                    gpu,
+                    window_size_mutable: window_size_mutable2
                 };
                 let async_handler =
                     AsyncExecutor::new(app, res, || {}).to_future();
@@ -140,7 +140,7 @@ where
                 It must run on the main thread, and it IS blocking...
                 And thus we _must_ create a new thread if we want any futures/signals to be polled.
             */
-            let mut winit_app_handler = WinitAppHandler { state: (0,), event_tx };
+            let mut winit_app_handler = WinitAppHandler { state: (0,), event_tx, window_size_mutable };
 
             /*
                 Create event loop and run the handler.
@@ -158,6 +158,7 @@ where
 pub struct WinitAppHandler {
     state: (i32,),
     event_tx: Sender<Event>,
+    window_size_mutable: Mutable<Size2>
 }
 impl ApplicationHandler<WinitUicRequest> for WinitAppHandler {
     fn resumed(&mut self, _: &ActiveEventLoop) {}
@@ -172,16 +173,16 @@ impl ApplicationHandler<WinitUicRequest> for WinitAppHandler {
         //TODO: Restructure how the event loop sends events.
         if let Ok(uic_event) = crate::winit_uic_conversion::into_event(event) {
             tracing::debug!("[Winit App Handler] Sending event no {} `{:?}`.", self.state.0, uic_event);
+            self.state.0 += 1;
             
-            // if let Event::Resized(new_size) = uic_event {
-            //     println!("Resized events can be sent directly?");
-            //     return;
-            // }
+            if let Event::Resized(new_size) = uic_event {
+                self.window_size_mutable.set(new_size);
+                return;
+            }
             
             // block_on(self.event_tx.send(uic_event))
             //     .expect("[Winit App Handler] Failed to send event though channel.");
             let _ = self.event_tx.try_send(uic_event);
-            self.state.0 += 1;
         } else {
             tracing::warn!("Unrecognized event.");
         }
@@ -213,6 +214,7 @@ impl ApplicationHandler<WinitUicRequest> for WinitAppHandler {
 pub struct WinitBlueprintResources<'make> {
     pub(crate) winit_requester: &'make WinitRequester,
     pub(crate) gpu: Gpu,
+    pub(crate) window_size_mutable: Mutable<Size2>
 }
 
 pub(crate) struct WinitRequester {

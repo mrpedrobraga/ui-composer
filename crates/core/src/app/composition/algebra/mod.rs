@@ -20,7 +20,7 @@ pub trait Empty {
 /// Marks a type that:
 /// 1. Has a canonical operation to "combine" two items into one;
 /// 2. Has a canonical "empty" element.
-/// 
+///
 /// Notably, this trait is simply an alias trait for `Semigroup + Empty`.
 pub trait Monoid: Semigroup + Empty {}
 impl<T> Monoid for T where T: Semigroup + Empty {}
@@ -29,29 +29,26 @@ impl<T> Monoid for T where T: Semigroup + Empty {}
 /// and bubble up a response (catamorphism).
 pub trait Bubble<Down, Up> {
     /// Pushes `cx` down the tree, gathering `Up`s on the way back.
-    /// 
+    ///
     /// If called recursively on a "tree" structure where the nodes
     /// have several children, it's expected that Down will be either split or cloned,
     /// and that Up will be [`Semigroup::combine`]d.
+    #[allow(async_fn_in_trait)]
     async fn bubble(&mut self, cx: &mut Down) -> Up;
 }
 
 /// Type for something that can bubble a value down its structure (anamorphism)
 /// and gather the responses as a tree, represented flat in a buffer.
-/// 
-/// Like [`Bubble`] but instead of 
+///
+/// Like [`Bubble`] but instead of
 pub trait Gather<Context, Item> {
     const SIZE: usize;
 
     /// Pushes `cx` down the tree, gathering `Up`s on the way back within `acc`.
-    /// 
+    ///
     /// If called recursively on a "tree" structure where the nodes
     /// have several children, it's expected that Down will be either split or cloned.
-    fn gather(
-        &mut self,
-        cx: &mut Context,
-        acc: &mut [std::mem::MaybeUninit<Item>],
-    );
+    fn gather(&mut self, cx: &mut Context, acc: &mut [std::mem::MaybeUninit<Item>]);
 }
 
 // #[cfg(feature = "specialization")]

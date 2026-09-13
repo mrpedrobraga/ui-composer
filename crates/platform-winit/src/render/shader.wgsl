@@ -23,9 +23,9 @@ fn vs_main(
     @builtin(instance_index) instance_index: u32
 ) -> VertexOutput {
     let POSITIONS = array<vec2<f32>, 6>(
-        vec2<f32>(-1.0,  1.0), // 0 -2  3--5
-        vec2<f32>(-1.0, -1.0), // | /    \ |
-        vec2<f32>( 1.0, -1.0), // 1/      \4
+        vec2<f32>(-1.0,  1.0), // 0\ 3--5
+        vec2<f32>(-1.0, -1.0), // | \ \ |
+        vec2<f32>( 1.0, -1.0), // 1--2 \4
         vec2<f32>(-1.0,  1.0),
         vec2<f32>( 1.0, -1.0), 
         vec2<f32>( 1.0,  1.0)
@@ -63,6 +63,6 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         vec4<f32>(0.2, 1.0, 0.0, 1.0)
     );
 
-    //return colors[in.instance_index];
-    return vec4<f32>(in.uv, 0.0, 1.0);
+    return in.quad_color;
+    //return vec4<f32>(in.uv, 0.0, 1.0);
 }

@@ -1,5 +1,5 @@
-use ui_composer_math::glamour::{Matrix4, Size2};
-use wgpu::{util::DeviceExt};
+use ui_composer_math::glamour::{Matrix4, Point2, Size2, Vector2, Vector4};
+use wgpu::util::DeviceExt;
 
 use crate::{gpu::Gpu, window::effect_handling::QuadInstance};
 
@@ -106,15 +106,22 @@ pub struct RenderPipelineUniforms {
 impl RenderPipelineUniforms {
     pub fn new() -> Self {
         Self {
-            view_matrix: ui_composer_math::glamour::Matrix4::orthographic_rh(
-                0.0, 640_f32, 360_f32, 0.0, -1.0, 1.0,
-            ),
+            view_matrix: Matrix4::IDENTITY,
         }
     }
 
     pub fn resize(&mut self, new_size: Size2) {
-        self.view_matrix = ui_composer_math::glamour::Matrix4::orthographic_rh(
-            0.0, new_size.width, new_size.height, 0.0, -1.0, 1.0,
+        let pan = Vector2::<f32>::new(0.0, 0.0);
+        self.view_matrix = Matrix4::from_cols(
+            Vector4::X * (1.0 / new_size.width),
+            Vector4::Y * (1.0 / new_size.height),
+            Vector4::Z,
+            Vector4::new(
+                pan.x,
+                pan.y,
+                0.0,
+                1.0,
+            ),
         );
     }
 }

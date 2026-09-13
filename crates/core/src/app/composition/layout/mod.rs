@@ -145,6 +145,13 @@ pub trait Resizable: LayoutItem {
     fn with_minimum_size(self, min_size: Size2) -> Self;
 }
 
+pub fn item_box<Factory, Item>(factory: Factory) -> ItemBox<Factory, Item>
+where
+    Factory: Send + FnMut(ParentHints) -> Item,
+{
+    ItemBox::new(factory)
+}
+
 pub struct ItemBox<Factory, Item>
 where
     Factory: Send + FnMut(ParentHints) -> Item,

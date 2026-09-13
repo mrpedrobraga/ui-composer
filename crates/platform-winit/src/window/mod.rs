@@ -26,7 +26,7 @@ use ui_composer_input::event::Event;
 use ui_composer_math::flow::{CartesianFlow, CurrentFlow};
 use ui_composer_math::glamour::{Point2, Rect};
 use ui_composer_math::prelude::Size2;
-use winit::dpi::PhysicalSize;
+use winit::dpi::{PhysicalSize};
 use winit::window::{Window, WindowAttributes};
 
 use self::effect_handling::WindowEffectVisitor;
@@ -39,53 +39,27 @@ pub struct WindowBlueprint<UiBlueprint> {
 }
 
 pub struct WindowState {
-    pub size: Mutable<Size2>,
+    pub app_size: Mutable<Size2>,
     pub mouse_position: Mutable<Option<Point2>>,
 }
 
 impl Default for WindowState {
     fn default() -> Self {
         Self {
-            size: Mutable::new(Size2::new(640.0, 360.0)),
+            app_size: Mutable::new(Size2::new(640.0, 360.0)),
             mouse_position: Default::default(),
         }
     }
 }
 
 pub struct WindowRuntimeState {
-    pub size: Mutable<Size2>,
+    pub app_size: Mutable<Size2>,
+    pub window_size: Mutable<Size2>,
     pub mouse_position: Mutable<Option<Point2>>,
     render_resources: RenderResources,
     render_target: WindowRenderTarget,
     pub render_pipeline: RenderPipeline,
     window: Arc<Window>,
-}
-
-impl WindowRuntimeState {
-    pub fn from_blueprint(
-        blueprint: WindowState,
-        env: &WinitBlueprintResources,
-    ) -> Self {
-        let window_attributes = WindowAttributes::default()
-            .with_title("Hello, world!")
-            .with_inner_size(PhysicalSize::new(640, 360));
-        let window = env.winit_requester.request_window(window_attributes);
-
-        let gpu = env.gpu.clone();
-        let render_target = WindowRenderTarget::new(&gpu, window.clone());
-        let render_pipeline =
-            RenderPipeline::new(&gpu, wgpu::TextureFormat::Bgra8UnormSrgb);
-        let render_resources = RenderResources::new(gpu, &render_pipeline);
-
-        Self {
-            size: blueprint.size,
-            mouse_position: blueprint.mouse_position,
-            render_resources,
-            window,
-            render_target,
-            render_pipeline,
-        }
-    }
 }
 
 #[allow(non_snake_case)]
@@ -98,7 +72,7 @@ where
     UiBlueprint: WinitUi,
 {
     let state = WindowState::default();
-    let reshape_signal = state.size.signal();
+    let reshape_signal = state.app_size.signal();
     let ui = reshape_signal
         .map(move |window_size| {
             let parent_hints = ParentHints {
@@ -158,18 +132,8 @@ pub struct WindowElement<Ui> {
 }
 
 impl<Ui> WindowElement<Ui> {
-    pub fn resize(&mut self, new_size: Size2) {
-        if new_size.width == 0.0
-            || new_size.height == 0.0
-            || self.state.size.get() == new_size
-        {
-            return;
-        }
-        self.state.render_resources.uniforms.resize(new_size);
-        self.state.size.set(new_size);
-        self.state
-            .render_target
-            .resize(&self.state.render_resources.gpu, new_size.as_());
+    fn resize_internal(&mut self, new_size: Size2) {
+        self.state.resize_internal(new_size)
     }
 
     pub fn redraw(&mut self) {
@@ -177,6 +141,7 @@ impl<Ui> WindowElement<Ui> {
         self.state
             .render_resources
             .sync(&self.state.render_resources.gpu);
+        self.resize_internal(self.state.window_size.get());
         render(
             &self.state.render_target,
             &self.state.render_pipeline,
@@ -188,8 +153,8 @@ impl<Ui> WindowElement<Ui> {
 impl<Ui> Bubble<Event, bool> for WindowElement<Ui> {
     async fn bubble(&mut self, cx: &mut Event) -> bool {
         match cx {
-            Event::Resized(new_size) => {
-                self.resize(*new_size);
+            Event::Resized(_new_size) => {
+                // self.resize(*new_size);
                 true
             }
             Event::CloseRequested => {
@@ -208,6 +173,44 @@ impl<Ui> Bubble<Event, bool> for WindowElement<Ui> {
             Event::Ime(_) => false,
             Event::File(_) => false,
         }
+    }
+}
+
+impl WindowRuntimeState {
+    pub fn from_blueprint(
+        blueprint: WindowState,
+        env: &WinitBlueprintResources,
+    ) -> Self {
+        let window_attributes = WindowAttributes::default()
+            .with_title("Hello, world!")
+            .with_inner_size(PhysicalSize::new(640, 360));
+        let window = env.winit_requester.request_window(window_attributes);
+
+        let gpu = env.gpu.clone();
+        let render_target = WindowRenderTarget::new(&gpu, window.clone());
+        let render_pipeline =
+            RenderPipeline::new(&gpu, wgpu::TextureFormat::Bgra8UnormSrgb);
+        let render_resources = RenderResources::new(gpu, &render_pipeline);
+
+        Self {
+            app_size: blueprint.app_size,
+            window_size: env.window_size_mutable.clone(),
+            mouse_position: blueprint.mouse_position,
+            render_resources,
+            window,
+            render_target,
+            render_pipeline,
+        }
+    }
+
+    pub fn resize_internal(&mut self, new_size: Size2) {
+        if new_size.width == 0.0 || new_size.height == 0.0 {
+            return;
+        }
+        self.render_resources.uniforms.resize(new_size);
+        //self.app_size.set(new_size);
+        self.render_target
+            .resize(&self.render_resources.gpu, new_size.as_());
     }
 }
 
