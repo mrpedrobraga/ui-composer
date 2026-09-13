@@ -1,4 +1,4 @@
-use ui_composer_math::glamour::{Matrix4, Point2, Size2, Vector2, Vector4};
+use ui_composer_math::glamour::{Matrix4, Size2, Vector2, Vector4};
 use wgpu::util::DeviceExt;
 
 use crate::{gpu::Gpu, window::effect_handling::QuadInstance};
@@ -32,38 +32,35 @@ pub struct RenderResources {
 impl RenderResources {
     pub fn new(gpu: Gpu, pipeline: &RenderPipeline) -> Self {
         let uniforms = RenderPipelineUniforms::new();
-        let uniforms_gpu =
-            gpu.device
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("Quads Pipeline Uniform Buffer"),
-                    contents: bytemuck::cast_slice(&[uniforms]),
-                    usage: wgpu::BufferUsages::UNIFORM
-                        | wgpu::BufferUsages::COPY_DST,
-                });
-        let quads = vec![QuadInstance::default(); 2];
-        let quads_buffer =
-            gpu.device
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("Quads Pipeline Quad Data Buffer"),
-                    contents: bytemuck::cast_slice(quads.as_slice()),
-                    usage: wgpu::BufferUsages::STORAGE
-                        | wgpu::BufferUsages::COPY_DST,
-                });
-        let bind_group =
-            gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("Quads Pipeline Bind Group"),
-                layout: &pipeline.bind_group_layout,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: uniforms_gpu.as_entire_binding(),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: quads_buffer.as_entire_binding(),
-                    },
-                ],
+        let uniforms_gpu = gpu
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Quads Pipeline Uniform Buffer"),
+                contents: bytemuck::cast_slice(&[uniforms]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             });
+        let quads = vec![QuadInstance::default(); 2];
+        let quads_buffer = gpu
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Quads Pipeline Quad Data Buffer"),
+                contents: bytemuck::cast_slice(quads.as_slice()),
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            });
+        let bind_group = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Quads Pipeline Bind Group"),
+            layout: &pipeline.bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: uniforms_gpu.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: quads_buffer.as_entire_binding(),
+                },
+            ],
+        });
 
         RenderResources {
             gpu,
@@ -116,12 +113,7 @@ impl RenderPipelineUniforms {
             Vector4::X * (1.0 / new_size.width),
             Vector4::Y * (1.0 / new_size.height),
             Vector4::Z,
-            Vector4::new(
-                pan.x,
-                pan.y,
-                0.0,
-                1.0,
-            ),
+            Vector4::new(pan.x, pan.y, 0.0, 1.0),
         );
     }
 }
@@ -132,60 +124,57 @@ impl RenderPipeline {
             .device
             .create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
 
-        let bind_group_layout = gpu.device.create_bind_group_layout(
-            &wgpu::BindGroupLayoutDescriptor {
-                label: Some("Quads Bind Group Layout"),
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::VERTEX,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Storage {
-                                read_only: true,
+        let bind_group_layout =
+            gpu.device
+                .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                    label: Some("Quads Bind Group Layout"),
+                    entries: &[
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 0,
+                            visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                            ty: wgpu::BindingType::Buffer {
+                                ty: wgpu::BufferBindingType::Uniform,
+                                has_dynamic_offset: false,
+                                min_binding_size: None,
                             },
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
+                            count: None,
                         },
-                        count: None,
-                    },
-                ],
-            },
-        );
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 1,
+                            visibility: wgpu::ShaderStages::VERTEX,
+                            ty: wgpu::BindingType::Buffer {
+                                ty: wgpu::BufferBindingType::Storage { read_only: true },
+                                has_dynamic_offset: false,
+                                min_binding_size: None,
+                            },
+                            count: None,
+                        },
+                    ],
+                });
 
-        let pipeline_layout = gpu.device.create_pipeline_layout(
-            &wgpu::PipelineLayoutDescriptor {
+        let pipeline_layout = gpu
+            .device
+            .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Quads Render Pipeline Layout"),
                 bind_group_layouts: &[Some(&bind_group_layout)],
                 immediate_size: 0,
-            },
-        );
+            });
 
-        let wgpu_pipeline = gpu.device.create_render_pipeline(
-            &wgpu::RenderPipelineDescriptor {
+        let wgpu_pipeline = gpu
+            .device
+            .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                 label: Some("Quads Render Pipeline"),
                 layout: Some(&pipeline_layout),
                 vertex: wgpu::VertexState {
                     module: &shader,
                     entry_point: Some("vs_main"),
-                    compilation_options:
-                        wgpu::PipelineCompilationOptions::default(),
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
                     buffers: &[],
                 },
                 fragment: Some(wgpu::FragmentState {
                     module: &shader,
                     entry_point: Some("fs_main"),
-                    compilation_options:
-                        wgpu::PipelineCompilationOptions::default(),
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
                     targets: &[Some(wgpu::ColorTargetState {
                         format: target_format,
                         blend: Some(wgpu::BlendState::ALPHA_BLENDING),
@@ -215,8 +204,7 @@ impl RenderPipeline {
                 },
                 multiview_mask: None, // TODO: Use for VR maybe?
                 cache: None,
-            },
-        );
+            });
 
         RenderPipeline {
             wgpu_pipeline,
@@ -225,11 +213,8 @@ impl RenderPipeline {
     }
 }
 
-pub fn render<R>(
-    target: &R,
-    pipeline: &RenderPipeline,
-    resources: &RenderResources,
-) where
+pub fn render<R>(target: &R, pipeline: &RenderPipeline, resources: &RenderResources)
+where
     R: RenderTarget,
 {
     let TextureSet {
@@ -238,11 +223,13 @@ pub fn render<R>(
         depth,
     } = target.texture_set();
 
-    let mut command_encoder = resources.gpu.device.create_command_encoder(
-        &wgpu::CommandEncoderDescriptor {
-            label: Some("Window Command Encoder"),
-        },
-    );
+    let mut command_encoder =
+        resources
+            .gpu
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("Window Command Encoder"),
+            });
 
     let albedo_view = albedo.create_view(&Default::default());
     let depth_view = depth.create_view(&Default::default());

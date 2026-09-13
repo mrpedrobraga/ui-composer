@@ -12,10 +12,11 @@ use winit::window::{Window, WindowAttributes, WindowId};
 use ui_composer_math::glamour::{Point2, Rect};
 use ui_composer_math::prelude::Size2;
 use ui_composer_platform_winit::gpu::Gpu;
-use ui_composer_platform_winit::render::{RenderPipeline, RenderResources, RenderTarget, render};
+use ui_composer_platform_winit::render::{render, RenderPipeline, RenderResources, RenderTarget};
 use ui_composer_platform_winit::window::WindowRenderTarget;
 use ui_composer_platform_winit::{wgpu, winit};
 
+#[allow(non_snake_case)]
 fn App2(rect: Rect) -> (Graphic, Graphic) {
     (
         Graphic {
@@ -53,9 +54,17 @@ impl DirectWindowApp {
 
             res.quads.clear();
             // Push graphics/quads into res.quads depending on your quad struct definition
-            res.quads.push(Element::<WinitEnvironment>::effect(&g1).as_quad_instance());
-            res.quads.push(Element::<WinitEnvironment>::effect(&g2).as_quad_instance());
+            res.quads
+                .push(Element::<WinitEnvironment>::effect(&g1).as_quad_instance());
+            res.quads
+                .push(Element::<WinitEnvironment>::effect(&g2).as_quad_instance());
         }
+    }
+}
+
+impl Default for DirectWindowApp {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -96,7 +105,10 @@ impl ApplicationHandler for DirectWindowApp {
                     return;
                 }
                 let size_f32 = Size2::new(physical_size.width as f32, physical_size.height as f32);
-                let size_u32 = ui_composer_math::glamour::Size2::new(physical_size.width, physical_size.height);
+                let size_u32 = ui_composer_math::glamour::Size2::new(
+                    physical_size.width,
+                    physical_size.height,
+                );
 
                 if let Some(res) = &mut self.render_resources {
                     res.uniforms.resize(size_f32);

@@ -4,21 +4,17 @@
 //! Every time they change (in response to an event or a future or signal yielding),
 //! it will render them to its [WindowRenderTarget].
 
-use crate::WinitUi;
 use crate::gpu::Gpu;
-use crate::render::{
-    RenderPipeline, RenderResources, RenderTarget, TextureSet, render,
-};
+use crate::render::{render, RenderPipeline, RenderResources, RenderTarget, TextureSet};
 use crate::runner::{WinitBlueprintResources, WinitEnvironment};
+use crate::WinitUi;
 use core::panic;
 use futures_signals::signal::{Mutable, Signal, SignalExt as _};
 use pin_project::pin_project;
 use std::sync::Arc;
 use std::task::Poll;
 use ui_composer_core::app::composition::algebra::Bubble;
-use ui_composer_core::app::composition::effects::signal::{
-    IntoBlueprint as _, React,
-};
+use ui_composer_core::app::composition::effects::signal::{IntoBlueprint as _, React};
 use ui_composer_core::app::composition::elements::{Blueprint, Element};
 use ui_composer_core::app::composition::layout::hints::ParentHints;
 use ui_composer_core::app::composition::visit::DriveThru;
@@ -26,7 +22,7 @@ use ui_composer_input::event::Event;
 use ui_composer_math::flow::{CartesianFlow, CurrentFlow};
 use ui_composer_math::glamour::{Point2, Rect};
 use ui_composer_math::prelude::Size2;
-use winit::dpi::{PhysicalSize};
+use winit::dpi::PhysicalSize;
 use winit::window::{Window, WindowAttributes};
 
 use self::effect_handling::WindowEffectVisitor;
@@ -39,21 +35,23 @@ pub struct WindowBlueprint<UiBlueprint> {
 }
 
 pub struct WindowState {
-    pub app_size: Mutable<Size2>,
+    pub app_size: AppSize,
     pub mouse_position: Mutable<Option<Point2>>,
 }
 
 impl Default for WindowState {
     fn default() -> Self {
         Self {
-            app_size: Mutable::new(Size2::new(640.0, 360.0)),
+            app_size: Mutable::new(Mutable::new(Size2::new(640.0, 360.0))),
             mouse_position: Default::default(),
         }
     }
 }
 
+type AppSize = Mutable<Mutable<Size2>>;
+
 pub struct WindowRuntimeState {
-    pub app_size: Mutable<Size2>,
+    pub app_size: AppSize,
     pub window_size: Mutable<Size2>,
     pub mouse_position: Mutable<Option<Point2>>,
     render_resources: RenderResources,
@@ -65,14 +63,12 @@ pub struct WindowRuntimeState {
 #[allow(non_snake_case)]
 pub fn Window<UiBlueprint>(
     mut ui: UiBlueprint,
-) -> WindowBlueprint<
-    React<impl Signal<Item = UiBlueprint::Blueprint>, WinitEnvironment>,
->
+) -> WindowBlueprint<React<impl Signal<Item = UiBlueprint::Blueprint>, WinitEnvironment>>
 where
     UiBlueprint: WinitUi,
 {
     let state = WindowState::default();
-    let reshape_signal = state.app_size.signal();
+    let reshape_signal = state.app_size.signal_cloned().switch(|m| m.signal());
     let ui = reshape_signal
         .map(move |window_size| {
             let parent_hints = ParentHints {
@@ -82,8 +78,7 @@ where
                     current_flow_direction: CartesianFlow::LeftToRight,
                     current_cross_flow_direction: CartesianFlow::TopToBottom,
                     current_writing_flow_direction: CartesianFlow::LeftToRight,
-                    current_writing_cross_flow_direction:
-                        CartesianFlow::TopToBottom,
+                    current_writing_cross_flow_direction: CartesianFlow::TopToBottom,
                 },
             };
             // TODO: Listen to and respect the child hints;
@@ -141,7 +136,8 @@ impl<Ui> WindowElement<Ui> {
         self.state
             .render_resources
             .sync(&self.state.render_resources.gpu);
-        self.resize_internal(self.state.window_size.get());
+        let new_size = self.state.window_size.get();
+        self.resize_internal(new_size);
         render(
             &self.state.render_target,
             &self.state.render_pipeline,
@@ -177,10 +173,7 @@ impl<Ui> Bubble<Event, bool> for WindowElement<Ui> {
 }
 
 impl WindowRuntimeState {
-    pub fn from_blueprint(
-        blueprint: WindowState,
-        env: &WinitBlueprintResources,
-    ) -> Self {
+    pub fn from_blueprint(blueprint: WindowState, env: &WinitBlueprintResources) -> Self {
         let window_attributes = WindowAttributes::default()
             .with_title("Hello, world!")
             .with_inner_size(PhysicalSize::new(640, 360));
@@ -188,9 +181,10 @@ impl WindowRuntimeState {
 
         let gpu = env.gpu.clone();
         let render_target = WindowRenderTarget::new(&gpu, window.clone());
-        let render_pipeline =
-            RenderPipeline::new(&gpu, wgpu::TextureFormat::Bgra8UnormSrgb);
+        let render_pipeline = RenderPipeline::new(&gpu, wgpu::TextureFormat::Bgra8UnormSrgb);
         let render_resources = RenderResources::new(gpu, &render_pipeline);
+
+        blueprint.app_size.set(env.window_size_mutable.clone());
 
         Self {
             app_size: blueprint.app_size,
@@ -313,8 +307,7 @@ impl WindowRenderTarget {
             dimension: wgpu::TextureDimension::D2,
             // TODO: Maybe use ints for depth in 2D?
             format: wgpu::TextureFormat::Depth32Float,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
-                | wgpu::TextureUsages::TEXTURE_BINDING,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
             view_formats: &[],
         })
     }

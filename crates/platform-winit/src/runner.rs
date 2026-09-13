@@ -77,12 +77,13 @@ where
                 // the app blueprint is sent to the ApplicationHandler to be made,
                 // like a 15 year old to a board school.
                 let winit_requester = WinitRequester { proxy };
-                let app = {
-                    let res = WinitBlueprintResources {
+                let app_making_resources = WinitBlueprintResources {
                         winit_requester: &winit_requester,
                         gpu: gpu2,
                         window_size_mutable: window_size_mutable2.clone()
                     };
+                let app = {
+                    let res = app_making_resources.clone();
                     app_blueprint.make(&res)
                 };
                 let app = Arc::new(futures::lock::Mutex::new(app));
@@ -119,13 +120,12 @@ where
                     }
                 };
 
-                let res = WinitBlueprintResources {
-                    winit_requester: &winit_requester,
-                    gpu,
-                    window_size_mutable: window_size_mutable2
-                };
+                let mut s = 0;
                 let async_handler =
-                    AsyncExecutor::new(app, res, || {}).to_future();
+                    AsyncExecutor::new(app, app_making_resources, || {
+                        println!("S = {}!", s);
+                        s += 1;
+                    }).to_future();
 
                 // TODO: Think very well about how these two tasks will coordinate,
                 // such that one doesn't hog all the resources when running on a single-threaded
@@ -211,6 +211,7 @@ impl ApplicationHandler<WinitUicRequest> for WinitAppHandler {
     }
 }
 
+#[derive(Clone)]
 pub struct WinitBlueprintResources<'make> {
     pub(crate) winit_requester: &'make WinitRequester,
     pub(crate) gpu: Gpu,

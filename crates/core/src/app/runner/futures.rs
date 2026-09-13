@@ -63,21 +63,22 @@ impl<'exec, Env: Environment, App: Element<Env>, Callback: FnMut()> Signal
         } = self.project();
 
         if let Some(mut element_borrow) = element.try_lock() {
-            
             let pinned_element =
-            unsafe { Pin::new_unchecked(element_borrow.deref_mut()) };
-            
+                unsafe { Pin::new_unchecked(element_borrow.deref_mut()) };
+
             // Because of how signals work internally, we must yield at least once.
-            
+
             let inner_poll = pinned_element.poll(cx, blueprint_resources);
             if let Poll::Ready(None) = inner_poll
-            && *first_tick
+                && *first_tick
             {
                 *first_tick = false;
                 return Poll::Ready(Some(()));
             }
+            if let Poll::Ready(Some(())) = inner_poll {
+                (callback)();
+            }
             *first_tick = false;
-            (callback)();
             inner_poll
         } else {
             cx.waker().wake_by_ref();

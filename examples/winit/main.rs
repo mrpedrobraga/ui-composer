@@ -5,7 +5,6 @@ use ui_composer_basic_ui::primitives::graphic::Graphic;
 use ui_composer_core::app::composition::layout::item_box;
 use ui_composer_math::glamour::Rect;
 use ui_composer_platform_winit::window::Window;
-use ui_composer_platform_winit::winit::dpi::Size;
 use ui_composer_platform_winit::WinitUi;
 use ui_composer_view_macro::view;
 
