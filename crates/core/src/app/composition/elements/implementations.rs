@@ -14,9 +14,9 @@ impl<Env: Environment> Blueprint<Env> for () {
 }
 
 impl<Env: Environment> Element<Env> for () {
-    type Effect<'fx> = ();
+    type Effect = ();
 
-    fn effect(&self) -> Self::Effect<'_> {}
+    fn effect(&self) -> Self::Effect {}
 }
 
 /* Indirection */
@@ -35,12 +35,9 @@ impl<A, Env: Environment> Element<Env> for Box<A>
 where
     A: Element<Env>,
 {
-    type Effect<'fx>
-        = A::Effect<'fx>
-    where
-        A: 'fx;
+    type Effect = A::Effect;
 
-    fn effect(&self) -> Self::Effect<'_> {
+    fn effect(&self) -> Self::Effect {
         let item = &**self;
         item.effect()
     }
@@ -74,13 +71,9 @@ where
     A: Element<Env>,
     B: Element<Env>,
 {
-    type Effect<'fx>
-        = (A::Effect<'fx>, B::Effect<'fx>)
-    where
-        A: 'fx,
-        B: 'fx;
+    type Effect = (A::Effect, B::Effect);
 
-    fn effect(&self) -> Self::Effect<'_> {
+    fn effect(&self) -> Self::Effect {
         (self.0.effect(), self.1.effect())
     }
 
@@ -121,12 +114,9 @@ impl<A, Env: Environment> Element<Env> for Vec<A>
 where
     A: Element<Env>,
 {
-    type Effect<'fx>
-        = Vec<A::Effect<'fx>>
-    where
-        A: 'fx;
+    type Effect = Vec<A::Effect>;
 
-    fn effect(&self) -> Self::Effect<'_> {
+    fn effect(&self) -> Self::Effect {
         self.iter().map(|it| it.effect()).collect()
     }
 
@@ -160,12 +150,28 @@ impl<A, Env: Environment> Element<Env> for Option<A>
 where
     A: Element<Env>,
 {
-    type Effect<'fx>
-        = Option<A::Effect<'fx>>
-    where
-        A: 'fx;
+    type Effect = Option<A::Effect>;
 
-    fn effect(&self) -> Self::Effect<'_> {
+    fn effect(&self) -> Self::Effect {
         self.as_ref().map(|x| x.effect())
+    }
+
+    fn poll(
+        mut self: Pin<&mut Self>,
+        cx: &mut Context,
+        env: &<Env as Environment>::BlueprintResources<'_>,
+    ) -> Poll<Option<()>> {
+        let projected_option = unsafe {
+            self.as_mut()
+                .get_unchecked_mut()
+                .as_mut()
+                .map(|value| Pin::new_unchecked(value))
+        };
+
+        match projected_option {
+            Some(inner) => inner.poll(cx, env),
+            // TODO: Ideally, something like `Option<()>` could return `Ready(None)`?
+            None => Poll::Pending,
+        }
     }
 }

@@ -1,9 +1,7 @@
 use {
     crate::interaction::{Hover, Tap, Typing},
     ui_composer_core::prelude::{Blueprint, Element},
-    ui_composer_platform_tui::runner::{
-        TerminalBlueprintResources, TerminalEnvironment,
-    },
+    ui_composer_platform_tui::runner::{TerminalBlueprintResources, TerminalEnvironment},
     ui_composer_state::effect::Effect,
 };
 
@@ -16,9 +14,9 @@ impl Blueprint<TerminalEnvironment> for Hover {
 }
 
 impl Element<TerminalEnvironment> for Hover {
-    type Effect<'fx> = ();
+    type Effect = ();
 
-    fn effect(&self) -> Self::Effect<'_> {}
+    fn effect(&self) -> Self::Effect {}
 }
 
 impl<A> Blueprint<TerminalEnvironment> for Tap<A>
@@ -36,9 +34,9 @@ impl<A> Element<TerminalEnvironment> for Tap<A>
 where
     A: Effect + Send + Sync + 'static,
 {
-    type Effect<'fx> = ();
+    type Effect = ();
 
-    fn effect(&self) -> Self::Effect<'_> {}
+    fn effect(&self) -> Self::Effect {}
 }
 
 impl Blueprint<TerminalEnvironment> for Typing {
@@ -50,7 +48,7 @@ impl Blueprint<TerminalEnvironment> for Typing {
 }
 
 impl Element<TerminalEnvironment> for Typing {
-    type Effect<'fx> = ();
+    type Effect = ();
 
-    fn effect(&self) -> Self::Effect<'_> {}
+    fn effect(&self) -> Self::Effect {}
 }

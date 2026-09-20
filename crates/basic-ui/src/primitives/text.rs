@@ -14,7 +14,7 @@ use ui_composer_platform_tui::{
 use ui_composer_platform_winit::runner::WinitEnvironment;
 
 /// An effect that describes rendering some text in the terminal.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RenderText(pub Rect, pub String, pub Srgba);
 
 impl ElementEffect<WinitEnvironment> for RenderText {}
@@ -55,7 +55,7 @@ pub fn Text() -> Text {
 }
 
 /// A simple coloured graphic.
-#[derive(Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Text {
     pub rect: Rect,
     pub text: String,
@@ -94,9 +94,9 @@ impl Blueprint<TerminalEnvironment> for Text {
 }
 
 impl Element<TerminalEnvironment> for Text {
-    type Effect<'fx> = RenderText;
+    type Effect = RenderText;
 
-    fn effect(&self) -> Self::Effect<'_> {
+    fn effect(&self) -> Self::Effect {
         RenderText(self.rect, self.text.clone(), self.color)
     }
 }

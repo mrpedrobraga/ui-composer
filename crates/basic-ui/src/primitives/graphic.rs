@@ -6,7 +6,8 @@ use ui_composer_core::app::composition::{
 };
 use ui_composer_input::event::Event;
 use ui_composer_math::{
-    glamour::{Matrix4, Vector4}, prelude::{Mix, Rect, Srgba},
+    glamour::{Matrix4, Vector4},
+    prelude::{Mix, Rect, Srgba},
 };
 use ui_composer_platform_tui::{
     canvas::{Canvas as _, TextModePixel},
@@ -19,7 +20,7 @@ use ui_composer_platform_winit::{
 };
 
 /// An effect that describes rendering of a quad in the terminal.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct RenderQuad(pub Rect, pub Srgba);
 
 //impl ElementEffect<WinitEnvironment> for RenderQuad {}
@@ -45,22 +46,22 @@ impl RenderQuad {
                 self.0.width(),
                 0.0,
                 0.0,
-                0.0, 
+                0.0,
                 // yx, yy, yz, yw,
                 0.0,
                 self.0.height(),
                 0.0,
-                0.0, 
+                0.0,
                 // zx, zy, zz, zw,
                 0.0,
                 0.0,
                 1.0,
                 0.0,
-                // wx, wy, wz, ww 
+                // wx, wy, wz, ww
                 self.0.origin.x,
                 self.0.origin.y,
                 0.0,
-                1.0, 
+                1.0,
             ]),
             color: Vector4 {
                 x: self.1.red,
@@ -100,7 +101,7 @@ pub fn Graphic() -> Graphic {
 }
 
 /// A simple coloured graphic.
-#[derive(Default, Clone, Copy, PartialEq)]
+#[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub struct Graphic {
     pub rect: Rect,
     pub color: Srgba,
@@ -146,9 +147,9 @@ impl Blueprint<TerminalEnvironment> for Graphic {
 }
 
 impl Element<TerminalEnvironment> for Graphic {
-    type Effect<'fx> = RenderQuad;
+    type Effect = RenderQuad;
 
-    fn effect(&self) -> Self::Effect<'_> {
+    fn effect(&self) -> Self::Effect {
         RenderQuad(self.rect, self.color)
     }
 }
@@ -171,9 +172,9 @@ impl Blueprint<WinitEnvironment> for Graphic {
 }
 
 impl Element<WinitEnvironment> for Graphic {
-    type Effect<'fx> = RenderQuad;
+    type Effect = RenderQuad;
 
-    fn effect(&self) -> Self::Effect<'_> {
+    fn effect(&self) -> Self::Effect {
         RenderQuad(self.rect, self.color)
     }
 }

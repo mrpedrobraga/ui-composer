@@ -77,12 +77,9 @@ pub struct ImageViewElementTerminal {
     rect: Rect,
 }
 impl Element<TerminalEnvironment> for ImageViewElementTerminal {
-    type Effect<'fx>
-        = RenderImageQuad
-    where
-        Self: 'fx;
+    type Effect = RenderImageQuad;
 
-    fn effect(&self) -> Self::Effect<'_> {
+    fn effect(&self) -> Self::Effect {
         RenderImageQuad(self.rect, self.image.clone())
     }
 }

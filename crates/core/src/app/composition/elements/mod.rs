@@ -27,11 +27,9 @@ where
 }
 
 pub trait Element<Env: Environment>: Bubble<Event, bool> {
-    type Effect<'fx>: DriveThru<Env::EffectVisitor<'fx>>
-    where
-        Self: 'fx;
+    type Effect: for<'fx> DriveThru<Env::EffectVisitor<'fx>> + std::fmt::Debug;
 
-    fn effect(&self) -> Self::Effect<'_>;
+    fn effect(&self) -> Self::Effect;
 
     fn poll(
         self: Pin<&mut Self>,

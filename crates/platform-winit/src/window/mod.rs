@@ -188,6 +188,7 @@ impl<Ui: WinitUi> Bubble<Event, bool> for WindowElement<Ui> {
                     let mut visitor = WindowEffectVisitor { quads };
                     ui_effects.drive_thru(&mut visitor);
                     drop(ui_effects);
+                    //println!("{:?}", quads);
 
                     self.redraw();
                     self.state.needs_redrawing = true;
@@ -210,12 +211,10 @@ impl<Ui> Element<WinitEnvironment> for WindowElement<Ui>
 where
     Ui: WinitUi,
 {
-    type Effect<'a>
-        = ()
-    where
-        Ui: 'a;
+    type Effect
+        = ();
 
-    fn effect(&self) -> Self::Effect<'_> {}
+    fn effect(&self) -> Self::Effect {}
 
     fn poll(
         self: std::pin::Pin<&mut Self>,
@@ -248,6 +247,8 @@ where
             let mut visitor = WindowEffectVisitor { quads };
             ui_effects.drive_thru(&mut visitor);
             drop(ui_effects);
+            state.needs_redrawing = true;
+            state.window.request_redraw();
         }
 
         elements_poll

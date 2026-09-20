@@ -1,11 +1,16 @@
 #![allow(non_snake_case)]
 
+use std::time::Duration;
+
+use futures::FutureExt;
 use ui_composer::prelude::*;
 use ui_composer_basic_ui::primitives::graphic::Graphic;
-use ui_composer_core::app::composition::layout::item_box;
+use ui_composer_core::app::composition::layout::{item_box, ItemBox2};
 use ui_composer_math::glamour::Rect;
 use ui_composer_platform_winit::window::Window;
 use ui_composer_platform_winit::WinitUi;
+use ui_composer_state::effect::animation::futures_time;
+use ui_composer_state::effect::animation::futures_time::future::FutureExt as _;
 
 fn main() {
     // tracing_subscriber::fmt()
@@ -13,17 +18,69 @@ fn main() {
     //     .without_time()
     //     .init();
 
-    let app = App();
+    //let app = App2();
+    let app = item_box(|hints| AppContent(hints.rect));
     let window = Window(app);
 
-    WinitRunner::run(window);
+    UIComposer::run_winit(window);
 }
 
 fn App() -> impl WinitUi {
-    item_box(|hints| AppContent(hints.rect))
+    let square: Mutable<Option<Graphic>> = Mutable::new(None);
+    let square2 = square.clone();
+
+    std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_millis(3000));
+        square2.set(Some(Graphic {
+            rect: Rect {
+                origin: Point2 { x: 0.0, y: 0.0 },
+                size: Size2 {
+                    width: 100.0,
+                    height: 100.0,
+                },
+            },
+            color: Srgba::new(0.2, 0.3, 0.9, 1.0),
+        }));
+    });
+
+    ItemBox2::new((square,), |(square,), _hints| {
+        square.signal().into_blueprint()
+    })
+}
+
+#[allow(unused)]
+fn App2() -> impl WinitUi {
+    //
+
+    let fut = async move {
+        Graphic {
+            rect: Rect {
+                origin: Point2 { x: 0.0, y: 0.0 },
+                size: Size2 {
+                    width: 100.0,
+                    height: 100.0,
+                },
+            },
+            color: Srgba::new(0.2, 0.3, 0.9, 1.0),
+        }
+    }
+    .delay(futures_time::time::Duration::from_millis(5000))
+    .inspect(|_| println!("SCREEN SHOULD BE BLUE NOW!"));
+
+    let futs = fut.shared().into_blueprint();
+    item_box(move |hints| {
+        (
+            Graphic {
+                rect: hints.rect.inflate(Size2::new(-10.0, -10.0)),
+                color: Srgba::new(0.5, 0.2, 0.7, 1.0),
+            },
+            futs.clone(),
+        )
+    })
 }
 
 #[allow(non_snake_case)]
+#[allow(unused)]
 fn AppContent(rect: Rect) -> Vec<Graphic> {
     let colors = [
         Srgba::new(1.0, 1.0, 0.0, 1.0),

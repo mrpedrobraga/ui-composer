@@ -44,6 +44,8 @@ impl UIComposer {
     }
 }
 
+use ui_composer_platform_winit::window::WindowBlueprint;
+
 impl UIComposer {
     pub fn run_tui(
         app_blueprint: impl Blueprint<TerminalEnvironment, Element: Send + 'static> + Send,
@@ -51,7 +53,7 @@ impl UIComposer {
         UIComposer::run_custom::<TUIRunner<_>>(app_blueprint);
     }
 
-    pub fn run_winit<Ui>(app_blueprint: ui_composer_platform_winit::window::WindowBlueprint<Ui>)
+    pub fn run_winit<Ui>(app_blueprint: WindowBlueprint<Ui>)
     where
         Ui: WinitUi,
     {

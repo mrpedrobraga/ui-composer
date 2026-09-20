@@ -1,9 +1,9 @@
 //! # Effects/Signal
-//! 
+//!
 //! A `Signal<Item = T>` is "a `T` that will appear later."
 //! In classic functorial fashion, if `T` is an UI element with an effect,
 //! `Signal<Item = T>` is _also_ an element.
-//! 
+//!
 //! [`React`] wraps the signal so it can hold onto the `T` it resolves to.
 
 use crate::app::composition::algebra::{Bubble, Semigroup as _};
@@ -15,7 +15,7 @@ use std::task::{Context, Poll};
 use ui_composer_input::event::Event;
 
 /// Wraps a signal, holding onto the elements it produces.
-/// 
+///
 /// Notably implements `Blueprint` and `Element.`
 #[pin_project]
 #[must_use = "React does nothing unless polled"]
@@ -57,18 +57,10 @@ impl<Sig, Env: Environment> Element<Env> for React<Sig, Env>
 where
     Sig: Signal<Item: Blueprint<Env>>,
 {
-    type Effect<'a>
-        =
-        Option<
-            <<<Sig as Signal>::Item as Blueprint<Env>>::Element as Element<
-                Env,
-            >>::Effect<'a>,
-        >
-    where
-        Sig: 'a,
-        Env: 'a;
+    type Effect =
+        Option<<<<Sig as Signal>::Item as Blueprint<Env>>::Element as Element<Env>>::Effect>;
 
-    fn effect(&self) -> Self::Effect<'_> {
+    fn effect(&self) -> Self::Effect {
         self.element.as_ref().map(|e| e.effect())
     }
 
@@ -85,8 +77,7 @@ where
                 let mut element = blueprint.make(env);
 
                 // Wake up the element.
-                let _ =
-                    unsafe { Pin::new_unchecked(&mut element) }.poll(cx, env);
+                let _ = unsafe { Pin::new_unchecked(&mut element) }.poll(cx, env);
                 *this.element = Some(element);
 
                 Poll::Ready(Some(()))
@@ -106,22 +97,22 @@ where
 }
 
 /// Handy trait for transforming a Signal into a `Blueprint` for an environment.
-/// 
+///
 /// ```no_run
 /// let my_state = Mutable::new(Text("Hello, World!"));
 /// let my_signal = my_state.signal();
-/// 
+///
 /// // Currently, you can't do this, because `Blueprint` isn't implemented for `Signal`.
 /// let bp: Blueprint<Env> = my_signal;
 /// // Do this instead:
 /// let bp: Blueprint<Env> = my_signal.into_blueprint();
 /// ```
-/// 
+///
 /// We can't implement `Blueprint` for all signals without problems,
 /// so we need to a type this crate owns.
-/// 
+///
 /// The automatic implementation that produces a [`React`] without a held item.
-/// 
+///
 /// This will no longer be a kink when `min_specialization` gets stabilized.
 /// When it does, you'll be able to directly use a future directly wherever a `Signal` is required.
 pub trait IntoBlueprint<Env: Environment> {

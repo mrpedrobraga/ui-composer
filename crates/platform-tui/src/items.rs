@@ -1,6 +1,6 @@
-use crate::Tui;
 use crate::render::present_canvas_to_terminal;
 use crate::runner::{TerminalBlueprintResources, TerminalEnvironment};
+use crate::Tui;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use futures_signals::signal::Mutable;
@@ -8,9 +8,7 @@ use futures_signals::signal::{Signal, SignalExt};
 use pin_project::pin_project;
 use ui_composer_canvas::{Canvas, PixelCanvas, TextModePixel};
 use ui_composer_core::app::composition::algebra::Bubble;
-use ui_composer_core::app::composition::effects::signal::{
-    IntoBlueprint, React,
-};
+use ui_composer_core::app::composition::effects::signal::{IntoBlueprint, React};
 use ui_composer_core::app::composition::elements::{Blueprint, Element};
 use ui_composer_core::app::composition::layout::hints::ParentHints;
 use ui_composer_core::app::composition::visit::DriveThru;
@@ -30,8 +28,7 @@ pub struct TerminalState {
     pub render_target: PixelCanvas<TextModePixel>,
 }
 
-impl<UiBlueprint> Blueprint<TerminalEnvironment>
-    for TerminalBlueprint<UiBlueprint>
+impl<UiBlueprint> Blueprint<TerminalEnvironment> for TerminalBlueprint<UiBlueprint>
 where
     UiBlueprint: Blueprint<TerminalEnvironment> + Send,
 {
@@ -86,12 +83,9 @@ impl<UiElement> Element<TerminalEnvironment> for TerminalElement<UiElement>
 where
     UiElement: Element<TerminalEnvironment>,
 {
-    type Effect<'a>
-        = ()
-    where
-        UiElement: 'a;
+    type Effect = ();
 
-    fn effect(&self) -> Self::Effect<'_> {
+    fn effect(&self) -> Self::Effect {
         todo!()
     }
 
@@ -143,9 +137,7 @@ pub struct TerminalEffectVisitor<'fx> {
 #[allow(non_snake_case)]
 pub fn Terminal<UiBlueprint>(
     mut ui: UiBlueprint,
-) -> TerminalBlueprint<
-    React<impl Signal<Item = UiBlueprint::Blueprint>, TerminalEnvironment>,
->
+) -> TerminalBlueprint<React<impl Signal<Item = UiBlueprint::Blueprint>, TerminalEnvironment>>
 where
     UiBlueprint: Tui,
 {
@@ -172,8 +164,7 @@ where
                     current_flow_direction: CartesianFlow::LeftToRight,
                     current_cross_flow_direction: CartesianFlow::TopToBottom,
                     current_writing_flow_direction: CartesianFlow::LeftToRight,
-                    current_writing_cross_flow_direction:
-                        CartesianFlow::TopToBottom,
+                    current_writing_cross_flow_direction: CartesianFlow::TopToBottom,
                 },
             };
             // TODO: Listen to and respect the child hints.

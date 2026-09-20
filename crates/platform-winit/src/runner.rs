@@ -1,9 +1,10 @@
 use futures::executor::block_on;
-use futures_signals::signal::Mutable;
+use futures_signals::signal::{Mutable, SignalExt};
 use std::marker::PhantomData;
 use std::sync::Arc;
 use ui_composer_core::app::composition::algebra::Bubble;
 use ui_composer_core::app::composition::elements::{Blueprint, Environment};
+use ui_composer_core::app::runner::futures::AsyncExecutor;
 use ui_composer_input::event::Event;
 use ui_composer_math::glamour::Size2;
 use winit::application::ApplicationHandler;
@@ -26,7 +27,9 @@ pub struct WinitRunner<Ui> {
 pub struct WinitAppHandler<'app, Ui: WinitUi> {
     pub app_making_resources: WinitBlueprintResources<'app>,
     pub blueprint: Option<WindowBlueprint<Ui>>,
-    pub element: Option<WindowElement<Ui>>,
+    pub element: Option<Arc<futures::lock::Mutex<WindowElement<Ui>>>>,
+    pub element_sender:
+        Option<futures::channel::oneshot::Sender<Arc<futures::lock::Mutex<WindowElement<Ui>>>>>,
 }
 
 // TODO: Add things to this Environment that elements might want to use.
@@ -73,23 +76,38 @@ where
         let proxy = e_loop.create_proxy();
         let gpu = futures::executor::block_on(Gpu::new());
 
-        let app_making_resources = WinitBlueprintResources {
-            winit_requester: &WinitRequester { proxy },
-            gpu,
-            window_size_mutable: Mutable::new(Size2::ZERO),
-            window: None,
-        };
+        let winit_requester = WinitRequester { proxy };
 
-        let mut winit_app_handler: WinitAppHandler<Ui> = WinitAppHandler {
-            app_making_resources,
-            blueprint: Some(window_blueprint),
-            element: None,
-        };
-        e_loop.set_control_flow(winit::event_loop::ControlFlow::Wait);
+        std::thread::scope(|scope| {
+            let app_making_resources = WinitBlueprintResources {
+                winit_requester: &winit_requester,
+                gpu,
+                window_size_mutable: Mutable::new(Size2::ZERO),
+                window: None,
+            };
 
-        println!("[Winit Runner] Transferring control to winit.");
-        e_loop.run_app(&mut winit_app_handler).unwrap();
-        println!("[Winit Runner] All done.")
+            let (tx, rx) = futures::channel::oneshot::channel();
+
+            let mut winit_app_handler: WinitAppHandler<Ui> = WinitAppHandler {
+                app_making_resources: app_making_resources.clone(),
+                blueprint: Some(window_blueprint),
+                element: None,
+                element_sender: Some(tx),
+            };
+
+            scope.spawn(|| {
+                let element = block_on(rx).unwrap();
+
+                let async_executor: AsyncExecutor<'_, WinitEnvironment, _, _> =
+                    AsyncExecutor::new(element, app_making_resources, || println!("Yielded!"));
+                block_on(async_executor.to_future())
+            });
+
+            e_loop.set_control_flow(winit::event_loop::ControlFlow::Wait);
+            println!("[Winit Runner] Transferring control to winit.");
+            e_loop.run_app(&mut winit_app_handler).unwrap();
+            println!("[Winit Runner] All done.")
+        });
     }
 }
 
@@ -116,6 +134,13 @@ where
                 winit_requester: self.app_making_resources.winit_requester,
             });
             // Set the element's window so Window is kept alive?
+
+            let element = Arc::new(futures::lock::Mutex::new(element));
+            self.element_sender
+                .take()
+                .expect("[Winit] But there was no sender anymore?")
+                .send(element.clone())
+                .expect("[Winit] Other side was closed.");
             self.element = Some(element);
         }
     }
@@ -128,14 +153,16 @@ where
         event: winit::event::WindowEvent,
     ) {
         if let Ok(mut uic_event) = winit_uic_conversion::into_event(event.clone()) {
-            if let Some(element) = &mut self.element {
+            if let Some(element) = &self.element {
                 //println!("Bubbling event: {:?}", uic_event);
 
+                let mut lock = block_on(element.lock());
+
                 if let Event::Resized(new_size) = &uic_event {
-                    element.prepare_to_resize(*new_size, &self.app_making_resources);
+                    lock.prepare_to_resize(*new_size, &self.app_making_resources);
                 }
 
-                let _effect_was_handled = block_on(element.bubble(&mut uic_event));
+                let _effect_was_handled = block_on(lock.bubble(&mut uic_event));
 
                 //println!("Handled? {}", _effect_was_handled);
             }

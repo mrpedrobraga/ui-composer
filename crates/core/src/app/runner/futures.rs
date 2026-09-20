@@ -67,7 +67,6 @@ impl<'exec, Env: Environment, App: Element<Env>, Callback: FnMut()> Signal
                 unsafe { Pin::new_unchecked(element_borrow.deref_mut()) };
 
             // Because of how signals work internally, we must yield at least once.
-
             let inner_poll = pinned_element.poll(cx, blueprint_resources);
             if let Poll::Ready(None) = inner_poll
                 && *first_tick
@@ -79,6 +78,7 @@ impl<'exec, Env: Environment, App: Element<Env>, Callback: FnMut()> Signal
                 (callback)();
             }
             *first_tick = false;
+            
             inner_poll
         } else {
             cx.waker().wake_by_ref();
