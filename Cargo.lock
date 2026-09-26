@@ -658,6 +658,7 @@ dependencies = [
  "futures",
  "futures-time",
  "pin-project",
+ "ui-composer-view-macro",
 ]
 
 [[package]]

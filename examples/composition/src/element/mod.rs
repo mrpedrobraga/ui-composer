@@ -7,7 +7,7 @@ use std::{
 
 pub mod effects;
 
-pub trait Element {
+pub trait Ui {
     type Effect: ElementEffect;
 
     fn initialize(&mut self, resources: &InitializationResources);
@@ -21,10 +21,10 @@ pub trait ElementEffect {
     fn apply(&self, consumer: &mut ElementEffectHandler);
 }
 
-impl<A, B> Element for (A, B)
+impl<A, B> Ui for (A, B)
 where
-    A: Element,
-    B: Element,
+    A: Ui,
+    B: Ui,
 {
     type Effect = (A::Effect, B::Effect);
 
@@ -96,9 +96,9 @@ impl<E, F> DelayedUntil<E, F> {
     }
 }
 
-impl<E, F> Element for DelayedUntil<E, F>
+impl<E, F> Ui for DelayedUntil<E, F>
 where
-    E: Element,
+    E: Ui,
     F: Future,
 {
     type Effect = Option<E::Effect>;
@@ -160,9 +160,9 @@ impl<E, Maker, F> Await<E, Maker, F> {
     }
 }
 
-impl<E, Maker, F> Element for Await<E, Maker, F>
+impl<E, Maker, F> Ui for Await<E, Maker, F>
 where
-    E: Element,
+    E: Ui,
     F: Future,
     Maker: Fn(F::Output) -> E,
 {

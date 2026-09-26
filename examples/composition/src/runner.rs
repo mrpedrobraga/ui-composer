@@ -1,4 +1,4 @@
-use crate::element::{Element, ElementEffect};
+use crate::element::{ElementEffect, Ui};
 use std::task::Poll;
 
 pub struct ElementEffectHandler {}
@@ -8,20 +8,20 @@ pub struct InitializationResources {
 }
 
 #[pin_project::pin_project(project = ElementsRunnerProj)]
-pub struct ElementsRunner<E>
+pub struct Runner<A>
 where
-    E: Element,
+    A: Ui,
 {
     #[pin]
-    pub elements: E,
+    pub elements: A,
     first_time: bool,
 }
 
-impl<E> ElementsRunner<E>
+impl<A> Runner<A>
 where
-    E: Element,
+    A: Ui,
 {
-    pub fn new(mut elements: E) -> Self {
+    pub fn new(mut elements: A) -> Self {
         let resources = InitializationResources {
             secret_key: "fee foh fi fum".to_string(),
         };
@@ -35,9 +35,9 @@ where
     }
 }
 
-impl<E> Future for ElementsRunner<E>
+impl<A> Future for Runner<A>
 where
-    E: Element,
+    A: Ui,
 {
     type Output = ();
 

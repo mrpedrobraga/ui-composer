@@ -1,6 +1,5 @@
+use crate::element::{effects::LogEffect, Ui};
 use std::sync::OnceLock;
-
-use crate::element::{effects::LogEffect, Element};
 
 pub struct Text(pub String, OnceLock<TextResources>);
 
@@ -14,7 +13,7 @@ impl Text {
     }
 }
 
-impl Element for Text {
+impl Ui for Text {
     type Effect = LogEffect;
 
     fn initialize(&mut self, resources: &crate::runner::InitializationResources) {
