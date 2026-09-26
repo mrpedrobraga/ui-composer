@@ -1,4 +1,4 @@
-use crate::runner::ElementEffectHandler;
+use crate::runner::{ElementEffectHandler, InitializationResources};
 use std::{
     cell::OnceCell,
     pin::Pin,
@@ -9,6 +9,8 @@ pub mod effects;
 
 pub trait Element {
     type Effect: ElementEffect;
+
+    fn initialize(&mut self, resources: &InitializationResources);
 
     fn effect(&self) -> Self::Effect;
 
@@ -25,6 +27,11 @@ where
     B: Element,
 {
     type Effect = (A::Effect, B::Effect);
+
+    fn initialize(&mut self, resources: &InitializationResources) {
+        self.0.initialize(resources);
+        self.1.initialize(resources);
+    }
 
     fn effect(&self) -> Self::Effect {
         (self.0.effect(), self.1.effect())
@@ -96,6 +103,10 @@ where
 {
     type Effect = Option<E::Effect>;
 
+    fn initialize(&mut self, resources: &InitializationResources) {
+        self.element.initialize(resources);
+    }
+
     fn effect(&self) -> Self::Effect {
         if self.ready {
             // println!("[Delayed] Ready to show Element!");
@@ -156,6 +167,10 @@ where
     Maker: Fn(F::Output) -> E,
 {
     type Effect = Option<E::Effect>;
+
+    fn initialize(&mut self, _resources: &InitializationResources) {
+        /* Nothing? */
+    }
 
     fn effect(&self) -> Self::Effect {
         self.element.get().map(|e| e.effect())

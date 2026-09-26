@@ -3,6 +3,10 @@ use std::task::Poll;
 
 pub struct ElementEffectHandler {}
 
+pub struct InitializationResources {
+    pub secret_key: String,
+}
+
 #[pin_project::pin_project(project = ElementsRunnerProj)]
 pub struct ElementsRunner<E>
 where
@@ -17,7 +21,13 @@ impl<E> ElementsRunner<E>
 where
     E: Element,
 {
-    pub fn new(elements: E) -> Self {
+    pub fn new(mut elements: E) -> Self {
+        let resources = InitializationResources {
+            secret_key: "fee foh fi fum".to_string(),
+        };
+
+        elements.initialize(&resources);
+
         Self {
             elements,
             first_time: true,

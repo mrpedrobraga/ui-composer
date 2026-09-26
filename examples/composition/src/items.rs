@@ -1,14 +1,34 @@
+use std::sync::OnceLock;
+
 use crate::element::{effects::LogEffect, Element};
 
-pub struct Text(pub String);
+pub struct Text(pub String, OnceLock<TextResources>);
 
-pub struct Number(pub i32);
+pub struct TextResources {
+    content: String,
+}
+
+impl Text {
+    pub fn new(content: String) -> Self {
+        Self(content, OnceLock::new())
+    }
+}
 
 impl Element for Text {
     type Effect = LogEffect;
 
+    fn initialize(&mut self, resources: &crate::runner::InitializationResources) {
+        let _ = self.1.set(TextResources {
+            content: resources.secret_key.clone(),
+        });
+    }
+
     fn effect(&self) -> Self::Effect {
-        LogEffect(self.0.clone())
+        LogEffect(format!(
+            "{} - ({})",
+            self.0,
+            self.1.get().map(|re| re.content.as_str()).unwrap()
+        ))
     }
 
     fn poll_change(
