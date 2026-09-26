@@ -18,7 +18,7 @@ members = [
 
     # Design Libraries
     "crates/lullaby-ui",
-    "examples/example-android",
+    "examples/example-android", "examples/composition",
 ]
 
 exclude = ["examples/aarch64-bare-metal"]

@@ -5,6 +5,7 @@ use std::time::Duration;
 use futures::FutureExt;
 use ui_composer::prelude::*;
 use ui_composer_basic_ui::primitives::graphic::Graphic;
+use ui_composer_core::app::composition::effects::signal::IntoBlueprint;
 use ui_composer_core::app::composition::layout::{item_box, ItemBox2};
 use ui_composer_math::glamour::Rect;
 use ui_composer_platform_winit::window::Window;
@@ -19,13 +20,15 @@ fn main() {
     //     .init();
 
     //let app = App2();
-    let app = item_box(|hints| AppContent(hints.rect));
-    let window = Window(app);
+    let app = item_box(|hints| LaserSquares(hints.rect));
+    let window = Window(DelayedBox2());
+
+    Mutable::new(0).signal().to_future();
 
     UIComposer::run_winit(window);
 }
 
-fn App() -> impl WinitUi {
+fn DelayedBox() -> impl WinitUi {
     let square: Mutable<Option<Graphic>> = Mutable::new(None);
     let square2 = square.clone();
 
@@ -49,7 +52,7 @@ fn App() -> impl WinitUi {
 }
 
 #[allow(unused)]
-fn App2() -> impl WinitUi {
+fn DelayedBox2() -> impl WinitUi {
     //
 
     let fut = async move {
@@ -64,8 +67,7 @@ fn App2() -> impl WinitUi {
             color: Srgba::new(0.2, 0.3, 0.9, 1.0),
         }
     }
-    .delay(futures_time::time::Duration::from_millis(5000))
-    .inspect(|_| println!("SCREEN SHOULD BE BLUE NOW!"));
+    .delay(futures_time::time::Duration::from_millis(5000));
 
     let futs = fut.shared().into_blueprint();
     item_box(move |hints| {
@@ -81,7 +83,7 @@ fn App2() -> impl WinitUi {
 
 #[allow(non_snake_case)]
 #[allow(unused)]
-fn AppContent(rect: Rect) -> Vec<Graphic> {
+fn LaserSquares(rect: Rect) -> Vec<Graphic> {
     let colors = [
         Srgba::new(1.0, 1.0, 0.0, 1.0),
         Srgba::new(0.0, 1.0, 0.0, 1.0),

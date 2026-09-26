@@ -26,13 +26,9 @@ pub mod prelude {
     pub use futures_signals::signal::always;
     pub use futures_signals::signal::{Mutable, Signal, SignalExt as _};
 
-    pub use futures_signals::signal_vec::{
-        MutableVec, SignalVec, SignalVecExt as _,
-    };
+    pub use futures_signals::signal_vec::{MutableVec, SignalVec, SignalVecExt as _};
 
-    pub use futures_signals::signal_map::{
-        MutableBTreeMap, SignalMap, SignalMapExt as _,
-    };
+    pub use futures_signals::signal_map::{MutableBTreeMap, SignalMap, SignalMapExt as _};
 }
 
 use crate::effect::Effect;
