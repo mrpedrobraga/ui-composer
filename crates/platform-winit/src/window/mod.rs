@@ -4,21 +4,17 @@
 //! Every time they change (in response to an event or a future or signal yielding),
 //! it will render them to its [WindowRenderTarget].
 
-use self::effect_handling::WindowEffectVisitor;
-use crate::WinitUi;
-use crate::render::{
-    RenderPipeline, RenderResources, RenderTarget as _, render,
-};
+use crate::render::{render, RenderPipeline, RenderResources, RenderTarget as _};
 use crate::runner::{WinitBlueprintResources, WinitEnvironment};
+use crate::WinitUi;
+use bytemuck::Zeroable;
 use futures_signals::signal::Mutable;
 use pin_project::pin_project;
 use std::sync::Arc;
 use std::task::Poll;
 use ui_composer_core::app::composition::algebra::Bubble;
 use ui_composer_core::app::composition::elements::{Blueprint, Element};
-use ui_composer_core::app::composition::layout::LayoutItem;
 use ui_composer_core::app::composition::layout::hints::ParentHints;
-use ui_composer_core::app::composition::visit::DriveThru;
 use ui_composer_input::event::Event;
 use ui_composer_math::flow::{CartesianFlow, CurrentFlow};
 use ui_composer_math::glamour::{Point2, Rect};
@@ -61,65 +57,28 @@ where
     WindowBlueprint { ui, state }
 }
 
-fn place_ui<Ui>(
-    ui: &mut Ui,
-    window_size: Size2,
-) -> <Ui as LayoutItem>::Blueprint
-where
-    Ui: WinitUi,
-{
-    let parent_hints = ParentHints {
-        rect: Rect::new(Point2::ZERO, window_size),
-        // TODO: Turn these into signals, maybe?
-        current_flow: CurrentFlow {
-            current_flow_direction: CartesianFlow::LeftToRight,
-            current_cross_flow_direction: CartesianFlow::TopToBottom,
-            current_writing_flow_direction: CartesianFlow::LeftToRight,
-            current_writing_cross_flow_direction: CartesianFlow::TopToBottom,
-        },
-    };
-    // TODO: Listen to and respect the child hints;
-    #[allow(unused)]
-    let child_hints = ui.prepare(parent_hints);
-    let clamped_rect = Rect::new(
-        Point2::ZERO,
-        parent_hints.rect.size.max(child_hints.minimum_size),
-    );
-    ui.place(ParentHints {
-        rect: clamped_rect,
-        ..parent_hints
-    })
-}
-
 impl<Ui> Blueprint<WinitEnvironment> for WindowBlueprint<Ui>
 where
     Ui: WinitUi,
     // for<'fx> <UiBlueprint::Element as Element<WinitEnvironment>>::Effect<'fx>: Debug,
 {
-    type Element = WindowElement<Ui>;
+    type Output = WindowElement<Ui>;
 
-    fn make(self, env: &WinitBlueprintResources<'_>) -> Self::Element {
+    fn make(self, env: &WinitBlueprintResources<'_>) -> Self::Output {
         // TODO: Allow different attributes to be specified.
         // Ideally, the user would be able to pass `Mutable`s
         // that the window would poll for reactivity!
 
         let state = WindowRuntimeState::from_blueprint(self.state, env);
 
-        WindowElement {
-            ui: self.ui,
-            elements: None,
-            state,
-        }
+        WindowElement { ui: self.ui, state }
     }
 }
 
 #[pin_project(project = WindowElementProj)]
-pub struct WindowElement<Ui: WinitUi> {
-    ui: Ui,
+pub struct WindowElement<U: WinitUi> {
     #[pin]
-    elements: Option<
-        <<Ui as LayoutItem>::Blueprint as Blueprint<WinitEnvironment>>::Element,
-    >,
+    ui: U,
     state: WindowRuntimeState,
 }
 
@@ -131,19 +90,16 @@ pub struct WindowRuntimeState {
     render_resources: RenderResources,
     render_target: render_target::WindowRenderTarget,
     pub render_pipeline: RenderPipeline,
-    #[allow(unused, reason = "It will be used in the future when we allow the user to control the window's attributes via signals.")]
+    #[allow(
+        unused,
+        reason = "It will be used in the future when we allow the user to control the window's attributes via signals."
+    )]
     window: Arc<Window>,
 }
 
 impl<Ui: WinitUi> WindowElement<Ui> {
-    pub(crate) fn prepare_to_resize(
-        &mut self,
-        new_size: Size2,
-        app_making_resources: &WinitBlueprintResources,
-    ) {
-        let new_elements =
-            place_ui(&mut self.ui, new_size).make(app_making_resources);
-        self.elements = Some(new_elements);
+    pub(crate) fn prepare_to_resize(&mut self, _: Size2, _: &WinitBlueprintResources) {
+        /* TODO: Update the ui by telling it about the new dimensions! */
     }
 
     fn resize_internal(&mut self, new_size: Size2) {
@@ -177,21 +133,22 @@ impl<Ui: WinitUi> Bubble<Event, bool> for WindowElement<Ui> {
                 std::process::exit(1);
             }
             Event::RedrawRequested => {
+                /* TODO: Redraw! */
                 if self.state.needs_redrawing
-                    && let Some(elements) = &mut self.elements
+                // && let Some(elements) = &mut self.elements
                 {
-                    let quads = &mut self.state.render_resources.quads;
-                    // TODO: No cleanup will be needed when we have a sized buffer.
-                    quads.clear();
+                    // let quads = &mut self.state.render_resources.quads;
+                    // // TODO: No cleanup will be needed when we have a sized buffer.
+                    // quads.clear();
 
-                    let ui_effects = elements.effect();
-                    let mut visitor = WindowEffectVisitor { quads };
-                    ui_effects.drive_thru(&mut visitor);
-                    drop(ui_effects);
-                    //println!("{:?}", quads);
+                    // let ui_effects = elements.effect();
+                    // let mut visitor = WindowEffectVisitor { quads };
+                    // ui_effects.drive_thru(&mut visitor);
+                    // drop(ui_effects);
+                    // //println!("{:?}", quads);
 
-                    self.redraw();
-                    self.state.needs_redrawing = true;
+                    // self.redraw();
+                    // self.state.needs_redrawing = true;
                 }
                 true
             }
@@ -211,21 +168,17 @@ impl<Ui> Element<WinitEnvironment> for WindowElement<Ui>
 where
     Ui: WinitUi,
 {
-    type Effect
-        = ();
+    type Effect = ();
+    type Blueprint = WindowBlueprint<Ui>;
 
     fn effect(&self) -> Self::Effect {}
 
-    fn poll(
+    fn poll_change(
         self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context,
         env: &WinitBlueprintResources<'_>,
     ) -> std::task::Poll<Option<()>> {
-        let WindowElementProj {
-            mut elements,
-            state,
-            ..
-        } = self.project();
+        let WindowElementProj { mut ui, state, .. } = self.project();
 
         /*
             TODO: Make `state` hold signals for all of a window's states
@@ -233,39 +186,40 @@ where
             poll those, and apply changes to the window as needed.
         */
 
-        let elements_poll: Poll<Option<_>> = elements.as_mut().poll(cx, env);
+        let window_size = state.window_size.get();
+        let parent_hints = ParentHints {
+            rect: Rect::new(Point2::zeroed(), window_size),
+            current_flow: CurrentFlow {
+                current_flow_direction: CartesianFlow::LeftToRight,
+                current_cross_flow_direction: CartesianFlow::TopToBottom,
+                current_writing_flow_direction: CartesianFlow::LeftToRight,
+                current_writing_cross_flow_direction: CartesianFlow::TopToBottom,
+            },
+        };
 
-        // TODO: Extract this to a method in `WindowElement` maybe?
-        // This updates the content of the frame when a signal yields,
-        // so interior reactivity/animaiton/etc works!
-        if let Poll::Ready(Some(())) = elements_poll {
-            let quads = &mut state.render_resources.quads;
-            // TODO: No cleanup will be needed when we have a sized buffer.
-            quads.clear();
+        let ui_poll: Poll<Option<_>> = ui.as_mut().poll_change(cx, env, parent_hints);
 
-            let ui_effects = elements.effect();
-            let mut visitor = WindowEffectVisitor { quads };
-            ui_effects.drive_thru(&mut visitor);
-            drop(ui_effects);
+        // TODO: Not sure what needs to be done
+        // other than telling the window it is dirty!
+        if let Poll::Ready(Some(())) = ui_poll {
             state.needs_redrawing = true;
             state.window.request_redraw();
         }
 
-        elements_poll
+        ui_poll
+    }
+
+    fn update(&mut self, _: WindowBlueprint<Ui>, _: &WinitBlueprintResources) {
+        unimplemented!()
     }
 }
 
 impl WindowRuntimeState {
-    pub fn from_blueprint(
-        blueprint: WindowState,
-        env: &WinitBlueprintResources,
-    ) -> Self {
+    pub fn from_blueprint(blueprint: WindowState, env: &WinitBlueprintResources) -> Self {
         let gpu = env.gpu.clone();
         let window = env.window.clone().unwrap();
-        let render_target =
-            render_target::WindowRenderTarget::new(&gpu, window.clone());
-        let render_pipeline =
-            RenderPipeline::new(&gpu, wgpu::TextureFormat::Bgra8UnormSrgb);
+        let render_target = render_target::WindowRenderTarget::new(&gpu, window.clone());
+        let render_pipeline = RenderPipeline::new(&gpu, wgpu::TextureFormat::Bgra8UnormSrgb);
         let render_resources = RenderResources::new(gpu, &render_pipeline);
 
         blueprint.app_size.set(env.window_size_mutable.clone());
@@ -292,17 +246,3 @@ impl WindowRuntimeState {
             .resize(&self.render_resources.gpu, new_size.as_());
     }
 }
-
-// fn sync_effects<Ui: Element<WinitEnvironment>>(
-//     ui: std::pin::Pin<&mut Ui>,
-//     state: &mut WindowRuntimeState,
-// ) {
-//     let quads = &mut state.render_resources.quads;
-//     // TODO: No cleanup will be needed when we have a sized buffer.
-//     quads.clear();
-//     let ui_effects = ui.effect();
-//     let mut visitor = WindowEffectVisitor { quads };
-//     ui_effects.drive_thru(&mut visitor);
-//     drop(ui_effects);
-//     state.needs_redrawing = true;
-// }

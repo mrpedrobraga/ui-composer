@@ -62,66 +62,44 @@
 //!
 //! Some utility functions for calculating layouts are in the [`flow`] module.
 
-use crate::app::composition::effects::signal::{IntoBlueprint as _, React};
-use crate::app::composition::elements::{Blueprint, Environment};
-use futures_signals::signal::{Signal, SignalExt};
+use super::elements::{Blueprint, Element, Environment};
 use hints::{ChildHints, ParentHints};
-use ui_composer_math::prelude::{Rect, Size2};
+use std::{
+    pin::Pin,
+    task::{Context, Poll},
+};
+use ui_composer_math::prelude::Size2;
 
 pub mod hints;
 mod implementations;
 
 /// The closure-like trait that produces [`Emit`]s.
 #[diagnostic::on_unimplemented(
-    message = "{Self} is not a [`LayoutItem`] thus can not be used...",
+    message = "{Self} is not [Ui] and thus can not be used...",
     label = "...in this context...",
-    note = "You can use `ResizableItem` to bundle [`Blueprint`]s as UI."
+    note = "You can use [Canvas] to bundle [Blueprint]s as [Ui]!."
 )]
-#[must_use = "layout items need to be put in a layout context to be used."]
-pub trait LayoutItem: Send {
-    type Blueprint;
+#[must_use = "Ui needs to be given to a context (such as a window) to do anything."]
+pub trait Ui<Env>: Send
+where
+    Env: Environment,
+{
+    type Blueprint: Blueprint<Env>;
 
-    /// Prepares the item for laying out.
     fn prepare(&mut self, expected_parent_hints: ParentHints) -> ChildHints;
 
-    /// Renders the content of this layout item with a specific rect.
-    fn place(
-        &mut self,
-        // TODO: Reflect on whether it's necessary to pass any context when calling `place`.
-        parent_hints: ParentHints,
-    ) -> Self::Blueprint;
+    fn place(&mut self, parent_hints: ParentHints, resources: &Env::BlueprintResources<'_>);
 
-    /// Creates a reactive Element that resizes its content to fit `rect_signal`.
-    fn place_reactive<Sig, Env: Environment>(
-        mut self,
-        rect_signal: Sig,
-        parent_hints: ParentHints,
-    ) -> React<impl Signal<Item = Self::Blueprint>, Env>
-    where
-        Sig: Signal<Item = Rect> + Send,
-        Self: Sized + Send,
-        Self::Blueprint: Blueprint<Env>,
-    {
-        rect_signal
-            .map(move |rect| {
-                self.place(ParentHints {
-                    rect,
-                    ..parent_hints
-                })
-            })
-            .into_blueprint()
-    }
+    fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect;
 
-    /// Erases the type of the layout item, allocating it on the heap,
-    /// while remembering the type of `Blueprint` the item generates.
-    ///
-    /// This is useful wherever you need to pass two or more items of the same concrete type,
-    /// but would like to pass different UI... for example, you can call `boxed`
-    /// to return different UI from `match` arms.
-    ///
-    /// This obviously adds some indirection as well as some heap allocation
-    /// so make of that what you will.
-    fn boxed(self) -> Box<dyn LayoutItem<Blueprint = Self::Blueprint>>
+    fn poll_change(
+        self: Pin<&mut Self>,
+        cx: &mut Context,
+        resources: &Env::BlueprintResources<'_>,
+        parent_hints: ParentHints,
+    ) -> Poll<Option<()>>;
+
+    fn boxed(self) -> Box<dyn Ui<Env, Blueprint = Self::Blueprint>>
     where
         Self: std::marker::Sized + 'static,
     {
@@ -140,111 +118,84 @@ pub trait LayoutItem: Send {
 ///
 /// [`Resizable`] indicates that the item in question can have sizing characteristics
 /// edited. Use it like `impl UI + Resizable`.
-pub trait Resizable: LayoutItem {
+pub trait Resizable<Env>: Ui<Env>
+where
+    Env: Environment,
+{
     /// Consumes this [`ItemBox`] and returns a similar one with the minimum size set.
     fn with_minimum_size(self, min_size: Size2) -> Self;
 }
 
-pub fn item_box<Factory, Item>(factory: Factory) -> ItemBox<Factory, Item>
+#[pin_project::pin_project]
+pub struct Canvas<Env, B, F>
 where
-    Factory: Send + FnMut(ParentHints) -> Item,
+    B: Blueprint<Env>,
+    F: Send + FnMut(ParentHints) -> B,
+    Env: Environment,
 {
-    ItemBox::new(factory)
-}
-
-pub struct ItemBox<Factory, Item>
-where
-    Factory: Send + FnMut(ParentHints) -> Item,
-{
+    #[pin]
+    elements: Option<B::Output>,
+    maker: F,
     hints: ChildHints,
-    factory: Factory,
 }
 
-impl<Factory, Item> ItemBox<Factory, Item>
+impl<Env, B, F> Canvas<Env, B, F>
 where
-    Factory: FnMut(ParentHints) -> Item + Send,
+    B: Blueprint<Env>,
+    F: Send + FnMut(ParentHints) -> B,
+    Env: Environment,
 {
-    pub fn new(factory: Factory) -> Self {
+    pub fn new(maker: F) -> Self {
         Self {
             hints: ChildHints::default(),
-            factory,
+            elements: None,
+            maker,
         }
     }
 }
 
-impl<F: Send, Item> LayoutItem for ItemBox<F, Item>
+impl<Env, B, F> Ui<Env> for Canvas<Env, B, F>
 where
-    F: FnMut(ParentHints) -> Item,
+    B: Blueprint<Env, Output: Send>,
+    F: Send + FnMut(ParentHints) -> B,
+    Env: Environment,
 {
-    type Blueprint = Item;
+    type Blueprint = B;
 
     fn prepare(&mut self, _: ParentHints) -> ChildHints {
         self.hints
     }
 
-    fn place(&mut self, layout_hints: ParentHints) -> Self::Blueprint {
-        (self.factory)(layout_hints)
-    }
-}
-
-impl<F, Item> Resizable for ItemBox<F, Item>
-where
-    F: Send + FnMut(ParentHints) -> Item,
-{
-    fn with_minimum_size(self, min_size: Size2) -> Self {
-        Self {
-            hints: ChildHints {
-                minimum_size: min_size,
-            },
-            ..self
+    fn place(&mut self, parent_hints: ParentHints, resources: &Env::BlueprintResources<'_>) {
+        // (self.maker)(layout_hints)
+        let new_blueprint = (self.maker)(parent_hints);
+        if let Some(elements) = &mut self.elements {
+            elements.update(new_blueprint, resources);
+        } else {
+            self.elements = Some(new_blueprint.make(resources))
         }
     }
-}
 
-// ---
+    fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect {
+        self.elements.as_ref().unwrap().effect()
+    }
 
-pub struct ItemBox2<Capture, Factory, Item>
-where
-    Factory: Send + FnMut(&mut Capture, ParentHints) -> Item,
-{
-    capture: Capture,
-    hints: ChildHints,
-    factory: Factory,
-}
-
-impl<Capture, Factory, Item> ItemBox2<Capture, Factory, Item>
-where
-    Factory: FnMut(&mut Capture, ParentHints) -> Item + Send,
-{
-    pub fn new(capture: Capture, factory: Factory) -> Self {
-        Self {
-            capture,
-            hints: ChildHints::default(),
-            factory,
-        }
+    fn poll_change(
+        self: Pin<&mut Self>,
+        cx: &mut Context,
+        resources: &Env::BlueprintResources<'_>,
+        _: ParentHints,
+    ) -> Poll<Option<()>> {
+        let this = self.project();
+        this.elements.poll_change(cx, resources)
     }
 }
 
-impl<Capture, F: Send, Item> LayoutItem for ItemBox2<Capture, F, Item>
+impl<Env, B, F> Resizable<Env> for Canvas<Env, B, F>
 where
-    F: FnMut(&mut Capture, ParentHints) -> Item,
-    Capture: std::marker::Send,
-{
-    type Blueprint = Item;
-
-    fn prepare(&mut self, _: ParentHints) -> ChildHints {
-        self.hints
-    }
-
-    fn place(&mut self, layout_hints: ParentHints) -> Self::Blueprint {
-        (self.factory)(&mut self.capture, layout_hints)
-    }
-}
-
-impl<Capture, F, Item> Resizable for ItemBox2<Capture, F, Item>
-where
-    F: Send + FnMut(&mut Capture, ParentHints) -> Item,
-    Capture: std::marker::Send,
+    B: Blueprint<Env, Output: Send>,
+    F: Send + FnMut(ParentHints) -> B,
+    Env: Environment,
 {
     fn with_minimum_size(self, min_size: Size2) -> Self {
         Self {

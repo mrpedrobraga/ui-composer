@@ -1832,6 +1832,7 @@ dependencies = [
 name = "lullaby-ui"
 version = "0.1.0"
 dependencies = [
+ "pin-project",
  "ui-composer-basic-ui",
  "ui-composer-core",
  "ui-composer-input",
@@ -3616,6 +3617,7 @@ name = "ui-composer-basic-ui"
 version = "0.1.0"
 dependencies = [
  "image",
+ "pin-project",
  "ui-composer-core",
  "ui-composer-input",
  "ui-composer-math",

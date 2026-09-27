@@ -139,9 +139,9 @@ impl Bubble<Event, bool> for Graphic {
 }
 
 impl Blueprint<TerminalEnvironment> for Graphic {
-    type Element = Self;
+    type Output = Self;
 
-    fn make(self, _: &TerminalBlueprintResources) -> Self::Element {
+    fn make(self, _: &TerminalBlueprintResources) -> Self::Output {
         self
     }
 }
@@ -151,6 +151,12 @@ impl Element<TerminalEnvironment> for Graphic {
 
     fn effect(&self) -> Self::Effect {
         RenderQuad(self.rect, self.color)
+    }
+
+    type Blueprint = Self;
+
+    fn update(&mut self, blueprint: Self, _: &TerminalBlueprintResources) {
+        *self = blueprint
     }
 }
 
@@ -164,9 +170,9 @@ impl ui_composer_state::effect::animation::Lerp for Graphic {
 }
 
 impl Blueprint<WinitEnvironment> for Graphic {
-    type Element = Self;
+    type Output = Self;
 
-    fn make(self, _: &WinitBlueprintResources<'_>) -> Self::Element {
+    fn make(self, _: &WinitBlueprintResources<'_>) -> Self::Output {
         self
     }
 }
@@ -176,5 +182,11 @@ impl Element<WinitEnvironment> for Graphic {
 
     fn effect(&self) -> Self::Effect {
         RenderQuad(self.rect, self.color)
+    }
+
+    type Blueprint = Self;
+
+    fn update(&mut self, blueprint: Self, _: &WinitBlueprintResources) {
+        *self = blueprint;
     }
 }

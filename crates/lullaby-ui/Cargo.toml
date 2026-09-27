@@ -18,3 +18,4 @@ ui-composer-state = { path = "../state" }
 # Gate these behind feature flags.
 ui-composer-platform-tui = { path = "../platform-tui" }
 ui-composer-platform-winit = { path = "../platform-winit" }
+pin-project = "1.1.13"

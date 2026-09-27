@@ -6,7 +6,7 @@ use crate::{
 pub mod reactive;
 
 #[pin_project::pin_project]
-pub struct Resizable<B, F>
+pub struct Canvas<B, F>
 where
     B: Blueprint,
     F: FnMut(ParentHints) -> B,
@@ -29,7 +29,7 @@ pub struct TextResources {
     content: String,
 }
 
-impl<B, F> Resizable<B, F>
+impl<B, F> Canvas<B, F>
 where
     B: Blueprint,
     F: FnMut(ParentHints) -> B,
@@ -42,14 +42,14 @@ where
     }
 }
 
-impl<B, F> Ui for Resizable<B, F>
+impl<B, F> Ui for Canvas<B, F>
 where
     B: Blueprint,
     F: FnMut(ParentHints) -> B,
 {
     type Blueprint = B;
 
-    fn plan(&mut self, parent_hints: ParentHints, resources: &InitializationResources) {
+    fn place(&mut self, parent_hints: ParentHints, resources: &InitializationResources) {
         let new_blueprint = (self.maker)(parent_hints);
         if let Some(elements) = &mut self.elements {
             elements.update(new_blueprint, resources);

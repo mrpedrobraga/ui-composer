@@ -4,22 +4,22 @@ use crate::Tui;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use futures_signals::signal::Mutable;
-use futures_signals::signal::{Signal, SignalExt};
 use pin_project::pin_project;
 use ui_composer_canvas::{Canvas, PixelCanvas, TextModePixel};
 use ui_composer_core::app::composition::algebra::Bubble;
-use ui_composer_core::app::composition::effects::signal::{IntoBlueprint, React};
 use ui_composer_core::app::composition::elements::{Blueprint, Element};
 use ui_composer_core::app::composition::layout::hints::ParentHints;
+use ui_composer_core::app::composition::layout::Ui;
 use ui_composer_core::app::composition::visit::DriveThru;
 use ui_composer_input::event::{CursorEvent, Event};
 use ui_composer_math::flow::{CartesianFlow, CurrentFlow};
-use ui_composer_math::prelude::{Point2, Rect, Size2};
+use ui_composer_math::glamour::Rect;
+use ui_composer_math::prelude::{Point2, Size2};
 use ui_composer_state::Slot;
 
-pub struct TerminalBlueprint<UiBlueprint> {
+pub struct TerminalBlueprint<U> {
     pub(crate) state: TerminalState,
-    pub(crate) ui: UiBlueprint,
+    pub(crate) ui: U,
 }
 
 pub struct TerminalState {
@@ -28,31 +28,25 @@ pub struct TerminalState {
     pub render_target: PixelCanvas<TextModePixel>,
 }
 
-impl<UiBlueprint> Blueprint<TerminalEnvironment> for TerminalBlueprint<UiBlueprint>
-where
-    UiBlueprint: Blueprint<TerminalEnvironment> + Send,
-{
-    type Element = TerminalElement<UiBlueprint::Element>;
+impl<U: Ui<TerminalEnvironment>> Blueprint<TerminalEnvironment> for TerminalBlueprint<U> {
+    type Output = TerminalElement<U>;
 
-    fn make(self, env: &TerminalBlueprintResources) -> Self::Element {
+    fn make(self, _: &TerminalBlueprintResources) -> Self::Output {
         TerminalElement {
             state: self.state,
-            ui: self.ui.make(env),
+            ui: self.ui,
         }
     }
 }
 
 #[pin_project(project = TerminalElementProj)]
-pub struct TerminalElement<UiElement> {
+pub struct TerminalElement<U> {
     pub state: TerminalState,
     #[pin]
-    pub ui: UiElement,
+    pub ui: U,
 }
 
-impl<UiElement> Bubble<Event, bool> for TerminalElement<UiElement>
-where
-    UiElement: Bubble<Event, bool>,
-{
+impl<Ui> Bubble<Event, bool> for TerminalElement<Ui> {
     async fn bubble(&mut self, cx: &mut Event) -> bool {
         if let Event::Resized(new_size) = cx {
             self.state.render_target.resize(new_size.as_());
@@ -75,28 +69,40 @@ where
             self.state.mouse_position.put(None);
         }
 
-        self.ui.bubble(cx).await
+        // TODO: Bubble the event down the UI!
+        //self.ui.bubble(cx).await
+        false
     }
 }
 
-impl<UiElement> Element<TerminalEnvironment> for TerminalElement<UiElement>
+impl<U> Element<TerminalEnvironment> for TerminalElement<U>
 where
-    UiElement: Element<TerminalEnvironment>,
+    U: Ui<TerminalEnvironment>,
 {
     type Effect = ();
+    type Blueprint = TerminalBlueprint<U>;
 
-    fn effect(&self) -> Self::Effect {
-        todo!()
-    }
+    fn effect(&self) -> Self::Effect {}
 
-    fn poll(
+    fn poll_change(
         self: Pin<&mut Self>,
         cx: &mut Context,
         env: &TerminalBlueprintResources,
     ) -> Poll<Option<()>> {
         let TerminalElementProj { state, mut ui } = self.project();
 
-        let inner = ui.as_mut().poll(cx, env);
+        /* TODO: Get these from somewhere... */
+        let parent_hints = ParentHints {
+            rect: Rect::new(Point2::ZERO, state.size.get()),
+            current_flow: CurrentFlow {
+                current_flow_direction: CartesianFlow::LeftToRight,
+                current_cross_flow_direction: CartesianFlow::TopToBottom,
+                current_writing_flow_direction: CartesianFlow::LeftToRight,
+                current_writing_cross_flow_direction: CartesianFlow::TopToBottom,
+            },
+        };
+
+        let inner = ui.as_mut().poll_change(cx, env, parent_hints);
 
         match inner {
             Poll::Pending => Poll::Pending,
@@ -128,6 +134,10 @@ where
             }
         }
     }
+
+    fn update(&mut self, _: TerminalBlueprint<U>, _: &TerminalBlueprintResources) {
+        unimplemented!()
+    }
 }
 
 pub struct TerminalEffectVisitor<'fx> {
@@ -135,11 +145,9 @@ pub struct TerminalEffectVisitor<'fx> {
 }
 
 #[allow(non_snake_case)]
-pub fn Terminal<UiBlueprint>(
-    mut ui: UiBlueprint,
-) -> TerminalBlueprint<React<impl Signal<Item = UiBlueprint::Blueprint>, TerminalEnvironment>>
+pub fn Terminal<U>(ui: U) -> TerminalBlueprint<U>
 where
-    UiBlueprint: Tui,
+    U: Tui,
 {
     let size = crossterm::terminal::size()
         .map(|(x, y)| Size2::<u16>::new(x, y))
@@ -152,34 +160,6 @@ where
         mouse_position: Mutable::new(None),
         render_target,
     };
-
-    let ui = state
-        .size
-        .signal()
-        .map(move |terminal_size| {
-            let parent_hints = ParentHints {
-                rect: Rect::new(Point2::ZERO, terminal_size),
-                // TODO: Turn these into signals, maybe?
-                current_flow: CurrentFlow {
-                    current_flow_direction: CartesianFlow::LeftToRight,
-                    current_cross_flow_direction: CartesianFlow::TopToBottom,
-                    current_writing_flow_direction: CartesianFlow::LeftToRight,
-                    current_writing_cross_flow_direction: CartesianFlow::TopToBottom,
-                },
-            };
-            // TODO: Listen to and respect the child hints.
-            #[allow(unused)]
-            let child_hints = ui.prepare(parent_hints);
-            let clamped_rect = Rect::new(
-                Point2::ZERO,
-                parent_hints.rect.size.max(child_hints.minimum_size),
-            );
-            ui.place(ParentHints {
-                rect: clamped_rect,
-                ..parent_hints
-            })
-        })
-        .into_blueprint();
 
     TerminalBlueprint { ui, state }
 }

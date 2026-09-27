@@ -1,177 +1,115 @@
-//! # Effects/Future
-//!
-//! A `Future<Output = T>` is "a `T` that will appear later."
-//! In classic functorial fashion, if `T` is an UI element with an effect,
-//! `Future<Output = T>` is _also_ an element.
-//!
-//! [`ReactOnce`] wraps the future so it can hold onto the `T` it resolves to.
+use std::{
+    marker::PhantomData,
+    task::{Context, Poll},
+};
 
-use super::super::elements::{Blueprint, Element};
-use crate::app::composition::algebra::Bubble;
-use crate::app::composition::elements::Environment;
-use futures_signals::signal::Mutable;
-use pin_project::pin_project;
-use std::fmt::Debug;
-use std::future::Future;
-use std::pin::Pin;
-use std::task::{Context, Poll};
-use ui_composer_input::event::Event;
+use crate::app::composition::{
+    elements::{Blueprint, Element, Environment},
+    layout::{
+        hints::{ChildHints, ParentHints},
+        Ui,
+    },
+};
 
-/// Wraps a future, holding onto the elements it produces.
-///
-/// Notably implements `Blueprint` and `Element.`
-#[pin_project]
-#[must_use = "ReactOnce does nothing unless polled"]
-pub struct ReactOnce<Fut, Env>
+#[pin_project::pin_project]
+pub struct Await<Env, U, Fut, Map>
 where
-    Fut: Future,
-    Fut::Output: Blueprint<Env>,
     Env: Environment,
+    U: Ui<Env>,
+    Fut: Future,
+    Map: FnOnce(Fut::Output) -> U,
 {
     #[pin]
     future: Fut,
-    element: Mutable<Option<<Fut::Output as Blueprint<Env>>::Element>>,
+    #[pin]
+    ui: Option<U>,
+    map: Option<Map>,
+    _marker: PhantomData<Env>,
 }
 
-impl<Fut, Env> Clone for ReactOnce<Fut, Env>
+impl<Env, U, Fut, Map> Await<Env, U, Fut, Map>
 where
-    Fut: Future + Clone,
-    Fut::Output: Blueprint<Env>,
-    <Fut::Output as Blueprint<Env>>::Element: Clone + Debug,
     Env: Environment,
-{
-    fn clone(&self) -> Self {
-        Self {
-            future: self.future.clone(),
-            element: self.element.clone(),
-        }
-    }
-}
-
-impl<Fut, Env> std::fmt::Debug for ReactOnce<Fut, Env>
-where
-    Fut: Future + Clone,
-    Fut::Output: Blueprint<Env>,
-    <Fut::Output as Blueprint<Env>>::Element: Clone + Debug,
-    Env: Environment,
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ReactOnce")
-            .field("element", &self.element)
-            .finish()
-    }
-}
-
-impl<Fut, Env: Environment> Blueprint<Env> for ReactOnce<Fut, Env>
-where
-    Fut: Future<Output: Blueprint<Env>>,
-    <<<Fut as futures::Future>::Output as Blueprint<Env>>::Element as Element<Env>>::Effect:
-        std::clone::Clone,
-{
-    type Element = Self;
-
-    fn make(self, _: &Env::BlueprintResources<'_>) -> Self::Element {
-        self
-    }
-}
-
-impl<Fut, Env: Environment> Bubble<Event, bool> for ReactOnce<Fut, Env>
-where
-    Fut: Future<Output: Blueprint<Env>>,
-{
-    async fn bubble(&mut self, cx: &mut Event) -> bool {
-        let mut guard = self.element.lock_mut();
-        if let Some(e) = &mut *guard {
-            e.bubble(cx).await
-        } else {
-            false
-        }
-    }
-}
-
-impl<Fut, Env: Environment> Element<Env> for ReactOnce<Fut, Env>
-where
-    Fut: Future<Output: Blueprint<Env>>,
-    <<<Fut as Future>::Output as Blueprint<Env>>::Element as Element<Env>>::Effect: Clone,
-{
-    type Effect =
-        Option<<<<Fut as Future>::Output as Blueprint<Env>>::Element as Element<Env>>::Effect>;
-
-    fn effect(&self) -> Self::Effect {
-        let guard = self.element.lock_ref();
-        guard.as_ref().map(|e| e.effect().clone())
-    }
-
-    fn poll(
-        self: Pin<&mut Self>,
-        cx: &mut Context,
-        env: &Env::BlueprintResources<'_>,
-    ) -> Poll<Option<()>> {
-        let this = self.project();
-
-        if let Some(element) = this.element.lock_mut().as_mut() {
-            // SAFETY: we can pin element here because `self` is pinned.
-            let poll = unsafe { Pin::new_unchecked(element) }.poll(cx, env);
-            return poll;
-        }
-
-        // *this.element = None;
-
-        // SAFETY: Because the future is pinned in this struct, its captures are stable.
-        match this.future.poll(cx) {
-            Poll::Ready(blueprint) => {
-                let mut element = blueprint.make(env);
-
-                // Wake up the element.
-                let _ = unsafe { Pin::new_unchecked(&mut element) }.poll(cx, env);
-                println!("Putting element inside.");
-                this.element.set(Some(element));
-
-                Poll::Ready(Some(()))
-            }
-            Poll::Pending => Poll::Pending,
-        }
-    }
-}
-
-/// Handy trait for transforming a Future into a `Blueprint` for an environment.
-///
-/// ```no_run
-/// let my_future = async { Text("Hello, World!") };
-///
-/// // Currently, you can't do this, because `Blueprint` isn't implemented for `Future`.
-/// let bp: Blueprint<Env> = my_future;
-/// // Do this instead:
-/// let bp: Blueprint<Env> = my_future.into_blueprint();
-/// ```
-///
-/// We can't implement `Blueprint` for all futures without problems,
-/// so we need to a type this crate owns.
-///
-/// The automatic implementation that produces a [`ReactOnce`] without a held item.
-///
-/// This will no longer be a kink when `min_specialization` gets stabilized.
-/// When it does, you'll be able to directly use a future directly wherever a `Blueprint` is required.
-pub trait IntoBlueprint<Env: Environment> {
-    type Output: Blueprint<Env>;
-
-    fn into_blueprint(self) -> Self::Output;
-}
-
-impl<Fut, Env> IntoBlueprint<Env> for Fut
-where
+    U: Ui<Env>,
     Fut: Future,
-    Env: Environment,
-    <Fut as futures::Future>::Output: Blueprint<Env>,
-    <<<Fut as futures::Future>::Output as Blueprint<Env>>::Element as Element<Env>>::Effect:
-        std::clone::Clone,
+    Map: FnOnce(Fut::Output) -> U,
 {
-    type Output = ReactOnce<Fut, Env>;
-
-    fn into_blueprint(self) -> Self::Output {
-        ReactOnce {
-            future: self,
-            element: Mutable::new(None),
+    pub fn new(future: Fut, map: Map) -> Self {
+        Self {
+            future,
+            ui: None,
+            map: Some(map),
+            _marker: PhantomData,
         }
+    }
+}
+
+impl<Env, U, Fut, Map> Ui<Env> for Await<Env, U, Fut, Map>
+where
+    Env: Environment + Send,
+    U: Ui<Env>,
+    Fut: Future + Send,
+    Map: FnOnce(Fut::Output) -> U + Send,
+{
+    type Blueprint = Option<U::Blueprint>;
+
+    fn prepare(&mut self, _: ParentHints) -> ChildHints {
+        /* TODO: Not sure what to do here? */
+        ChildHints::default()
+    }
+
+    fn place(&mut self, parent_hints: ParentHints, resources: &Env::BlueprintResources<'_>) {
+        if let Some(inner) = &mut self.ui {
+            inner.place(parent_hints, resources);
+        }
+    }
+
+    fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect {
+        self.ui.as_ref().map(|inner| inner.effect())
+    }
+
+    fn poll_change(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut Context,
+        resources: &Env::BlueprintResources<'_>,
+        parent_hints: ParentHints,
+    ) -> Poll<Option<()>> {
+        let mut this = self.project();
+
+        /* The future has not yet yielded! */
+        // To satisfy FnOnce, we `take` the map here.
+        if let Some(map) = this.map.take() {
+            let fut_poll = this.future.poll(cx);
+
+            match fut_poll {
+                Poll::Ready(value) => {
+                    let mut new_ui = map(value);
+                    new_ui.place(parent_hints, resources);
+                    this.ui.set(Some(new_ui));
+                    // Safe to unwrap because we just set it, duh.
+                    return this
+                        .ui
+                        .as_pin_mut()
+                        .unwrap()
+                        .poll_change(cx, resources, parent_hints);
+                }
+                Poll::Pending => {
+                    // Put the mapper back because it wasn't used hehe
+                    *this.map = Some(map);
+                }
+            }
+        }
+        /* The future has yielded! */
+        else {
+            if let Some(element) = this.ui.as_pin_mut() {
+                let inner_poll = element.poll_change(cx, resources, parent_hints);
+
+                return inner_poll;
+            } else {
+                return Poll::Ready(None);
+            }
+        }
+
+        Poll::Pending
     }
 }

@@ -1,31 +1,43 @@
-use ui_composer_core::app::composition::layout::{
-    LayoutItem,
-    hints::{ChildHints, ParentHints},
+use std::marker::PhantomData;
+
+use ui_composer_core::app::composition::{
+    elements::{Blueprint, Element, Environment},
+    layout::{
+        hints::{ChildHints, ParentHints},
+        Ui,
+    },
 };
 use ui_composer_math::prelude::Rect;
 
 /// A container that, as it is reshaped, keeps its item at its natural size and centered in the available space.
-pub fn center<A>(item: A) -> CenterContainer<A>
+pub fn center<Env, A>(item: A) -> CenterContainer<Env, A>
 where
-    A: LayoutItem,
+    A: Ui<Env>,
+    Env: Environment,
 {
     CenterContainer {
         item,
+        _marker: PhantomData,
         _item_hints_cache: ChildHints::default(),
     }
 }
 
-pub struct CenterContainer<A>
+#[pin_project::pin_project]
+pub struct CenterContainer<Env, A>
 where
-    A: LayoutItem,
+    A: Ui<Env>,
+    Env: Environment,
 {
+    #[pin]
     item: A,
+    _marker: PhantomData<Env>,
     _item_hints_cache: ChildHints,
 }
 
-impl<A> LayoutItem for CenterContainer<A>
+impl<Env, A> Ui<Env> for CenterContainer<Env, A>
 where
-    A: LayoutItem,
+    A: Ui<Env>,
+    Env: Environment,
 {
     type Blueprint = A::Blueprint;
 
@@ -35,11 +47,10 @@ where
         hints
     }
 
-    fn place(&mut self, parent_hints: ParentHints) -> Self::Blueprint {
+    fn place(&mut self, parent_hints: ParentHints, resources: &Env::BlueprintResources<'_>) {
         let my_rect = parent_hints.rect;
         let item_size = self._item_hints_cache.minimum_size;
-        let item_position =
-            my_rect.origin + (my_rect.size - item_size).to_vector() / 2.0;
+        let item_position = my_rect.origin + (my_rect.size - item_size).to_vector() / 2.0;
 
         let item_rect = Rect::new(item_position, item_size);
 
@@ -48,6 +59,20 @@ where
             ..parent_hints
         };
 
-        self.item.place(inner_hints)
+        self.item.place(inner_hints, resources);
+    }
+
+    fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect {
+        self.item.effect()
+    }
+
+    fn poll_change(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context,
+        resources: &<Env as Environment>::BlueprintResources<'_>,
+        parent_hints: ParentHints,
+    ) -> std::task::Poll<Option<()>> {
+        let this = self.project();
+        this.item.poll_change(cx, resources, parent_hints)
     }
 }

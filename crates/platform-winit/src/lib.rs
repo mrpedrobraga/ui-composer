@@ -20,8 +20,8 @@ pub use winit;
 pub trait WinitUi: CompatibleWith<WinitEnvironment> {}
 impl<T> WinitUi for T where T: CompatibleWith<WinitEnvironment> {}
 
-pub trait WinitBlueprint: Blueprint<WinitEnvironment, Element: Send> + Send {}
-impl<T> WinitBlueprint for T where T: Blueprint<WinitEnvironment, Element: Send> + Send {}
+pub trait WinitBlueprint: Blueprint<WinitEnvironment, Output: Send> + Send {}
+impl<T> WinitBlueprint for T where T: Blueprint<WinitEnvironment, Output: Send> + Send {}
 
 #[doc(hidden)]
 pub mod prelude {

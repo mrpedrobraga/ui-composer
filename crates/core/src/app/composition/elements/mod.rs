@@ -22,25 +22,32 @@ pub trait Blueprint<Env>
 where
     Env: Environment,
 {
-    type Element: Element<Env>;
-    fn make(self, env: &Env::BlueprintResources<'_>) -> Self::Element;
+    type Output: Element<Env, Blueprint = Self>;
+
+    fn make(self, env: &Env::BlueprintResources<'_>) -> Self::Output;
 }
 
-pub trait Element<Env: Environment>: Bubble<Event, bool> {
+pub trait Element<Env>: Bubble<Event, bool>
+where
+    Env: Environment,
+{
     type Effect: for<'fx> DriveThru<Env::EffectVisitor<'fx>> + std::fmt::Debug;
+    type Blueprint: Blueprint<Env, Output = Self>;
+
+    fn update(&mut self, blueprint: Self::Blueprint, resources: &Env::BlueprintResources<'_>);
 
     fn effect(&self) -> Self::Effect;
 
-    fn poll(
+    fn poll_change(
         self: Pin<&mut Self>,
         #[expect(unused)] cx: &mut Context,
-        #[expect(unused)] env: &Env::BlueprintResources<'_>,
+        #[expect(unused)] resources: &Env::BlueprintResources<'_>,
     ) -> Poll<Option<()>> {
         Poll::Ready(None)
     }
 }
 
-pub trait Environment {
+pub trait Environment: Send {
     type BlueprintResources<'make>;
     type EffectVisitor<'fx>;
 }

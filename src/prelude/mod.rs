@@ -48,7 +48,7 @@ use ui_composer_platform_winit::window::WindowBlueprint;
 
 impl UIComposer {
     pub fn run_tui(
-        app_blueprint: impl Blueprint<TerminalEnvironment, Element: Send + 'static> + Send,
+        app_blueprint: impl Blueprint<TerminalEnvironment, Output: Send + 'static> + Send,
     ) {
         UIComposer::run_custom::<TUIRunner<_>>(app_blueprint);
     }

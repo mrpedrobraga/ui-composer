@@ -1,34 +1,52 @@
-use core::iter::{Chain, Once, once};
-use ui_composer_core::app::composition::layout::{
-    LayoutItem,
-    hints::{ChildHints, ParentHints},
+use core::iter::{once, Chain, Once};
+use std::{marker::PhantomData, pin::Pin};
+use ui_composer_core::app::composition::{
+    algebra::Semigroup,
+    elements::{Blueprint, Element, Environment},
+    layout::{
+        hints::{ChildHints, ParentHints},
+        Ui,
+    },
 };
 use ui_composer_math::{
     flow::{
-        CartesianFlow, CoordinateSystem as _, Flow, WritingFlow,
-        arrangers::arrange_stretchy_rects_with_minimum_sizes_dirty_alloc,
+        arrangers::arrange_stretchy_rects_with_minimum_sizes_dirty_alloc, CartesianFlow,
+        CoordinateSystem as _, Flow, WritingFlow,
     },
     prelude::{Rect, Size2, Vector2},
 };
 
 #[allow(non_snake_case)]
 #[inline(always)]
-pub fn flex<TItems>(items: TItems) -> FlexContainer<TItems>
+pub fn flex<Env, Items>(items: Items) -> FlexContainer<Env, Items>
 where
-    TItems: FlexItemList,
+    Items: FlexItemList<Env>,
+    Env: Environment,
 {
     FlexContainer {
         items,
         flow_direction: Flow::Writing(WritingFlow::WritingAxisForward),
+        __marker: PhantomData,
     }
 }
 
-pub struct FlexContainer<TItems: FlexItemList> {
-    items: TItems,
+#[pin_project::pin_project]
+pub struct FlexContainer<Env, Items>
+where
+    Items: FlexItemList<Env>,
+    Env: Environment,
+{
+    #[pin]
+    items: Items,
     flow_direction: Flow,
+    __marker: PhantomData<Env>,
 }
 
-impl<TItems: FlexItemList> FlexContainer<TItems> {
+impl<Env, Items> FlexContainer<Env, Items>
+where
+    Items: FlexItemList<Env>,
+    Env: Environment,
+{
     #[inline(always)]
     pub fn with_flow(self, flow_direction: Flow) -> Self {
         Self {
@@ -46,15 +64,15 @@ impl<TItems: FlexItemList> FlexContainer<TItems> {
     }
 }
 
-impl<ItemList> LayoutItem for FlexContainer<ItemList>
+impl<Env, Items> Ui<Env> for FlexContainer<Env, Items>
 where
-    ItemList: FlexItemList + Send,
+    Items: FlexItemList<Env> + Send,
+    Env: Environment,
 {
-    type Blueprint = ItemList::Content;
+    type Blueprint = Items::Blueprint;
 
     fn prepare(&mut self, parent_hints: ParentHints) -> ChildHints {
-        let flow_direction =
-            self.flow_direction.as_cartesian(&parent_hints.current_flow);
+        let flow_direction = self.flow_direction.as_cartesian(&parent_hints.current_flow);
 
         let mock_size = if flow_direction.is_horizontal() {
             Size2::new(0.0, parent_hints.rect.size.height)
@@ -66,7 +84,7 @@ where
             rect: Rect::new(parent_hints.rect.origin, mock_size),
             ..parent_hints
         };
-        let base_hints_iter = std::iter::repeat_n(base_hints, ItemList::SIZE);
+        let base_hints_iter = std::iter::repeat_n(base_hints, Items::SIZE);
         let _ = self.items.prepare(base_hints_iter).count();
 
         let minima = self.items.minima(flow_direction).collect::<Vec<_>>();
@@ -77,19 +95,15 @@ where
         } else {
             parent_hints.rect.size.height
         };
-        let main_axis_sizes =
-            arrange_stretchy_rects_with_minimum_sizes_dirty_alloc(
-                parent_size,
-                weights.as_slice(),
-                minima.as_slice(),
-                0.01,
-            );
-
-        let allocated_hints_iter = allocate_rects(
-            parent_hints,
-            flow_direction,
-            main_axis_sizes.into_iter(),
+        let main_axis_sizes = arrange_stretchy_rects_with_minimum_sizes_dirty_alloc(
+            parent_size,
+            weights.as_slice(),
+            minima.as_slice(),
+            0.01,
         );
+
+        let allocated_hints_iter =
+            allocate_rects(parent_hints, flow_direction, main_axis_sizes.into_iter());
 
         let mut combined_minimum_sizes: Size2 = Size2::ZERO;
 
@@ -110,9 +124,8 @@ where
         }
     }
 
-    fn place(&mut self, parent_hints: ParentHints) -> Self::Blueprint {
-        let flow_direction =
-            self.flow_direction.as_cartesian(&parent_hints.current_flow);
+    fn place(&mut self, parent_hints: ParentHints, resources: &Env::BlueprintResources<'_>) {
+        let flow_direction = self.flow_direction.as_cartesian(&parent_hints.current_flow);
         let minima = self.items.minima(flow_direction).collect::<Vec<_>>();
         let weights = self.items.weights().collect::<Vec<_>>();
 
@@ -122,21 +135,31 @@ where
             TopToBottom | BottomToTop => parent_hints.rect.size.height,
         };
 
-        let main_axis_sizes =
-            arrange_stretchy_rects_with_minimum_sizes_dirty_alloc(
-                parent_size,
-                weights.as_slice(),
-                minima.as_slice(),
-                0.01,
-            );
-
-        let parent_hints_iter = allocate_rects(
-            parent_hints,
-            flow_direction,
-            main_axis_sizes.into_iter(),
+        let main_axis_sizes = arrange_stretchy_rects_with_minimum_sizes_dirty_alloc(
+            parent_size,
+            weights.as_slice(),
+            minima.as_slice(),
+            0.01,
         );
 
-        self.items.place(parent_hints_iter)
+        let parent_hints_iter =
+            allocate_rects(parent_hints, flow_direction, main_axis_sizes.into_iter());
+
+        self.items.place(parent_hints_iter, resources);
+    }
+
+    fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect {
+        self.items.effect()
+    }
+
+    fn poll_change(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context,
+        resources: &<Env as Environment>::BlueprintResources<'_>,
+        parent_hints: ParentHints,
+    ) -> std::task::Poll<Option<()>> {
+        let this = self.project();
+        this.items.poll_change(cx, resources, parent_hints)
     }
 }
 
@@ -158,25 +181,17 @@ where
                         .rect
                         .origin
                         .translate(Vector2::new(*offset_from_start, 0.0)),
-                    Size2::new(
-                        current_element_size,
-                        container.rect.size.height,
-                    ),
+                    Size2::new(current_element_size, container.rect.size.height),
                 ),
                 ..container
             },
             RightToLeft => ParentHints {
                 rect: Rect::new(
                     container.rect.origin.translate(Vector2::new(
-                        container.rect.size.width
-                            - *offset_from_start
-                            - current_element_size,
+                        container.rect.size.width - *offset_from_start - current_element_size,
                         0.0,
                     )),
-                    Size2::new(
-                        current_element_size,
-                        container.rect.size.height,
-                    ),
+                    Size2::new(current_element_size, container.rect.size.height),
                 ),
                 ..container
             },
@@ -194,9 +209,7 @@ where
                 rect: Rect::new(
                     container.rect.origin.translate(Vector2::new(
                         0.0,
-                        container.rect.size.height
-                            - *offset_from_start
-                            - current_element_size,
+                        container.rect.size.height - *offset_from_start - current_element_size,
                     )),
                     Size2::new(container.rect.size.width, current_element_size),
                 ),
@@ -210,7 +223,9 @@ where
     })
 }
 
+#[pin_project::pin_project]
 pub struct FlexItem<T> {
+    #[pin]
     item: T,
     grow: f32,
     _hints_cache: ChildHints,
@@ -230,16 +245,16 @@ impl<T> FlexItem<T> {
     }
 }
 
-pub trait FlexItemList {
+pub trait FlexItemList<Env>
+where
+    Env: Environment,
+{
     type Content;
     type Weights: Iterator<Item = f32>;
     type Minima: Iterator<Item = f32>;
     const SIZE: usize;
 
-    fn prepare<I>(
-        &mut self,
-        expected_parent_hints: I,
-    ) -> impl Iterator<Item = ChildHints>
+    fn prepare<I>(&mut self, expected_parent_hints: I) -> impl Iterator<Item = ChildHints>
     where
         I: Iterator<Item = ParentHints>;
 
@@ -247,24 +262,33 @@ pub trait FlexItemList {
 
     fn minima(&self, flow_direction: CartesianFlow) -> Self::Minima;
 
-    fn place<I>(&mut self, parent_hints: I) -> Self::Content
+    fn place<I>(&mut self, parent_hints: I, resources: &Env::BlueprintResources<'_>)
     where
         I: Iterator<Item = ParentHints>;
+
+    type Blueprint: Blueprint<Env>;
+
+    fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect;
+
+    fn poll_change(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context,
+        resources: &Env::BlueprintResources<'_>,
+        parent_hints: ParentHints,
+    ) -> std::task::Poll<Option<()>>;
 }
 
-impl<A> FlexItemList for FlexItem<A>
+impl<Env, A> FlexItemList<Env> for FlexItem<A>
 where
-    A: LayoutItem,
+    A: Ui<Env>,
+    Env: Environment,
 {
     type Content = A::Blueprint;
     type Weights = Once<f32>;
     type Minima = Once<f32>;
     const SIZE: usize = 1;
 
-    fn prepare<I>(
-        &mut self,
-        mut parent_hints: I,
-    ) -> impl Iterator<Item = ChildHints>
+    fn prepare<I>(&mut self, mut parent_hints: I) -> impl Iterator<Item = ChildHints>
     where
         I: Iterator<Item = ParentHints>,
     {
@@ -284,38 +308,50 @@ where
     fn minima(&self, flow_direction: CartesianFlow) -> Once<f32> {
         use CartesianFlow::*;
         match flow_direction {
-            LeftToRight | RightToLeft => {
-                once(self._hints_cache.minimum_size.width)
-            }
-            TopToBottom | BottomToTop => {
-                once(self._hints_cache.minimum_size.height)
-            }
+            LeftToRight | RightToLeft => once(self._hints_cache.minimum_size.width),
+            TopToBottom | BottomToTop => once(self._hints_cache.minimum_size.height),
         }
     }
 
-    fn place<I>(&mut self, mut hx: I) -> Self::Content
+    fn place<I>(&mut self, mut hx: I, resources: &Env::BlueprintResources<'_>)
     where
         I: Iterator<Item = ParentHints>,
     {
-        self.item
-            .place(hx.next().expect("Iterator underflow in FlexItem::place"))
+        self.item.place(
+            hx.next().expect("Iterator underflow in FlexItem::place"),
+            resources,
+        );
+    }
+
+    type Blueprint = A::Blueprint;
+
+    fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect {
+        self.item.effect()
+    }
+
+    fn poll_change(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context,
+        resources: &<Env as Environment>::BlueprintResources<'_>,
+        parent_hints: ParentHints,
+    ) -> std::task::Poll<Option<()>> {
+        let this = self.project();
+        this.item.poll_change(cx, resources, parent_hints)
     }
 }
 
-impl<A, B> FlexItemList for (A, B)
+impl<Env, A, B> FlexItemList<Env> for (A, B)
 where
-    A: FlexItemList,
-    B: FlexItemList,
+    A: FlexItemList<Env>,
+    B: FlexItemList<Env>,
+    Env: Environment,
 {
     type Content = (A::Content, B::Content);
     type Weights = Chain<A::Weights, B::Weights>;
     type Minima = Chain<A::Minima, B::Minima>;
     const SIZE: usize = A::SIZE + B::SIZE;
 
-    fn prepare<I>(
-        &mut self,
-        mut parent_hints: I,
-    ) -> impl Iterator<Item = ChildHints>
+    fn prepare<I>(&mut self, mut parent_hints: I) -> impl Iterator<Item = ChildHints>
     where
         I: Iterator<Item = ParentHints>,
     {
@@ -335,12 +371,41 @@ where
             .chain(self.1.minima(flow_direction))
     }
 
-    fn place<I>(&mut self, mut parent_hints: I) -> Self::Content
+    fn place<I>(&mut self, mut parent_hints: I, resources: &Env::BlueprintResources<'_>)
     where
         I: Iterator<Item = ParentHints>,
     {
-        let a = self.0.place(&mut parent_hints);
-        let b = self.1.place(parent_hints);
-        (a, b)
+        // TODO: Split the `resources`?
+
+        self.0.place(&mut parent_hints, resources);
+        self.1.place(parent_hints, resources);
+    }
+
+    type Blueprint = (A::Blueprint, B::Blueprint);
+
+    fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect {
+        (self.0.effect(), self.1.effect())
+    }
+
+    fn poll_change(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context,
+        resources: &<Env as Environment>::BlueprintResources<'_>,
+        parent_hints: ParentHints,
+    ) -> std::task::Poll<Option<()>> {
+        let (pinned_a, pinned_b) = {
+            let mut_ref = unsafe { self.get_unchecked_mut() };
+            let (a, b) = mut_ref;
+
+            let a = unsafe { Pin::new_unchecked(a) };
+            let b = unsafe { Pin::new_unchecked(b) };
+
+            (a, b)
+        };
+
+        let poll_a = pinned_a.poll_change(cx, resources, parent_hints);
+        let poll_b = pinned_b.poll_change(cx, resources, parent_hints);
+
+        Semigroup::combine(poll_a, poll_b)
     }
 }

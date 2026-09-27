@@ -1,13 +1,15 @@
-use {lullaby_ui::prelude::{*, image::GenericImageView}, ui_composer::prelude::*};
+use {
+    lullaby_ui::prelude::{image::GenericImageView, *},
+    ui_composer::prelude::*,
+};
 
 fn main() {
     UIComposer::run_tui(Terminal(app()));
 }
 
-fn app() -> impl Ui {
-    let im = std::sync::Arc::new(
-        image::open("./examples/images/assets/castle_sprite.png").unwrap(),
-    );
+fn app() -> impl lullaby_ui::prelude::Ui {
+    let im =
+        std::sync::Arc::new(image::open("./examples/images/assets/castle_sprite.png").unwrap());
     let (w, h) = im.dimensions();
     let size = Size2::new(w as f32, h as f32 / 2.0) / 60.0f32;
 

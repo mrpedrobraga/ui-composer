@@ -86,9 +86,9 @@ impl Bubble<Event, bool> for Text {
 }
 
 impl Blueprint<TerminalEnvironment> for Text {
-    type Element = Self;
+    type Output = Self;
 
-    fn make(self, _: &TerminalBlueprintResources) -> Self::Element {
+    fn make(self, _: &TerminalBlueprintResources) -> Self::Output {
         self
     }
 }
@@ -98,5 +98,11 @@ impl Element<TerminalEnvironment> for Text {
 
     fn effect(&self) -> Self::Effect {
         RenderText(self.rect, self.text.clone(), self.color)
+    }
+
+    type Blueprint = Self;
+
+    fn update(&mut self, blueprint: Self, _: &TerminalBlueprintResources) {
+        *self = blueprint
     }
 }

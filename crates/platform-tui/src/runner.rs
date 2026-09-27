@@ -47,7 +47,7 @@ where
 impl<AppBlueprint> Runner for TUIRunner<AppBlueprint>
 where
     AppBlueprint: Send + Blueprint<TerminalEnvironment>,
-    AppBlueprint::Element: Send + 'static,
+    AppBlueprint::Output: Send + 'static,
 {
     type AppBlueprint = AppBlueprint;
 

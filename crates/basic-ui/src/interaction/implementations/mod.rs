@@ -6,9 +6,9 @@ use {
 };
 
 impl Blueprint<TerminalEnvironment> for Hover {
-    type Element = Self;
+    type Output = Self;
 
-    fn make(self, _: &TerminalBlueprintResources) -> Self::Element {
+    fn make(self, _: &TerminalBlueprintResources) -> Self::Output {
         self
     }
 }
@@ -17,15 +17,21 @@ impl Element<TerminalEnvironment> for Hover {
     type Effect = ();
 
     fn effect(&self) -> Self::Effect {}
+
+    type Blueprint = Self;
+
+    fn update(&mut self, blueprint: Self::Blueprint, _: &TerminalBlueprintResources) {
+        *self = blueprint
+    }
 }
 
 impl<A> Blueprint<TerminalEnvironment> for Tap<A>
 where
     A: Effect + Send + Sync + 'static,
 {
-    type Element = Self;
+    type Output = Self;
 
-    fn make(self, _: &TerminalBlueprintResources) -> Self::Element {
+    fn make(self, _: &TerminalBlueprintResources) -> Self::Output {
         self
     }
 }
@@ -37,12 +43,18 @@ where
     type Effect = ();
 
     fn effect(&self) -> Self::Effect {}
+
+    type Blueprint = Self;
+
+    fn update(&mut self, blueprint: Self::Blueprint, _: &TerminalBlueprintResources) {
+        *self = blueprint
+    }
 }
 
 impl Blueprint<TerminalEnvironment> for Typing {
-    type Element = Self;
+    type Output = Self;
 
-    fn make(self, _: &TerminalBlueprintResources) -> Self::Element {
+    fn make(self, _: &TerminalBlueprintResources) -> Self::Output {
         self
     }
 }
@@ -51,4 +63,10 @@ impl Element<TerminalEnvironment> for Typing {
     type Effect = ();
 
     fn effect(&self) -> Self::Effect {}
+
+    type Blueprint = Self;
+
+    fn update(&mut self, blueprint: Self::Blueprint, _: &TerminalBlueprintResources) {
+        *self = blueprint
+    }
 }

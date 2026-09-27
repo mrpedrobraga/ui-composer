@@ -43,7 +43,7 @@ where
             rect: Rect::new(Point2::new(0.0, 0.0), Size2::new(64.0, 64.0)),
         };
 
-        self.ui.plan(hx, &r);
+        self.ui.place(hx, &r);
     }
 }
 

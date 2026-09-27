@@ -1,158 +1,123 @@
-//! # Effects/Signal
-//!
-//! A `Signal<Item = T>` is "a `T` that will appear later."
-//! In classic functorial fashion, if `T` is an UI element with an effect,
-//! `Signal<Item = T>` is _also_ an element.
-//!
-//! [`React`] wraps the signal so it can hold onto the `T` it resolves to.
-
-use crate::app::composition::algebra::{Bubble, Semigroup as _};
+use crate::app::composition::algebra::Semigroup;
 use crate::app::composition::elements::{Blueprint, Element, Environment};
+use crate::app::composition::layout::hints::{ChildHints, ParentHints};
+use crate::app::composition::layout::Ui;
 use futures_signals::signal::Signal;
-use pin_project::pin_project;
-use std::pin::Pin;
+use std::marker::PhantomData;
 use std::task::{Context, Poll};
-use ui_composer_input::event::Event;
 
-/// Wraps a signal, holding onto the elements it produces.
-///
-/// Notably implements `Blueprint` and `Element.`
-#[pin_project]
+#[pin_project::pin_project]
 #[must_use = "React does nothing unless polled"]
-pub struct React<Sig, Env: Environment>
+pub struct React<Env, U, Sig, Map>
 where
+    Env: Environment,
+    U: Ui<Env>,
     Sig: Signal,
-    Sig::Item: Blueprint<Env>,
+    Map: FnMut(Sig::Item) -> U,
 {
     #[pin]
     signal: Sig,
-    element: Option<<Sig::Item as Blueprint<Env>>::Element>,
+    signal_is_done: bool,
+    #[pin]
+    ui: Option<U>,
+    map: Map,
+    _marker: PhantomData<Env>,
 }
 
-impl<Sig, Env: Environment> Blueprint<Env> for React<Sig, Env>
-where
-    Sig: Signal<Item: Blueprint<Env>>,
-{
-    type Element = Self;
-
-    fn make(self, _: &Env::BlueprintResources<'_>) -> Self::Element {
-        self
+pub trait SignalExt: Signal {
+    fn react<Env, U, Map>(self, map: Map) -> React<Env, U, Self, Map>
+    where
+        Env: Environment,
+        U: Ui<Env>,
+        Map: FnMut(Self::Item) -> U,
+        Self: std::marker::Sized,
+    {
+        React::new(self, map)
     }
 }
+impl<Sig> SignalExt for Sig where Sig: Signal {}
 
-impl<Sig, Env: Environment> Bubble<Event, bool> for React<Sig, Env>
+impl<Env, U, Sig, Map> React<Env, U, Sig, Map>
 where
-    Sig: Signal<Item: Blueprint<Env>>,
+    Env: Environment,
+    U: Ui<Env>,
+    Sig: Signal,
+    Map: FnMut(Sig::Item) -> U,
 {
-    async fn bubble(&mut self, cx: &mut Event) -> bool {
-        if let Some(e) = self.element.as_mut() {
-            e.bubble(cx).await
-        } else {
-            false
+    pub fn new(signal: Sig, map: Map) -> Self {
+        Self {
+            signal,
+            signal_is_done: false,
+            ui: None,
+            map,
+            _marker: PhantomData,
         }
     }
 }
 
-impl<Sig, Env: Environment> Element<Env> for React<Sig, Env>
+impl<Env, U, Sig, Map> Ui<Env> for React<Env, U, Sig, Map>
 where
-    Sig: Signal<Item: Blueprint<Env>>,
+    Env: Environment + Send,
+    U: Ui<Env>,
+    Sig: Signal + Send,
+    Map: FnMut(Sig::Item) -> U + Send,
 {
-    type Effect =
-        Option<<<<Sig as Signal>::Item as Blueprint<Env>>::Element as Element<Env>>::Effect>;
+    type Blueprint = Option<U::Blueprint>;
 
-    fn effect(&self) -> Self::Effect {
-        self.element.as_ref().map(|e| e.effect())
+    fn prepare(
+        &mut self,
+        _: crate::app::composition::layout::hints::ParentHints,
+    ) -> crate::app::composition::layout::hints::ChildHints {
+        /* TODO: Idk what to do here tbh */
+        ChildHints::default()
     }
 
-    fn poll(
-        self: Pin<&mut Self>,
+    fn place(&mut self, parent_hints: ParentHints, resources: &Env::BlueprintResources<'_>) {
+        if let Some(inner) = &mut self.ui {
+            inner.place(parent_hints, resources);
+        }
+    }
+
+    fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect {
+        self.ui.as_ref().map(|inner| inner.effect())
+    }
+
+    fn poll_change(
+        self: std::pin::Pin<&mut Self>,
         cx: &mut Context,
-        env: &Env::BlueprintResources<'_>,
+        resources: &Env::BlueprintResources<'_>,
+        parent_hints: ParentHints,
     ) -> Poll<Option<()>> {
-        let this = self.project();
+        let mut this = self.project();
 
-        // SAFETY: Because the signal is pinned in this struct, its captures are stable.
-        let signal_poll = match this.signal.poll_change(cx) {
-            Poll::Ready(Some(blueprint)) => {
-                let mut element = blueprint.make(env);
-
-                // Wake up the element.
-                let _ = unsafe { Pin::new_unchecked(&mut element) }.poll(cx, env);
-                *this.element = Some(element);
-
-                Poll::Ready(Some(()))
+        let signal_poll = if *this.signal_is_done {
+            Poll::Ready(None)
+        } else {
+            match this.signal.poll_change(cx) {
+                Poll::Ready(Some(value)) => {
+                    let mut new_ui = (this.map)(value);
+                    new_ui.place(parent_hints, resources);
+                    this.ui.set(Some(new_ui));
+                    Poll::Ready(Some(()))
+                }
+                Poll::Ready(None) => {
+                    *this.signal_is_done = true;
+                    Poll::Ready(None)
+                }
+                Poll::Pending => Poll::Pending,
             }
-            Poll::Pending => Poll::Pending,
-            Poll::Ready(None) => Poll::Ready(None),
         };
 
-        let element_poll = this
-            .element
-            .as_mut()
-            .map(|element| unsafe { Pin::new_unchecked(element) }.poll(cx, env))
-            .unwrap_or(Poll::Pending);
+        let ui_poll = if let Some(ui) = this.ui.as_pin_mut() {
+            match ui.poll_change(cx, resources, parent_hints) {
+                Poll::Ready(Some(())) => Poll::Ready(Some(())),
+                Poll::Ready(None) => Poll::Ready(None),
+                Poll::Pending => Poll::Pending,
+            }
+        } else {
+            Poll::Ready(None)
+        };
 
-        signal_poll.combine(element_poll)
+        Semigroup::combine(signal_poll, ui_poll)
     }
 }
-
-/// Handy trait for transforming a Signal into a `Blueprint` for an environment.
-///
-/// ```no_run
-/// let my_state = Mutable::new(Text("Hello, World!"));
-/// let my_signal = my_state.signal();
-///
-/// // Currently, you can't do this, because `Blueprint` isn't implemented for `Signal`.
-/// let bp: Blueprint<Env> = my_signal;
-/// // Do this instead:
-/// let bp: Blueprint<Env> = my_signal.into_blueprint();
-/// ```
-///
-/// We can't implement `Blueprint` for all signals without problems,
-/// so we need to a type this crate owns.
-///
-/// The automatic implementation that produces a [`React`] without a held item.
-///
-/// This will no longer be a kink when `min_specialization` gets stabilized.
-/// When it does, you'll be able to directly use a future directly wherever a `Signal` is required.
-pub trait IntoBlueprint<Env: Environment> {
-    type Output: Blueprint<Env>;
-
-    fn into_blueprint(self) -> Self::Output;
-}
-
-impl<Sig, Env> IntoBlueprint<Env> for Sig
-where
-    Sig: Signal,
-    Env: Environment,
-    Sig::Item: Blueprint<Env>,
-{
-    type Output = React<Sig, Env>;
-
-    fn into_blueprint(self) -> Self::Output {
-        React {
-            signal: self,
-            element: None,
-        }
-    }
-}
-
-/*
-// This is not possible without specialization.
-// Because upstream (`futures-signals`) could add an implemntation of `Signal`
-// for other types in this crate that `Blueprint<Env>` is implemented for
-// and that would resut in conflicting implementations.
-
-impl<Sig, Env: Environment> Blueprint<Env> for Sig
-where
-    Sig: Signal<Item: Blueprint<Env>>,
-{
-    type Element = React<Sig, Env>;
-
-    fn make(self, _: &Env) -> Self::Element {
-        React {
-            signal: self,
-            element: None,
-        }
-    }
-}*/

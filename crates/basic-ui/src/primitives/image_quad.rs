@@ -4,7 +4,7 @@ use image::{DynamicImage, GenericImageView};
 use ui_composer_core::app::composition::{
     algebra::{Bubble, Empty},
     effects::ElementEffect,
-    elements::Element,
+    elements::{Blueprint, Element},
     visit::{Apply, DriveThru},
 };
 use ui_composer_input::event::Event;
@@ -12,7 +12,7 @@ use ui_composer_math::prelude::{Rect, Srgba};
 use ui_composer_platform_tui::{
     canvas::{Canvas as _, TextModePixel},
     items::TerminalEffectVisitor,
-    runner::TerminalEnvironment,
+    runner::{TerminalBlueprintResources, TerminalEnvironment},
 };
 
 use crate::components::ImageViewBlueprint;
@@ -81,6 +81,19 @@ impl Element<TerminalEnvironment> for ImageViewElementTerminal {
 
     fn effect(&self) -> Self::Effect {
         RenderImageQuad(self.rect, self.image.clone())
+    }
+
+    type Blueprint = ImageViewBlueprint;
+
+    fn update(&mut self, blueprint: Self::Blueprint, resources: &TerminalBlueprintResources) {
+        /*
+            TODO: There's a more performant way to reuse resources...
+            For example, if the image is the same we can reuse it instead of
+            loading it from scratch again.
+
+            Even if the image does change, one can imagine reusing allocations, etc.
+        */
+        *self = blueprint.make(resources)
     }
 }
 

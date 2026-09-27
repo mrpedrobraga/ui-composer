@@ -3,7 +3,7 @@ use futures_signals::signal::{Mutable, SignalExt};
 use futures_time::{task::sleep, time::Duration};
 
 use self::{
-    items::{reactive::SignalExt as _, Resizable, Text},
+    items::{reactive::SignalExt as _, Canvas, Text},
     runner::Runner,
 };
 
@@ -53,7 +53,7 @@ fn main() {
     let ui = combined_signal.react(|(affirmation, question)| {
         if_then(
             affirmation.contains("Gna"),
-            Some(Resizable::new(move |hx| {
+            Some(Canvas::new(move |hx| {
                 Text(format!(
                     "{} - {} - {}",
                     affirmation,

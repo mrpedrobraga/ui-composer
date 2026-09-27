@@ -1,8 +1,10 @@
 use core::f32;
+use std::{marker::PhantomData};
 
-use ui_composer_core::app::composition::layout::{
-    LayoutItem,
-    hints::{ChildHints, ParentHints},
+use ui_composer_core::app::composition::{
+    algebra::Semigroup, elements::Environment, layout::{
+        Ui, hints::{ChildHints, ParentHints},
+    },
 };
 use ui_composer_math::prelude::{Rect, Size2, Vector2};
 
@@ -14,35 +16,41 @@ use ui_composer_math::prelude::{Rect, Size2, Vector2};
 ///
 /// The width of the container is the max width between the items.
 /// TODO: Allow to take more than two items.
-pub fn column<A, B>((item_a, item_b): (A, B)) -> ColumnContainer<A, B> {
+pub fn column<Env, A, B>((item_a, item_b): (A, B)) -> ColumnContainer<Env, A, B> {
     ColumnContainer {
         item_a,
         item_b,
         gap: 0.0,
         __item_a_hints_cache: ChildHints::default(),
         __item_b_hints_cache: ChildHints::default(),
+        __marker: PhantomData,
     }
 }
 
-pub struct ColumnContainer<A, B> {
+#[pin_project::pin_project]
+pub struct ColumnContainer<Env, A, B> {
+    #[pin]
     pub item_a: A,
+    #[pin]
     pub item_b: B,
     pub gap: f32,
     __item_a_hints_cache: ChildHints,
     __item_b_hints_cache: ChildHints,
+    __marker: PhantomData<Env>,
 }
 
-impl<A, B> ColumnContainer<A, B> {
+impl<Env, A, B> ColumnContainer<Env, A, B> {
     /// Adds some spacing between elements.
     pub fn with_gap(self, gap: f32) -> Self {
         Self { gap, ..self }
     }
 }
 
-impl<A, B> LayoutItem for ColumnContainer<A, B>
+impl<Env, A, B> Ui<Env> for ColumnContainer<Env, A, B>
 where
-    A: LayoutItem,
-    B: LayoutItem,
+    A: Ui<Env>,
+    B: Ui<Env>,
+    Env: Environment,
 {
     type Blueprint = (A::Blueprint, B::Blueprint);
 
@@ -70,8 +78,10 @@ where
         ChildHints { minimum_size }
     }
 
-    fn place(&mut self, parent_hints: ParentHints) -> Self::Blueprint {
-        let a = self.item_a.place(ParentHints {
+    fn place(&mut self, parent_hints: ParentHints, resources: &Env::BlueprintResources<'_>) {
+        // TODO: Maybe split `resources`?
+
+        self.item_a.place(ParentHints {
             rect: Rect::new(
                 parent_hints.rect.origin,
                 Size2::new(
@@ -80,9 +90,9 @@ where
                 ),
             ),
             ..parent_hints
-        });
+        }, resources);
 
-        let b = self.item_b.place(ParentHints {
+        self.item_b.place(ParentHints {
             rect: Rect::new(
                 parent_hints.rect.origin.translate(Vector2::new(
                     0.0,
@@ -94,8 +104,20 @@ where
                 ),
             ),
             ..parent_hints
-        });
-
-        (a, b)
+        }, resources);
+    }
+    
+    fn effect(&self) -> <<Self::Blueprint as ui_composer_core::prelude::Blueprint<Env>>::Output as ui_composer_core::prelude::Element<Env>>::Effect {
+        todo!()
+    }
+    
+    fn poll_change(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context,
+        resources: &<Env as Environment>::BlueprintResources<'_>,
+        parent_hints: ParentHints,
+    ) -> std::task::Poll<Option<()>> {
+        let this = self.project();
+        Semigroup::combine(this.item_a.poll_change(cx, resources, parent_hints), this.item_b.poll_change(cx, resources, parent_hints))
     }
 }

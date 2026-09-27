@@ -44,9 +44,9 @@ where
 {
     type Blueprint = Option<U::Blueprint>;
 
-    fn plan(&mut self, parent_hints: ParentHints, resources: &InitializationResources) {
+    fn place(&mut self, parent_hints: ParentHints, resources: &InitializationResources) {
         if let Some(inner) = &mut self.ui {
-            inner.plan(parent_hints, resources);
+            inner.place(parent_hints, resources);
         }
     }
 
@@ -70,7 +70,7 @@ where
             match fut_poll {
                 Poll::Ready(value) => {
                     let mut new_ui = map(value);
-                    new_ui.plan(parent_hints.clone(), resources);
+                    new_ui.place(parent_hints.clone(), resources);
                     this.ui.set(Some(new_ui));
                     // Safe to unwrap because we just set it, duh.
                     return this
@@ -151,9 +151,9 @@ where
 {
     type Blueprint = Option<<U as Ui>::Blueprint>;
 
-    fn plan(&mut self, parent_hints: ParentHints, resources: &InitializationResources) {
+    fn place(&mut self, parent_hints: ParentHints, resources: &InitializationResources) {
         if let Some(inner) = &mut self.ui {
-            inner.plan(parent_hints, resources);
+            inner.place(parent_hints, resources);
         }
     }
 
@@ -175,7 +175,7 @@ where
             match this.signal.poll_change(cx) {
                 Poll::Ready(Some(value)) => {
                     let mut new_ui = (this.map)(value);
-                    new_ui.plan(parent_hints.clone(), resources);
+                    new_ui.place(parent_hints.clone(), resources);
                     this.ui.set(Some(new_ui));
                     println!("Signal yields");
                     Poll::Ready(Some(()))

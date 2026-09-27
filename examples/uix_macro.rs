@@ -35,8 +35,8 @@ fn main() {
 /// A simple coloured square.
 fn Square(color: Srgba) -> impl Tui {
     uix! (
-        <ItemBox::new minimum_size=Size2::new(16.0, 2.0)>
+        <Canvas::new minimum_size=Size2::new(16.0, 2.0)>
             @move |hx| <Graphic color=color rect=hx.rect />
-        </ItemBox::new>
+        </Canvas::new>
     )
 }

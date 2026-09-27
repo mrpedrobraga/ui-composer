@@ -13,7 +13,7 @@ pub mod implementations;
 pub trait Ui {
     type Blueprint: Blueprint;
 
-    fn plan(&mut self, parent_hints: ParentHints, resources: &InitializationResources);
+    fn place(&mut self, parent_hints: ParentHints, resources: &InitializationResources);
 
     fn effect(&self) -> <<Self::Blueprint as Blueprint>::Output as Element>::Effect;
 

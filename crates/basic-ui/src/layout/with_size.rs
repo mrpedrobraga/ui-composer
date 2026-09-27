@@ -1,32 +1,44 @@
-use ui_composer_core::app::composition::layout::{
-    LayoutItem,
-    hints::{ChildHints, ParentHints},
+use std::marker::PhantomData;
+
+use ui_composer_core::app::composition::{
+    elements::Environment,
+    layout::{
+        hints::{ChildHints, ParentHints},
+        Ui,
+    },
 };
 use ui_composer_math::prelude::Size2;
 
-pub struct WithSizeContainer<A>
+#[pin_project::pin_project]
+pub struct WithSizeContainer<Env, A>
 where
-    A: LayoutItem,
+    A: Ui<Env>,
+    Env: Environment,
 {
     suggested_size: Size2,
+    #[pin]
     item: A,
+    __marker: PhantomData<Env>,
 }
 
 /// A container that scales its single item to a bigger size.
 /// You **can not** make the minimum size _lower_ than the original, however.
-pub fn with_size<A>(item: A) -> WithSizeContainer<A>
+pub fn with_size<Env, A>(item: A) -> WithSizeContainer<Env, A>
 where
-    A: LayoutItem,
+    A: Ui<Env>,
+    Env: Environment,
 {
     WithSizeContainer {
         suggested_size: Size2::ZERO,
         item,
+        __marker: PhantomData,
     }
 }
 
-impl<A> WithSizeContainer<A>
+impl<Env, A> WithSizeContainer<Env, A>
 where
-    A: LayoutItem,
+    A: Ui<Env>,
+    Env: Environment,
 {
     pub fn with_size(self, suggested_size: Size2) -> Self {
         Self {
@@ -36,9 +48,10 @@ where
     }
 }
 
-impl<A> LayoutItem for WithSizeContainer<A>
+impl<Env, A> Ui<Env> for WithSizeContainer<Env, A>
 where
-    A: LayoutItem,
+    A: Ui<Env>,
+    Env: Environment,
 {
     type Blueprint = A::Blueprint;
 
@@ -52,7 +65,21 @@ where
         }
     }
 
-    fn place(&mut self, layout_hints: ParentHints) -> Self::Blueprint {
-        self.item.place(layout_hints)
+    fn place(&mut self, layout_hints: ParentHints, resources: &Env::BlueprintResources<'_>) {
+        self.item.place(layout_hints, resources);
+    }
+    
+    fn effect(&self) -> <<Self::Blueprint as ui_composer_core::prelude::Blueprint<Env>>::Output as ui_composer_core::prelude::Element<Env>>::Effect {
+        self.item.effect()
+    }
+    
+    fn poll_change(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context,
+        resources: &<Env as Environment>::BlueprintResources<'_>,
+        parent_hints: ParentHints,
+    ) -> std::task::Poll<Option<()>> {
+        let this = self.project();
+        this.item.poll_change(cx, resources, parent_hints)
     }
 }

@@ -116,8 +116,7 @@ where
 
         match projected_option {
             Some(inner) => inner.poll_change(cx),
-            // TODO: Ideally, something like `Option<()>` could return `Ready(None)`?
-            None => Poll::Pending,
+            None => Poll::Ready(None),
         }
     }
 }
@@ -139,9 +138,9 @@ where
 {
     type Blueprint = Option<A::Blueprint>;
 
-    fn plan(&mut self, parent_hints: super::ParentHints, resources: &InitializationResources) {
+    fn place(&mut self, parent_hints: super::ParentHints, resources: &InitializationResources) {
         if let Some(inner) = self.as_mut() {
-            inner.plan(parent_hints, resources)
+            inner.place(parent_hints, resources)
         }
     }
 

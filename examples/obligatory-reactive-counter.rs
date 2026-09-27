@@ -8,7 +8,9 @@ fn main() {
 }
 
 fn Counter(count: Mutable<i32>) -> impl Tui {
-    let txt_count = ReactiveLabel(count.signal_ref(|num| format!("Counter: {num}")));
+    let txt_count = count
+        .signal()
+        .react(|count| Label(format!("Count: {count}")));
 
     view! {
         center flex [
@@ -23,21 +25,4 @@ fn Counter(count: Mutable<i32>) -> impl Tui {
             )
         ]
     }
-}
-
-fn ReactiveLabel(text_signal: impl Signal<Item = String> + Send + Sync) -> impl Tui {
-    let text_signal = text_signal.broadcast();
-
-    ItemBox::new(move |hx| {
-        let text = text_signal
-            .signal_ref(move |text| {
-                let mut l = Label(text.clone());
-                l.prepare(hx);
-                l.place(hx)
-            })
-            .into_blueprint();
-
-        list![text]
-    })
-    .with_minimum_size(Size2::new(15.0, 1.0))
 }
