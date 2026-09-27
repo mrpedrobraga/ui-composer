@@ -115,6 +115,18 @@ where
     map: Map,
 }
 
+pub trait SignalExt: Signal {
+    fn react<U, Map>(self, map: Map) -> React<U, Self, Map>
+    where
+        U: Ui,
+        Map: FnMut(Self::Item) -> U,
+        Self: std::marker::Sized,
+    {
+        React::new(self, map)
+    }
+}
+impl<Sig> SignalExt for Sig where Sig: Signal {}
+
 impl<U, Sig, Map> React<U, Sig, Map>
 where
     U: Ui,
