@@ -62,7 +62,7 @@ pub trait ElementEffect {
     fn apply(&self, consumer: &mut ElementEffectHandler);
 }
 
-fn combine_polls(a: Poll<Option<()>>, b: Poll<Option<()>>) -> Poll<Option<()>> {
+fn max(a: Poll<Option<()>>, b: Poll<Option<()>>) -> Poll<Option<()>> {
     use std::task::Poll::*;
 
     match (a, b) {

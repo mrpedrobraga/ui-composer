@@ -656,6 +656,7 @@ name = "composition"
 version = "0.1.0"
 dependencies = [
  "futures",
+ "futures-signals",
  "futures-time",
  "glamour",
  "pin-project",

@@ -1,3 +1,4 @@
+use futures_signals::signal::Signal;
 use glamour::{Point2, Rect, Size2};
 
 use crate::element::{ElementEffect, ParentHints, Ui};
@@ -46,23 +47,17 @@ where
     }
 }
 
-impl<U> Future for Runner<U>
+impl<U> Signal for Runner<U>
 where
     U: Ui,
 {
-    type Output = ();
+    type Item = ();
 
-    fn poll(self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Self::Output> {
+    fn poll_change(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context,
+    ) -> Poll<Option<Self::Item>> {
         let ElementsRunnerProj { mut ui, first_time } = self.project();
-
-        // println!("[Runner] Polling.");
-
-        if *first_time {
-            let mut e_handler = ElementEffectHandler {};
-            let effects = ui.effect();
-            effects.apply(&mut e_handler);
-            *first_time = true;
-        }
 
         let r = InitializationResources {
             secret_key: "[EXPENSIVE RUNTIME RESOURCE]".to_string(),
@@ -71,19 +66,25 @@ where
             rect: Rect::new(Point2::new(0.0, 0.0), Size2::new(64.0, 64.0)),
         };
 
-        let poll = match ui.as_mut().poll_change(cx, &r, hx) {
-            std::task::Poll::Ready(Some(_)) => Poll::Pending,
-            Poll::Ready(None) => Poll::Ready(()),
-            Poll::Pending => Poll::Pending,
+        let ui_poll = ui.as_mut().poll_change(cx, &r, hx);
+
+        if ui_poll.is_pending() {
+            return Poll::Pending;
         };
+        if let Poll::Ready(None) = ui_poll
+            && !*first_time {
+                return Poll::Ready(None);
+            };
+
+        *first_time = false;
 
         //print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
-        println!("-----------------------");
+        println!("\n-----------------------");
         let mut e_handler = ElementEffectHandler {};
         let effects = ui.effect();
         effects.apply(&mut e_handler);
-        println!("-----------------------");
+        println!("-----------------------\n");
 
-        poll
+        Poll::Ready(Some(()))
     }
 }

@@ -5,7 +5,7 @@ use std::{
 
 use crate::runner::{ElementEffectHandler, InitializationResources};
 
-use super::{combine_polls, Blueprint, Element, ElementEffect};
+use super::{max, Blueprint, Element, ElementEffect, Ui};
 
 impl<A, B> Blueprint for (A, B)
 where
@@ -54,7 +54,7 @@ where
         let poll_a = pinned_a.poll_change(cx);
         let poll_b = pinned_b.poll_change(cx);
 
-        combine_polls(poll_a, poll_b)
+        max(poll_a, poll_b)
     }
 }
 
@@ -129,6 +129,36 @@ where
     fn apply(&self, consumer: &mut ElementEffectHandler) {
         if let Some(element) = &self {
             element.apply(consumer);
+        }
+    }
+}
+
+impl<A> Ui for Option<A>
+where
+    A: Ui,
+{
+    type Blueprint = Option<A::Blueprint>;
+
+    fn plan(&mut self, parent_hints: super::ParentHints, resources: &InitializationResources) {
+        if let Some(inner) = self.as_mut() {
+            inner.plan(parent_hints, resources)
+        }
+    }
+
+    fn effect(&self) -> <<Self::Blueprint as Blueprint>::Output as Element>::Effect {
+        self.as_ref().map(|inner| inner.effect())
+    }
+
+    fn poll_change(
+        self: Pin<&mut Self>,
+        cx: &mut Context,
+        resources: &InitializationResources,
+        parent_hints: super::ParentHints,
+    ) -> Poll<Option<()>> {
+        if let Some(inner) = self.as_pin_mut() {
+            inner.poll_change(cx, resources, parent_hints)
+        } else {
+            Poll::Ready(None)
         }
     }
 }
