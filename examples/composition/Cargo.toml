@@ -6,5 +6,6 @@ edition = "2024"
 [dependencies]
 futures = "0.3.34"
 futures-time = "3.1.0"
+glamour = "0.18.0"
 pin-project = "1.1.13"
 ui-composer-view-macro = { path = "../../crates/view-macro" }
