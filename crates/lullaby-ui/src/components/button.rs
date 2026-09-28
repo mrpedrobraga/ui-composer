@@ -6,6 +6,7 @@ use {
     ui_composer_state::{effect::Effect, futures_signals::signal::Mutable},
 };
 
+#[allow(unused)]
 static BUTTON_COLOR: Srgba = Srgba::new(255.0, 217.0, 179.0, 255.0);
 #[allow(unused)]
 static BUTTON_COLOR_HOVER: Srgba = Srgba::new(235.0, 189.0, 143.0, 255.0);

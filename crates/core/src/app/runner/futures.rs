@@ -25,7 +25,7 @@ pub struct AsyncExecutor<'exec, Env: Environment, App: Element<Env>, Callback> {
     #[pin]
     element: Own<App>,
     blueprint_resources: Env::BlueprintResources<'exec>,
-    first_tick: bool,
+    has_yet_to_yield: bool,
     callback: Callback,
 }
 
@@ -40,7 +40,7 @@ impl<'exec, Env: Environment, App: Element<Env>, Callback>
         AsyncExecutor {
             element,
             blueprint_resources: environment,
-            first_tick: true,
+            has_yet_to_yield: true,
             callback,
         }
     }
@@ -58,28 +58,34 @@ impl<'exec, Env: Environment, App: Element<Env>, Callback: FnMut()> Signal
         let AsyncExecutorProj {
             element,
             blueprint_resources,
-            first_tick,
+            has_yet_to_yield,
             callback,
         } = self.project();
 
+        let has_yet_to_yield2 = *has_yet_to_yield;
+        
         if let Some(mut element_borrow) = element.try_lock() {
             let pinned_element =
                 unsafe { Pin::new_unchecked(element_borrow.deref_mut()) };
 
             // Because of how signals work internally, we must yield at least once.
-            let inner_poll = pinned_element.poll_change(cx, blueprint_resources);
-            if let Poll::Ready(None) = inner_poll
-                && *first_tick
+            let element_poll = pinned_element.poll_change(cx, blueprint_resources);
+
+            if element_poll.is_pending() { 
+                return Poll::Pending;
+            };
+            if let Poll::Ready(None) = element_poll
+                && !has_yet_to_yield2
             {
-                *first_tick = false;
-                return Poll::Ready(Some(()));
+                return Poll::Ready(None);
             }
-            if let Poll::Ready(Some(())) = inner_poll {
+
+            if let Poll::Ready(Some(())) = element_poll {
                 (callback)();
             }
-            *first_tick = false;
-            
-            inner_poll
+
+            *has_yet_to_yield = false;
+            Poll::Ready(Some(()))
         } else {
             cx.waker().wake_by_ref();
             Poll::Pending

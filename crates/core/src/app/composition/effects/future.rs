@@ -86,12 +86,7 @@ where
                     let mut new_ui = map(value);
                     new_ui.place(parent_hints, resources);
                     this.ui.set(Some(new_ui));
-                    // Safe to unwrap because we just set it, duh.
-                    return this
-                        .ui
-                        .as_pin_mut()
-                        .unwrap()
-                        .poll_change(cx, resources, parent_hints);
+                    return Poll::Ready(Some(()));
                 }
                 Poll::Pending => {
                     // Put the mapper back because it wasn't used hehe
@@ -99,7 +94,7 @@ where
                 }
             }
         }
-        /* The future has yielded! */
+        /* The future has yielded, so we just pass forth the value of the inner poll! */
         else {
             if let Some(element) = this.ui.as_pin_mut() {
                 let inner_poll = element.poll_change(cx, resources, parent_hints);
