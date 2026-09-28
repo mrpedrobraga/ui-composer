@@ -42,11 +42,11 @@ impl<A, B> FlexContainer<A, B> {
 }
 
 /// A container which stacks its items horizontally, in line writing order.
-/// ```html
-/// <row>
-///     <item />
-///     <item />
-/// </row>
+/// ```norun
+/// row [
+///     item_a
+///     item_b
+/// ]
 /// ```
 #[allow(non_snake_case)]
 pub fn row<A, B>((a, b): (A, B)) -> Row<A, B> {
@@ -59,11 +59,11 @@ pub struct Row<A, B> {
 }
 
 /// A container which stacks its items vertically, in paragraph writing order.
-/// ```html
-/// <column>
-///     <item />
-///     <item />
-/// </column>
+/// ```norun
+/// column [
+///     item_a
+///     item_b
+/// ]
 /// ```
 #[allow(non_snake_case)]
 pub fn column<A, B>((a, b): (A, B)) -> Column<A, B> {
@@ -76,8 +76,8 @@ pub struct Column<A, B> {
 }
 
 /// A humble label, displays some text.
-/// ```html
-/// <Label>"Hello, world!"</Label>
+/// ```norun
+/// Label "Hello, World!"
 /// ````
 #[allow(non_snake_case)]
 pub fn Label<S>(text: S) -> LabelBlueprint
@@ -250,7 +250,37 @@ impl<A, E> WithEmptyState<E> for Option<A> {
 
 #[test]
 fn test_blocks() {
+    /* Conditionals */
+
+    let number_a = 3;
+    let number_b = 4;
+    let res: Result<i32, ()> = Ok(8);
+
+    let conditional = view! {
+        if number_a > number_b {
+            Label(("Number A is Bigger!"))
+        }
+    };
+
+    let conditional_res = view! {
+        if let Ok(v) = res {
+            Label(( format!("Result is {v}") ))
+        }
+    };
+
+    let conditional2 = view! {
+        if number_a > number_b {
+            Label(("Number A is Bigger!"))
+        } else {
+            Label(("Number B is Bigger!"))
+            Label(("This makes me happy!"))
+        }
+    };
+
+    dbg!(conditional, conditional_res, conditional2);
+
     /* Options */
+
     let option = Some(3);
 
     let optional = view! {
@@ -280,19 +310,17 @@ fn test_blocks() {
     let message_sig = message_st.signal();
 
     let derived = view! {
-        column [
-            Label ("Message 1!")
-            for message of message_sig {
-                Label (( message ))
-            }
-        ]
+        Label ("Message 1!")
+        for message of message_sig {
+            Label (( message ))
+        }
     };
 
     // (Hacky way to listen to the signal to prove it updates right!)
     std::thread::spawn(move || {
         block_on(
             derived
-                .b
+                .1
                 .for_each(|item| async move { println!("Item: {:?}", item) }),
         );
     });

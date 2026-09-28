@@ -1,6 +1,6 @@
 use crate::transform::{ChildrenStructure, ViewNodes};
 
-use super::{Attribute, Element, ForExpr, ViewNode};
+use super::{Attribute, Element, ForExpr, IfExpr, ViewNode};
 use proc_macro_error2::emit_error;
 use syn::{
     braced, bracketed, parenthesized,
@@ -12,6 +12,8 @@ impl Parse for ViewNode {
     fn parse(input: ParseStream) -> parse::Result<Self> {
         if input.peek(Token![for]) {
             Ok(ViewNode::ForExpr(input.parse()?))
+        } else if input.peek(Token![if]) {
+            Ok(ViewNode::IfExpr(input.parse()?))
         } else if input.peek(syn::token::Paren) {
             let content;
             parenthesized!(content in input);
@@ -72,6 +74,7 @@ impl Parse for Element {
         } else if lookahead.peek(syn::Ident)
             || lookahead.peek(Token![::])
             || lookahead.peek(Token![for])
+            || lookahead.peek(Token![if])
         {
             children.push(input.parse()?);
         } else if lookahead.peek(syn::token::Comma) {
@@ -136,6 +139,45 @@ impl Parse for ForExpr {
             expr,
             body,
             empty_state,
+        })
+    }
+}
+
+impl Parse for IfExpr {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        input.parse::<Token![if]>()?;
+
+        // There's no `parse_without_eager_bracket` so we can't use square brackets.
+        let condition = Expr::parse_without_eager_brace(input).unwrap_or_else(|e| {
+            emit_error!(e);
+            syn::parse_quote!(())
+        });
+
+        let content;
+        braced!(content in input);
+        let mut body = Vec::new();
+        while !content.is_empty() {
+            body.push(content.parse()?);
+        }
+
+        let else_body = if input.peek(Token![else]) {
+            input.parse::<Token![else]>()?;
+
+            let else_content;
+            braced!(else_content in input);
+            let mut stmts = Vec::new();
+            while !else_content.is_empty() {
+                stmts.push(else_content.parse()?);
+            }
+            Some(stmts)
+        } else {
+            None
+        };
+
+        Ok(IfExpr {
+            condition,
+            body,
+            else_body,
         })
     }
 }

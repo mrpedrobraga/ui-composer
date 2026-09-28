@@ -1,3 +1,5 @@
+use super::IfExpr;
+
 use {
     crate::transform::{ChildrenStructure, Element, ViewNodes},
     proc_macro2::TokenStream,
@@ -42,6 +44,7 @@ impl ViewNode {
             ViewNode::Element(element) => element.to_tokens(),
             ViewNode::Block(expr) => quote! { #expr },
             ViewNode::ForExpr(for_expr) => for_expr.to_tokens(),
+            ViewNode::IfExpr(if_expr) => if_expr.to_tokens(),
         }
     }
 }
@@ -84,6 +87,44 @@ impl ForExpr {
         } else {
             quote! {
                 #expr.for_of(move |#pat| { #(#body),* }) #empty_state
+            }
+        }
+    }
+}
+
+impl IfExpr {
+    pub fn to_tokens(&self) -> TokenStream {
+        let condition = &self.condition;
+        let body: Vec<_> = self.body.iter().map(|i| i.to_tokens()).collect();
+
+        let content = if body.len() > 1 {
+            quote! { list![ #(#body),* ] }
+        } else {
+            quote! { { #(#body),* } }
+        };
+
+        if let Some(else_body) = &self.else_body {
+            let else_body: Vec<_> = else_body.iter().map(ViewNode::to_tokens).collect();
+            let else_content = if else_body.len() > 1 {
+                quote! { list![ #(#else_body),* ] }
+            } else {
+                quote! { { #(#body),* } }
+            };
+
+            return quote! {
+                if #condition {
+                    either::Either::Left(#content)
+                } else {
+                    either::Either::Right(#else_content)
+                }
+            };
+        }
+
+        quote! {
+            if #condition {
+                Some(#content)
+            } else {
+                None
             }
         }
     }

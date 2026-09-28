@@ -22,8 +22,13 @@ pub fn view_internal(input: TokenStream) -> TokenStream {
 enum ViewNode {
     // foo (bar = 1) { quz { ... } }
     Element(Element),
+
     // for x in y { ... }
     ForExpr(Box<ForExpr>),
+
+    // if cond { ... }
+    IfExpr(Box<IfExpr>),
+
     // { expression }
     Block(Expr),
 }
@@ -52,4 +57,10 @@ struct ForExpr {
     expr: Expr,
     body: Vec<ViewNode>,
     empty_state: Option<Vec<ViewNode>>,
+}
+
+struct IfExpr {
+    condition: Expr,
+    body: Vec<ViewNode>,
+    else_body: Option<Vec<ViewNode>>,
 }

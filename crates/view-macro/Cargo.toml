@@ -18,3 +18,4 @@ proc-macro-error2 = "2.0.1"
 [dev-dependencies]
 futures-signals = "0.3.34"
 async-std = "1.13.2"
+either = "1.18.0"
