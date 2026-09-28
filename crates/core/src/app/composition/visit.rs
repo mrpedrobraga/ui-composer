@@ -35,6 +35,8 @@ pub trait DriveThruStatic<V, Acc> {
 }
 
 pub mod implementations {
+    use ::either::{for_both, Either};
+
     use super::{ApplyStatic, DriveThru, DriveThruMut, DriveThruStatic};
 
     #[allow(non_local_definitions)]
@@ -142,6 +144,26 @@ pub mod implementations {
             }
         }
     }
+
+    impl<V, A, B> DriveThru<V> for Either<A, B>
+    where
+        A: DriveThru<V>,
+        B: DriveThru<V>,
+    {
+        fn drive_thru(&self, visitor: &mut V) {
+            for_both!(self, inner => inner.drive_thru(visitor))
+        }
+    }
+
+    impl<V, A, B> DriveThruMut<V> for Either<A, B>
+    where
+        A: DriveThruMut<V>,
+        B: DriveThruMut<V>,
+    {
+        fn drive_thru_mut(&mut self, visitor: &mut V) {
+            for_both!(self, inner => inner.drive_thru_mut(visitor))
+        }
+    }
 }
 
 #[test]
@@ -214,7 +236,7 @@ fn test_visit_static() {
     macro_rules! apply {
         ( $t:ty, $v:ty, $acc_initial:ty ) => {
             <$t as DriveThruStatic<$v, $acc_initial>>::OutputAcc
-        }
+        };
     }
 
     type MyStructure = (U1, (U2, U3));

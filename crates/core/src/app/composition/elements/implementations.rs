@@ -1,3 +1,5 @@
+use ::either::{map_both, Either};
+
 use super::{Blueprint, Element};
 use crate::app::composition::algebra::Semigroup;
 use crate::app::composition::elements::Environment;
@@ -219,6 +221,62 @@ where
         match projected_option {
             Some(inner) => inner.poll_change(cx, resources),
             None => Poll::Ready(None),
+        }
+    }
+}
+
+/* Either */
+impl<A, B, Env: Environment> Blueprint<Env> for Either<A, B>
+where
+    A: Blueprint<Env>,
+    B: Blueprint<Env>,
+{
+    type Output = Either<A::Output, B::Output>;
+
+    fn make(self, env: &Env::BlueprintResources<'_>) -> Self::Output {
+        map_both!(self, x => x.make(env))
+    }
+}
+
+impl<A, B, Env: Environment> Element<Env> for Either<A, B>
+where
+    A: Element<Env>,
+    B: Element<Env>,
+{
+    type Effect = Either<A::Effect, B::Effect>;
+    type Blueprint = Either<A::Blueprint, B::Blueprint>;
+
+    fn update(
+        &mut self,
+        blueprint: Self::Blueprint,
+        resources: &<Env as Environment>::BlueprintResources<'_>,
+    ) {
+        match self {
+            Either::Left(current) => match blueprint {
+                Either::Left(new_left) => {
+                    current.update(new_left, resources);
+                }
+                Either::Right(_) => *self = blueprint.make(resources),
+            },
+            Either::Right(current) => match blueprint {
+                Either::Left(_) => *self = blueprint.make(resources),
+                Either::Right(new_right) => current.update(new_right, resources),
+            },
+        }
+    }
+
+    fn effect(&self) -> Self::Effect {
+        map_both!(self, inner => inner.effect())
+    }
+
+    fn poll_change(
+        self: Pin<&mut Self>,
+        cx: &mut Context,
+        resources: &<Env as Environment>::BlueprintResources<'_>,
+    ) -> Poll<Option<()>> {
+        match self.as_pin_mut() {
+            Either::Left(inner) => inner.poll_change(cx, resources),
+            Either::Right(inner) => inner.poll_change(cx, resources),
         }
     }
 }

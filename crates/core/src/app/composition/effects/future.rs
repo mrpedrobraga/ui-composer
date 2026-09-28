@@ -11,6 +11,8 @@ use crate::app::composition::{
     },
 };
 
+use super::adapters::WithEmptyState;
+
 #[pin_project::pin_project]
 pub struct Await<Env, U, Fut, Map>
 where
@@ -20,10 +22,10 @@ where
     Map: FnOnce(Fut::Output) -> U,
 {
     #[pin]
-    future: Fut,
+    pub(crate) future: Fut,
     #[pin]
-    ui: Option<U>,
-    map: Option<Map>,
+    pub(crate) ui: Option<U>,
+    pub(crate) map: Option<Map>,
     _marker: PhantomData<Env>,
 }
 
@@ -75,6 +77,10 @@ where
             map: Some(map),
             _marker: PhantomData,
         }
+    }
+
+    pub fn with_empty_state<E>(self, empty_state: E) -> WithEmptyState<Self, E> {
+        WithEmptyState(self, empty_state)
     }
 }
 

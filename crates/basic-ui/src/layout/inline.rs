@@ -68,6 +68,11 @@ where
         resources: &Env::BlueprintResources<'_>,
     );
     fn measure(&mut self, cx: &mut MeasureContext, hints: ParentHints);
+
+    type Blueprint: Blueprint<Env>;
+
+    fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect;
+
     fn poll_change(
         self: Pin<&mut Self>,
         cx: &mut Context,
@@ -87,6 +92,10 @@ where
         resources: &Env::BlueprintResources<'_>,
     );
     fn measure(&mut self, cx: &mut MeasureContext, hints: ParentHints);
+
+    type Blueprint: Blueprint<Env>;
+    fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect;
+
     fn poll_change(
         self: Pin<&mut Self>,
         cx: &mut Context,
@@ -161,6 +170,12 @@ where
     ) -> Poll<Option<()>> {
         let this = self.project();
         this.0.poll_change(cx, resources, parent_hints)
+    }
+
+    type Blueprint = U::Blueprint;
+
+    fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect {
+        self.0.effect()
     }
 }
 
@@ -238,6 +253,12 @@ where
     ) -> Poll<Option<()>> {
         Poll::Ready(None)
     }
+
+    type Blueprint = ();
+
+    fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect {
+        /* TODO: Not sure what kinds of effects these emit? */
+    }
 }
 
 impl<Env, A> InlineItemList<Env> for A
@@ -264,6 +285,15 @@ where
         parent_hints: ParentHints,
     ) -> Poll<Option<()>> {
         InlineItem::poll_change(self, cx, resources, parent_hints)
+    }
+
+    type Blueprint = A::Blueprint;
+
+    fn effect(
+        &self,
+    ) -> <<<Self as InlineItemList<Env>>::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect
+    {
+        InlineItem::effect(self)
     }
 }
 
@@ -307,6 +337,16 @@ where
 
         Semigroup::combine(poll_a, poll_b)
     }
+
+    type Blueprint = (A::Blueprint, B::Blueprint);
+
+    fn effect(
+        &self,
+    ) -> <<Self::Blueprint as Blueprint<TerminalEnvironment>>::Output as Element<
+        TerminalEnvironment,
+    >>::Effect {
+        (self.0.effect(), self.1.effect())
+    }
 }
 
 impl<A, B> InlineItemList<WinitEnvironment> for (A, B)
@@ -348,6 +388,12 @@ where
         let poll_b = pinned_b.poll_change(cx, resources, parent_hints);
 
         Semigroup::combine(poll_a, poll_b)
+    }
+
+    type Blueprint = (A::Blueprint, B::Blueprint);
+
+    fn effect(&self) -> <<Self::Blueprint as Blueprint<WinitEnvironment>>::Output as Element<WinitEnvironment>>::Effect{
+        (self.0.effect(), self.1.effect())
     }
 }
 
@@ -409,8 +455,6 @@ where
     Items: InlineItemList<Env> + Send,
     Env: Environment,
 {
-    type Blueprint = ();
-
     fn prepare(&mut self, parent_hints: ParentHints) -> ChildHints {
         let mut min_w_cx = MeasureContext {
             container_width: 0,
@@ -452,8 +496,10 @@ where
         self.items.allocate(&mut cx, hints, resources);
     }
 
+    type Blueprint = Items::Blueprint;
+
     fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect {
-        /* TODO: Do effects for this! */
+        self.items.effect()
     }
 
     fn poll_change(

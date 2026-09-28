@@ -35,6 +35,8 @@ impl Empty for std::task::Poll<Option<()>> {
 }
 
 pub mod bubble {
+    use ::either::{for_both, Either};
+
     use super::{Bubble, Empty, Semigroup};
     use crate::app::composition::algebra::Monoid;
 
@@ -112,6 +114,17 @@ pub mod bubble {
         }
     }
 
+    impl<A, B, Down, Up> Bubble<Down, Up> for Either<A, B>
+    where
+        A: Bubble<Down, Up>,
+        B: Bubble<Down, Up>,
+        Up: Empty,
+    {
+        async fn bubble(&mut self, cx: &mut Down) -> Up {
+            for_both!(self, inner => inner.bubble(cx).await)
+        }
+    }
+
     impl<T, E, Down, Up> Bubble<Down, Up> for Result<T, E>
     where
         T: Bubble<Down, Up>,
@@ -134,11 +147,7 @@ pub mod gather {
     impl<Context, Item> Gather<Context, Item> for () {
         const SIZE: usize = 0;
 
-        fn gather(
-            &mut self,
-            #[expect(unused)] cx: &mut Context,
-            acc: &mut [MaybeUninit<Item>],
-        ) {
+        fn gather(&mut self, #[expect(unused)] cx: &mut Context, acc: &mut [MaybeUninit<Item>]) {
             debug_assert_eq!(acc.len(), 0);
         }
     }

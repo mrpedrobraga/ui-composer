@@ -11,11 +11,6 @@ use ui_composer_platform_winit::window::Window;
 use ui_composer_state::effect::animation::{futures_time::time::Duration, Animation};
 
 fn main() {
-    // tracing_subscriber::fmt()
-    //     .with_max_level(tracing::Level::DEBUG)
-    //     .without_time()
-    //     .init();
-
     UIComposer::run_winit(Window(App2()));
 }
 
@@ -31,15 +26,29 @@ fn App2() -> impl WinitUi {
         .animate_value(point_state)
         .into_ui_process();
 
+    let other_future = async {
+        ::ui_composer_state::effect::animation::futures_time::task::sleep(Duration::from_secs(1))
+            .await;
+        Srgba::new(0.8, 0.2, 0.0, 1.0)
+    };
+
     view! {
         (animation_process)
 
         row [
-            ColorBox (
-                ( Rect::new(Point2::ZERO, Size2::new(50.0, 50.0)) )
-                ( Srgba::new(0.8, 0.2, 0.0, 1.0) )
-            )
-            // Fine-grained reactivity with functors*!
+            // Awaiting a future
+            for color of other_future {
+                ColorBox (
+                    ( Rect::new(Point2::new(100.0, 100.0), Size2::new(50.0, 50.0)) )
+                    ( color )
+                )
+            } else {
+                ColorBox (
+                    ( Rect::new(Point2::new(100.0, 100.0), Size2::new(50.0, 50.0)) )
+                    ( Srgba::new(0.5, 0.5, 0.5, 1.0) )
+                )
+            }
+            // Reacting to a signal
             for point of point_signal {
                 ColorBox (
                     ( Rect::new(point, Size2::new(100.0, 100.0)) )
