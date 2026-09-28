@@ -115,6 +115,7 @@ pub struct PixelCanvas<P> {
     pub back_buffer: Vec<P>,
     pub front_buffer: Vec<P>,
     pub needs_full_redraw: bool,
+    pub draw_transform: Vector2<f32>
 }
 
 impl<P> PixelCanvas<P>
@@ -133,7 +134,12 @@ where
                 (size.width * size.height) as usize
             ],
             needs_full_redraw: true,
+            draw_transform: Vector2 { x: 1.0, y: 1.0 },
         }
+    }
+
+    pub fn set_draw_transform(&mut self, draw_transform: Vector2) {
+        self.draw_transform = draw_transform;
     }
 }
 
@@ -144,6 +150,8 @@ where
     type Pixel = P;
 
     fn put_pixel(&mut self, position: Point2<u32>, new_pixel: P) {
+        let position: Point2<u32> = (position.as_().to_vector() * self.draw_transform).to_point().as_();
+
         if position.x < self.size.width
             && position.y < self.size.height
             && let Some(pixel) = self
@@ -155,6 +163,7 @@ where
     }
 
     fn rect(&mut self, rect: Rect<u32>, color: Self::Pixel) {
+        let rect: Rect<u32> = (Rect::new((rect.origin.as_().to_vector() * self.draw_transform).to_point(), (rect.size.as_().to_vector() * self.draw_transform).to_size())).as_();
         let rect = rect.to_box2();
 
         for y in rect.min.y..rect.max.y {
@@ -183,6 +192,8 @@ where
         shader: impl Fn(PixelShaderInput) -> Self::Pixel,
     ) {
         let aabb = rect.to_box2();
+
+        let rect: Rect<u32> = (Rect::new((rect.origin.as_().to_vector() * self.draw_transform).to_point(), (rect.size.as_().to_vector() * self.draw_transform).to_size())).as_();
 
         for y in aabb.min.y..aabb.max.y {
             for x in aabb.min.x..aabb.max.x {

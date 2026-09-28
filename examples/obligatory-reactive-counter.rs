@@ -8,18 +8,18 @@ fn main() {
 }
 
 fn Counter(count: Mutable<i32>) -> impl Tui {
-    let _txt_count = count
+    let txt_count = count
         .signal()
         .react(|count| Label(format!("Count: {count}")));
 
     view! {
-        center column [
-            Button (
+        center flex { vertical_flow } [
+            item Button (
                 Label (("Take 1"))
                 (count.clone().effect(|e| *e -= 1))
             )
-            // item {grow: 1.0} center ((txt_count))
-            Button (
+            item {grow: 1.0} center ((txt_count))
+            item Button (
                 Label (("Add 1"))
                 (count.effect(|e| *e += 1))
             )

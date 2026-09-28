@@ -24,20 +24,6 @@ use ui_composer_platform_winit::{
 pub struct RenderQuad(pub Rect, pub Srgba);
 
 //impl ElementEffect<WinitEnvironment> for RenderQuad {}
-
-impl ElementEffect<TerminalEnvironment> for RenderQuad {}
-impl<'fx> Apply<RenderQuad> for TerminalEffectVisitor<'fx> {
-    fn visit(&mut self, RenderQuad(rect, color): &RenderQuad) {
-        self.canvas.rect(
-            rect.as_(),
-            TextModePixel {
-                bg_color: *color,
-                fg_color: Srgba::new(0.0, 0.0, 0.0, 0.0),
-                character: ' ',
-            },
-        );
-    }
-}
 impl RenderQuad {
     pub fn as_quad_instance(&self) -> QuadInstance {
         QuadInstance {
@@ -72,6 +58,21 @@ impl RenderQuad {
         }
     }
 }
+
+impl ElementEffect<TerminalEnvironment> for RenderQuad {}
+impl<'fx> Apply<RenderQuad> for TerminalEffectVisitor<'fx> {
+    fn visit(&mut self, RenderQuad(rect, color): &RenderQuad) {
+        self.canvas.rect(
+            rect.as_(),
+            TextModePixel {
+                bg_color: *color,
+                fg_color: Srgba::new(0.0, 0.0, 0.0, 0.0),
+                character: ' ',
+            },
+        );
+    }
+}
+
 impl<'fx> Apply<RenderQuad> for WindowEffectVisitor<'fx> {
     fn visit(&mut self, render_quad: &RenderQuad) {
         /* Do nothing for now */

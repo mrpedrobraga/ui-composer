@@ -3,6 +3,7 @@ use crate::render::present_canvas_to_terminal;
 use crate::runner::{TerminalBlueprintResources, TerminalEnvironment};
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use ::std::hint::black_box;
 use futures_signals::signal::Mutable;
 use pin_project::pin_project;
 use ui_composer_canvas::{Canvas, PixelCanvas, TextModePixel};
@@ -66,15 +67,46 @@ impl<U> TerminalElement<U> where U: Ui<TerminalEnvironment> {
         };
 
         self.ui.place(parent_hints, resources);
+        self.redraw();
+    }
+
+    pub fn redraw(&mut self) {
+        let ui_effects = self.ui.effect();
+        self.state.render_target.clear();
+        let mut vis = TerminalEffectVisitor {
+            canvas: &mut self.state.render_target,
+        };
+        ui_effects.drive_thru(&mut vis);
+
+        /* Draws a cute little mouse cursor... useful for troubleshooting certain interactions. */
+        if let Some(mouse_position) = self.state.mouse_position.get() {
+            vis.canvas.put_pixel(
+                Point2::new(mouse_position.x as u32, mouse_position.y as u32 - 1),
+                TextModePixel {
+                    bg_color: Srgba::new(0.0, 0.0, 0.0, 0.0),
+                    fg_color: Srgba::new(1.0, 1.0, 1.0, 1.0),
+                    character: '\u{f01bf}',
+                },
+            )
+        } else {
+            black_box(())
+        }
+
+        present_canvas_to_terminal(vis.canvas)
+            .expect("Failed to present canvas to terminal?");
+
     }
 }
 
-impl<U> Bubble<Event, bool> for TerminalElement<U> {
+impl<U> Bubble<Event, bool> for TerminalElement<U> where U: Ui<TerminalEnvironment> {
     async fn bubble(&mut self, cx: &mut Event) -> bool {
         if let Event::Resized(new_size) = cx {
             self.state.render_target.resize(new_size.as_());
             self.state.size.set(*new_size);
             /* Needs redrawing! */
+
+            // TODO: Move this somewhere else?
+            self.update_within(&TerminalBlueprintResources {});
         };
 
         if let Event::Cursor {
@@ -113,6 +145,7 @@ where
         cx: &mut Context,
         resources: &TerminalBlueprintResources,
     ) -> Poll<Option<()>> {
+        
         let TerminalElementProj {
             state,
             mut ui,
@@ -144,6 +177,10 @@ where
 
         *first_time = false;
 
+        /*
+            Instead of rendering immediately, mark the terminal as dirty
+            and re-rener as a result of a "redraw requested" event!
+        */
         let ui_effects = ui.effect();
         state.render_target.clear();
         let mut vis = TerminalEffectVisitor {
@@ -165,6 +202,7 @@ where
 
         present_canvas_to_terminal(vis.canvas)
             .expect("Failed to present canvas to terminal?");
+        
 
         Poll::Ready(Some(()))
     }
@@ -192,6 +230,7 @@ where
         .unwrap_or(Size2::new(8, 8));
 
     let render_target = PixelCanvas::new(size.as_());
+    //render_target.set_draw_transform(Vector2::new(1.0/2.0, 1.0/4.0));
 
     let state = TerminalState {
         size: Mutable::new(size.as_()),

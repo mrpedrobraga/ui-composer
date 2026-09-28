@@ -1,4 +1,4 @@
-#![allow(non_snake_case)]
+#![allow(non_snake_case, unused)]
 
 use ::ui_composer_state::effect::animation::assign;
 use ui_composer::prelude::*;
@@ -11,11 +11,17 @@ use ui_composer_platform_winit::window::Window;
 use ui_composer_state::effect::animation::{futures_time::time::Duration, Animation};
 
 fn main() {
-    UIComposer::run_winit(Window(App2()));
+    //UIComposer::run_winit(Window(App()));
+    UIComposer::run_tui(Terminal(App()))
 }
 
-#[allow(unused)]
-fn App2() -> impl WinitUi {
+macro_rules! MyUi {
+    () => {
+        impl Tui
+    };
+}
+
+fn App2() -> MyUi!() {
     let point_state = Mutable::new(Point2::new(0.0, 0.0));
     let point_signal = point_state.signal();
 
@@ -63,13 +69,11 @@ fn App2() -> impl WinitUi {
     }
 }
 
-#[allow(non_snake_case, unused)]
-fn ColorBox(rect: Rect, color: Rgba) -> impl WinitUi {
+fn ColorBox(rect: Rect, color: Rgba) -> MyUi!() {
     Canvas::new(move |_| Graphic { rect, color })
 }
 
-#[allow(unused)]
-fn App() -> impl WinitUi {
+fn App() -> MyUi!() {
     let c_a = Canvas::new(|hx| LaserSquares(hx.rect)).with_minimum_size(Size2 {
         width: 400.0,
         height: 400.0,
@@ -87,7 +91,6 @@ fn App() -> impl WinitUi {
     }
 }
 
-#[allow(non_snake_case, unused)]
 fn LaserSquares(rect: Rect) -> Vec<Graphic> {
     let colors = [
         Srgba::new(1.0, 1.0, 0.0, 1.0),
@@ -98,13 +101,14 @@ fn LaserSquares(rect: Rect) -> Vec<Graphic> {
         Srgba::new(1.0, 0.0, 0.0, 1.0),
     ];
 
+    let size = Size2::<f32>::new(4.0, 2.0);
+    let step = 2.0;
+
     let mut velocity = Vector2::<f32>::new(1.0, 1.0);
     let mut position = Point2::<f32>::new(0.0, 0.0);
 
     (0..99)
         .map(|i| {
-            let size = Size2::<f32>::new(20.0, 20.0);
-
             if position.x <= 0.0 {
                 velocity.x = 1.0
             };
@@ -126,7 +130,7 @@ fn LaserSquares(rect: Rect) -> Vec<Graphic> {
                 color: colors[i % colors.len()],
             };
 
-            position += velocity * 10.0;
+            position += velocity * step;
 
             g
         })

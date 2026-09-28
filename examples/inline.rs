@@ -4,8 +4,8 @@ use ::ui_composer_platform_winit::window::Window;
 use {lullaby_ui::prelude::*, ui_composer::prelude::*};
 
 fn main() {
-    // UIComposer::run_tui(Terminal(app()))
-    UIComposer::run_winit(Window(app_w()));
+    UIComposer::run_tui(Terminal(app()))
+    // UIComposer::run_winit(Window(app_w()));
 }
 
 fn app() -> impl Tui {

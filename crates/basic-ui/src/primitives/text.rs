@@ -54,7 +54,7 @@ pub fn Text() -> Text {
     }
 }
 
-/// A simple coloured graphic.
+/// A simple coloured strip of text.
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Text {
     pub rect: Rect,

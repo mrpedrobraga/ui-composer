@@ -134,6 +134,7 @@ where
                                         },
                                     })
                                     .await;
+                                    l.redraw();
                                 }
 
                                 if m.kind.is_drag() {
@@ -148,6 +149,7 @@ where
                                         },
                                     })
                                     .await;
+                                    l.redraw();
                                 }
 
                                 if m.kind.is_down() {
