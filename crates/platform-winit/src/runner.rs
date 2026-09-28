@@ -118,12 +118,20 @@ where
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         println!("[Winit] Resumed.");
 
-        if let Some(blueprint) = self.blueprint.take() {
+        if let Some(mut blueprint) = self.blueprint.take() {
+            let initial_child_hints = blueprint.initial_child_hints();
+
+            let minimum_window_size = initial_child_hints.minimum_size;
+
+            // TODO: Allow changing the attributes!
+            let initial_title = "Ui Composer Window!";
+            let initial_window_size: Size2<f32> = Size2::new(640.0, 360.0).max(minimum_window_size);
+
             let window_attributes = WindowAttributes::default()
-                .with_title("UI Composer Window")
+                .with_title(initial_title)
                 .with_inner_size(PhysicalSize {
-                    width: 640,
-                    height: 360,
+                    width: initial_window_size.width,
+                    height: initial_window_size.height,
                 });
             let window = event_loop.create_window(window_attributes).unwrap();
             let window = Arc::new(window);

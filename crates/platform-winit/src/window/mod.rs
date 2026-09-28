@@ -14,12 +14,13 @@ use std::sync::Arc;
 use std::task::Poll;
 use ui_composer_core::app::composition::algebra::Bubble;
 use ui_composer_core::app::composition::elements::{Blueprint, Element};
-use ui_composer_core::app::composition::layout::hints::ParentHints;
+use ui_composer_core::app::composition::layout::hints::{ChildHints, ParentHints};
 use ui_composer_core::app::composition::visit::DriveThru as _;
 use ui_composer_input::event::Event;
 use ui_composer_math::flow::{CartesianFlow, CurrentFlow};
 use ui_composer_math::glamour::{Point2, Rect};
 use ui_composer_math::prelude::Size2;
+use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
 use self::effect_handling::WindowEffectVisitor;
@@ -60,6 +61,24 @@ where
     WindowBlueprint { ui, state }
 }
 
+impl<Ui> WindowBlueprint<Ui>
+where
+    Ui: WinitUi,
+{
+    pub fn initial_child_hints(&mut self) -> ChildHints {
+        let parent_hints = ParentHints {
+            rect: Rect::new(Point2::zeroed(), Size2::new(1.0, 1.0)),
+            current_flow: CurrentFlow {
+                current_flow_direction: CartesianFlow::LeftToRight,
+                current_cross_flow_direction: CartesianFlow::TopToBottom,
+                current_writing_flow_direction: CartesianFlow::LeftToRight,
+                current_writing_cross_flow_direction: CartesianFlow::TopToBottom,
+            },
+        };
+        self.ui.prepare(parent_hints)
+    }
+}
+
 impl<Ui> Blueprint<WinitEnvironment> for WindowBlueprint<Ui>
 where
     Ui: WinitUi,
@@ -67,12 +86,15 @@ where
 {
     type Output = WindowElement<Ui>;
 
-    fn make(self, env: &WinitBlueprintResources<'_>) -> Self::Output {
+    fn make(mut self, env: &WinitBlueprintResources<'_>) -> Self::Output {
         // TODO: Allow different attributes to be specified.
         // Ideally, the user would be able to pass `Mutable`s
         // that the window would poll for reactivity!
 
-        let state = WindowRuntimeState::from_blueprint(self.state, env);
+        // TODO: Move this somewhere else?
+        let initial_child_hints = self.initial_child_hints();
+
+        let state = WindowRuntimeState::from_blueprint(self.state, env, initial_child_hints);
 
         WindowElement { ui: self.ui, state }
     }
@@ -106,7 +128,7 @@ impl<Ui: WinitUi> WindowElement<Ui> {
         new_size: Size2,
         resources: &WinitBlueprintResources,
     ) {
-        /* TODO: Update the ui by telling it about the new dimensions! */
+        /* TODO: Move this somewhere else? */
         let parent_hints = ParentHints {
             rect: Rect::new(Point2::zeroed(), new_size),
             current_flow: CurrentFlow {
@@ -116,6 +138,7 @@ impl<Ui: WinitUi> WindowElement<Ui> {
                 current_writing_cross_flow_direction: CartesianFlow::TopToBottom,
             },
         };
+        self.ui.prepare(parent_hints);
         self.ui.place(parent_hints, resources);
     }
 
@@ -230,12 +253,22 @@ where
 }
 
 impl WindowRuntimeState {
-    pub fn from_blueprint(blueprint: WindowState, env: &WinitBlueprintResources) -> Self {
+    pub fn from_blueprint(
+        blueprint: WindowState,
+        env: &WinitBlueprintResources,
+        initial_child_hints: ChildHints,
+    ) -> Self {
         let gpu = env.gpu.clone();
         let window = env.window.clone().unwrap();
         let render_target = render_target::WindowRenderTarget::new(&gpu, window.clone());
         let render_pipeline = RenderPipeline::new(&gpu, wgpu::TextureFormat::Bgra8UnormSrgb);
         let render_resources = RenderResources::new(gpu, &render_pipeline);
+
+        /* TODO: See what more child hints can be used for! */
+        window.set_min_inner_size(Some(PhysicalSize::new(
+            initial_child_hints.minimum_size.width,
+            initial_child_hints.minimum_size.height,
+        )));
 
         blueprint.app_size.set(env.window_size_mutable.clone());
 

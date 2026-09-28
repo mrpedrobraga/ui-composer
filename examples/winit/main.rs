@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use ui_composer::prelude::*;
-use ui_composer_basic_ui::primitives::graphic::Graphic;
+use ui_composer_basic_ui::{layout::column, primitives::graphic::Graphic};
 use ui_composer_math::{glamour::Rect, palette::rgb::Rgba};
 use ui_composer_platform_winit::window::Window;
 
@@ -16,8 +16,25 @@ fn main() {
 }
 
 fn App() -> impl WinitUi {
-    Canvas::new(|hx| LaserSquares(hx.rect))
+    let c_a = Canvas::new(|hx| LaserSquares(hx.rect)).with_minimum_size(Size2 {
+        width: 100.0,
+        height: 400.0,
+    });
+    let c_b = Canvas::new(|hx| LaserSquares(hx.rect)).with_minimum_size(Size2 {
+        width: 100.0,
+        height: 400.0,
+    });
 
+    view! {
+        column [
+            ((c_a))
+            ((c_b))
+        ]
+    }
+}
+
+#[allow(unused)]
+fn App2() -> impl WinitUi {
     // let future = async {
     //     println!("Eeping");
     //     sleep(Duration::from_secs(1)).await;
@@ -91,7 +108,7 @@ fn LaserSquares(rect: Rect) -> Vec<Graphic> {
 
             let g = Graphic {
                 rect: Rect {
-                    origin: position,
+                    origin: rect.origin + position,
                     size,
                 },
                 color: colors[i % colors.len()],

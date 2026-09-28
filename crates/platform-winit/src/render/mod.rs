@@ -39,7 +39,8 @@ impl RenderResources {
                 contents: bytemuck::cast_slice(&[uniforms]),
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             });
-        let quads = vec![QuadInstance::default(); 100];
+        // TODO: Use a static-sized buffer — derive the capacity from the UI.
+        let quads = vec![QuadInstance::default(); 200];
         let quads_buffer = gpu
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
