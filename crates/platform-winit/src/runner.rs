@@ -154,7 +154,7 @@ where
     ) {
         if let Ok(mut uic_event) = winit_uic_conversion::into_event(event.clone()) {
             if let Some(element) = &self.element {
-                //println!("Bubbling event: {:?}", uic_event);
+                // println!("Bubbling event: {:?}", uic_event);
 
                 let mut lock = block_on(element.lock());
 

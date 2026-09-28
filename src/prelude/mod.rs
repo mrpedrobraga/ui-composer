@@ -13,6 +13,7 @@ pub mod macros;
 /* Core */
 pub use ui_composer_core::prelude::*;
 
+use ui_composer_platform_tui::items::TerminalBlueprint;
 /* Terminal target */
 pub use ui_composer_platform_tui::prelude::*;
 
@@ -47,10 +48,8 @@ impl UIComposer {
 use ui_composer_platform_winit::window::WindowBlueprint;
 
 impl UIComposer {
-    pub fn run_tui(
-        app_blueprint: impl Blueprint<TerminalEnvironment, Output: Send + 'static> + Send,
-    ) {
-        UIComposer::run_custom::<TUIRunner<_>>(app_blueprint);
+    pub fn run_tui(terminal_blueprint: TerminalBlueprint<impl Tui>) {
+        TuiRunner::run(terminal_blueprint);
     }
 
     pub fn run_winit<Ui>(app_blueprint: WindowBlueprint<Ui>)

@@ -31,7 +31,7 @@ pub fn Button(_label: impl Ui, effect: impl Effect + 'static) -> impl Ui {
         //     }
         // });
 
-        list_internal![tap, Graphic::new(hx.rect, BUTTON_COLOR / 255.0)]
+        list_internal![tap, Graphic::new(hx.rect, BUTTON_COLOR_HOVER / 255.0)]
     })
     .with_minimum_size(Size2::new(15.0, 3.0))
 }

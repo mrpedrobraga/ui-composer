@@ -15,11 +15,14 @@ use std::task::Poll;
 use ui_composer_core::app::composition::algebra::Bubble;
 use ui_composer_core::app::composition::elements::{Blueprint, Element};
 use ui_composer_core::app::composition::layout::hints::ParentHints;
+use ui_composer_core::app::composition::visit::DriveThru as _;
 use ui_composer_input::event::Event;
 use ui_composer_math::flow::{CartesianFlow, CurrentFlow};
 use ui_composer_math::glamour::{Point2, Rect};
 use ui_composer_math::prelude::Size2;
 use winit::window::Window;
+
+use self::effect_handling::WindowEffectVisitor;
 
 pub mod effect_handling;
 pub mod render_target;
@@ -98,8 +101,22 @@ pub struct WindowRuntimeState {
 }
 
 impl<Ui: WinitUi> WindowElement<Ui> {
-    pub(crate) fn prepare_to_resize(&mut self, _: Size2, _: &WinitBlueprintResources) {
+    pub(crate) fn prepare_to_resize(
+        &mut self,
+        new_size: Size2,
+        resources: &WinitBlueprintResources,
+    ) {
         /* TODO: Update the ui by telling it about the new dimensions! */
+        let parent_hints = ParentHints {
+            rect: Rect::new(Point2::zeroed(), new_size),
+            current_flow: CurrentFlow {
+                current_flow_direction: CartesianFlow::LeftToRight,
+                current_cross_flow_direction: CartesianFlow::TopToBottom,
+                current_writing_flow_direction: CartesianFlow::LeftToRight,
+                current_writing_cross_flow_direction: CartesianFlow::TopToBottom,
+            },
+        };
+        self.ui.place(parent_hints, resources);
     }
 
     fn resize_internal(&mut self, new_size: Size2) {
@@ -134,21 +151,19 @@ impl<Ui: WinitUi> Bubble<Event, bool> for WindowElement<Ui> {
             }
             Event::RedrawRequested => {
                 /* TODO: Redraw! */
-                if self.state.needs_redrawing
-                // && let Some(elements) = &mut self.elements
-                {
-                    // let quads = &mut self.state.render_resources.quads;
-                    // // TODO: No cleanup will be needed when we have a sized buffer.
-                    // quads.clear();
+                if self.state.needs_redrawing {
+                    let quads = &mut self.state.render_resources.quads;
+                    // TODO: No cleanup will be needed when we have a sized buffer.
+                    quads.clear();
 
-                    // let ui_effects = elements.effect();
-                    // let mut visitor = WindowEffectVisitor { quads };
-                    // ui_effects.drive_thru(&mut visitor);
-                    // drop(ui_effects);
-                    // //println!("{:?}", quads);
+                    let ui_effects = self.ui.effect();
+                    let mut visitor = WindowEffectVisitor { quads };
+                    ui_effects.drive_thru(&mut visitor);
+                    drop(ui_effects);
+                    //println!("{:?}", quads);
 
-                    // self.redraw();
-                    // self.state.needs_redrawing = true;
+                    self.redraw();
+                    self.state.needs_redrawing = true;
                 }
                 true
             }

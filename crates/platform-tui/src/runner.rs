@@ -16,10 +16,11 @@ use futures_signals::signal::SignalExt as _;
 use smol_str::ToSmolStr as _;
 use std::io::{Write, stdout};
 use std::marker::PhantomData;
-use std::sync::{Arc};
+use std::sync::Arc;
 use ui_composer_core::app::composition::algebra::Bubble as _;
-use ui_composer_core::app::composition::elements::{Blueprint, Environment};
-use ui_composer_core::app::runner::Runner;
+use ui_composer_core::app::composition::elements::{
+    Blueprint, Environment,
+};
 use ui_composer_core::app::runner::futures::AsyncExecutor;
 use ui_composer_input::event::{
     ButtonState, CursorEvent, DeviceId, Event, KeyEvent, KeyboardEvent,
@@ -27,9 +28,12 @@ use ui_composer_input::event::{
 };
 use ui_composer_math::prelude::{Point2, Size2, Vector2};
 
-use crate::items::TerminalEffectVisitor;
+use crate::Tui;
+use crate::items::{TerminalBlueprint, TerminalEffectVisitor};
 
 pub struct TerminalEnvironment;
+
+#[derive(Clone)]
 pub struct TerminalBlueprintResources;
 
 impl Environment for TerminalEnvironment {
@@ -37,121 +41,132 @@ impl Environment for TerminalEnvironment {
     type EffectVisitor<'fx> = TerminalEffectVisitor<'fx>;
 }
 
-pub struct TUIRunner<AppBlueprint>
+pub struct TuiRunner<U>
 where
-    AppBlueprint: Send + Blueprint<TerminalEnvironment>,
+    U: Tui
 {
-    _app: PhantomData<AppBlueprint>,
+    _app: PhantomData<U>,
 }
 
-impl<AppBlueprint> Runner for TUIRunner<AppBlueprint>
+impl<U> TuiRunner<U>
 where
-    AppBlueprint: Send + Blueprint<TerminalEnvironment>,
-    AppBlueprint::Output: Send + 'static,
+    U: Tui,
 {
-    type AppBlueprint = AppBlueprint;
-
-    fn run(blueprint: Self::AppBlueprint) {
+    pub fn run(terminal_blueprint: TerminalBlueprint<U>) {
         Self::grab_terminal(&mut stdout()).unwrap();
 
         #[allow(unused)]
-        let env = TerminalEnvironment;
-        let res = TerminalBlueprintResources;
-        let app = blueprint.make(&res);
-        let app = Arc::new(futures::lock::Mutex::new(app));
-        let app_e = app.clone();
+        let environment = TerminalEnvironment;
+        let resources = TerminalBlueprintResources;
+        let mut terminal_element = terminal_blueprint.make(&resources);
+        terminal_element.update_within(&resources);
+        let terminal_element = Arc::new(futures::lock::Mutex::new(terminal_element));
+        let terminal_element_2 = terminal_element.clone();
 
         // Correction for the terminal's way of indexing.
         let top_left_correction = Vector2::new(1.0, 1.0);
 
+
+        let res2 = resources.clone();
         let event_handler = async {
             let e_stream = EventStream::new();
-
+            let resources = res2.clone();
             e_stream
                 .filter_map(|e| async { e.ok() })
                 .for_each(move |event| {
-                    let app_e = app_e.clone();
-                    async move {
-                        if let CrosstermEvent::Key(e) = event
-                            && let KeyCode::Char('q') = e.code
-                        {
-                            let _ = Self::release_terminal(&mut stdout());
-                            std::process::exit(1);
-                        }
-
-                        if let CrosstermEvent::Resize(new_width, new_height) =
-                            event
-                        {
-                            let mut l = app_e.lock().await;
-                            l.bubble(&mut Event::Resized(Size2::new(
-                                new_width as f32,
-                                new_height as f32,
-                            ))).await;
-                        }
-
-                        if let CrosstermEvent::Key(k) = event {
-                            let mut l = app_e.lock().await;
-                            l.bubble(&mut Event::Keyboard {
-                                id: DeviceId(0),
-                                event: KeyboardEvent::Key(KeyEvent {
-                                    is_implicit: false,
-                                    text_repr: k
-                                        .code
-                                        .as_char()
-                                        .map(|x| x.to_smolstr()),
-                                    button_state: if k.is_press() {
-                                        ButtonState::Pressed
-                                    } else {
-                                        ButtonState::Released
-                                    },
-                                }),
-                            }).await;
-                        }
-
-                        if let CrosstermEvent::Mouse(m) = event {
-                            let mut l = app_e.lock().await;
-
-                            if m.kind.is_moved() {
-                                l.bubble(&mut Event::Cursor {
-                                    id: DeviceId(0),
-                                    event: CursorEvent::Moved {
-                                        position: (Point2::<u16>::new(
-                                            m.column, m.row,
-                                        )
-                                        .as_()
-                                            + top_left_correction),
-                                    },
-                                }).await;
+                    let app_e = terminal_element_2.clone();
+                    {
+                        let resources = resources.clone();
+                        async move {
+                            if let CrosstermEvent::Key(e) = event
+                                && let KeyCode::Char('q') = e.code
+                            {
+                                let _ = Self::release_terminal(&mut stdout());
+                                std::process::exit(1);
                             }
 
-                            if m.kind.is_drag() {
-                                l.bubble(&mut Event::Cursor {
-                                    id: DeviceId(0),
-                                    event: CursorEvent::Moved {
-                                        position: (Point2::<u16>::new(
-                                            m.column, m.row,
-                                        )
-                                        .as_()
-                                            + top_left_correction),
-                                    },
-                                }).await;
+                            if let CrosstermEvent::Resize(
+                                new_width,
+                                new_height,
+                            ) = event
+                            {
+                                let mut l = app_e.lock().await;
+                                l.bubble(&mut Event::Resized(Size2::new(
+                                    new_width as f32,
+                                    new_height as f32,
+                                )))
+                                .await;
+                                l.update_within(&resources);
                             }
 
-                            if m.kind.is_down() {
-                                l.bubble(&mut Event::Cursor {
+                            if let CrosstermEvent::Key(k) = event {
+                                let mut l = app_e.lock().await;
+                                l.bubble(&mut Event::Keyboard {
                                     id: DeviceId(0),
-                                    event: CursorEvent::Touched {
-                                        finger_id: 0,
-                                        stage: TouchStage::Started,
-                                    },
-                                }).await;
+                                    event: KeyboardEvent::Key(KeyEvent {
+                                        is_implicit: false,
+                                        text_repr: k
+                                            .code
+                                            .as_char()
+                                            .map(|x| x.to_smolstr()),
+                                        button_state: if k.is_press() {
+                                            ButtonState::Pressed
+                                        } else {
+                                            ButtonState::Released
+                                        },
+                                    }),
+                                })
+                                .await;
+                            }
+
+                            if let CrosstermEvent::Mouse(m) = event {
+                                let mut l = app_e.lock().await;
+
+                                if m.kind.is_moved() {
+                                    l.bubble(&mut Event::Cursor {
+                                        id: DeviceId(0),
+                                        event: CursorEvent::Moved {
+                                            position: (Point2::<u16>::new(
+                                                m.column, m.row,
+                                            )
+                                            .as_()
+                                                + top_left_correction),
+                                        },
+                                    })
+                                    .await;
+                                }
+
+                                if m.kind.is_drag() {
+                                    l.bubble(&mut Event::Cursor {
+                                        id: DeviceId(0),
+                                        event: CursorEvent::Moved {
+                                            position: (Point2::<u16>::new(
+                                                m.column, m.row,
+                                            )
+                                            .as_()
+                                                + top_left_correction),
+                                        },
+                                    })
+                                    .await;
+                                }
+
+                                if m.kind.is_down() {
+                                    l.bubble(&mut Event::Cursor {
+                                        id: DeviceId(0),
+                                        event: CursorEvent::Touched {
+                                            finger_id: 0,
+                                            stage: TouchStage::Started,
+                                        },
+                                    })
+                                    .await;
+                                }
                             }
                         }
                     }
                 })
                 .await;
         };
-        let async_handler = AsyncExecutor::new(app, res, || {}).to_future();
+        let async_handler = AsyncExecutor::new(terminal_element, resources, || {}).to_future();
         let processes = async { join!(event_handler, async_handler) };
         block_on(processes);
 
@@ -159,9 +174,9 @@ where
     }
 }
 
-impl<AppBlueprint> TUIRunner<AppBlueprint>
+impl<U> TuiRunner<U>
 where
-    AppBlueprint: Send + Blueprint<TerminalEnvironment>,
+    U: Tui
 {
     pub fn grab_terminal(
         terminal: &mut (impl QueueableCommand + Write),

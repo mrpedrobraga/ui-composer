@@ -1,9 +1,12 @@
 use core::f32;
-use std::{marker::PhantomData};
+use std::marker::PhantomData;
 
 use ui_composer_core::app::composition::{
-    algebra::Semigroup, elements::Environment, layout::{
-        Ui, hints::{ChildHints, ParentHints},
+    algebra::Semigroup,
+    elements::{Blueprint, Element, Environment},
+    layout::{
+        hints::{ChildHints, ParentHints},
+        Ui,
     },
 };
 use ui_composer_math::prelude::{Rect, Size2, Vector2};
@@ -81,36 +84,47 @@ where
     fn place(&mut self, parent_hints: ParentHints, resources: &Env::BlueprintResources<'_>) {
         // TODO: Maybe split `resources`?
 
-        self.item_a.place(ParentHints {
-            rect: Rect::new(
-                parent_hints.rect.origin,
-                Size2::new(
-                    parent_hints.rect.size.width,
-                    self.__item_a_hints_cache.minimum_size.height,
+        self.item_a.place(
+            ParentHints {
+                rect: Rect::new(
+                    parent_hints.rect.origin,
+                    Size2::new(
+                        parent_hints.rect.size.width,
+                        self.__item_a_hints_cache.minimum_size.height,
+                    ),
                 ),
-            ),
-            ..parent_hints
-        }, resources);
+                ..parent_hints
+            },
+            resources,
+        );
 
-        self.item_b.place(ParentHints {
-            rect: Rect::new(
-                parent_hints.rect.origin.translate(Vector2::new(
-                    0.0,
-                    self.__item_a_hints_cache.minimum_size.height + self.gap,
-                )),
-                Size2::new(
-                    parent_hints.rect.size.width,
-                    self.__item_b_hints_cache.minimum_size.height,
+        self.item_b.place(
+            ParentHints {
+                rect: Rect::new(
+                    parent_hints.rect.origin.translate(Vector2::new(
+                        0.0,
+                        self.__item_a_hints_cache.minimum_size.height + self.gap,
+                    )),
+                    Size2::new(
+                        parent_hints.rect.size.width,
+                        self.__item_b_hints_cache.minimum_size.height,
+                    ),
                 ),
-            ),
-            ..parent_hints
-        }, resources);
+                ..parent_hints
+            },
+            resources,
+        );
     }
-    
-    fn effect(&self) -> <<Self::Blueprint as ui_composer_core::prelude::Blueprint<Env>>::Output as ui_composer_core::prelude::Element<Env>>::Effect {
-        todo!()
+
+    fn effect(
+        &self,
+    ) -> (
+        <<A::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect,
+        <<B::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect,
+    ) {
+        (self.item_a.effect(), self.item_b.effect())
     }
-    
+
     fn poll_change(
         self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context,
@@ -118,6 +132,9 @@ where
         parent_hints: ParentHints,
     ) -> std::task::Poll<Option<()>> {
         let this = self.project();
-        Semigroup::combine(this.item_a.poll_change(cx, resources, parent_hints), this.item_b.poll_change(cx, resources, parent_hints))
+        Semigroup::combine(
+            this.item_a.poll_change(cx, resources, parent_hints),
+            this.item_b.poll_change(cx, resources, parent_hints),
+        )
     }
 }
