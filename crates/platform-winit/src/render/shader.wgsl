@@ -23,12 +23,12 @@ fn vs_main(
     @builtin(instance_index) instance_index: u32
 ) -> VertexOutput {
     let POSITIONS = array<vec2<f32>, 6>(
-        vec2<f32>(-1.0,  1.0), // 0\ 3--5
-        vec2<f32>(-1.0, -1.0), // | \ \ |
-        vec2<f32>( 1.0, -1.0), // 1--2 \4
-        vec2<f32>(-1.0,  1.0),
-        vec2<f32>( 1.0, -1.0), 
-        vec2<f32>( 1.0,  1.0)
+        vec2<f32>( 0.0, 0.0), // 0\ 3--5
+        vec2<f32>( 0.0, 1.0), // | \ \ |
+        vec2<f32>( 1.0, 1.0), // 1--2 \4
+        vec2<f32>( 0.0, 0.0),
+        vec2<f32>( 1.0, 1.0), 
+        vec2<f32>( 1.0, 0.0)
     );
     
     let UVS = array<vec2<f32>, 6>(

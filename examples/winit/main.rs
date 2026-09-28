@@ -1,11 +1,12 @@
 #![allow(non_snake_case)]
 
+use futures::executor::block_on;
 use ui_composer::prelude::*;
 use ui_composer_basic_ui::primitives::graphic::Graphic;
-use ui_composer_core::app::composition::effects::future::Await;
 use ui_composer_math::{glamour::Rect, palette::rgb::Rgba};
 use ui_composer_platform_winit::window::Window;
 use ui_composer_state::effect::animation::futures_time::{task::sleep, time::Duration};
+
 fn main() {
     // tracing_subscriber::fmt()
     //     .with_max_level(tracing::Level::DEBUG)
@@ -19,16 +20,37 @@ fn main() {
 fn App() -> impl WinitUi {
     //Canvas::new(|hx| LaserSquares(hx.rect))
 
-    let future = async {
-        println!("Eeping");
-        sleep(Duration::from_secs(1)).await;
-        Point2::new(200.0, 100.0)
-    };
+    // let future = async {
+    //     println!("Eeping");
+    //     sleep(Duration::from_secs(1)).await;
+    //     Point2::new(200.0, 100.0)
+    // };
 
-    Await::new(future, |origin| {
+    // Await::new(future, |origin| {
+    //     ColorBox(
+    //         Rect::new(origin, Size2::new(100.0, 100.0)),
+    //         Srgba::new(1.0, 1.0, 0.0, 1.0),
+    //     )
+    // })
+
+    let state = Mutable::new(Point2::new(0.0, 0.0));
+    let signal = state.signal();
+
+    std::thread::spawn(move || {
+        block_on(async move {
+            sleep(Duration::from_secs(1)).await;
+            state.set(Point2::new(200.0, 0.0));
+            sleep(Duration::from_secs(1)).await;
+            state.set(Point2::new(200.0, 200.0));
+            sleep(Duration::from_secs(1)).await;
+            state.set(Point2::new(0.0, 200.0));
+        })
+    });
+
+    signal.react(|point| {
         ColorBox(
-            Rect::new(origin, Size2::new(100.0, 100.0)),
-            Srgba::new(1.0, 1.0, 0.0, 1.0),
+            Rect::new(point, Size2::new(100.0, 100.0)),
+            Srgba::new(0.8, 0.7, 0.0, 1.0),
         )
     })
 }
