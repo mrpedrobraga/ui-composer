@@ -75,8 +75,8 @@ mod implementations;
 
 /// The closure-like trait that produces [`Emit`]s.
 #[diagnostic::on_unimplemented(
-    message = "{Self} is not [Ui] and thus can not be used...",
-    label = "...in this context...",
+    message = "`{Self}` is not a `{Env}`-compatible `Ui`...",
+    label = "...required because of this...",
     note = "You can use [Canvas] to bundle [Blueprint]s as [Ui]!."
 )]
 #[must_use = "Ui needs to be given to a context (such as a window) to do anything."]

@@ -13,8 +13,7 @@ pub mod button;
 /* Containers */
 pub mod panel_container;
 
-pub trait Ui: CompatibleWith<TerminalEnvironment>
-//+ CompatibleWith<WinitEnvironment>
+pub trait Ui: CompatibleWith<TerminalEnvironment> //+ CompatibleWith<WinitEnvironment>
 {
 }
 

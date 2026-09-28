@@ -99,7 +99,7 @@ where
                 let element = block_on(rx).unwrap();
 
                 let async_executor: AsyncExecutor<'_, WinitEnvironment, _, _> =
-                    AsyncExecutor::new(element, app_making_resources, || println!("Yielded!"));
+                    AsyncExecutor::new(element, app_making_resources, || {});
                 block_on(async_executor.to_future())
             });
 

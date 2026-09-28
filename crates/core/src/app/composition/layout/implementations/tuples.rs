@@ -28,7 +28,7 @@ impl<Env: Environment> Ui<Env> for () {
         _: &<Env as crate::prelude::Environment>::BlueprintResources<'_>,
         _: ParentHints,
     ) -> std::task::Poll<Option<()>> {
-        todo!()
+        std::task::Poll::Ready(None)
     }
 }
 

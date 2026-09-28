@@ -27,6 +27,40 @@ where
     _marker: PhantomData<Env>,
 }
 
+pub trait FutureExt: Future {
+    /// Returns a branch of reactive UI that polls the future and updates when the future resolves.
+    fn react<Env, U, Map>(self, map: Map) -> Await<Env, U, Self, Map>
+    where
+        Env: Environment,
+        U: Ui<Env>,
+        Map: FnMut(Self::Output) -> U,
+        Self: std::marker::Sized,
+    {
+        Await::new(self, map)
+    }
+
+    /// Returns a branch of reactive UI that polls the future but doesn't render anything.
+    fn into_ui_process<Env>(self) -> Await<Env, (), Self, impl FnMut(Self::Output)>
+    where
+        Env: Environment,
+        Self: std::marker::Sized,
+    {
+        self.react(|_| {})
+    }
+
+    /// Returns a branch of reactive UI that polls the future and updates when the future resolves.
+    fn for_of<Env, U, Map>(self, map: Map) -> Await<Env, U, Self, Map>
+    where
+        Env: Environment,
+        U: Ui<Env>,
+        Map: FnMut(Self::Output) -> U,
+        Self: std::marker::Sized,
+    {
+        self.react(map)
+    }
+}
+impl<Fut> FutureExt for Fut where Fut: Future {}
+
 impl<Env, U, Fut, Map> Await<Env, U, Fut, Map>
 where
     Env: Environment,

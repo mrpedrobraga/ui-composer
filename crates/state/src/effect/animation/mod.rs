@@ -12,27 +12,19 @@ use futures_time::{
 
 pub mod spring;
 pub use futures_time;
+use glamour::Point2;
+use num_traits::{One, Zero};
 
 use core::ops::{Add, Mul, Sub};
-use vek::num_traits::{One, Zero};
 
 /// A Vector is a value that be added to itself and be scaled.
 pub trait Vector:
-    Zero
-    + One
-    + Add<Self, Output = Self>
-    + Sub<Self, Output = Self>
-    + Mul<f32, Output = Self>
+    Zero + One + Add<Self, Output = Self> + Sub<Self, Output = Self> + Mul<f32, Output = Self>
 {
 }
 
-impl<
-    T: Zero
-        + One
-        + Add<Output = Self>
-        + Sub<Output = Self>
-        + Mul<f32, Output = Self>,
-> Vector for T
+impl<T: Zero + One + Add<Output = Self> + Sub<Output = Self> + Mul<f32, Output = Self>> Vector
+    for T
 {
 }
 
@@ -41,20 +33,35 @@ pub trait Lerp {
     fn linear_interpolate(self, other: Self, t: f32) -> Self;
 }
 
-/*impl<T: Num + Mul<f32, Output = Self>> Lerp for T {
+// impl<T: Num + Mul<f32, Output = Self>> Lerp for T {
+//     fn linear_interpolate(self, other: Self, t: f32) -> Self {
+//         self * (1.0 - t) + other * t
+//     }
+// }
+
+impl Lerp for f32 {
     fn linear_interpolate(self, other: Self, t: f32) -> Self {
         self * (1.0 - t) + other * t
     }
-}*/
+}
 
-impl<T> Lerp for T
-where
-    T: vek::Lerp<Output = T>,
-{
+impl Lerp for Point2 {
     fn linear_interpolate(self, other: Self, t: f32) -> Self {
-        vek::Lerp::lerp(self, other, t)
+        Point2 {
+            x: self.x.linear_interpolate(other.x, t),
+            y: self.y.linear_interpolate(other.y, t),
+        }
     }
 }
+
+// impl<T> Lerp for T
+// where
+//     T: vek::Lerp<Output = T>,
+// {
+//     fn linear_interpolate(self, other: Self, t: f32) -> Self {
+//         vek::Lerp::lerp(self, other, t)
+//     }
+// }
 
 /// A lossy [`Stream`] which attempts to keep up with the flow of time.
 pub trait Animation {
@@ -84,7 +91,7 @@ pub trait Animation {
     }
 
     /// Chains [self] with an additional linear interpolation of the value.
-    fn lerp_to(
+    fn then_lerp_to(
         self,
         target_value: Self::Item,
         duration: Duration,
@@ -107,11 +114,7 @@ pub trait Animation {
 
     /// Consumes this [Animation] and produces a future that completes
     /// when the animation is finished.
-    fn animate_from<F>(
-        mut self,
-        mut f: F,
-        initial_value: Self::Item,
-    ) -> impl Future<Output = ()>
+    fn animate_from<F>(mut self, mut f: F, initial_value: Self::Item) -> impl Future<Output = ()>
     where
         Self::Item: Copy,
         Self: Sized,
@@ -122,8 +125,7 @@ pub trait Animation {
         async move {
             loop {
                 let delta = last_frame.elapsed().into();
-                let poll = self
-                    .process(initial_value, AnimationFrame { start, delta });
+                let poll = self.process(initial_value, AnimationFrame { start, delta });
 
                 match poll {
                     Poll::Ongoing(frame) => {
@@ -136,10 +138,7 @@ pub trait Animation {
                     }
                 }
 
-                task::sleep(
-                    Duration::from_millis(16) - last_frame.elapsed().into(),
-                )
-                .await;
+                task::sleep(Duration::from_millis(16) - last_frame.elapsed().into()).await;
             }
         }
     }
@@ -285,10 +284,7 @@ impl<Item> Animation for Assign<Item> {
 }
 
 /// Interpolates the initial value to a destination value in a certain time.
-pub fn lerp<Item: Lerp>(
-    to: Item,
-    duration: Duration,
-) -> LinearInterpolate<Item> {
+pub fn lerp<Item: Lerp>(to: Item, duration: Duration) -> LinearInterpolate<Item> {
     LinearInterpolate { to, duration }
 }
 
@@ -314,8 +310,7 @@ impl<Item: Lerp> Animation for LinearInterpolate<Item> {
         } else {
             Poll::Ongoing(initial_value.linear_interpolate(
                 self.to,
-                frame_params.start.elapsed().as_secs_f32()
-                    / self.duration.as_secs_f32(),
+                frame_params.start.elapsed().as_secs_f32() / self.duration.as_secs_f32(),
             ))
         }
     }
@@ -352,8 +347,7 @@ where
     ) -> Poll<Self::Item> {
         if let Some(current_value) = self.current_value {
             let vector = self.target - current_value;
-            let next_value = current_value
-                + vector * self.speed * frame_params.delta.as_secs_f32();
+            let next_value = current_value + vector * self.speed * frame_params.delta.as_secs_f32();
             self.current_value = Some(next_value);
             Poll::Ongoing(next_value)
         } else {

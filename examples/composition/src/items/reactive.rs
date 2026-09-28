@@ -21,6 +21,18 @@ where
     map: Option<Map>,
 }
 
+pub trait FutureExt: Future {
+    fn react<U, Map>(self, map: Map) -> Await<U, Self, Map>
+    where
+        U: Ui,
+        Map: FnMut(Self::Output) -> U,
+        Self: std::marker::Sized,
+    {
+        Await::new(self, map)
+    }
+}
+impl<Fut> FutureExt for Fut where Fut: Future {}
+
 impl<U, Fut, Map> Await<U, Fut, Map>
 where
     U: Ui,

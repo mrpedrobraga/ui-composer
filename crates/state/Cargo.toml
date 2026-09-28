@@ -9,6 +9,6 @@ name = "ui_composer_state"
 [dependencies]
 futures-signals = "*"
 futures-time = "3.0.1"
+glamour = "0.18.0"
 num-traits = "0.2.19"
 pin-project = "1.1.10"
-vek = "0.17.2"

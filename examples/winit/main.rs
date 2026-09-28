@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use futures::executor::block_on;
+use ::ui_composer_state::effect::animation::assign;
 use ui_composer::prelude::*;
 use ui_composer_basic_ui::{
     layout::{flex, item, row},
@@ -8,7 +8,7 @@ use ui_composer_basic_ui::{
 };
 use ui_composer_math::{glamour::Rect, palette::rgb::Rgba};
 use ui_composer_platform_winit::window::Window;
-use ui_composer_state::effect::animation::futures_time::{task::sleep, time::Duration};
+use ui_composer_state::effect::animation::{futures_time::time::Duration, Animation};
 
 fn main() {
     // tracing_subscriber::fmt()
@@ -16,8 +16,47 @@ fn main() {
     //     .without_time()
     //     .init();
 
-    let window = Window(App2());
-    UIComposer::run_winit(window);
+    UIComposer::run_winit(Window(App2()));
+}
+
+#[allow(unused)]
+fn App2() -> impl WinitUi {
+    let point_state = Mutable::new(Point2::new(0.0, 0.0));
+    let point_signal = point_state.signal();
+
+    let animation_process = assign(Point2::new(0.0, 0.0))
+        .then_lerp_to(Point2::new(200.0, 0.0), Duration::from_secs(1))
+        .then_lerp_to(Point2::new(200.0, 200.0), Duration::from_secs(1))
+        .then_lerp_to(Point2::new(0.0, 200.0), Duration::from_secs(1))
+        .animate_value(point_state)
+        .into_ui_process();
+
+    view! {
+        (animation_process)
+
+        row [
+            ColorBox (
+                ( Rect::new(Point2::ZERO, Size2::new(50.0, 50.0)) )
+                ( Srgba::new(0.8, 0.2, 0.0, 1.0) )
+            )
+            // Fine-grained reactivity with functors*!
+            for point of point_signal {
+                ColorBox (
+                    ( Rect::new(point, Size2::new(100.0, 100.0)) )
+                    ( Srgba::new(0.8, 0.7, 0.0, 1.0) )
+                )
+            }
+            ColorBox (
+                ( Rect::new(Point2::new(200.0, 200.0), Size2::new(50.0, 50.0)) )
+                ( Srgba::new(0.2, 0.7, 0.0, 1.0) )
+            )
+        ]
+    }
+}
+
+#[allow(non_snake_case, unused)]
+fn ColorBox(rect: Rect, color: Rgba) -> impl WinitUi {
+    Canvas::new(move |_| Graphic { rect, color })
 }
 
 #[allow(unused)]
@@ -37,48 +76,6 @@ fn App() -> impl WinitUi {
             item {grow: 1.0} ((c_b))
         ]
     }
-}
-
-#[allow(unused)]
-fn App2() -> impl WinitUi {
-    let point_state = Mutable::new(Point2::new(0.0, 0.0));
-    let point_signal = point_state.signal();
-
-    std::thread::spawn(move || {
-        block_on(async move {
-            sleep(Duration::from_secs(1)).await;
-            point_state.set(Point2::new(200.0, 0.0));
-            sleep(Duration::from_secs(1)).await;
-            point_state.set(Point2::new(200.0, 200.0));
-            sleep(Duration::from_secs(1)).await;
-            point_state.set(Point2::new(0.0, 200.0));
-        })
-    });
-
-    view! {
-        row [
-            ColorBox (
-                (( Rect::new(Point2::ZERO, Size2::new(50.0, 50.0)) ))
-                (( Srgba::new(0.8, 0.2, 0.0, 1.0) ))
-            )
-            // Fine-grained reactivity with functors*!
-            for point of point_signal {
-                ColorBox (
-                    (( Rect::new(point, Size2::new(100.0, 100.0)) ))
-                    (( Srgba::new(0.8, 0.7, 0.0, 1.0) ))
-                )
-            }
-            ColorBox (
-                (( Rect::new(Point2::new(200.0, 200.0), Size2::new(50.0, 50.0)) ))
-                (( Srgba::new(0.2, 0.7, 0.0, 1.0) ))
-            )
-        ]
-    }
-}
-
-#[allow(non_snake_case, unused)]
-fn ColorBox(rect: Rect, color: Rgba) -> impl WinitUi {
-    Canvas::new(move |_| Graphic { rect, color })
 }
 
 #[allow(non_snake_case, unused)]
