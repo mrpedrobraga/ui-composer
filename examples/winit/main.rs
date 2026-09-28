@@ -1,11 +1,9 @@
 #![allow(non_snake_case)]
 
-use futures::executor::block_on;
 use ui_composer::prelude::*;
 use ui_composer_basic_ui::primitives::graphic::Graphic;
 use ui_composer_math::{glamour::Rect, palette::rgb::Rgba};
 use ui_composer_platform_winit::window::Window;
-use ui_composer_state::effect::animation::futures_time::{task::sleep, time::Duration};
 
 fn main() {
     // tracing_subscriber::fmt()
@@ -18,7 +16,7 @@ fn main() {
 }
 
 fn App() -> impl WinitUi {
-    //Canvas::new(|hx| LaserSquares(hx.rect))
+    Canvas::new(|hx| LaserSquares(hx.rect))
 
     // let future = async {
     //     println!("Eeping");
@@ -33,26 +31,26 @@ fn App() -> impl WinitUi {
     //     )
     // })
 
-    let state = Mutable::new(Point2::new(0.0, 0.0));
-    let signal = state.signal();
+    // let state = Mutable::new(Point2::new(0.0, 0.0));
+    // let signal = state.signal();
 
-    std::thread::spawn(move || {
-        block_on(async move {
-            sleep(Duration::from_secs(1)).await;
-            state.set(Point2::new(200.0, 0.0));
-            sleep(Duration::from_secs(1)).await;
-            state.set(Point2::new(200.0, 200.0));
-            sleep(Duration::from_secs(1)).await;
-            state.set(Point2::new(0.0, 200.0));
-        })
-    });
+    // std::thread::spawn(move || {
+    //     block_on(async move {
+    //         sleep(Duration::from_secs(1)).await;
+    //         state.set(Point2::new(200.0, 0.0));
+    //         sleep(Duration::from_secs(1)).await;
+    //         state.set(Point2::new(200.0, 200.0));
+    //         sleep(Duration::from_secs(1)).await;
+    //         state.set(Point2::new(0.0, 200.0));
+    //     })
+    // });
 
-    signal.react(|point| {
-        ColorBox(
-            Rect::new(point, Size2::new(100.0, 100.0)),
-            Srgba::new(0.8, 0.7, 0.0, 1.0),
-        )
-    })
+    // signal.react(|point| {
+    //     ColorBox(
+    //         Rect::new(point, Size2::new(100.0, 100.0)),
+    //         Srgba::new(0.8, 0.7, 0.0, 1.0),
+    //     )
+    // })
 }
 
 #[allow(non_snake_case, unused)]
@@ -76,28 +74,32 @@ fn LaserSquares(rect: Rect) -> Vec<Graphic> {
 
     (0..99)
         .map(|i| {
-            position += velocity * 10.0;
-            if position.x < 0.0 {
-                velocity.x = 1.0
-            };
-            if position.y < 0.0 {
-                velocity.y = 1.0
-            };
-            if position.x > rect.size.width {
-                velocity.x = -1.0
-            };
-            if position.y > rect.size.height {
-                velocity.y = -1.0
-            };
             let size = Size2::<f32>::new(20.0, 20.0);
 
-            Graphic {
+            if position.x <= 0.0 {
+                velocity.x = 1.0
+            };
+            if position.y <= 0.0 {
+                velocity.y = 1.0
+            };
+            if position.x >= rect.size.width - size.width {
+                velocity.x = -1.0
+            };
+            if position.y >= rect.size.height - size.height {
+                velocity.y = -1.0
+            };
+
+            let g = Graphic {
                 rect: Rect {
                     origin: position,
                     size,
                 },
                 color: colors[i % colors.len()],
-            }
+            };
+
+            position += velocity * 10.0;
+
+            g
         })
         .chain(std::iter::once(Graphic {
             rect,
