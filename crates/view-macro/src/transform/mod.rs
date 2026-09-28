@@ -51,4 +51,5 @@ struct ForExpr {
     pat: Pat,
     expr: Expr,
     body: Vec<ViewNode>,
+    empty_state: Option<Vec<ViewNode>>,
 }

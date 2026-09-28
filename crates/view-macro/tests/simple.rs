@@ -1,5 +1,7 @@
 use async_std::task::block_on;
+use futures_signals::signal::Map;
 use futures_signals::signal::Mutable;
+use futures_signals::signal::MutableSignal;
 use futures_signals::signal::SignalExt;
 use std::fmt::Formatter;
 use ui_composer_view_macro::view;
@@ -129,10 +131,7 @@ where
     Eff: Effect,
 {
     /// This effect will be [triggered](Effect::trigger) when the button is pressed.
-    pub fn with_effect<NewEffect>(
-        self,
-        eff: NewEffect,
-    ) -> ButtonBlueprint<Label, NewEffect> {
+    pub fn with_on_click<NewEffect>(self, eff: NewEffect) -> ButtonBlueprint<Label, NewEffect> {
         ButtonBlueprint {
             label: self.label,
             effect: eff,
@@ -153,12 +152,12 @@ pub fn test_simple() {
             Label (( "Hello, world!" ))
             row [
                 Label (( "Click me:" ))
-                Button {effect:|| println!("Hello!")} (
+                Button { on_click: || println!("Hello!") }
                     Label (( "Click me!" ))
-                )
             ]
         ]
     };
+    dbg!(_ui);
 
     let Add = |a, b| a + b;
     let Mul = |a, b| a * b;
@@ -174,15 +173,56 @@ pub fn test_simple() {
     };
     dbg!(sum);
 
-    let me_button =
-        view! { Button {effect: || println!("I was clicked!")} ((())) };
+    let me_button = view! { Button {on_click: || println!("I was clicked!")} ((())) };
     me_button.trigger();
 }
 
 /// Dummy trait so the tests work.
 /// In practice, there will be an IntoBlueprint trait in scope
 /// whenever you use `view` that adapts the monadic traits to implement `Blueprint`.
-trait IntoBlueprint {
+trait ForOf<A, F, B>
+where
+    F: FnMut(A) -> B,
+{
+    type Output;
+    fn for_of(self, map: F) -> Self::Output;
+}
+
+impl<const N: usize, A, F, B> ForOf<A, F, B> for [A; N]
+where
+    F: FnMut(A) -> B,
+{
+    type Output = [B; N];
+
+    fn for_of(self, map: F) -> Self::Output {
+        self.map(map)
+    }
+}
+
+impl<A, F, B> ForOf<A, F, B> for MutableSignal<A>
+where
+    F: FnMut(A) -> B,
+    Self: futures_signals::signal::Signal<Item = A>,
+{
+    type Output = Map<MutableSignal<A>, F>;
+
+    fn for_of(self, map: F) -> Self::Output {
+        self.map(map)
+    }
+}
+
+impl<A, F, B> ForOf<A, F, B> for Option<A>
+where
+    F: FnMut(A) -> B,
+{
+    type Output = Option<B>;
+
+    fn for_of(self, map: F) -> Self::Output {
+        self.map(map)
+    }
+}
+
+pub trait IntoBlueprint {
     fn into_blueprint(self) -> Self
     where
         Self: Sized,
@@ -192,17 +232,49 @@ trait IntoBlueprint {
 }
 impl<T> IntoBlueprint for T {}
 
+pub trait WithEmptyState<E> {
+    type Output;
+    fn with_empty_state(self, empty_state: E) -> Self::Output;
+}
+
+#[derive(Debug)]
+pub struct Meanwhile<A, E>(A, E);
+
+impl<A, E> WithEmptyState<E> for Option<A> {
+    type Output = Meanwhile<Option<A>, E>;
+
+    fn with_empty_state(self, empty_state: E) -> Self::Output {
+        Meanwhile(self, empty_state)
+    }
+}
+
 #[test]
 fn test_blocks() {
+    /* Options */
+    let option = Some(3);
+
+    let optional = view! {
+        for value of option {
+            Label (( format!("The value is {}", value) ))
+        } else {
+            Label (("Loading..."))
+        }
+    };
+
+    dbg!(optional);
+
+    /* Collections */
     let collection = [(1, 2), (3, 4)];
 
     let iterated = view! {
-        for (l, r) in &collection {
+        for (l, r) of &collection {
             Label (( format!("The tuple has {} and {}", l, r) ))
         }
     };
 
     dbg!(iterated);
+
+    /* Signals */
 
     let message_st = Mutable::new("Hi there!");
     let message_sig = message_st.signal();
@@ -210,12 +282,13 @@ fn test_blocks() {
     let derived = view! {
         column [
             Label ("Message 1!")
-            for message in message_sig {
+            for message of message_sig {
                 Label (( message ))
             }
         ]
     };
 
+    // (Hacky way to listen to the signal to prove it updates right!)
     std::thread::spawn(move || {
         block_on(
             derived

@@ -34,6 +34,16 @@ pub trait SignalExt: Signal {
     {
         React::new(self, map)
     }
+
+    fn for_of<Env, U, Map>(self, map: Map) -> React<Env, U, Self, Map>
+    where
+        Env: Environment,
+        U: Ui<Env>,
+        Map: FnMut(Self::Item) -> U,
+        Self: std::marker::Sized,
+    {
+        self.react(map)
+    }
 }
 impl<Sig> SignalExt for Sig where Sig: Signal {}
 

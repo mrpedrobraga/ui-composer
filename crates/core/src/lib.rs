@@ -12,7 +12,7 @@ pub mod app;
 
 pub mod prelude {
     pub use crate::app::composition::algebra::{Bubble, Empty, Gather, Monoid, Semigroup};
-    pub use crate::app::composition::effects::signal::SignalExt;
+    pub use crate::app::composition::effects::signal::SignalExt as _;
     pub use crate::app::composition::elements::{Blueprint, Element, Environment};
     pub use crate::app::composition::layout::{Canvas, Resizable, Ui};
     pub use crate::app::composition::visit::{Apply, ApplyMut, DriveThru, DriveThruMut};

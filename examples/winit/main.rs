@@ -1,12 +1,14 @@
 #![allow(non_snake_case)]
 
+use futures::executor::block_on;
 use ui_composer::prelude::*;
 use ui_composer_basic_ui::{
-    layout::{flex, item},
+    layout::{flex, item, row},
     primitives::graphic::Graphic,
 };
 use ui_composer_math::{glamour::Rect, palette::rgb::Rgba};
 use ui_composer_platform_winit::window::Window;
+use ui_composer_state::effect::animation::futures_time::{task::sleep, time::Duration};
 
 fn main() {
     // tracing_subscriber::fmt()
@@ -14,10 +16,11 @@ fn main() {
     //     .without_time()
     //     .init();
 
-    let window = Window(App());
+    let window = Window(App2());
     UIComposer::run_winit(window);
 }
 
+#[allow(unused)]
 fn App() -> impl WinitUi {
     let c_a = Canvas::new(|hx| LaserSquares(hx.rect)).with_minimum_size(Size2 {
         width: 400.0,
@@ -38,39 +41,39 @@ fn App() -> impl WinitUi {
 
 #[allow(unused)]
 fn App2() -> impl WinitUi {
-    // let future = async {
-    //     println!("Eeping");
-    //     sleep(Duration::from_secs(1)).await;
-    //     Point2::new(200.0, 100.0)
-    // };
+    let point_state = Mutable::new(Point2::new(0.0, 0.0));
+    let point_signal = point_state.signal();
 
-    // Await::new(future, |origin| {
-    //     ColorBox(
-    //         Rect::new(origin, Size2::new(100.0, 100.0)),
-    //         Srgba::new(1.0, 1.0, 0.0, 1.0),
-    //     )
-    // })
+    std::thread::spawn(move || {
+        block_on(async move {
+            sleep(Duration::from_secs(1)).await;
+            point_state.set(Point2::new(200.0, 0.0));
+            sleep(Duration::from_secs(1)).await;
+            point_state.set(Point2::new(200.0, 200.0));
+            sleep(Duration::from_secs(1)).await;
+            point_state.set(Point2::new(0.0, 200.0));
+        })
+    });
 
-    // let state = Mutable::new(Point2::new(0.0, 0.0));
-    // let signal = state.signal();
-
-    // std::thread::spawn(move || {
-    //     block_on(async move {
-    //         sleep(Duration::from_secs(1)).await;
-    //         state.set(Point2::new(200.0, 0.0));
-    //         sleep(Duration::from_secs(1)).await;
-    //         state.set(Point2::new(200.0, 200.0));
-    //         sleep(Duration::from_secs(1)).await;
-    //         state.set(Point2::new(0.0, 200.0));
-    //     })
-    // });
-
-    // signal.react(|point| {
-    //     ColorBox(
-    //         Rect::new(point, Size2::new(100.0, 100.0)),
-    //         Srgba::new(0.8, 0.7, 0.0, 1.0),
-    //     )
-    // })
+    view! {
+        row [
+            ColorBox (
+                (( Rect::new(Point2::ZERO, Size2::new(50.0, 50.0)) ))
+                (( Srgba::new(0.8, 0.2, 0.0, 1.0) ))
+            )
+            // Fine-grained reactivity with functors*!
+            for point of point_signal {
+                ColorBox (
+                    (( Rect::new(point, Size2::new(100.0, 100.0)) ))
+                    (( Srgba::new(0.8, 0.7, 0.0, 1.0) ))
+                )
+            }
+            ColorBox (
+                (( Rect::new(Point2::new(200.0, 200.0), Size2::new(50.0, 50.0)) ))
+                (( Srgba::new(0.2, 0.7, 0.0, 1.0) ))
+            )
+        ]
+    }
 }
 
 #[allow(non_snake_case, unused)]

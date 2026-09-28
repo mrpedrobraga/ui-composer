@@ -12,8 +12,7 @@ impl Element {
         let path = &self.path;
 
         let children = {
-            let each: Vec<_> =
-                self.children.iter().map(|c| c.to_tokens()).collect();
+            let each: Vec<_> = self.children.iter().map(|c| c.to_tokens()).collect();
 
             if let ChildrenStructure::ConsList = self.children_structure {
                 quote! { list![#(#each),*] }
@@ -68,13 +67,23 @@ impl ForExpr {
         let expr = &self.expr;
         let body: Vec<_> = self.body.iter().map(|i| i.to_tokens()).collect();
 
+        /* Empty state */
+        let empty_state = self.empty_state.as_ref().map(|body| {
+            let body = body.iter().map(|i| i.to_tokens());
+            quote! {
+                .with_empty_state({
+                    #(#body)*
+                })
+            }
+        });
+
         if body.len() > 1 {
             quote! {
-                #expr.map(move |#pat| list![ #(#body),* ]).into_blueprint()
+                #expr.for_of(move |#pat| list![ #(#body),* ]) #empty_state
             }
         } else {
             quote! {
-                #expr.map(move |#pat| { #(#body),* }).into_blueprint()
+                #expr.for_of(move |#pat| { #(#body),* }) #empty_state
             }
         }
     }

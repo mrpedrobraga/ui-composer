@@ -87,17 +87,24 @@ impl Parse for Element {
     }
 }
 
+mod kw {
+    syn::custom_keyword!(of);
+}
+
 impl Parse for ForExpr {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         input.parse::<Token![for]>()?;
-        let pat =
-            Pat::parse_multi_with_leading_vert(input).unwrap_or_else(|e| {
-                emit_error!(e);
-                syn::parse_quote!(_)
-            });
-        if input.parse::<Token![in]>().is_err() {
-            emit_error!(input.span(), "expected `in`")
-        };
+        let pat = Pat::parse_multi_with_leading_vert(input).unwrap_or_else(|e| {
+            emit_error!(e);
+            syn::parse_quote!(_)
+        });
+        // if input.parse::<Token![in]>().is_err() {
+        //     emit_error!(input.span(), "expected `in`")
+        // };
+        if input.parse::<kw::of>().is_err() {
+            emit_error!(input.span(), "expected of")
+        }
+
         // There's no `parse_without_eager_bracket` so we can't use square brackets.
         let expr = Expr::parse_without_eager_brace(input).unwrap_or_else(|e| {
             emit_error!(e);
@@ -110,7 +117,26 @@ impl Parse for ForExpr {
             body.push(content.parse()?);
         }
 
-        Ok(ForExpr { pat, expr, body })
+        let empty_state = if input.peek(Token![else]) {
+            input.parse::<Token![else]>()?;
+
+            let else_content;
+            braced!(else_content in input);
+            let mut stmts = Vec::new();
+            while !else_content.is_empty() {
+                stmts.push(else_content.parse()?);
+            }
+            Some(stmts)
+        } else {
+            None
+        };
+
+        Ok(ForExpr {
+            pat,
+            expr,
+            body,
+            empty_state,
+        })
     }
 }
 
