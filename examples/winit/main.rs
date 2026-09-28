@@ -1,7 +1,10 @@
 #![allow(non_snake_case)]
 
 use ui_composer::prelude::*;
-use ui_composer_basic_ui::{layout::row, primitives::graphic::Graphic};
+use ui_composer_basic_ui::{
+    layout::{flex, item},
+    primitives::graphic::Graphic,
+};
 use ui_composer_math::{glamour::Rect, palette::rgb::Rgba};
 use ui_composer_platform_winit::window::Window;
 
@@ -26,9 +29,9 @@ fn App() -> impl WinitUi {
     });
 
     view! {
-        row [
-            ((c_a))
-            ((c_b))
+        flex {vertical_flow} [
+            item ((c_a))
+            item {grow: 1.0} ((c_b))
         ]
     }
 }
