@@ -22,7 +22,7 @@ pub trait Blueprint<Env>
 where
     Env: Environment,
 {
-    type Output: Element<Env, Blueprint = Self>;
+    type Output: Element<Env, Blueprint = Self> + Send;
 
     fn make(self, env: &Env::BlueprintResources<'_>) -> Self::Output;
 }

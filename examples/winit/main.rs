@@ -1,5 +1,6 @@
 #![allow(non_snake_case, unused)]
 
+use ::ui_composer_core::app::composition::CompatibleWith;
 use ::ui_composer_state::effect::animation::assign;
 use ui_composer::prelude::*;
 use ui_composer_basic_ui::{
@@ -15,13 +16,7 @@ fn main() {
     UIComposer::run_tui(Terminal(App()))
 }
 
-macro_rules! MyUi {
-    () => {
-        impl Tui
-    };
-}
-
-fn App2() -> MyUi!() {
+fn App2() -> impl Tui {
     let point_state = Mutable::new(Point2::new(0.0, 0.0));
     let point_signal = point_state.signal();
 
@@ -54,6 +49,7 @@ fn App2() -> MyUi!() {
                     ( Srgba::new(0.5, 0.5, 0.5, 1.0) )
                 )
             }
+
             // Reacting to a signal
             for point of point_signal {
                 ColorBox (
@@ -61,6 +57,7 @@ fn App2() -> MyUi!() {
                     ( Srgba::new(0.8, 0.7, 0.0, 1.0) )
                 )
             }
+
             ColorBox (
                 ( Rect::new(Point2::new(200.0, 200.0), Size2::new(50.0, 50.0)) )
                 ( Srgba::new(0.2, 0.7, 0.0, 1.0) )
@@ -69,11 +66,14 @@ fn App2() -> MyUi!() {
     }
 }
 
-fn ColorBox(rect: Rect, color: Rgba) -> MyUi!() {
+fn ColorBox<Env: Environment>(rect: Rect, color: Rgba) -> impl CompatibleWith<Env>
+where
+    ui_composer_basic_ui::primitives::graphic::Graphic: ui_composer_core::prelude::Blueprint<Env>,
+{
     Canvas::new(move |_| Graphic { rect, color })
 }
 
-fn App() -> MyUi!() {
+fn App() -> impl Tui {
     let c_a = Canvas::new(|hx| LaserSquares(hx.rect)).with_minimum_size(Size2 {
         width: 400.0,
         height: 400.0,

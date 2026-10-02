@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 use ::ui_composer_math::palette::rgb::Rgba;
-use ::ui_composer_platform_winit::window::Window;
 use {lullaby_ui::prelude::*, ui_composer::prelude::*};
 
 fn main() {
