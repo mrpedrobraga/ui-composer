@@ -26,34 +26,47 @@ type Offset = u32;
 // --- Contexts ---
 
 pub struct InlineContext {
-    pub local_offset: Vector2<Offset>,
-    pub max_line_height: Offset,
+    /// The current offset relative to the inline container,
+    /// represented in pixels.
+    pub local_offset_px: Vector2<Offset>,
+    /// The running maximum height for all the items in the current line.
+    pub current_line_max_item_height: Offset,
+    /// The gap between items in line.
     pub inline_gap: Offset,
+    /// The gap between lines.
     pub cross_axis_gap: Offset,
 }
 
 impl InlineContext {
     pub fn new_line(&mut self) {
-        self.local_offset.y += self.max_line_height + self.cross_axis_gap;
-        self.local_offset.x = 0;
-        self.max_line_height = 1;
+        self.local_offset_px.y += self.current_line_max_item_height + self.cross_axis_gap;
+        self.local_offset_px.x = 0;
+        self.current_line_max_item_height = 1;
     }
 }
 
 pub struct MeasureContext {
-    pub local_offset: Vector2<Offset>,
+    /// The current offset relative to the inline container,
+    /// represented in pixels.
+    pub local_offset_px: Vector2<Offset>,
+    /// The width of the container.
     pub container_width: Offset,
-    pub max_line_height: Offset,
+    /// The running maximum height for all the items in the current line.
+    pub current_line_max_item_height: Offset,
+    /// The gap between items in line.
     pub inline_gap: Offset,
+    /// The gap between lines.
     pub cross_axis_gap: Offset,
-    pub max_width_reached: Offset, // Tracks the widest line encountered
+    /// Widest line reached so far.
+    pub max_width_reached: Offset,
 }
 
 impl MeasureContext {
+    /// Moves to a new line and returns the "carriage" to the start, like a typewriter.
     pub fn new_line(&mut self) {
-        self.local_offset.y += self.max_line_height + self.cross_axis_gap;
-        self.local_offset.x = 0;
-        self.max_line_height = 1;
+        self.local_offset_px.y += self.current_line_max_item_height + self.cross_axis_gap;
+        self.local_offset_px.x = 0;
+        self.current_line_max_item_height = 1;
     }
 }
 
@@ -63,7 +76,7 @@ pub trait InlineItem<Env>
 where
     Env: Environment,
 {
-    fn allocate(
+    fn place(
         &mut self,
         cx: &mut InlineContext,
         hints: ParentHints,
@@ -74,6 +87,9 @@ where
     type Blueprint: Blueprint<Env>;
 
     fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect;
+
+    #[allow(async_fn_in_trait)]
+    async fn propagate(&mut self, event: &mut ui_composer_input::event::Event) -> bool;
 
     fn poll_change(
         self: Pin<&mut Self>,
@@ -87,7 +103,7 @@ pub trait InlineItemList<Env>
 where
     Env: Environment,
 {
-    fn allocate(
+    fn place(
         &mut self,
         cx: &mut InlineContext,
         hints: ParentHints,
@@ -97,6 +113,9 @@ where
 
     type Blueprint: Blueprint<Env>;
     fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect;
+
+    #[allow(async_fn_in_trait)]
+    async fn propagate(&mut self, event: &mut ui_composer_input::event::Event) -> bool;
 
     fn poll_change(
         self: Pin<&mut Self>,
@@ -120,26 +139,24 @@ where
     U: Ui<Env>,
     Env: Environment,
 {
-    fn allocate(
+    fn place(
         &mut self,
         cx: &mut InlineContext,
         hints: ParentHints,
         resources: &Env::BlueprintResources<'_>,
     ) {
         let inner_hints = self.0.prepare(hints);
-        let size = inner_hints.minimum_size;
-        let (w, h) = (size.width as Offset, size.height as Offset);
+        let item_size = inner_hints.minimum_size.as_::<Offset>();
 
-        if cx.local_offset.x > 0 && cx.local_offset.x + w > hints.rect.width() as u32 {
+        if cx.local_offset_px.x > 0 && cx.local_offset_px.x + item_size.width > hints.rect.width() as u32 {
             cx.new_line();
         }
 
-        cx.max_line_height = cx.max_line_height.max(h);
-        let pos = cx.local_offset;
-        cx.local_offset.x += w + cx.inline_gap;
+        cx.current_line_max_item_height = cx.current_line_max_item_height.max(item_size.height);
+        let pos = cx.local_offset_px;
+        cx.local_offset_px.x += item_size.width + cx.inline_gap;
 
-        let size = Size2::new(w, h);
-        let rect = Rect::new(pos.to_point(), size).translate(hints.rect.origin.as_().into());
+        let rect = Rect::new(pos.to_point(), item_size).translate(hints.rect.origin.as_().into());
 
         self.0.place(
             ParentHints {
@@ -152,16 +169,15 @@ where
 
     fn measure(&mut self, cx: &mut MeasureContext, hints: ParentHints) {
         let inner_hints = self.0.prepare(hints);
-        let size = inner_hints.minimum_size;
-        let (w, h) = (size.width as Offset, size.height as Offset);
+        let item_size = inner_hints.minimum_size.as_::<Offset>();
 
-        if cx.local_offset.x > 0 && cx.local_offset.x + w > cx.container_width {
+        if cx.local_offset_px.x > 0 && cx.local_offset_px.x + item_size.width > cx.container_width {
             cx.new_line();
         }
 
-        cx.max_line_height = cx.max_line_height.max(h);
-        cx.local_offset.x += w + cx.inline_gap;
-        cx.max_width_reached = cx.max_width_reached.max(cx.local_offset.x);
+        cx.current_line_max_item_height = cx.current_line_max_item_height.max(item_size.height);
+        cx.local_offset_px.x += item_size.width + cx.inline_gap;
+        cx.max_width_reached = cx.max_width_reached.max(cx.local_offset_px.x);
     }
 
     fn poll_change(
@@ -178,6 +194,10 @@ where
 
     fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect {
         self.0.effect()
+    }
+
+    async fn propagate(&mut self, event: &mut ui_composer_input::event::Event) -> bool {
+        self.0.propagate(event).await
     }
 }
 
@@ -200,46 +220,46 @@ impl InlineItem<TerminalEnvironment> for MonospaceText
 where
     TerminalEnvironment: Environment,
 {
-    fn allocate(
+    fn place(
         &mut self,
         cx: &mut InlineContext,
         hints: ParentHints,
         _: &TerminalBlueprintResources,
     ) {
         let word_spacing = 1;
-        let mut text_blueprints = Vec::new();
+        let mut text_elements = Vec::new();
         let words = self.text.split_whitespace();
 
         for word in words {
             let len = word.len() as Offset;
 
-            if cx.local_offset.x > 0
-                && cx.local_offset.x + word_spacing + len > hints.rect.width() as u32
+            if cx.local_offset_px.x > 0
+                && cx.local_offset_px.x + word_spacing + len > hints.rect.width() as u32
             {
                 cx.new_line();
             }
 
-            if cx.local_offset.x > 0 {
-                cx.local_offset.x += word_spacing;
+            if cx.local_offset_px.x > 0 {
+                cx.local_offset_px.x += word_spacing;
             }
 
-            text_blueprints.push(
+            text_elements.push(
                 Text()
                     .with_text(word.to_string())
                     .with_rect(
                         // TODO: Lines might have different heights?
                         Rect::new(
-                            (hints.rect.origin.as_() + cx.local_offset).as_::<f32>(),
+                            (hints.rect.origin.as_() + cx.local_offset_px).as_::<f32>(),
                             Size2::new(len as f32, 1.0),
                         ),
                     )
                     .with_color(self.color),
             );
-            cx.max_line_height = cx.max_line_height.max(1);
-            cx.local_offset.x += len;
+            cx.current_line_max_item_height = cx.current_line_max_item_height.max(1);
+            cx.local_offset_px.x += len;
         }
 
-        self.allocated_texts = text_blueprints
+        self.allocated_texts = text_elements
     }
 
     fn measure(&mut self, cx: &mut MeasureContext, _: ParentHints) {
@@ -249,18 +269,18 @@ where
         for word in words {
             let len = word.len() as Offset;
 
-            if cx.local_offset.x > 0 && cx.local_offset.x + word_spacing + len > cx.container_width
+            if cx.local_offset_px.x > 0 && cx.local_offset_px.x + word_spacing + len > cx.container_width
             {
                 cx.new_line();
             }
 
-            if cx.local_offset.x > 0 {
-                cx.local_offset.x += word_spacing;
+            if cx.local_offset_px.x > 0 {
+                cx.local_offset_px.x += word_spacing;
             }
 
-            cx.max_line_height = cx.max_line_height.max(1);
-            cx.local_offset.x += len;
-            cx.max_width_reached = cx.max_width_reached.max(cx.local_offset.x);
+            cx.current_line_max_item_height = cx.current_line_max_item_height.max(1);
+            cx.local_offset_px.x += len;
+            cx.max_width_reached = cx.max_width_reached.max(cx.local_offset_px.x);
         }
     }
 
@@ -278,65 +298,75 @@ where
     fn effect(&self) -> Vec<RenderText> {
         self.allocated_texts.iter().map(|e| e.effect()).collect()
     }
+
+    async fn propagate(&mut self, _: &mut ui_composer_input::event::Event) -> bool {
+        false
+    }
 }
 
 impl InlineItem<DesktopEnvironment> for MonospaceText {
-    fn allocate(&mut self, cx: &mut InlineContext, hints: ParentHints, _: &DesktopResources) {
-        let word_spacing = 1;
-        let mut words_with_pos = Vec::new();
-        let words = self.text.split_whitespace();
+    fn place(&mut self, cx: &mut InlineContext, hints: ParentHints, _: &DesktopResources) {
+        let word_spacing = DesktopEnvironment::TILE_SIZE.width as u32;
+        let mut text_elements = Vec::new();
 
-        for word in words {
+        for word in self.text.split_whitespace() {
             let len = word.len() as Offset;
 
-            if cx.local_offset.x > 0
-                && cx.local_offset.x + word_spacing + len > hints.rect.width() as u32
+            // Look ahead to see if the word will fit in this line.
+            // If it won't, break into a new line.
+            //
+            // If the word itself is bigger than the whole line,
+            // it will be left as is.
+            if cx.local_offset_px.x + word_spacing + len > hints.rect.width() as u32
+                && cx.local_offset_px.x > 0
             {
                 cx.new_line();
             }
 
-            if cx.local_offset.x > 0 {
-                cx.local_offset.x += word_spacing;
+            // Add a space before the previous word in this line if there's such.
+            if cx.local_offset_px.x > 0 {
+                cx.local_offset_px.x += word_spacing;
             }
 
-            words_with_pos.push(
+            text_elements.push(
                 Text()
+                    // TODO: Make this zero-copy?
                     .with_text(word.to_string())
                     .with_rect(
                         // TODO: Lines might have different heights?
                         Rect::new(
-                            (hints.rect.origin.as_() + cx.local_offset).as_::<f32>(),
-                            Size2::new(len as f32, 1.0),
+                            hints.rect.origin + cx.local_offset_px.as_(),
+                            Size2::new(len as f32, 1.0) * DesktopEnvironment::TILE_SIZE,
                         ),
                     )
                     .with_color(self.color),
             );
-            cx.max_line_height = cx.max_line_height.max(1);
-            cx.local_offset.x += len;
+            cx.current_line_max_item_height = cx.current_line_max_item_height.max(DesktopEnvironment::TILE_SIZE.height as u32);
+            cx.local_offset_px.x += len * DesktopEnvironment::TILE_SIZE.width as u32;
         }
 
-        self.allocated_texts = words_with_pos
+        self.allocated_texts = text_elements
     }
 
     fn measure(&mut self, cx: &mut MeasureContext, _: ParentHints) {
-        let word_spacing = 1;
-        let words = self.text.split_whitespace();
+        /* Same as [place], but no allocation happens. */
 
-        for word in words {
+        let word_spacing = DesktopEnvironment::TILE_SIZE.width as u32;
+        for word in self.text.split_whitespace() {
             let len = word.len() as Offset;
 
-            if cx.local_offset.x > 0 && cx.local_offset.x + word_spacing + len > cx.container_width
+            if cx.local_offset_px.x > 0 && cx.local_offset_px.x + word_spacing + len > cx.container_width
             {
                 cx.new_line();
             }
 
-            if cx.local_offset.x > 0 {
-                cx.local_offset.x += word_spacing;
+            if cx.local_offset_px.x > 0 {
+                cx.local_offset_px.x += word_spacing;
             }
 
-            cx.max_line_height = cx.max_line_height.max(1);
-            cx.local_offset.x += len;
-            cx.max_width_reached = cx.max_width_reached.max(cx.local_offset.x);
+            cx.current_line_max_item_height = cx.current_line_max_item_height.max(DesktopEnvironment::TILE_SIZE.height as u32);
+            cx.local_offset_px.x += len * DesktopEnvironment::TILE_SIZE.width as u32;
+            cx.max_width_reached = cx.max_width_reached.max(cx.local_offset_px.x);
         }
     }
 
@@ -357,16 +387,17 @@ impl InlineItem<DesktopEnvironment> for MonospaceText {
             .map(|e| {
                 RenderQuad(
                     Rect {
-                        origin: (e.rect.origin.to_vector()
-                            * DesktopEnvironment::TILE_SIZE.to_vector())
-                        .to_point(),
-                        // origin: e.rect.origin,
-                        size: e.rect.size * DesktopEnvironment::TILE_SIZE,
+                        origin: (e.rect.origin.to_vector()).to_point(),
+                        size: e.rect.size,
                     },
                     e.color,
                 )
             })
             .collect()
+    }
+
+    async fn propagate(&mut self, _: &mut ui_composer_input::event::Event) -> bool {
+        false
     }
 }
 
@@ -375,13 +406,13 @@ where
     A: InlineItem<Env>,
     Env: Environment,
 {
-    fn allocate(
+    fn place(
         &mut self,
         cx: &mut InlineContext,
         hints: ParentHints,
         resources: &Env::BlueprintResources<'_>,
     ) {
-        InlineItem::allocate(self, cx, hints, resources)
+        InlineItem::place(self, cx, hints, resources)
     }
     fn measure(&mut self, cx: &mut MeasureContext, hints: ParentHints) {
         InlineItem::measure(self, cx, hints)
@@ -404,6 +435,10 @@ where
     {
         InlineItem::effect(self)
     }
+
+    async fn propagate(&mut self, event: &mut ui_composer_input::event::Event) -> bool {
+        InlineItem::propagate(self, event).await
+    }
 }
 
 impl<A, B> InlineItemList<TerminalEnvironment> for (A, B)
@@ -411,14 +446,14 @@ where
     A: InlineItemList<TerminalEnvironment>,
     B: InlineItemList<TerminalEnvironment>,
 {
-    fn allocate(
+    fn place(
         &mut self,
         cx: &mut InlineContext,
         hints: ParentHints,
         resources: &TerminalBlueprintResources,
     ) {
-        self.0.allocate(cx, hints, resources);
-        self.1.allocate(cx, hints, resources);
+        self.0.place(cx, hints, resources);
+        self.1.place(cx, hints, resources);
     }
     fn measure(&mut self, cx: &mut MeasureContext, hints: ParentHints) {
         self.0.measure(cx, hints);
@@ -456,6 +491,10 @@ where
     >>::Effect {
         (self.0.effect(), self.1.effect())
     }
+
+    async fn propagate(&mut self, event: &mut ui_composer_input::event::Event) -> bool {
+        Combine::combine(self.0.propagate(event).await, self.1.propagate(event).await)
+    }
 }
 
 impl<A, B> InlineItemList<DesktopEnvironment> for (A, B)
@@ -463,14 +502,14 @@ where
     A: InlineItemList<DesktopEnvironment>,
     B: InlineItemList<DesktopEnvironment>,
 {
-    fn allocate(
+    fn place(
         &mut self,
         cx: &mut InlineContext,
         hints: ParentHints,
         resources: &DesktopResources,
     ) {
-        self.0.allocate(cx, hints, resources);
-        self.1.allocate(cx, hints, resources);
+        self.0.place(cx, hints, resources);
+        self.1.place(cx, hints, resources);
     }
     fn measure(&mut self, cx: &mut MeasureContext, hints: ParentHints) {
         self.0.measure(cx, hints);
@@ -503,6 +542,10 @@ where
 
     fn effect(&self) -> <<Self::Blueprint as Blueprint<DesktopEnvironment>>::Output as Element<DesktopEnvironment>>::Effect{
         (self.0.effect(), self.1.effect())
+    }
+
+    async fn propagate(&mut self, event: &mut ui_composer_input::event::Event) -> bool {
+        Combine::combine(self.0.propagate(event).await, self.1.propagate(event).await)
     }
 }
 
@@ -565,31 +608,42 @@ where
     Env: Environment,
 {
     fn prepare(&mut self, parent_hints: ParentHints) -> ChildHints {
-        let mut min_w_cx = MeasureContext {
+        // Calculates the minimum width of this container,
+        // that is, the biggest of its items minimum sizes.
+        //
+        // You can imagine the `container_width: 0` here as forcing
+        // every single item inside into its own line.
+        let mut cx_measure_max_inner_min = MeasureContext {
             container_width: 0,
             inline_gap: self.inline_gap,
             cross_axis_gap: self.cross_axis_gap,
-            max_line_height: 1,
-            local_offset: Vector2::new(0, 0),
+            current_line_max_item_height: 1,
+            local_offset_px: Vector2::new(0, 0),
             max_width_reached: 0,
         };
-        self.items.measure(&mut min_w_cx, parent_hints);
-        let true_min_w = min_w_cx.max_width_reached;
+        self.items.measure(&mut cx_measure_max_inner_min, parent_hints);
+        let true_min_w = cx_measure_max_inner_min.max_width_reached;
 
-        let mut height_whem_min_w_cx = MeasureContext {
+        // Calculates the minimum height of the container,
+        // which might be smaller than the height above,
+        // because when the container is at its minimum width
+        // some items might be in the same line.
+        let mut cx_measure_height_when_min_width = MeasureContext {
             container_width: true_min_w,
             inline_gap: self.inline_gap,
             cross_axis_gap: self.cross_axis_gap,
-            max_line_height: 1,
-            local_offset: Vector2::new(0, 0),
+            current_line_max_item_height: 1,
+            local_offset_px: Vector2::new(0, 0),
             max_width_reached: 0,
         };
-        self.items.measure(&mut height_whem_min_w_cx, parent_hints);
+        self.items.measure(&mut cx_measure_height_when_min_width, parent_hints);
+        // The height is the vertical offset accumulated from the previous lines
+        // plus the height of the current line.
         let height_when_min_w =
-            height_whem_min_w_cx.local_offset.y + height_whem_min_w_cx.max_line_height;
+            cx_measure_height_when_min_width.local_offset_px.y + cx_measure_height_when_min_width.current_line_max_item_height;
 
         ChildHints {
-            minimum_size: Size2::new(true_min_w as f32, height_when_min_w as f32) * Env::TILE_SIZE,
+            minimum_size: Size2::new(true_min_w as f32, height_when_min_w as f32),
         }
     }
 
@@ -597,17 +651,21 @@ where
         let mut cx = InlineContext {
             inline_gap: self.inline_gap,
             cross_axis_gap: self.cross_axis_gap,
-            max_line_height: 1,
-            local_offset: Vector2::new(0, 0),
+            current_line_max_item_height: 1,
+            local_offset_px: Vector2::new(0, 0),
         };
 
-        self.items.allocate(&mut cx, hints, resources);
+        self.items.place(&mut cx, hints, resources);
     }
 
     type Blueprint = Items::Blueprint;
 
     fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect {
         self.items.effect()
+    }
+
+    async fn propagate(&mut self, event: &mut ui_composer_input::event::Event) -> bool {
+        self.items.propagate(event).await
     }
 
     fn poll_change(
@@ -617,6 +675,7 @@ where
         parent_hints: ParentHints,
     ) -> std::task::Poll<Option<()>> {
         let this = self.project();
+        // TODO: Cache the item rects and send them correct parent hints.
         this.items.poll_change(cx, resources, parent_hints)
     }
 }

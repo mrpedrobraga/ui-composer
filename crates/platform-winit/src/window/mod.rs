@@ -159,8 +159,8 @@ impl<Ui: DesktopUi> WindowElement<Ui> {
 }
 
 impl<Ui: DesktopUi> Propagate<Event, bool> for WindowElement<Ui> {
-    async fn propagate(&mut self, cx: &mut Event) -> bool {
-        match cx {
+    async fn propagate(&mut self, event: &mut Event) -> bool {
+        match event {
             Event::Resized(new_size) => {
                 self.resize_internal(*new_size);
                 self.state.needs_redrawing = true;
@@ -191,7 +191,7 @@ impl<Ui: DesktopUi> Propagate<Event, bool> for WindowElement<Ui> {
             Event::FocusStateChanged(_) => false,
             Event::ScaleFactorChanged(_) => false,
             Event::ThemeTypeChanged(_) => false,
-            Event::Cursor { .. } => false,
+            Event::Cursor { .. } => self.ui.propagate(event).await,
             Event::Keyboard { .. } => false,
             Event::Ime(_) => false,
             Event::File(_) => false,
@@ -288,6 +288,7 @@ impl WindowRuntimeState {
         self.render_resources.uniforms.resize(new_size);
         self.render_target
             .resize(&self.render_resources.gpu, new_size.as_());
+        self.window_size.set_neq(new_size);
     }
 
     fn update_with_child_hints(&mut self, child_hints: ChildHints) {

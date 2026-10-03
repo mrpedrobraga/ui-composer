@@ -48,11 +48,11 @@ where
             Event::Cursor { id: _, event } => match event {
                 CursorEvent::Moved { position } => {
                     self.mouse_position_state = Some(*position);
-                    self.is_hovered_state.set(self.rect.contains(position));
+                    self.is_hovered_state.set_neq(self.rect.contains(position));
                     false
                 }
                 CursorEvent::Exited => {
-                    self.is_hovered_state.set(false);
+                    self.is_hovered_state.set_neq(false);
                     false
                 }
                 CursorEvent::Button(MouseButton::Left, ButtonState::Pressed)

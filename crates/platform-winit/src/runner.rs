@@ -163,8 +163,6 @@ where
     ) {
         if let Ok(mut uic_event) = winit_uic_conversion::into_event(event.clone()) {
             if let Some(element) = &self.element {
-                // println!("Bubbling event: {:?}", uic_event);
-
                 let mut lock = block_on(element.lock());
 
                 if let Event::Resized(new_size) = &uic_event {
@@ -172,8 +170,6 @@ where
                 }
 
                 let _effect_was_handled = block_on(lock.propagate(&mut uic_event));
-
-                //println!("Handled? {}", _effect_was_handled);
             }
         } else {
             //println!("Unrecognized event: {:?}", event);

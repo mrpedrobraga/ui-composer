@@ -71,6 +71,10 @@ impl Ui<TerminalEnvironment> for ImageView {
             .unwrap_or(RenderImageQuad(Rect::ZERO, self.image.clone()))
     }
 
+    async fn propagate(&mut self, _: &mut ui_composer_input::event::Event) -> bool {
+        false
+    }
+
     fn poll_change(
         self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context,

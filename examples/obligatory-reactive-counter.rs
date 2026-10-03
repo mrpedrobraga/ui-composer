@@ -11,6 +11,10 @@ fn main() {
 }
 
 fn Counter(count: Mutable<i32>) -> impl DesktopUi {
+    // view! {
+    //     Button ( Label(("Test Button")) (||{}) )
+    // }
+
     view! {
         center flex [
             item Button (

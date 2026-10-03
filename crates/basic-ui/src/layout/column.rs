@@ -125,6 +125,10 @@ where
         (self.item_a.effect(), self.item_b.effect())
     }
 
+    async fn propagate(&mut self, event: &mut ui_composer_input::event::Event) -> bool {
+        Combine::combine(self.item_a.propagate(event).await, self.item_b.propagate(event).await)
+    }
+
     fn poll_change(
         self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context,

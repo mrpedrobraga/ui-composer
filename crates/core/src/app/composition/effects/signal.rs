@@ -3,6 +3,7 @@ use crate::app::composition::elements::{Blueprint, Element, Environment};
 use crate::app::composition::layout::hints::{ChildHints, ParentHints};
 use crate::app::composition::layout::Ui;
 use futures_signals::signal::Signal;
+use ::ui_composer_input::event::Event;
 use std::marker::PhantomData;
 use std::task::{Context, Poll};
 
@@ -91,6 +92,14 @@ where
         self.ui.as_ref().map(|inner| inner.effect())
     }
 
+    async fn propagate(&mut self, event: &mut Event) -> bool {
+        if let Some(ui) = &mut self.ui {
+            ui.propagate(event).await
+        } else {
+            false
+        }
+    }
+
     fn poll_change(
         self: std::pin::Pin<&mut Self>,
         cx: &mut Context,
@@ -105,6 +114,7 @@ where
             match this.signal.poll_change(cx) {
                 Poll::Ready(Some(value)) => {
                     let mut new_ui = (this.map)(value);
+                    new_ui.prepare(parent_hints);
                     new_ui.place(parent_hints, resources);
                     this.ui.set(Some(new_ui));
                     Poll::Ready(Some(()))

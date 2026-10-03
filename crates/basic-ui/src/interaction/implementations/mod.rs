@@ -2,7 +2,6 @@ use ::ui_composer_core::app::composition::elements::Environment;
 use {
     crate::interaction::{Hover, Tap, Typing},
     ui_composer_core::prelude::{Blueprint, Element},
-    ui_composer_platform_tui::runner::{TerminalBlueprintResources, TerminalEnvironment},
     ui_composer_state::effect::Effect,
 };
 

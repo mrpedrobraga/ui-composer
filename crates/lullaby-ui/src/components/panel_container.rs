@@ -63,6 +63,10 @@ where
         (RenderQuad(self.rect, SURFACE_COLOR), self.item.effect())
     }
 
+    async fn propagate(&mut self, event: &mut ui_composer_input::event::Event) -> bool {
+        self.item.propagate(event).await
+    }
+
     fn poll_change(
         self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context,
@@ -105,6 +109,10 @@ where
         >>::Effect,
     ) {
         (RenderQuad(self.rect, SURFACE_COLOR), self.item.effect())
+    }
+
+    async fn propagate(&mut self, event: &mut ui_composer_input::event::Event) -> bool {
+        self.item.propagate(event).await
     }
 
     fn poll_change(

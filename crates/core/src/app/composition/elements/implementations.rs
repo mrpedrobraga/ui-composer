@@ -115,7 +115,7 @@ where
         let poll_a = pinned_a.poll_change(cx, env);
         let poll_b = pinned_b.poll_change(cx, env);
 
-        poll_a.combine(poll_b)
+        Combine::combine(poll_a, poll_b)
     }
 }
 

@@ -152,14 +152,39 @@ where
         self.items.effect()
     }
 
+    async fn propagate(&mut self, event: &mut ui_composer_input::event::Event) -> bool {
+        self.items.propagate(event).await
+    }
+
     fn poll_change(
         self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context,
         resources: &<Env as Environment>::BlueprintResources<'_>,
         parent_hints: ParentHints,
     ) -> std::task::Poll<Option<()>> {
+        /* TODO: Extract this into a function! */
+        let flow_direction = self.flow_direction.as_cartesian(&parent_hints.current_flow);
+        let minima = self.items.minima(flow_direction).collect::<Vec<_>>();
+        let weights = self.items.weights().collect::<Vec<_>>();
+
+        use CartesianFlow::*;
+        let parent_size = match flow_direction {
+            LeftToRight | RightToLeft => parent_hints.rect.size.width,
+            TopToBottom | BottomToTop => parent_hints.rect.size.height,
+        };
+
+        let main_axis_sizes = arrange_stretchy_rects_with_minimum_sizes_dirty_alloc(
+            parent_size,
+            weights.as_slice(),
+            minima.as_slice(),
+            0.01,
+        );
+
+        let mut parent_hints_iter =
+            allocate_rects(parent_hints, flow_direction, main_axis_sizes.into_iter());
+
         let this = self.project();
-        this.items.poll_change(cx, resources, parent_hints)
+        this.items.poll_change(cx, resources, &mut parent_hints_iter)
     }
 }
 
@@ -270,12 +295,15 @@ where
 
     fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect;
 
-    fn poll_change(
+    #[allow(async_fn_in_trait)]
+    async fn propagate(&mut self, event: &mut ui_composer_input::event::Event) -> bool;
+
+    fn poll_change<I>(
         self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context,
         resources: &Env::BlueprintResources<'_>,
-        parent_hints: ParentHints,
-    ) -> std::task::Poll<Option<()>>;
+        parent_hints: &mut I,
+    ) -> std::task::Poll<Option<()>> where I: Iterator<Item = ParentHints>;
 }
 
 impl<Env, A> FlexItemList<Env> for FlexItem<A>
@@ -329,14 +357,18 @@ where
         self.item.effect()
     }
 
-    fn poll_change(
+    async fn propagate(&mut self, event: &mut ui_composer_input::event::Event) -> bool {
+        self.item.propagate(event).await
+    }
+
+    fn poll_change<I>(
         self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context,
         resources: &<Env as Environment>::BlueprintResources<'_>,
-        parent_hints: ParentHints,
-    ) -> std::task::Poll<Option<()>> {
+        parent_hints: &mut I,
+    ) -> std::task::Poll<Option<()>> where I: Iterator<Item = ParentHints> {
         let this = self.project();
-        this.item.poll_change(cx, resources, parent_hints)
+        this.item.poll_change(cx, resources, parent_hints.next().unwrap())
     }
 }
 
@@ -356,6 +388,7 @@ where
         I: Iterator<Item = ParentHints>,
     {
         // Use collect into a Vec to avoid borrowing issues while chaining iterators
+        // TODO: Investigate this and if it can be solved with lifetimes.
         let a: Vec<_> = self.0.prepare(&mut parent_hints).collect();
         let b: Vec<_> = self.1.prepare(parent_hints).collect();
         a.into_iter().chain(b)
@@ -387,20 +420,19 @@ where
         (self.0.effect(), self.1.effect())
     }
 
-    fn poll_change(
+    async fn propagate(&mut self, event: &mut ui_composer_input::event::Event) -> bool {
+        Combine::combine(self.0.propagate(event).await, self.1.propagate(event).await)
+    }
+
+    fn poll_change<I>(
         self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context,
         resources: &<Env as Environment>::BlueprintResources<'_>,
-        parent_hints: ParentHints,
-    ) -> std::task::Poll<Option<()>> {
+        parent_hints: &mut I,
+    ) -> std::task::Poll<Option<()>> where I: Iterator<Item = ParentHints> {
         let (pinned_a, pinned_b) = {
-            let mut_ref = unsafe { self.get_unchecked_mut() };
-            let (a, b) = mut_ref;
-
-            let a = unsafe { Pin::new_unchecked(a) };
-            let b = unsafe { Pin::new_unchecked(b) };
-
-            (a, b)
+            let (a, b) = unsafe { self.get_unchecked_mut() };
+            (unsafe { Pin::new_unchecked(a) }, unsafe { Pin::new_unchecked(b) })
         };
 
         let poll_a = pinned_a.poll_change(cx, resources, parent_hints);

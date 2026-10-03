@@ -66,13 +66,28 @@ where
         self.item.effect()
     }
 
+    async fn propagate(&mut self, event: &mut ui_composer_input::event::Event) -> bool {
+        self.item.propagate(event).await
+    }
+
     fn poll_change(
         self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context,
         resources: &<Env as Environment>::BlueprintResources<'_>,
         parent_hints: ParentHints,
     ) -> std::task::Poll<Option<()>> {
+        let my_rect = parent_hints.rect;
+        let item_size = self._item_hints_cache.minimum_size;
+        let item_position = my_rect.origin + (my_rect.size - item_size).to_vector() / 2.0;
+
+        let item_rect = Rect::new(item_position, item_size);
+
+        let inner_hints = ParentHints {
+            rect: item_rect,
+            ..parent_hints
+        };
+
         let this = self.project();
-        this.item.poll_change(cx, resources, parent_hints)
+        this.item.poll_change(cx, resources, inner_hints)
     }
 }

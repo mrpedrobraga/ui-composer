@@ -65,12 +65,16 @@ where
         }
     }
 
-    fn place(&mut self, layout_hints: ParentHints, resources: &Env::BlueprintResources<'_>) {
-        self.item.place(layout_hints, resources);
+    fn place(&mut self, parent_hints: ParentHints, resources: &Env::BlueprintResources<'_>) {
+        self.item.place(parent_hints, resources);
     }
     
     fn effect(&self) -> <<Self::Blueprint as ui_composer_core::prelude::Blueprint<Env>>::Output as ui_composer_core::prelude::Element<Env>>::Effect {
         self.item.effect()
+    }
+
+    async fn propagate(&mut self, event: &mut ui_composer_input::event::Event) -> bool {
+        self.item.propagate(event).await
     }
     
     fn poll_change(

@@ -21,6 +21,10 @@ impl<Env: Environment> Ui<Env> for () {
     fn effect(&self) -> <<Self::Blueprint as crate::prelude::Blueprint<Env>>::Output as crate::prelude::Element<Env>>::Effect {
         
     }
+
+    async fn propagate(&mut self, _: &mut ui_composer_input::event::Event) -> bool {
+        false
+    }
     
     fn poll_change(
         self: std::pin::Pin<&mut Self>,
@@ -46,7 +50,7 @@ where
         let a = self.0.prepare(parent_hints);
         let b = self.0.prepare(parent_hints);
         ChildHints {
-            minimum_size: a.minimum_size.max(b.minimum_size),
+            minimum_size: Size2::max(a.minimum_size, b.minimum_size),
         }
     }
 
@@ -60,6 +64,10 @@ where
             self.0.effect(),
             self.1.effect()
         )
+    }
+
+    async fn propagate(&mut self, event: &mut ui_composer_input::event::Event) -> bool {
+        Combine::combine(self.0.propagate(event).await, self.1.propagate(event).await)
     }
     
     fn poll_change(
@@ -102,6 +110,10 @@ where
     
     fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect {
         self.as_ref().effect()
+    }
+
+    fn propagate(&mut self, event: &mut ui_composer_input::event::Event) -> impl Future<Output = bool> {
+        self.as_mut().propagate(event)
     }
     
     fn poll_change(

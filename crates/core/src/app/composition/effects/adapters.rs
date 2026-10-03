@@ -1,6 +1,7 @@
 use ::std::task::Poll;
 
 use ::either::Either;
+use ::ui_composer_input::event::Event;
 
 use crate::app::composition::{algebra::Combine, elements::Environment, layout::Ui};
 
@@ -47,6 +48,14 @@ where
             Either::Left(ui.effect())
         } else {
             Either::Right(self.1.effect())
+        }
+    }
+
+    async fn propagate(&mut self, event: &mut Event) -> bool {
+        if let Some(ui) = &mut self.0.ui {
+            ui.propagate(event).await
+        } else {
+            self.1.propagate(event).await
         }
     }
 

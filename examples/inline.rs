@@ -43,6 +43,7 @@ fn app() -> impl Tui {
     )
 }
 
+#[allow(unused)]
 fn app_w() -> impl DesktopUi {
     let white = Srgba::new(1.0, 1.0, 1.0, 1.0);
     let red = Srgba::new(1.0, 0.0, 0.0, 1.0);

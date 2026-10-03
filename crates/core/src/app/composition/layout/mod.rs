@@ -62,8 +62,9 @@
 //!
 //! Some utility functions for calculating layouts are in the [`flow`] module.
 
-use super::elements::{Blueprint, Element, Environment};
+use super::{algebra::Propagate, elements::{Blueprint, Element, Environment}};
 use hints::{ChildHints, ParentHints};
+use ::ui_composer_input::event::Event;
 use std::{
     pin::Pin,
     task::{Context, Poll},
@@ -92,19 +93,15 @@ where
 
     fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect;
 
+    #[allow(async_fn_in_trait)]
+    async fn propagate(&mut self, event: &mut Event) -> bool;
+
     fn poll_change(
         self: Pin<&mut Self>,
         cx: &mut Context,
         resources: &Env::BlueprintResources<'_>,
         parent_hints: ParentHints,
     ) -> Poll<Option<()>>;
-
-    fn boxed(self) -> Box<dyn Ui<Env, Blueprint = Self::Blueprint>>
-    where
-        Self: std::marker::Sized + 'static,
-    {
-        Box::new(self)
-    }
 }
 
 /// A quite interesting auxiliary trait that
@@ -134,7 +131,7 @@ where
     Env: Environment,
 {
     #[pin]
-    elements: Option<B::Output>,
+    element: Option<B::Output>,
     maker: F,
     hints: ChildHints,
 }
@@ -148,7 +145,7 @@ where
     pub fn new(maker: F) -> Self {
         Self {
             hints: ChildHints::default(),
-            elements: None,
+            element: None,
             maker,
         }
     }
@@ -169,15 +166,15 @@ where
     fn place(&mut self, parent_hints: ParentHints, resources: &Env::BlueprintResources<'_>) {
         // (self.maker)(layout_hints)
         let new_blueprint = (self.maker)(parent_hints);
-        if let Some(elements) = &mut self.elements {
+        if let Some(elements) = &mut self.element {
             elements.update(new_blueprint, resources);
         } else {
-            self.elements = Some(new_blueprint.make(resources))
+            self.element = Some(new_blueprint.make(resources))
         }
     }
 
     fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect {
-        self.elements.as_ref().unwrap().effect()
+        self.element.as_ref().unwrap().effect()
     }
 
     fn poll_change(
@@ -187,7 +184,15 @@ where
         _: ParentHints,
     ) -> Poll<Option<()>> {
         let this = self.project();
-        this.elements.poll_change(cx, resources)
+        this.element.poll_change(cx, resources)
+    }
+    
+    async fn propagate(&mut self, event: &mut Event) -> bool {
+        if let Some(element) = &mut self.element {
+            element.propagate(event).await
+        } else {
+            false
+        }
     }
 }
 

@@ -67,9 +67,7 @@ pub mod bubble {
         Up: Combine,
     {
         async fn propagate(&mut self, cx: &mut Down) -> Up {
-            let a = self.0.propagate(cx).await;
-            let b = self.1.propagate(cx).await;
-            a.combine(b)
+            Combine::combine(self.0.propagate(cx).await, self.1.propagate(cx).await)
         }
     }
 

@@ -3,6 +3,8 @@ use std::{
     task::{Context, Poll},
 };
 
+use ::ui_composer_input::event::Event;
+
 use crate::app::composition::{
     elements::{Blueprint, Element, Environment},
     layout::{
@@ -108,6 +110,14 @@ where
 
     fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect {
         self.ui.as_ref().map(|inner| inner.effect())
+    }
+
+    async fn propagate(&mut self, event: &mut Event) -> bool {
+        if let Some(ui) = &mut self.ui {
+            ui.propagate(event).await
+        } else {
+            false
+        }
     }
 
     fn poll_change(
