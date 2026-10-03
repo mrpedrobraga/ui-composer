@@ -21,7 +21,8 @@ fn Counter(count: Mutable<i32>) -> impl DesktopUi {
                 Label (("Take 1"))
                 (count.clone().effect(|e| *e -= 1))
             )
-            item {grow: 1.0} for count of count.signal() {
+            item {grow: 1.0}
+            for count of count.signal() {
                 center Label (( format!("Count: {count}") ))
             }
             item Button (

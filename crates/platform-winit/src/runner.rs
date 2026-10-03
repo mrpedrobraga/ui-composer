@@ -96,13 +96,22 @@ where
                 element_sender: Some(tx),
             };
 
-            scope.spawn(|| {
+            // let (sync_tx, sync_rx) = futures::channel::oneshot::channel();
+
+            scope.spawn(move || {
                 let element = block_on(rx).unwrap();
+                // let mut sync_tx = Some(sync_tx);
 
                 let async_executor: AsyncExecutor<'_, DesktopEnvironment, _, _> =
-                    AsyncExecutor::new(element, app_making_resources, || {});
+                    AsyncExecutor::new(element, app_making_resources, || {
+                        // if let Some(sync_tx) = sync_tx.take() {
+                        //     let _ = sync_tx.send(());
+                        // }
+                    });
                 block_on(async_executor.to_future())
             });
+
+            // let _ = block_on(sync_rx);
 
             e_loop.set_control_flow(winit::event_loop::ControlFlow::Wait);
             println!("[Winit Runner] Transferring control to winit.");
@@ -120,13 +129,15 @@ where
         println!("[Winit] Resumed.");
 
         if let Some(mut blueprint) = self.blueprint.take() {
+            /* TODO: Calculate this only after the internal items have been properly polled! */
+            /* For this, `WindowBlueprint`/`WindowElement` will probably be no more. */
+            /* I mean, windows aren't really element OR ui, right? XD */
+
             let initial_child_hints = blueprint.initial_child_hints();
-
             let minimum_window_size = initial_child_hints.minimum_size;
-
             // TODO: Allow changing the attributes!
             let initial_title = "Ui Composer Window!";
-            let initial_window_size: Size2<f32> = Size2::new(640.0, 360.0).max(minimum_window_size);
+            let initial_window_size: Size2<f32> = blueprint.initial_size().max(minimum_window_size);
 
             let window_attributes = WindowAttributes::default()
                 .with_title(initial_title)

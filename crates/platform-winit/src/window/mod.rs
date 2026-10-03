@@ -36,20 +36,18 @@ pub struct WindowBlueprint<UiBlueprint> {
 
 /// Describes the state of the window as it shall be in the app.
 pub struct WindowState {
-    pub app_size: AppSize,
+    pub app_size: Size2,
     pub mouse_position: Mutable<Option<Point2>>,
 }
 
 impl Default for WindowState {
     fn default() -> Self {
         Self {
-            app_size: Mutable::new(Mutable::new(Size2::new(640.0, 360.0))),
+            app_size: Size2::new(640.0, 360.0),
             mouse_position: Default::default(),
         }
     }
 }
-
-type AppSize = Mutable<Mutable<Size2>>;
 
 /// Function for creating a WindowBlueprint
 #[allow(non_snake_case)]
@@ -67,7 +65,7 @@ where
 {
     pub fn initial_child_hints(&mut self) -> ChildHints {
         let parent_hints = ParentHints {
-            rect: Rect::new(Point2::zeroed(), Size2::new(1.0, 1.0)),
+            rect: Rect::new(Point2::ZERO, self.state.app_size),
             current_flow: CurrentFlow {
                 current_flow_direction: CartesianFlow::LeftToRight,
                 current_cross_flow_direction: CartesianFlow::TopToBottom,
@@ -76,6 +74,15 @@ where
             },
         };
         self.ui.prepare(parent_hints)
+    }
+
+    pub fn initial_size(&self) -> Size2 {
+        self.state.app_size
+    }
+
+    pub fn with_initial_size(mut self, size: Size2) -> Self {
+        self.state.app_size = size;
+        self
     }
 }
 
@@ -108,7 +115,6 @@ pub struct WindowElement<U: DesktopUi> {
 }
 
 pub struct WindowRuntimeState {
-    pub app_size: AppSize,
     pub window_size: Mutable<Size2>,
     pub mouse_position: Mutable<Option<Point2>>,
     pub needs_redrawing: bool,
@@ -267,10 +273,7 @@ impl WindowRuntimeState {
             initial_child_hints.minimum_size.height,
         )));
 
-        blueprint.app_size.set(env.window_size_mutable.clone());
-
         Self {
-            app_size: blueprint.app_size,
             window_size: env.window_size_mutable.clone(),
             mouse_position: blueprint.mouse_position,
             render_resources,
