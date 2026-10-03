@@ -1,14 +1,11 @@
 #![allow(unused)]
 
 use {
-    ui_composer_core::app::composition::algebra::Bubble,
+    ui_composer_core::app::composition::algebra::Propagate,
     ui_composer_input::event::{CursorEvent, Event},
     ui_composer_math::glamour::Contains,
 };
-use {
-    ui_composer_math::prelude::Rect,
-    ui_composer_state::futures_signals::signal::Mutable,
-};
+use {ui_composer_math::prelude::Rect, ui_composer_state::futures_signals::signal::Mutable};
 
 /// An Interactor that handles a user hovering over it with a cursor.
 pub struct Hover {
@@ -25,8 +22,8 @@ impl Hover {
     }
 }
 
-impl Bubble<Event, bool> for Hover {
-    async fn bubble(&mut self, event: &mut Event) -> bool {
+impl Propagate<Event, bool> for Hover {
+    async fn propagate(&mut self, event: &mut Event) -> bool {
         match event {
             Event::Cursor { id, event } => match event {
                 CursorEvent::Moved { position } => {

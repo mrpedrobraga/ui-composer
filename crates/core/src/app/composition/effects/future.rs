@@ -93,9 +93,11 @@ where
 {
     type Blueprint = Option<U::Blueprint>;
 
-    fn prepare(&mut self, _: ParentHints) -> ChildHints {
-        /* TODO: Not sure what to do here? */
-        ChildHints::default()
+    fn prepare(&mut self, expected_parent_hints: ParentHints) -> ChildHints {
+        self.ui
+            .as_mut()
+            .map(|u| u.prepare(expected_parent_hints))
+            .unwrap_or_default()
     }
 
     fn place(&mut self, parent_hints: ParentHints, resources: &Env::BlueprintResources<'_>) {

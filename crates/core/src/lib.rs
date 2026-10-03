@@ -11,7 +11,7 @@
 pub mod app;
 
 pub mod prelude {
-    pub use crate::app::composition::algebra::{Bubble, Empty, Gather, Monoid, Semigroup};
+    pub use crate::app::composition::algebra::{Combine, Empty, Gather, Monoid, Propagate};
     pub use crate::app::composition::effects::future::FutureExt as _;
     pub use crate::app::composition::effects::signal::SignalExt as _;
     pub use crate::app::composition::elements::{Blueprint, Element, Environment};

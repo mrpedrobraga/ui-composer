@@ -1,7 +1,7 @@
 use ::either::{map_both, Either};
 
 use super::{Blueprint, Element};
-use crate::app::composition::algebra::Semigroup;
+use crate::app::composition::algebra::Combine;
 use crate::app::composition::elements::Environment;
 use crate::prelude::Empty;
 use std::pin::Pin;

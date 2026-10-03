@@ -2,7 +2,7 @@ use std::pin::Pin;
 
 use ui_composer_math::prelude::Size2;
 
-use crate::app::composition::algebra::Semigroup;
+use crate::app::composition::algebra::Combine;
 use crate::app::composition::elements::{Blueprint, Element, Environment};
 use crate::app::composition::layout::hints::{ChildHints, ParentHints};
 use crate::app::composition::layout::Ui;
@@ -81,7 +81,7 @@ where
         let poll_a = pinned_a.poll_change(cx, resources, parent_hints);
         let poll_b = pinned_b.poll_change(cx, resources, parent_hints);
 
-        Semigroup::combine(poll_a, poll_b)
+        Combine::combine(poll_a, poll_b)
     }
 }
 

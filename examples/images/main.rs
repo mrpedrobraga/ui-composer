@@ -4,7 +4,7 @@ use {
 };
 
 fn main() {
-    UIComposer::run_tui(Terminal(app()));
+    TuiPlatform::run(Terminal(app()));
 }
 
 fn app() -> impl lullaby_ui::prelude::Ui {

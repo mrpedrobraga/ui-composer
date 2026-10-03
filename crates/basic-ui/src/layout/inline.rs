@@ -1,4 +1,6 @@
+use crate::primitives::graphic::{Graphic, RenderQuad};
 use ::ui_composer_math::palette::rgb::Rgba;
+
 use {
     crate::primitives::text::{RenderText, Text},
     std::{
@@ -7,7 +9,7 @@ use {
         task::{Context, Poll},
     },
     ui_composer_core::app::composition::{
-        algebra::Semigroup,
+        algebra::Combine,
         elements::{Blueprint, Element, Environment},
         layout::{
             hints::{ChildHints, ParentHints},
@@ -16,7 +18,7 @@ use {
     },
     ui_composer_math::prelude::{Rect, Size2, Vector2},
     ui_composer_platform_tui::runner::{TerminalBlueprintResources, TerminalEnvironment},
-    ui_composer_platform_winit::runner::{WinitBlueprintResources, WinitEnvironment},
+    ui_composer_platform_winit::runner::{DesktopEnvironment, DesktopResources},
 };
 
 type Offset = u32;
@@ -205,7 +207,7 @@ where
         _: &TerminalBlueprintResources,
     ) {
         let word_spacing = 1;
-        let mut words_with_pos = Vec::new();
+        let mut text_blueprints = Vec::new();
         let words = self.text.split_whitespace();
 
         for word in words {
@@ -221,7 +223,7 @@ where
                 cx.local_offset.x += word_spacing;
             }
 
-            words_with_pos.push(
+            text_blueprints.push(
                 Text()
                     .with_text(word.to_string())
                     .with_rect(
@@ -237,7 +239,7 @@ where
             cx.local_offset.x += len;
         }
 
-        self.allocated_texts = words_with_pos
+        self.allocated_texts = text_blueprints
     }
 
     fn measure(&mut self, cx: &mut MeasureContext, _: ParentHints) {
@@ -278,13 +280,8 @@ where
     }
 }
 
-impl InlineItem<WinitEnvironment> for MonospaceText {
-    fn allocate(
-        &mut self,
-        cx: &mut InlineContext,
-        hints: ParentHints,
-        _: &WinitBlueprintResources,
-    ) {
+impl InlineItem<DesktopEnvironment> for MonospaceText {
+    fn allocate(&mut self, cx: &mut InlineContext, hints: ParentHints, _: &DesktopResources) {
         let word_spacing = 1;
         let mut words_with_pos = Vec::new();
         let words = self.text.split_whitespace();
@@ -346,16 +343,30 @@ impl InlineItem<WinitEnvironment> for MonospaceText {
     fn poll_change(
         self: Pin<&mut Self>,
         _: &mut Context,
-        _: &<WinitEnvironment as Environment>::BlueprintResources<'_>,
+        _: &<DesktopEnvironment as Environment>::BlueprintResources<'_>,
         _: ParentHints,
     ) -> Poll<Option<()>> {
         Poll::Ready(None)
     }
 
-    type Blueprint = ();
+    type Blueprint = Vec<Graphic>;
 
-    fn effect(&self) -> <<Self::Blueprint as Blueprint<WinitEnvironment>>::Output as Element<WinitEnvironment>>::Effect{
-        /* TODO: Not sure what kinds of effects these emit? */
+    fn effect(&self) -> <<Self::Blueprint as Blueprint<DesktopEnvironment>>::Output as Element<DesktopEnvironment>>::Effect{
+        self.allocated_texts
+            .iter()
+            .map(|e| {
+                RenderQuad(
+                    Rect {
+                        origin: (e.rect.origin.to_vector()
+                            * DesktopEnvironment::TILE_SIZE.to_vector())
+                        .to_point(),
+                        // origin: e.rect.origin,
+                        size: e.rect.size * DesktopEnvironment::TILE_SIZE,
+                    },
+                    e.color,
+                )
+            })
+            .collect()
     }
 }
 
@@ -433,7 +444,7 @@ where
         let poll_a = pinned_a.poll_change(cx, resources, parent_hints);
         let poll_b = pinned_b.poll_change(cx, resources, parent_hints);
 
-        Semigroup::combine(poll_a, poll_b)
+        Combine::combine(poll_a, poll_b)
     }
 
     type Blueprint = (A::Blueprint, B::Blueprint);
@@ -447,16 +458,16 @@ where
     }
 }
 
-impl<A, B> InlineItemList<WinitEnvironment> for (A, B)
+impl<A, B> InlineItemList<DesktopEnvironment> for (A, B)
 where
-    A: InlineItemList<WinitEnvironment>,
-    B: InlineItemList<WinitEnvironment>,
+    A: InlineItemList<DesktopEnvironment>,
+    B: InlineItemList<DesktopEnvironment>,
 {
     fn allocate(
         &mut self,
         cx: &mut InlineContext,
         hints: ParentHints,
-        resources: &WinitBlueprintResources,
+        resources: &DesktopResources,
     ) {
         self.0.allocate(cx, hints, resources);
         self.1.allocate(cx, hints, resources);
@@ -469,7 +480,7 @@ where
     fn poll_change(
         self: Pin<&mut Self>,
         cx: &mut Context,
-        resources: &WinitBlueprintResources,
+        resources: &DesktopResources,
         parent_hints: ParentHints,
     ) -> Poll<Option<()>> {
         let (pinned_a, pinned_b) = {
@@ -485,12 +496,12 @@ where
         let poll_a = pinned_a.poll_change(cx, resources, parent_hints);
         let poll_b = pinned_b.poll_change(cx, resources, parent_hints);
 
-        Semigroup::combine(poll_a, poll_b)
+        Combine::combine(poll_a, poll_b)
     }
 
     type Blueprint = (A::Blueprint, B::Blueprint);
 
-    fn effect(&self) -> <<Self::Blueprint as Blueprint<WinitEnvironment>>::Output as Element<WinitEnvironment>>::Effect{
+    fn effect(&self) -> <<Self::Blueprint as Blueprint<DesktopEnvironment>>::Output as Element<DesktopEnvironment>>::Effect{
         (self.0.effect(), self.1.effect())
     }
 }
@@ -578,7 +589,7 @@ where
             height_whem_min_w_cx.local_offset.y + height_whem_min_w_cx.max_line_height;
 
         ChildHints {
-            minimum_size: Size2::new(true_min_w as f32, height_when_min_w as f32),
+            minimum_size: Size2::new(true_min_w as f32, height_when_min_w as f32) * Env::TILE_SIZE,
         }
     }
 

@@ -1,4 +1,4 @@
-use crate::app::composition::algebra::Semigroup;
+use crate::app::composition::algebra::Combine;
 use crate::app::composition::elements::{Blueprint, Element, Environment};
 use crate::app::composition::layout::hints::{ChildHints, ParentHints};
 use crate::app::composition::layout::Ui;
@@ -74,12 +74,11 @@ where
 {
     type Blueprint = Option<U::Blueprint>;
 
-    fn prepare(
-        &mut self,
-        _: crate::app::composition::layout::hints::ParentHints,
-    ) -> crate::app::composition::layout::hints::ChildHints {
-        /* TODO: Idk what to do here tbh */
-        ChildHints::default()
+    fn prepare(&mut self, expected_parent_hints: ParentHints) -> ChildHints {
+        self.ui
+            .as_mut()
+            .map(|u| u.prepare(expected_parent_hints))
+            .unwrap_or_default()
     }
 
     fn place(&mut self, parent_hints: ParentHints, resources: &Env::BlueprintResources<'_>) {
@@ -128,6 +127,6 @@ where
             Poll::Ready(None)
         };
 
-        Semigroup::combine(signal_poll, ui_poll)
+        Combine::combine(signal_poll, ui_poll)
     }
 }

@@ -24,6 +24,7 @@
 //! 2. Perform layout calculations;
 //! 3. Generate parent hints, likely in order, while calling [`LayoutItem::lay`] on them.;
 //!
+use ::ui_composer_math::{flow::CartesianFlow, glamour::Point2};
 use ui_composer_math::{
     flow::CurrentFlow,
     prelude::{Rect, Size2},
@@ -34,6 +35,26 @@ use ui_composer_math::{
 pub struct ParentHints {
     pub rect: Rect,
     pub current_flow: CurrentFlow,
+}
+
+impl ParentHints {
+    pub fn mock() -> Self {
+        Self {
+            rect: Rect::new(
+                Point2::ZERO,
+                Size2 {
+                    width: 64.0,
+                    height: 64.0,
+                },
+            ),
+            current_flow: CurrentFlow {
+                current_flow_direction: CartesianFlow::LeftToRight,
+                current_cross_flow_direction: CartesianFlow::TopToBottom,
+                current_writing_flow_direction: CartesianFlow::LeftToRight,
+                current_writing_cross_flow_direction: CartesianFlow::TopToBottom,
+            },
+        }
+    }
 }
 
 /// The child hints struct.

@@ -8,7 +8,7 @@ static BUTTON_COLOR: Srgba = Srgba::new(255.0, 217.0, 179.0, 255.0);
 static BUTTON_COLOR_HOVER: Srgba = Srgba::new(235.0, 189.0, 143.0, 255.0);
 
 fn main() {
-    UIComposer::run_tui(uix! (
+    TuiPlatform::run(uix! (
         <Terminal>
             <flex vertical_flow>
                 <item grow=1.0>

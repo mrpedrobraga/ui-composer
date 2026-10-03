@@ -1,4 +1,4 @@
-use ui_composer_core::app::composition::algebra::Bubble;
+use ui_composer_core::app::composition::algebra::Propagate;
 use ui_composer_input::event::Event;
 use ui_composer_input::event::{ButtonState, KeyEvent, KeyboardEvent};
 use ui_composer_state::futures_signals::signal::Mutable;
@@ -15,8 +15,8 @@ impl Typing {
     }
 }
 
-impl Bubble<Event, bool> for Typing {
-    async fn bubble(&mut self, event: &mut Event) -> bool {
+impl Propagate<Event, bool> for Typing {
+    async fn propagate(&mut self, event: &mut Event) -> bool {
         if let Event::Keyboard {
             event:
                 KeyboardEvent::Key(KeyEvent {

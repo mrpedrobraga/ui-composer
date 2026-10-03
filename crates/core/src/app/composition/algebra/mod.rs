@@ -6,8 +6,8 @@
 pub mod implementations;
 
 /// Marks a type where items can be "combined" into a new item in a canonical way.
-pub trait Semigroup {
-    /// Associative function which combines two items from the semigroup.
+pub trait Combine {
+    /// "Semigroup" combine operation.
     fn combine(self, other: Self) -> Self;
 }
 
@@ -22,19 +22,19 @@ pub trait Empty {
 /// 2. Has a canonical "empty" element.
 ///
 /// Notably, this trait is simply an alias trait for `Semigroup + Empty`.
-pub trait Monoid: Semigroup + Empty {}
-impl<T> Monoid for T where T: Semigroup + Empty {}
+pub trait Monoid: Combine + Empty {}
+impl<T> Monoid for T where T: Combine + Empty {}
 
 /// Type for something that can bubble a value down its structure (anamorphism)
 /// and bubble up a response (catamorphism).
-pub trait Bubble<Down, Up> {
+pub trait Propagate<Down, Up> {
     /// Pushes `cx` down the tree, gathering `Up`s on the way back.
     ///
     /// If called recursively on a "tree" structure where the nodes
     /// have several children, it's expected that Down will be either split or cloned,
     /// and that Up will be [`Semigroup::combine`]d.
     #[allow(async_fn_in_trait)]
-    async fn bubble(&mut self, cx: &mut Down) -> Up;
+    async fn propagate(&mut self, cx: &mut Down) -> Up;
 }
 
 /// Type for something that can bubble a value down its structure (anamorphism)
@@ -52,11 +52,11 @@ pub trait Gather<Context, Item> {
 }
 
 // #[cfg(feature = "specialization")]
-// impl<T, Down, Up> Bubble<Down, Up> for T
+// impl<T, Down, Up> Propagate<Down, Up> for T
 // where
 //     Up: Empty,
 // {
-//     default fn bubble(&mut self, cx: &mut Down) -> Up {
+//     default fn propagate(&mut self, cx: &mut Down) -> Up {
 //         Up::empty()
 //     }
 // }

@@ -1,5 +1,5 @@
 use ui_composer_core::app::composition::{
-    algebra::{Bubble, Empty},
+    algebra::{Empty, Propagate},
     effects::ElementEffect,
     elements::{Blueprint, Element},
     visit::{Apply, DriveThru},
@@ -15,7 +15,7 @@ use ui_composer_platform_tui::{
     runner::{TerminalBlueprintResources, TerminalEnvironment},
 };
 use ui_composer_platform_winit::{
-    runner::{WinitBlueprintResources, WinitEnvironment},
+    runner::{DesktopEnvironment, DesktopResources},
     window::effect_handling::{QuadInstance, WindowEffectVisitor},
 };
 
@@ -133,8 +133,8 @@ impl Graphic {
     }
 }
 
-impl Bubble<Event, bool> for Graphic {
-    async fn bubble(&mut self, _: &mut Event) -> bool {
+impl Propagate<Event, bool> for Graphic {
+    async fn propagate(&mut self, _: &mut Event) -> bool {
         Empty::empty()
     }
 }
@@ -170,15 +170,15 @@ impl ui_composer_state::effect::animation::Lerp for Graphic {
     }
 }
 
-impl Blueprint<WinitEnvironment> for Graphic {
+impl Blueprint<DesktopEnvironment> for Graphic {
     type Output = Self;
 
-    fn make(self, _: &WinitBlueprintResources<'_>) -> Self::Output {
+    fn make(self, _: &DesktopResources<'_>) -> Self::Output {
         self
     }
 }
 
-impl Element<WinitEnvironment> for Graphic {
+impl Element<DesktopEnvironment> for Graphic {
     type Effect = RenderQuad;
 
     fn effect(&self) -> Self::Effect {
@@ -187,7 +187,7 @@ impl Element<WinitEnvironment> for Graphic {
 
     type Blueprint = Self;
 
-    fn update(&mut self, blueprint: Self, _: &WinitBlueprintResources) {
+    fn update(&mut self, blueprint: Self, _: &DesktopResources) {
         *self = blueprint;
     }
 }

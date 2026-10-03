@@ -1,8 +1,8 @@
-use crate::app::composition::algebra::{Bubble, Empty, Gather, Semigroup};
+use crate::app::composition::algebra::{Combine, Empty, Gather, Propagate};
 
 /* bool */
 
-impl Semigroup for bool {
+impl Combine for bool {
     fn combine(self, other: Self) -> Self {
         self || other
     }
@@ -16,7 +16,7 @@ impl Empty for bool {
 
 /* Poll<Option<()>> */
 
-impl Semigroup for std::task::Poll<Option<()>> {
+impl Combine for std::task::Poll<Option<()>> {
     fn combine(self, other: Self) -> Self {
         use std::task::Poll::*;
 
@@ -37,104 +37,104 @@ impl Empty for std::task::Poll<Option<()>> {
 pub mod bubble {
     use ::either::{for_both, Either};
 
-    use super::{Bubble, Empty, Semigroup};
+    use super::{Combine, Empty, Propagate};
     use crate::app::composition::algebra::Monoid;
 
-    impl<Down, Up> Bubble<Down, Up> for ()
+    impl<Down, Up> Propagate<Down, Up> for ()
     where
         Up: Empty,
     {
-        async fn bubble(&mut self, #[allow(unused)] cx: &mut Down) -> Up {
+        async fn propagate(&mut self, #[allow(unused)] cx: &mut Down) -> Up {
             Empty::empty()
         }
     }
 
     #[cfg(feature = "std")]
-    impl<A, Down, Up> Bubble<Down, Up> for Box<A>
+    impl<A, Down, Up> Propagate<Down, Up> for Box<A>
     where
-        A: Bubble<Down, Up>,
-        Up: Semigroup,
+        A: Propagate<Down, Up>,
+        Up: Combine,
     {
-        async fn bubble(&mut self, cx: &mut Down) -> Up {
-            self.as_mut().bubble(cx).await
+        async fn propagate(&mut self, cx: &mut Down) -> Up {
+            self.as_mut().propagate(cx).await
         }
     }
 
-    impl<A, B, Down, Up> Bubble<Down, Up> for (A, B)
+    impl<A, B, Down, Up> Propagate<Down, Up> for (A, B)
     where
-        A: Bubble<Down, Up>,
-        B: Bubble<Down, Up>,
-        Up: Semigroup,
+        A: Propagate<Down, Up>,
+        B: Propagate<Down, Up>,
+        Up: Combine,
     {
-        async fn bubble(&mut self, cx: &mut Down) -> Up {
-            let a = self.0.bubble(cx).await;
-            let b = self.1.bubble(cx).await;
+        async fn propagate(&mut self, cx: &mut Down) -> Up {
+            let a = self.0.propagate(cx).await;
+            let b = self.1.propagate(cx).await;
             a.combine(b)
         }
     }
 
-    impl<A, Down, Up, const N: usize> Bubble<Down, Up> for [A; N]
+    impl<A, Down, Up, const N: usize> Propagate<Down, Up> for [A; N]
     where
-        A: Bubble<Down, Up>,
+        A: Propagate<Down, Up>,
         Up: Monoid,
     {
-        async fn bubble(&mut self, cx: &mut Down) -> Up {
+        async fn propagate(&mut self, cx: &mut Down) -> Up {
             let mut acc = Empty::empty();
             for el in self.iter_mut() {
-                acc = Semigroup::combine(acc, el.bubble(cx).await);
+                acc = Combine::combine(acc, el.propagate(cx).await);
             }
             acc
         }
     }
 
-    impl<A, Down, Up> Bubble<Down, Up> for Vec<A>
+    impl<A, Down, Up> Propagate<Down, Up> for Vec<A>
     where
-        A: Bubble<Down, Up>,
+        A: Propagate<Down, Up>,
         Up: Monoid,
     {
-        async fn bubble(&mut self, cx: &mut Down) -> Up {
+        async fn propagate(&mut self, cx: &mut Down) -> Up {
             let mut acc = Empty::empty();
             for el in self.iter_mut() {
-                acc = Semigroup::combine(acc, el.bubble(cx).await);
+                acc = Combine::combine(acc, el.propagate(cx).await);
             }
             acc
         }
     }
 
-    impl<A, Down, Up> Bubble<Down, Up> for Option<A>
+    impl<A, Down, Up> Propagate<Down, Up> for Option<A>
     where
-        A: Bubble<Down, Up>,
+        A: Propagate<Down, Up>,
         Up: Empty,
     {
-        async fn bubble(&mut self, cx: &mut Down) -> Up {
+        async fn propagate(&mut self, cx: &mut Down) -> Up {
             match self {
                 None => Up::empty(),
-                Some(inner) => inner.bubble(cx).await,
+                Some(inner) => inner.propagate(cx).await,
             }
         }
     }
 
-    impl<A, B, Down, Up> Bubble<Down, Up> for Either<A, B>
+    impl<A, B, Down, Up> Propagate<Down, Up> for Either<A, B>
     where
-        A: Bubble<Down, Up>,
-        B: Bubble<Down, Up>,
+        A: Propagate<Down, Up>,
+        B: Propagate<Down, Up>,
         Up: Empty,
     {
-        async fn bubble(&mut self, cx: &mut Down) -> Up {
-            for_both!(self, inner => inner.bubble(cx).await)
+        async fn propagate(&mut self, cx: &mut Down) -> Up {
+            for_both!(self, inner => inner.propagate(cx).await)
         }
     }
 
-    impl<T, E, Down, Up> Bubble<Down, Up> for Result<T, E>
+    impl<T, E, Down, Up> Propagate<Down, Up> for Result<T, E>
     where
-        T: Bubble<Down, Up>,
-        E: Bubble<Down, Up>,
+        T: Propagate<Down, Up>,
+        E: Propagate<Down, Up>,
         Up: Empty,
     {
-        async fn bubble(&mut self, cx: &mut Down) -> Up {
+        async fn propagate(&mut self, cx: &mut Down) -> Up {
             match self {
-                Err(inner) => inner.bubble(cx).await,
-                Ok(inner) => inner.bubble(cx).await,
+                Err(inner) => inner.propagate(cx).await,
+                Ok(inner) => inner.propagate(cx).await,
             }
         }
     }

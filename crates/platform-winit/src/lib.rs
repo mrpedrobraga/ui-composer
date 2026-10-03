@@ -4,7 +4,7 @@
 //! on many targets using `winit` under the hood.
 
 use {
-    crate::runner::WinitEnvironment,
+    crate::runner::DesktopEnvironment,
     ui_composer_core::app::composition::{elements::Blueprint, CompatibleWith},
 };
 
@@ -17,14 +17,14 @@ mod winit_uic_conversion;
 pub use wgpu;
 pub use winit;
 
-pub trait WinitUi: CompatibleWith<WinitEnvironment> {}
-impl<T> WinitUi for T where T: CompatibleWith<WinitEnvironment> {}
+pub trait DesktopUi: CompatibleWith<DesktopEnvironment> {}
+impl<T> DesktopUi for T where T: CompatibleWith<DesktopEnvironment> {}
 
-pub trait WinitBlueprint: Blueprint<WinitEnvironment, Output: Send> + Send {}
-impl<T> WinitBlueprint for T where T: Blueprint<WinitEnvironment, Output: Send> + Send {}
+pub trait DesktopBlueprint: Blueprint<DesktopEnvironment, Output: Send> + Send {}
+impl<T> DesktopBlueprint for T where T: Blueprint<DesktopEnvironment, Output: Send> + Send {}
 
 #[doc(hidden)]
 pub mod prelude {
-    pub use crate::runner::{WinitEnvironment, WinitRunner};
-    pub use crate::WinitUi;
+    pub use crate::runner::{DesktopEnvironment, DesktopPlatform};
+    pub use crate::DesktopUi;
 }

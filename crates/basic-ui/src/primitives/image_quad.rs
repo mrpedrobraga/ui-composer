@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use image::{DynamicImage, GenericImageView};
 use ui_composer_core::app::composition::{
-    algebra::{Bubble, Empty},
+    algebra::{Empty, Propagate},
     effects::ElementEffect,
     elements::{Blueprint, Element},
     visit::{Apply, DriveThru},
@@ -113,8 +113,8 @@ impl ImageViewElementTerminal {
     }
 }
 
-impl Bubble<Event, bool> for ImageViewElementTerminal {
-    async fn bubble(&mut self, _: &mut Event) -> bool {
+impl Propagate<Event, bool> for ImageViewElementTerminal {
+    async fn propagate(&mut self, _: &mut Event) -> bool {
         Empty::empty()
     }
 }

@@ -1,5 +1,5 @@
 #![allow(unused)]
-use ui_composer_core::app::composition::algebra::Bubble;
+use ui_composer_core::app::composition::algebra::Propagate;
 use ui_composer_core::app::composition::elements::{Blueprint, Element};
 use ui_composer_input::event::{ButtonState, MouseButton};
 use ui_composer_input::event::{CursorEvent, Event, TouchStage};
@@ -39,11 +39,11 @@ where
     }
 }
 
-impl<A> Bubble<Event, bool> for Tap<A>
+impl<A> Propagate<Event, bool> for Tap<A>
 where
     A: Effect + Send + Sync,
 {
-    async fn bubble(&mut self, event: &mut Event) -> bool {
+    async fn propagate(&mut self, event: &mut Event) -> bool {
         match event {
             Event::Cursor { id: _, event } => match event {
                 CursorEvent::Moved { position } => {
@@ -55,10 +55,7 @@ where
                     self.is_hovered_state.set(false);
                     false
                 }
-                CursorEvent::Button(
-                    MouseButton::Left,
-                    ButtonState::Pressed,
-                )
+                CursorEvent::Button(MouseButton::Left, ButtonState::Pressed)
                 | CursorEvent::Touched {
                     stage: TouchStage::Started,
                     ..

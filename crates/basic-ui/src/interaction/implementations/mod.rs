@@ -1,3 +1,4 @@
+use ::ui_composer_core::app::composition::elements::Environment;
 use {
     crate::interaction::{Hover, Tap, Typing},
     ui_composer_core::prelude::{Blueprint, Element},
@@ -5,38 +6,42 @@ use {
     ui_composer_state::effect::Effect,
 };
 
-impl Blueprint<TerminalEnvironment> for Hover {
+impl<Env: Environment> Blueprint<Env> for Hover
+where
+    Hover: Element<Env, Blueprint = Hover>,
+{
     type Output = Self;
 
-    fn make(self, _: &TerminalBlueprintResources) -> Self::Output {
+    fn make(self, _: &Env::BlueprintResources<'_>) -> Self::Output {
         self
     }
 }
 
-impl Element<TerminalEnvironment> for Hover {
+impl<Env: Environment> Element<Env> for Hover {
     type Effect = ();
 
     fn effect(&self) -> Self::Effect {}
 
     type Blueprint = Self;
 
-    fn update(&mut self, blueprint: Self::Blueprint, _: &TerminalBlueprintResources) {
+    fn update(&mut self, blueprint: Self::Blueprint, _: &Env::BlueprintResources<'_>) {
         *self = blueprint
     }
 }
 
-impl<A> Blueprint<TerminalEnvironment> for Tap<A>
+impl<Env: Environment, A> Blueprint<Env> for Tap<A>
 where
+    Tap<A>: Element<Env, Blueprint = Self>,
     A: Effect + Send + Sync + 'static,
 {
     type Output = Self;
 
-    fn make(self, _: &TerminalBlueprintResources) -> Self::Output {
+    fn make(self, _: &Env::BlueprintResources<'_>) -> Self::Output {
         self
     }
 }
 
-impl<A> Element<TerminalEnvironment> for Tap<A>
+impl<Env: Environment, A> Element<Env> for Tap<A>
 where
     A: Effect + Send + Sync + 'static,
 {
@@ -46,27 +51,27 @@ where
 
     type Blueprint = Self;
 
-    fn update(&mut self, blueprint: Self::Blueprint, _: &TerminalBlueprintResources) {
+    fn update(&mut self, blueprint: Self::Blueprint, _: &Env::BlueprintResources<'_>) {
         *self = blueprint
     }
 }
 
-impl Blueprint<TerminalEnvironment> for Typing {
+impl<Env: Environment> Blueprint<Env> for Typing {
     type Output = Self;
 
-    fn make(self, _: &TerminalBlueprintResources) -> Self::Output {
+    fn make(self, _: &Env::BlueprintResources<'_>) -> Self::Output {
         self
     }
 }
 
-impl Element<TerminalEnvironment> for Typing {
+impl<Env: Environment> Element<Env> for Typing {
     type Effect = ();
 
     fn effect(&self) -> Self::Effect {}
 
     type Blueprint = Self;
 
-    fn update(&mut self, blueprint: Self::Blueprint, _: &TerminalBlueprintResources) {
+    fn update(&mut self, blueprint: Self::Blueprint, _: &Env::BlueprintResources<'_>) {
         *self = blueprint
     }
 }

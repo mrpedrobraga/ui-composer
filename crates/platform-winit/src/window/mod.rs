@@ -5,14 +5,14 @@
 //! it will render them to its [WindowRenderTarget].
 
 use crate::render::{render, RenderPipeline, RenderResources, RenderTarget as _};
-use crate::runner::{WinitBlueprintResources, WinitEnvironment};
-use crate::WinitUi;
+use crate::runner::{DesktopEnvironment, DesktopResources};
+use crate::DesktopUi;
 use bytemuck::Zeroable;
 use futures_signals::signal::Mutable;
 use pin_project::pin_project;
 use std::sync::Arc;
 use std::task::Poll;
-use ui_composer_core::app::composition::algebra::Bubble;
+use ui_composer_core::app::composition::algebra::Propagate;
 use ui_composer_core::app::composition::elements::{Blueprint, Element};
 use ui_composer_core::app::composition::layout::hints::{ChildHints, ParentHints};
 use ui_composer_core::app::composition::visit::DriveThru as _;
@@ -55,7 +55,7 @@ type AppSize = Mutable<Mutable<Size2>>;
 #[allow(non_snake_case)]
 pub fn Window<Ui>(ui: Ui) -> WindowBlueprint<Ui>
 where
-    Ui: WinitUi,
+    Ui: DesktopUi,
 {
     let state = WindowState::default();
     WindowBlueprint { ui, state }
@@ -63,7 +63,7 @@ where
 
 impl<Ui> WindowBlueprint<Ui>
 where
-    Ui: WinitUi,
+    Ui: DesktopUi,
 {
     pub fn initial_child_hints(&mut self) -> ChildHints {
         let parent_hints = ParentHints {
@@ -79,14 +79,14 @@ where
     }
 }
 
-impl<Ui> Blueprint<WinitEnvironment> for WindowBlueprint<Ui>
+impl<Ui> Blueprint<DesktopEnvironment> for WindowBlueprint<Ui>
 where
-    Ui: WinitUi,
+    Ui: DesktopUi,
     // for<'fx> <UiBlueprint::Element as Element<WinitEnvironment>>::Effect<'fx>: Debug,
 {
     type Output = WindowElement<Ui>;
 
-    fn make(mut self, env: &WinitBlueprintResources<'_>) -> Self::Output {
+    fn make(mut self, env: &DesktopResources<'_>) -> Self::Output {
         // TODO: Allow different attributes to be specified.
         // Ideally, the user would be able to pass `Mutable`s
         // that the window would poll for reactivity!
@@ -101,7 +101,7 @@ where
 }
 
 #[pin_project(project = WindowElementProj)]
-pub struct WindowElement<U: WinitUi> {
+pub struct WindowElement<U: DesktopUi> {
     #[pin]
     ui: U,
     state: WindowRuntimeState,
@@ -122,12 +122,8 @@ pub struct WindowRuntimeState {
     window: Arc<Window>,
 }
 
-impl<Ui: WinitUi> WindowElement<Ui> {
-    pub(crate) fn prepare_to_resize(
-        &mut self,
-        new_size: Size2,
-        resources: &WinitBlueprintResources,
-    ) {
+impl<Ui: DesktopUi> WindowElement<Ui> {
+    pub(crate) fn prepare_to_resize(&mut self, new_size: Size2, resources: &DesktopResources) {
         /* TODO: Move this somewhere else? */
         let parent_hints = ParentHints {
             rect: Rect::new(Point2::zeroed(), new_size),
@@ -138,7 +134,8 @@ impl<Ui: WinitUi> WindowElement<Ui> {
                 current_writing_cross_flow_direction: CartesianFlow::TopToBottom,
             },
         };
-        self.ui.prepare(parent_hints);
+        let child_hints = self.ui.prepare(parent_hints);
+        self.state.update_with_child_hints(child_hints);
         self.ui.place(parent_hints, resources);
     }
 
@@ -161,8 +158,8 @@ impl<Ui: WinitUi> WindowElement<Ui> {
     }
 }
 
-impl<Ui: WinitUi> Bubble<Event, bool> for WindowElement<Ui> {
-    async fn bubble(&mut self, cx: &mut Event) -> bool {
+impl<Ui: DesktopUi> Propagate<Event, bool> for WindowElement<Ui> {
+    async fn propagate(&mut self, cx: &mut Event) -> bool {
         match cx {
             Event::Resized(new_size) => {
                 self.resize_internal(*new_size);
@@ -202,9 +199,9 @@ impl<Ui: WinitUi> Bubble<Event, bool> for WindowElement<Ui> {
     }
 }
 
-impl<Ui> Element<WinitEnvironment> for WindowElement<Ui>
+impl<Ui> Element<DesktopEnvironment> for WindowElement<Ui>
 where
-    Ui: WinitUi,
+    Ui: DesktopUi,
 {
     type Effect = ();
     type Blueprint = WindowBlueprint<Ui>;
@@ -214,7 +211,7 @@ where
     fn poll_change(
         self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context,
-        env: &WinitBlueprintResources<'_>,
+        env: &DesktopResources<'_>,
     ) -> std::task::Poll<Option<()>> {
         let WindowElementProj { mut ui, state, .. } = self.project();
 
@@ -247,7 +244,7 @@ where
         ui_poll
     }
 
-    fn update(&mut self, _: WindowBlueprint<Ui>, _: &WinitBlueprintResources) {
+    fn update(&mut self, _: WindowBlueprint<Ui>, _: &DesktopResources) {
         unimplemented!()
     }
 }
@@ -255,7 +252,7 @@ where
 impl WindowRuntimeState {
     pub fn from_blueprint(
         blueprint: WindowState,
-        env: &WinitBlueprintResources,
+        env: &DesktopResources,
         initial_child_hints: ChildHints,
     ) -> Self {
         let gpu = env.gpu.clone();
@@ -289,8 +286,14 @@ impl WindowRuntimeState {
             return;
         }
         self.render_resources.uniforms.resize(new_size);
-        //self.app_size.set(new_size);
         self.render_target
             .resize(&self.render_resources.gpu, new_size.as_());
+    }
+
+    fn update_with_child_hints(&mut self, child_hints: ChildHints) {
+        self.window.set_min_inner_size(Some(PhysicalSize {
+            width: child_hints.minimum_size.width,
+            height: child_hints.minimum_size.height,
+        }));
     }
 }

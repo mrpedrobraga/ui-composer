@@ -1,7 +1,7 @@
 use core::iter::{once, Chain, Once};
 use std::{marker::PhantomData, pin::Pin};
 use ui_composer_core::app::composition::{
-    algebra::Semigroup,
+    algebra::Combine,
     elements::{Blueprint, Element, Environment},
     layout::{
         hints::{ChildHints, ParentHints},
@@ -406,6 +406,6 @@ where
         let poll_a = pinned_a.poll_change(cx, resources, parent_hints);
         let poll_b = pinned_b.poll_change(cx, resources, parent_hints);
 
-        Semigroup::combine(poll_a, poll_b)
+        Combine::combine(poll_a, poll_b)
     }
 }

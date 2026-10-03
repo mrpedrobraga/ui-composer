@@ -1,7 +1,7 @@
 #![allow(unused)]
 
 use {
-    ui_composer_core::app::composition::algebra::Bubble,
+    ui_composer_core::app::composition::algebra::Propagate,
     ui_composer_input::event::CursorEvent,
     ui_composer_math::{
         glamour::Contains,
@@ -50,8 +50,8 @@ impl Drag {
     }
 }
 
-impl Bubble<Event, bool> for Drag {
-    async fn bubble(&mut self, event: &mut Event) -> bool {
+impl Propagate<Event, bool> for Drag {
+    async fn propagate(&mut self, event: &mut Event) -> bool {
         if let Event::Cursor { id, event } = event {
             match (event, self.drag_state.get()) {
                 (CursorEvent::Moved { position }, DragState::None) => {
@@ -80,17 +80,12 @@ impl Bubble<Event, bool> for Drag {
                     self.mouse_position.set(*position);
                     true
                 }
-                (
-                    CursorEvent::Exited,
-                    DragState::Dragging | DragState::Hovering,
-                ) => {
+                (CursorEvent::Exited, DragState::Dragging | DragState::Hovering) => {
                     self.drag_state.set(DragState::None);
                     false
                 }
                 (CursorEvent::Button(button, state), DragState::Hovering) => {
-                    if let (MouseButton::Left, ButtonState::Pressed) =
-                        (button, state)
-                    {
+                    if let (MouseButton::Left, ButtonState::Pressed) = (button, state) {
                         self.drag_state.set(DragState::Dragging);
                         true
                     } else {
@@ -98,9 +93,7 @@ impl Bubble<Event, bool> for Drag {
                     }
                 }
                 (CursorEvent::Button(button, state), DragState::Dragging) => {
-                    if let (MouseButton::Left, ButtonState::Released) =
-                        (button, state)
-                    {
+                    if let (MouseButton::Left, ButtonState::Released) = (button, state) {
                         self.drag_state.set(DragState::Hovering);
                         true
                     } else {

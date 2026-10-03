@@ -2,7 +2,7 @@ use core::f32;
 use std::marker::PhantomData;
 
 use ui_composer_core::app::composition::{
-    algebra::Semigroup,
+    algebra::Combine,
     elements::{Blueprint, Element, Environment},
     layout::{
         hints::{ChildHints, ParentHints},
@@ -132,7 +132,7 @@ where
         parent_hints: ParentHints,
     ) -> std::task::Poll<Option<()>> {
         let this = self.project();
-        Semigroup::combine(
+        Combine::combine(
             this.item_a.poll_change(cx, resources, parent_hints),
             this.item_b.poll_change(cx, resources, parent_hints),
         )

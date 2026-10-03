@@ -3,8 +3,8 @@ use ::ui_composer_math::palette::rgb::Rgba;
 use {lullaby_ui::prelude::*, ui_composer::prelude::*};
 
 fn main() {
-    UIComposer::run_tui(Terminal(app()))
-    // UIComposer::run_winit(Window(app_w()));
+    TuiPlatform::run(Terminal(app()))
+    // DesktopPlatform::run(Window(app_w()));
 }
 
 fn app() -> impl Tui {
@@ -43,7 +43,7 @@ fn app() -> impl Tui {
     )
 }
 
-fn app_w() -> impl WinitUi {
+fn app_w() -> impl DesktopUi {
     let white = Srgba::new(1.0, 1.0, 1.0, 1.0);
     let red = Srgba::new(1.0, 0.0, 0.0, 1.0);
     let green = Srgba::new(0.0, 1.0, 0.0, 1.0);
@@ -89,7 +89,7 @@ fn ColorBox(min_size: Size2, color: Rgba) -> impl Tui {
 }
 
 #[allow(non_snake_case, unused)]
-fn ColorBoxW(min_size: Size2, color: Rgba) -> impl WinitUi {
+fn ColorBoxW(min_size: Size2, color: Rgba) -> impl DesktopUi {
     Canvas::new(move |hx| Graphic {
         rect: hx.rect,
         color,

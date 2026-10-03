@@ -2,7 +2,7 @@ use futures::executor::block_on;
 use futures_signals::signal::{Mutable, SignalExt};
 use std::marker::PhantomData;
 use std::sync::Arc;
-use ui_composer_core::app::composition::algebra::Bubble;
+use ui_composer_core::app::composition::algebra::Propagate;
 use ui_composer_core::app::composition::elements::{Blueprint, Environment};
 use ui_composer_core::app::runner::futures::AsyncExecutor;
 use ui_composer_input::event::Event;
@@ -14,18 +14,18 @@ use winit::window::{Window, WindowAttributes};
 
 use crate::{
     window::{WindowBlueprint, WindowElement},
-    winit_uic_conversion, WinitUi,
+    winit_uic_conversion, DesktopUi,
 };
 
 use crate::gpu::Gpu;
 use crate::window::effect_handling::WindowEffectVisitor;
 
-pub struct WinitRunner<Ui> {
+pub struct DesktopPlatform<Ui> {
     _ui: PhantomData<Ui>,
 }
 
-pub struct WinitAppHandler<'app, Ui: WinitUi> {
-    pub app_making_resources: WinitBlueprintResources<'app>,
+pub struct WinitAppHandler<'app, Ui: DesktopUi> {
+    pub app_making_resources: DesktopResources<'app>,
     pub blueprint: Option<WindowBlueprint<Ui>>,
     pub element: Option<Arc<futures::lock::Mutex<WindowElement<Ui>>>>,
     pub element_sender:
@@ -35,15 +35,16 @@ pub struct WinitAppHandler<'app, Ui: WinitUi> {
 // TODO: Add things to this Environment that elements might want to use.
 // In mind I have a GPU allocator for allocating images and textures.
 // This is probably how one requests a window, too.
-pub struct WinitEnvironment;
+pub struct DesktopEnvironment;
 
-impl Environment for WinitEnvironment {
-    type BlueprintResources<'make> = WinitBlueprintResources<'make>;
+impl Environment for DesktopEnvironment {
+    type BlueprintResources<'make> = DesktopResources<'make>;
     type EffectVisitor<'fx> = WindowEffectVisitor<'fx>;
+    const TILE_SIZE: Size2 = Size2::new(16.0, 16.0);
 }
 
 #[derive(Clone)]
-pub struct WinitBlueprintResources<'make> {
+pub struct DesktopResources<'make> {
     pub(crate) winit_requester: &'make WinitRequester,
     pub(crate) gpu: Gpu,
     pub(crate) window_size_mutable: Mutable<Size2>,
@@ -52,11 +53,11 @@ pub struct WinitBlueprintResources<'make> {
 
 #[allow(unused)]
 pub(crate) struct WinitRequester {
-    pub proxy: EventLoopProxy<WinitUicRequest>,
+    pub proxy: EventLoopProxy<DesktopUicRequest>,
 }
 
 #[allow(unused)]
-pub(crate) enum WinitUicRequest {
+pub(crate) enum DesktopUicRequest {
     // CreateWindow {
     //     attributes: WindowAttributes,
     //     tx: oneshot::Sender<Arc<Window>>,
@@ -65,9 +66,9 @@ pub(crate) enum WinitUicRequest {
 
 impl WinitRequester {}
 
-impl<Ui> WinitRunner<Ui>
+impl<Ui> DesktopPlatform<Ui>
 where
-    Ui: WinitUi,
+    Ui: DesktopUi,
 {
     pub fn run(window_blueprint: WindowBlueprint<Ui>) {
         println!("[Winit Runner] Starting.");
@@ -79,7 +80,7 @@ where
         let winit_requester = WinitRequester { proxy };
 
         std::thread::scope(|scope| {
-            let app_making_resources = WinitBlueprintResources {
+            let app_making_resources = DesktopResources {
                 winit_requester: &winit_requester,
                 gpu,
                 window_size_mutable: Mutable::new(Size2::ZERO),
@@ -98,7 +99,7 @@ where
             scope.spawn(|| {
                 let element = block_on(rx).unwrap();
 
-                let async_executor: AsyncExecutor<'_, WinitEnvironment, _, _> =
+                let async_executor: AsyncExecutor<'_, DesktopEnvironment, _, _> =
                     AsyncExecutor::new(element, app_making_resources, || {});
                 block_on(async_executor.to_future())
             });
@@ -111,9 +112,9 @@ where
     }
 }
 
-impl<'app, Ui> ApplicationHandler<WinitUicRequest> for WinitAppHandler<'app, Ui>
+impl<'app, Ui> ApplicationHandler<DesktopUicRequest> for WinitAppHandler<'app, Ui>
 where
-    Ui: WinitUi,
+    Ui: DesktopUi,
 {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         println!("[Winit] Resumed.");
@@ -135,7 +136,7 @@ where
                 });
             let window = event_loop.create_window(window_attributes).unwrap();
             let window = Arc::new(window);
-            let element = blueprint.make(&WinitBlueprintResources {
+            let element = blueprint.make(&DesktopResources {
                 window: Some(window),
                 gpu: self.app_making_resources.gpu.clone(),
                 window_size_mutable: self.app_making_resources.window_size_mutable.clone(),
@@ -170,7 +171,7 @@ where
                     lock.prepare_to_resize(*new_size, &self.app_making_resources);
                 }
 
-                let _effect_was_handled = block_on(lock.bubble(&mut uic_event));
+                let _effect_was_handled = block_on(lock.propagate(&mut uic_event));
 
                 //println!("Handled? {}", _effect_was_handled);
             }
@@ -179,7 +180,7 @@ where
         }
     }
 
-    fn user_event(&mut self, _event_loop: &ActiveEventLoop, _event: WinitUicRequest) {
+    fn user_event(&mut self, _event_loop: &ActiveEventLoop, _event: DesktopUicRequest) {
         /* Maybe will go unused? */
     }
 }

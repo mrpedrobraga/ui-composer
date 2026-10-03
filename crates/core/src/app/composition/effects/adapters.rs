@@ -2,7 +2,7 @@ use ::std::task::Poll;
 
 use ::either::Either;
 
-use crate::app::composition::{algebra::Semigroup, elements::Environment, layout::Ui};
+use crate::app::composition::{algebra::Combine, elements::Environment, layout::Ui};
 
 use super::future::Await;
 
@@ -76,7 +76,7 @@ where
                     *awaiter.map = Some(map);
 
                     let empty_state_poll = this.1.poll_change(cx, resources, parent_hints);
-                    Semigroup::combine(Poll::Pending, empty_state_poll)
+                    Combine::combine(Poll::Pending, empty_state_poll)
                 }
             }
         }

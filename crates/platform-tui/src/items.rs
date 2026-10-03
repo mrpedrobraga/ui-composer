@@ -7,7 +7,7 @@ use ::std::hint::black_box;
 use futures_signals::signal::Mutable;
 use pin_project::pin_project;
 use ui_composer_canvas::{Canvas, PixelCanvas, TextModePixel};
-use ui_composer_core::app::composition::algebra::Bubble;
+use ui_composer_core::app::composition::algebra::Propagate;
 use ui_composer_core::app::composition::elements::{Blueprint, Element};
 use ui_composer_core::app::composition::layout::Ui;
 use ui_composer_core::app::composition::layout::hints::ParentHints;
@@ -98,8 +98,8 @@ impl<U> TerminalElement<U> where U: Ui<TerminalEnvironment> {
     }
 }
 
-impl<U> Bubble<Event, bool> for TerminalElement<U> where U: Ui<TerminalEnvironment> {
-    async fn bubble(&mut self, cx: &mut Event) -> bool {
+impl<U> Propagate<Event, bool> for TerminalElement<U> where U: Ui<TerminalEnvironment> {
+    async fn propagate(&mut self, cx: &mut Event) -> bool {
         if let Event::Resized(new_size) = cx {
             self.state.render_target.resize(new_size.as_());
             self.state.size.set(*new_size);

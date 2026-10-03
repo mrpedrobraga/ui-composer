@@ -1,5 +1,5 @@
 use ui_composer_core::app::composition::{
-    algebra::{Bubble, Empty},
+    algebra::{Empty, Propagate},
     effects::ElementEffect,
     elements::{Blueprint, Element},
     visit::{Apply, DriveThru},
@@ -11,13 +11,13 @@ use ui_composer_platform_tui::{
     items::TerminalEffectVisitor,
     runner::{TerminalBlueprintResources, TerminalEnvironment},
 };
-use ui_composer_platform_winit::runner::WinitEnvironment;
+use ui_composer_platform_winit::runner::DesktopEnvironment;
 
 /// An effect that describes rendering some text in the terminal.
 #[derive(Debug, Clone)]
 pub struct RenderText(pub Rect, pub String, pub Srgba);
 
-impl ElementEffect<WinitEnvironment> for RenderText {}
+impl ElementEffect<DesktopEnvironment> for RenderText {}
 
 impl ElementEffect<TerminalEnvironment> for RenderText {}
 
@@ -79,8 +79,8 @@ impl Text {
     }
 }
 
-impl Bubble<Event, bool> for Text {
-    async fn bubble(&mut self, _: &mut Event) -> bool {
+impl Propagate<Event, bool> for Text {
+    async fn propagate(&mut self, _: &mut Event) -> bool {
         Empty::empty()
     }
 }

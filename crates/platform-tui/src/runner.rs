@@ -17,7 +17,7 @@ use smol_str::ToSmolStr as _;
 use std::io::{Write, stdout};
 use std::marker::PhantomData;
 use std::sync::Arc;
-use ui_composer_core::app::composition::algebra::Bubble as _;
+use ui_composer_core::app::composition::algebra::Propagate as _;
 use ui_composer_core::app::composition::elements::{
     Blueprint, Environment,
 };
@@ -39,16 +39,17 @@ pub struct TerminalBlueprintResources;
 impl Environment for TerminalEnvironment {
     type BlueprintResources<'make> = TerminalBlueprintResources;
     type EffectVisitor<'fx> = TerminalEffectVisitor<'fx>;
+    const TILE_SIZE: Size2 = Size2::new(1.0, 1.0);
 }
 
-pub struct TuiRunner<U>
+pub struct TuiPlatform<U>
 where
     U: Tui
 {
     _app: PhantomData<U>,
 }
 
-impl<U> TuiRunner<U>
+impl<U> TuiPlatform<U>
 where
     U: Tui,
 {
@@ -91,7 +92,7 @@ where
                             ) = event
                             {
                                 let mut l = app_e.lock().await;
-                                l.bubble(&mut Event::Resized(Size2::new(
+                                l.propagate(&mut Event::Resized(Size2::new(
                                     new_width as f32,
                                     new_height as f32,
                                 )))
@@ -101,7 +102,7 @@ where
 
                             if let CrosstermEvent::Key(k) = event {
                                 let mut l = app_e.lock().await;
-                                l.bubble(&mut Event::Keyboard {
+                                l.propagate(&mut Event::Keyboard {
                                     id: DeviceId(0),
                                     event: KeyboardEvent::Key(KeyEvent {
                                         is_implicit: false,
@@ -123,7 +124,7 @@ where
                                 let mut l = app_e.lock().await;
 
                                 if m.kind.is_moved() {
-                                    l.bubble(&mut Event::Cursor {
+                                    l.propagate(&mut Event::Cursor {
                                         id: DeviceId(0),
                                         event: CursorEvent::Moved {
                                             position: (Point2::<u16>::new(
@@ -138,7 +139,7 @@ where
                                 }
 
                                 if m.kind.is_drag() {
-                                    l.bubble(&mut Event::Cursor {
+                                    l.propagate(&mut Event::Cursor {
                                         id: DeviceId(0),
                                         event: CursorEvent::Moved {
                                             position: (Point2::<u16>::new(
@@ -153,7 +154,7 @@ where
                                 }
 
                                 if m.kind.is_down() {
-                                    l.bubble(&mut Event::Cursor {
+                                    l.propagate(&mut Event::Cursor {
                                         id: DeviceId(0),
                                         event: CursorEvent::Touched {
                                             finger_id: 0,
@@ -176,7 +177,7 @@ where
     }
 }
 
-impl<U> TuiRunner<U>
+impl<U> TuiPlatform<U>
 where
     U: Tui
 {

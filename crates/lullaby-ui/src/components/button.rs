@@ -1,5 +1,11 @@
+use ::ui_composer_basic_ui::layout::center;
+use ::ui_composer_core::app::composition::{
+    effects::signal::SignalExt as _,
+    elements::{Blueprint, Environment},
+    CompatibleWith,
+};
 use {
-    crate::{components::Ui, list_internal},
+    crate::list_internal,
     ui_composer_basic_ui::{interaction::Tap, primitives::graphic::Graphic},
     ui_composer_core::app::composition::layout::{Canvas, Resizable as _},
     ui_composer_math::prelude::{Size2, Srgba},
@@ -17,24 +23,33 @@ static BUTTON_TEXT_COLOR: Srgba = Srgba::new(175.0, 90.0, 16.0, 255.0);
 
 /// A simple button which can be clicked to trigger some `effect`.
 /// The button supports a `label` component which will be displayed inside the button
-pub fn Button(label: impl Ui, effect: impl Effect + 'static) -> impl Ui {
+pub fn Button<Env: Environment, U: CompatibleWith<Env>, E: Effect + 'static>(
+    label: U,
+    effect: E,
+) -> impl CompatibleWith<Env>
+where
+    Graphic: Blueprint<Env>,
+    Tap<E>: Blueprint<Env>,
+{
     let is_hovered: Mutable<bool> = Mutable::default();
 
-    // TODO: Reimplement this correctly.
-    let bg = Canvas::new(move |hx| {
+    /* TODO: Use a single layout component for the bg and tap area instead of many. */
+
+    let _bg = is_hovered.signal().for_of(|is_hovered| {
+        Canvas::new(move |hx| {
+            if is_hovered {
+                Graphic::new(hx.rect, BUTTON_COLOR / 255.0)
+            } else {
+                Graphic::new(hx.rect, BUTTON_COLOR_HOVER / 255.0)
+            }
+        })
+    });
+
+    let tap_area = Canvas::new(move |hx| {
         let tap = Tap::new(hx.rect, effect.clone()).with_hover_state(is_hovered.clone());
-
-        // let rect = is_hovered.signal().react(move |is_hovered| {
-        //     if is_hovered {
-        //         Graphic::new(hx.rect, BUTTON_COLOR_HOVER / 255.0)
-        //     } else {
-        //         Graphic::new(hx.rect, BUTTON_COLOR / 255.0)
-        //     }
-        // });
-
-        list_internal![tap, Graphic::new(hx.rect, BUTTON_COLOR_HOVER / 255.0)]
+        (tap, Graphic::new(hx.rect, BUTTON_COLOR_HOVER / 255.0))
     })
-    .with_minimum_size(Size2::new(15.0, 3.0));
+    .with_minimum_size(Size2::new(21.0, 5.0) * Env::TILE_SIZE);
 
-    (bg, label)
+    list_internal![tap_area, center(label)]
 }
