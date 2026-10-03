@@ -9,7 +9,7 @@ pub mod codegen;
 pub mod parser;
 
 pub fn view_internal(input: TokenStream) -> TokenStream {
-    let res: Result<ViewNodes, _> = syn::parse(input);
+    let res: Result<NodeList, _> = syn::parse(input);
     match res {
         Ok(component) => component.to_tokens().into(),
         Err(e) => {
@@ -19,7 +19,7 @@ pub fn view_internal(input: TokenStream) -> TokenStream {
     }
 }
 
-enum ViewNode {
+enum Node {
     // foo (bar = 1) { quz { ... } }
     Element(Element),
 
@@ -33,13 +33,13 @@ enum ViewNode {
     Block(Expr),
 }
 
-struct ViewNodes(Vec<ViewNode>);
+struct NodeList(Vec<Node>);
 
 struct Element {
     path: syn::Path,
     attributes: Vec<Attribute>,
     children_structure: ChildrenStructure,
-    children: Vec<ViewNode>,
+    children: Vec<Node>,
 }
 
 struct Attribute {
@@ -55,12 +55,12 @@ enum ChildrenStructure {
 struct ForExpr {
     pat: Pat,
     expr: Expr,
-    body: Vec<ViewNode>,
-    empty_state: Option<Vec<ViewNode>>,
+    body: Vec<Node>,
+    empty_state: Option<Vec<Node>>,
 }
 
 struct IfExpr {
     condition: Expr,
-    body: Vec<ViewNode>,
-    else_body: Option<Vec<ViewNode>>,
+    body: Vec<Node>,
+    else_body: Option<Vec<Node>>,
 }

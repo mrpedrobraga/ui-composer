@@ -4,7 +4,7 @@ use {lullaby_ui::prelude::*, ui_composer::prelude::*};
 
 fn main() {
     TuiPlatform::run(Terminal(app()))
-    // DesktopPlatform::run(Window(app_w()));
+    // DesktopPlatform::run(Window(app_w(}});
 }
 
 fn app() -> impl Tui {
@@ -19,26 +19,26 @@ fn app() -> impl Tui {
 
     view! (
         linewise_flow [
-            inline ColorBox ((scale * size!(6.0, 6.0)) (red))
-            inline ColorBox ((size!(21.0, 8.0)) (green))
-            MonospaceText (
-                ("This is an amazing opportunity to show how cool layouting is!".to_string())
-                (white)
-            )
-            inline ColorBox ((scale * size!(27.0, 2.0)) (magenta))
-            inline ColorBox ((scale * size!(12.0, 3.0)) (cyan))
-            inline ColorBox ((scale * size!(15.0, 6.0)) (red))
-            inline ColorBox ((scale * size!(21.0, 10.0)) (green))
-            inline ColorBox ((scale * size!(6.0, 15.0)) (yellow))
-            inline ColorBox ((scale * size!(3.0, 5.0)) (blue))
-            MonospaceText (
-                ("What the hell?".to_string())
-                (white)
-            )
-            inline ColorBox ((scale * size!(3.0, 8.0)) (red))
-            inline ColorBox ((scale * size!(9.0, 7.0)) (green))
-            inline ColorBox ((scale * size!(15.0, 5.0)) (magenta))
-            inline ColorBox ((scale * size!(12.0, 9.0)) (blue))
+            inline ColorBox {{scale * size!(6.0, 6.0)} {red}}
+            inline ColorBox {{size!(21.0, 8.0)} {green}}
+            MonospaceText {
+                "This is an amazing opportunity to show how cool layouting is!".to_string()
+                {white}
+            }
+            inline ColorBox {{scale * size!(27.0, 2.0)} {magenta}}
+            inline ColorBox {{scale * size!(12.0, 3.0)} {cyan}}
+            inline ColorBox {{scale * size!(15.0, 6.0)} {red}}
+            inline ColorBox {{scale * size!(21.0, 10.0)} {green}}
+            inline ColorBox {{scale * size!(6.0, 15.0)} {yellow}}
+            inline ColorBox {{scale * size!(3.0, 5.0)} {blue}}
+            MonospaceText {
+                "What the hell?".to_string()
+                {white}
+            }
+            inline ColorBox {{scale * size!(3.0, 8.0)} {red}}
+            inline ColorBox {{scale * size!(9.0, 7.0)} {green}}
+            inline ColorBox {{scale * size!(15.0, 5.0)} {magenta}}
+            inline ColorBox {{scale * size!(12.0, 9.0)} {blue}}
         ]
     )
 }
@@ -56,26 +56,26 @@ fn app_w() -> impl DesktopUi {
 
     view! (
         linewise_flow [
-            inline ColorBoxW ((scale * size!(6.0, 6.0)) (red))
-            inline ColorBoxW ((scale * size!(21.0, 8.0)) (green))
-            MonospaceText (
-                ("This is an amazing opportunity to show how cool layouting is!".to_string())
-                (white)
-            )
-            inline ColorBoxW ((scale * size!(27.0, 2.0)) (magenta))
-            inline ColorBoxW ((scale * size!(12.0, 3.0)) (cyan))
-            inline ColorBoxW ((scale * size!(15.0, 6.0)) (red))
-            inline ColorBoxW ((scale * size!(21.0, 10.0)) (green))
-            inline ColorBoxW ((scale * size!(6.0, 15.0)) (yellow))
-            inline ColorBoxW ((scale * size!(3.0, 5.0)) (blue))
-            MonospaceText (
-                ("What the hell?".to_string())
-                (white)
-            )
-            inline ColorBoxW ((scale * size!(3.0, 8.0)) (red))
-            inline ColorBoxW ((scale * size!(9.0, 7.0)) (green))
-            inline ColorBoxW ((scale * size!(15.0, 5.0)) (magenta))
-            inline ColorBoxW ((scale * size!(12.0, 9.0)) (blue))
+            inline ColorBoxW {{scale * size!(6.0, 6.0)} {red}}
+            inline ColorBoxW {{size!(21.0, 8.0)} {green}}
+            MonospaceText {
+                {"This is an amazing opportunity to show how cool layouting is!".to_string()}
+                {white}
+            }
+            inline ColorBoxW {{scale * size!(27.0, 2.0)} {magenta}}
+            inline ColorBoxW {{scale * size!(12.0, 3.0)} {cyan}}
+            inline ColorBoxW {{scale * size!(15.0, 6.0)} {red}}
+            inline ColorBoxW {{scale * size!(21.0, 10.0)} {green}}
+            inline ColorBoxW {{scale * size!(6.0, 15.0)} {yellow}}
+            inline ColorBoxW {{scale * size!(3.0, 5.0)} {blue}}
+            MonospaceText {
+                {"What the hell?".to_string()}
+                {white}
+            }
+            inline ColorBoxW {{scale * size!(3.0, 8.0)} {red}}
+            inline ColorBoxW {{scale * size!(9.0, 7.0)} {green}}
+            inline ColorBoxW {{scale * size!(15.0, 5.0)} {magenta}}
+            inline ColorBoxW {{scale * size!(12.0, 9.0)} {blue}}
         ]
     )
 }

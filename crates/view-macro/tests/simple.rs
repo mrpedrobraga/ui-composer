@@ -148,12 +148,12 @@ pub fn test_simple() {
     #![allow(non_snake_case)]
 
     let _ui = view! {
-        flex {vertical_layout} [
-            Label (( "Hello, world!" ))
+        flex (vertical_layout) [
+            Label { "Hello, world!" }
             row [
-                Label (( "Click me:" ))
-                Button { on_click: || println!("Hello!") }
-                    Label (( "Click me!" ))
+                Label { "Click me:" }
+                Button ( on_click: || println!("Hello!") )
+                    Label { "Click me!" }
             ]
         ]
     };
@@ -163,17 +163,17 @@ pub fn test_simple() {
     let Mul = |a, b| a * b;
 
     let sum = view! {
-        Add (
-            (1)
-            Mul (
-                (2)
-                (3)
-            )
-        )
+        Add {
+            1 
+            Mul {
+                2
+                3
+            }
+        }
     };
     dbg!(sum);
 
-    let me_button = view! { Button {on_click: || println!("I was clicked!")} ((())) };
+    let me_button = view! { Button (on_click: || println!("I was clicked!")) {()} };
     me_button.trigger();
 }
 
@@ -258,22 +258,22 @@ fn test_blocks() {
 
     let conditional = view! {
         if number_a > number_b {
-            Label(("Number A is Bigger!"))
+            Label {"Number A is Bigger!"}
         }
     };
 
     let conditional_res = view! {
         if let Ok(v) = res {
-            Label(( format!("Result is {v}") ))
+            Label {{ format!("Result is {v}") }}
         }
     };
 
     let conditional2 = view! {
         if number_a > number_b {
-            Label(("Number A is Bigger!"))
+            Label {"Number A is Bigger!"}
         } else {
-            Label(("Number B is Bigger!"))
-            Label(("This makes me happy!"))
+            Label {"Number B is Bigger!"}
+            Label {"This makes me happy!"}
         }
     };
 
@@ -285,9 +285,9 @@ fn test_blocks() {
 
     let optional = view! {
         for value of option {
-            Label (( format!("The value is {}", value) ))
+            Label {{ format!("The value is {}", value) }}
         } else {
-            Label (("Loading..."))
+            Label {"Loading..."}
         }
     };
 
@@ -298,7 +298,7 @@ fn test_blocks() {
 
     let iterated = view! {
         for (l, r) of &collection {
-            Label (( format!("The tuple has {} and {}", l, r) ))
+            Label {{ format!("The tuple has {} and {}", l, r) }}
         }
     };
 
@@ -310,9 +310,9 @@ fn test_blocks() {
     let message_sig = message_st.signal();
 
     let derived = view! {
-        Label ("Message 1!")
+        Label {"Message 1!"}
         for message of message_sig {
-            Label (( message ))
+            Label {{ message }}
         }
     };
 

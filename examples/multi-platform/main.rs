@@ -54,29 +54,29 @@ where
         row [
             // Awaiting a future
             for color of other_future {
-                ColorBox (
-                    ( Rect::new(Point2::new(12.0, 12.0) * scale, Size2::new(6.0, 6.0) * scale) )
-                    ( color )
-                )
+                ColorBox {
+                    { Rect::new(Point2::new(12.0, 12.0) * scale, Size2::new(6.0, 6.0) * scale) }
+                    { color }
+                }
             } else {
-                ColorBox (
-                    ( Rect::new(Point2::new(12.0, 12.0) * scale, Size2::new(6.0, 6.0) * scale) )
-                    ( Srgba::new(0.5, 0.5, 0.5, 1.0) )
-                )
+                ColorBox {
+                    { Rect::new(Point2::new(12.0, 12.0) * scale, Size2::new(6.0, 6.0) * scale) }
+                    { Srgba::new(0.5, 0.5, 0.5, 1.0) }
+                }
             }
 
             // Reacting to a signal
             for point of point_signal {
-                ColorBox (
-                    ( Rect::new(point, Size2::new(12.0, 12.0) * scale) )
-                    ( Srgba::new(0.8, 0.7, 0.0, 1.0) )
-                )
+                ColorBox {
+                    { Rect::new(point, Size2::new(12.0, 12.0) * scale) }
+                    { Srgba::new(0.8, 0.7, 0.0, 1.0) }
+                }
             }
 
-            ColorBox (
-                ( Rect::new(Point2::new(24.0, 24.0) * scale, Size2::new(6.0, 6.0) * scale) )
-                ( Srgba::new(0.2, 0.7, 0.0, 1.0) )
-            )
+            ColorBox {
+                { Rect::new(Point2::new(24.0, 24.0) * scale, Size2::new(6.0, 6.0) * scale) }
+                { Srgba::new(0.2, 0.7, 0.0, 1.0) }
+            }
         ]
     }
 }
@@ -102,9 +102,9 @@ where
     });
 
     view! {
-        flex {vertical_flow} [
-            item ((c_a))
-            item {grow: 1.0} ((c_b))
+        flex (vertical_flow) [
+            item {{ c_a }}
+            item (grow: 1.0) {{ c_b }}
         ]
     }
 }

@@ -1,6 +1,6 @@
-use crate::transform::{ChildrenStructure, ViewNodes};
+use crate::transform::{ChildrenStructure, NodeList};
 
-use super::{Attribute, Element, ForExpr, IfExpr, ViewNode};
+use super::{Attribute, Element, ForExpr, IfExpr, Node};
 use proc_macro_error2::emit_error;
 use syn::{
     braced, bracketed, parenthesized,
@@ -8,31 +8,31 @@ use syn::{
     Expr, Ident, Pat, Path, Token,
 };
 
-impl Parse for ViewNode {
+impl Parse for Node {
     fn parse(input: ParseStream) -> parse::Result<Self> {
         if input.peek(Token![for]) {
-            Ok(ViewNode::ForExpr(input.parse()?))
+            Ok(Node::ForExpr(input.parse()?))
         } else if input.peek(Token![if]) {
-            Ok(ViewNode::IfExpr(input.parse()?))
-        } else if input.peek(syn::token::Paren) {
+            Ok(Node::IfExpr(input.parse()?))
+        } else if input.peek(syn::token::Brace) {
             let content;
-            parenthesized!(content in input);
-            Ok(ViewNode::Block(content.parse()?))
+            braced!(content in input);
+            Ok(Node::Block(content.parse()?))
         } else if input.peek(syn::Ident) {
-            Ok(ViewNode::Element(input.parse()?))
+            Ok(Node::Element(input.parse()?))
         } else {
-            Ok(ViewNode::Block(input.parse()?))
+            Ok(Node::Block(input.parse()?))
         }
     }
 }
 
-impl Parse for ViewNodes {
+impl Parse for NodeList {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let mut body = Vec::new();
         while !input.is_empty() {
             body.push(input.parse()?);
         }
-        Ok(ViewNodes(body))
+        Ok(NodeList(body))
     }
 }
 
@@ -41,9 +41,9 @@ impl Parse for Element {
         let path: Path = input.parse()?;
 
         let mut attributes = Vec::new();
-        if input.peek(syn::token::Brace) {
+        if input.peek(syn::token::Paren) {
             let content;
-            braced!(content in input);
+            parenthesized!(content in input);
             while !content.is_empty() {
                 attributes.push(content.parse()?);
 
@@ -58,12 +58,14 @@ impl Parse for Element {
         let mut children_structure = ChildrenStructure::IndividualArguments;
 
         let lookahead = input.lookahead1();
-        if lookahead.peek(syn::token::Paren) {
+        /* Use {} to include several children in the view node. */
+        if lookahead.peek(syn::token::Brace) {
             let content;
-            parenthesized!(content in input);
+            braced!(content in input);
             while !content.is_empty() {
                 children.push(content.parse()?);
             }
+        /* Use [] to include several children on a viewnode with a variable number of children. */
         } else if lookahead.peek(syn::token::Bracket) {
             children_structure = ChildrenStructure::ConsList;
             let content;
@@ -71,18 +73,21 @@ impl Parse for Element {
             while !content.is_empty() {
                 children.push(content.parse()?);
             }
+        /* {} isn't necessary for a single child. */
         } else if lookahead.peek(syn::Ident)
             || lookahead.peek(Token![::])
             || lookahead.peek(Token![for])
             || lookahead.peek(Token![if])
         {
             children.push(input.parse()?);
+        /* Even if the child is a string. */
         } else if lookahead.peek(syn::LitStr) {
             let lit_str: syn::LitStr = input.parse()?;
-            children.push(ViewNode::Block(syn::Expr::Lit(syn::ExprLit {
+            children.push(Node::Block(syn::Expr::Lit(syn::ExprLit {
                 attrs: Vec::new(),
                 lit: syn::Lit::Str(lit_str),
             })));
+        /* If something has no children you can use a comma instead of an empty {}. */
         } else if lookahead.peek(syn::token::Comma) {
             input.parse::<syn::token::Comma>()?;
         }

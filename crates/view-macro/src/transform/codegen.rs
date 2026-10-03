@@ -1,11 +1,11 @@
 use super::IfExpr;
 
 use {
-    crate::transform::{ChildrenStructure, Element, ViewNodes},
+    crate::transform::{ChildrenStructure, Element, NodeList},
     proc_macro2::TokenStream,
 };
 use {
-    crate::transform::{ForExpr, ViewNode},
+    crate::transform::{ForExpr, Node},
     quote::{format_ident, quote},
 };
 
@@ -38,18 +38,18 @@ impl Element {
     }
 }
 
-impl ViewNode {
+impl Node {
     pub fn to_tokens(&self) -> TokenStream {
         match self {
-            ViewNode::Element(element) => element.to_tokens(),
-            ViewNode::Block(expr) => quote! { #expr },
-            ViewNode::ForExpr(for_expr) => for_expr.to_tokens(),
-            ViewNode::IfExpr(if_expr) => if_expr.to_tokens(),
+            Node::Element(element) => element.to_tokens(),
+            Node::Block(expr) => quote! { #expr },
+            Node::ForExpr(for_expr) => for_expr.to_tokens(),
+            Node::IfExpr(if_expr) => if_expr.to_tokens(),
         }
     }
 }
 
-impl ViewNodes {
+impl NodeList {
     pub fn to_tokens(&self) -> TokenStream {
         let body: Vec<_> = self.0.iter().map(|i| i.to_tokens()).collect();
         if body.len() > 1 {
@@ -104,7 +104,7 @@ impl IfExpr {
         };
 
         if let Some(else_body) = &self.else_body {
-            let else_body: Vec<_> = else_body.iter().map(ViewNode::to_tokens).collect();
+            let else_body: Vec<_> = else_body.iter().map(Node::to_tokens).collect();
             let else_content = if else_body.len() > 1 {
                 quote! { list![ #(#else_body),* ] }
             } else {
