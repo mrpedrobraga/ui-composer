@@ -15,6 +15,8 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 use ui_composer_input::event::Event;
 
+use super::modules::RenderModuleResources;
+
 pub mod implementations;
 
 pub struct DummyEnvironment();
@@ -50,6 +52,7 @@ where
 
 pub trait Environment: Send {
     type BlueprintResources<'make>;
+    type RenderResources: RenderModuleResources;
     type EffectVisitor<'fx>;
     const TILE_SIZE: Size2;
 }

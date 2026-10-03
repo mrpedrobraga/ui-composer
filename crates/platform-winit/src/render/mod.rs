@@ -1,3 +1,4 @@
+use ::ui_composer_core::app::composition::modules::RenderModuleResources;
 use ui_composer_math::glamour::{Matrix4, Size2, Vector2, Vector4};
 use wgpu::util::DeviceExt;
 
@@ -17,8 +18,9 @@ pub struct TextureSet {
     pub depth: wgpu::Texture,
 }
 
-pub struct RenderResources {
+pub struct DesktopRenderResources {
     pub gpu: Gpu,
+    pub pipeline: RenderPipeline,
 
     pub uniforms: RenderPipelineUniforms,
     pub uniforms_gpu: wgpu::Buffer,
@@ -29,8 +31,10 @@ pub struct RenderResources {
     pub bind_group: wgpu::BindGroup,
 }
 
-impl RenderResources {
-    pub fn new(gpu: Gpu, pipeline: &RenderPipeline) -> Self {
+impl DesktopRenderResources {
+    pub fn new(gpu: Gpu) -> Self {
+        // TODO: Share a single pipeline with all modules!
+        let pipeline = RenderPipeline::new(&gpu, wgpu::TextureFormat::Bgra8UnormSrgb);
         let uniforms = RenderPipelineUniforms::new();
         let uniforms_gpu = gpu
             .device
@@ -63,7 +67,8 @@ impl RenderResources {
             ],
         });
 
-        RenderResources {
+        DesktopRenderResources {
+            pipeline,
             gpu,
             uniforms,
             uniforms_gpu,
@@ -74,19 +79,25 @@ impl RenderResources {
     }
 
     /// Synchronizes the data between the CPU and the GPU.
-    pub fn sync(&self, gpu: &Gpu) {
+    pub fn sync(&self) {
         // TODO: Only send what changed?
-        gpu.queue.write_buffer(
+        self.gpu.queue.write_buffer(
             &self.uniforms_gpu,
             0,
             bytemuck::cast_slice(&[self.uniforms]),
         );
-        gpu.queue.write_buffer(
+        self.gpu.queue.write_buffer(
             &self.quads_buffer,
             0,
             bytemuck::cast_slice(self.quads.as_slice()),
         );
-        gpu.queue.submit(std::iter::empty());
+        self.gpu.queue.submit(std::iter::empty());
+    }
+}
+
+impl RenderModuleResources for DesktopRenderResources {
+    fn resize(&mut self, new_size: Size2) {
+        self.uniforms.set_render_area_size(new_size);
     }
 }
 
@@ -108,7 +119,7 @@ impl RenderPipelineUniforms {
         }
     }
 
-    pub fn resize(&mut self, new_size: Size2) {
+    pub fn set_render_area_size(&mut self, new_size: Size2) {
         let pan = Vector2::<f32>::new(0.0, 0.0);
         self.view_matrix = Matrix4::from_cols(
             Vector4::X * (2.0 / new_size.width),
@@ -214,7 +225,7 @@ impl RenderPipeline {
     }
 }
 
-pub fn render<R>(target: &R, pipeline: &RenderPipeline, resources: &RenderResources)
+pub fn draw_render_module_onto_render_target<R>(target: &R, resources: &DesktopRenderResources)
 where
     R: RenderTarget,
 {
@@ -238,7 +249,7 @@ where
     let mut pass = render_pass(&mut command_encoder, albedo_view, depth_view);
 
     /* Draw all the wonderful, wonderful quads */
-    pass.set_pipeline(&pipeline.wgpu_pipeline);
+    pass.set_pipeline(&resources.pipeline.wgpu_pipeline);
     pass.set_bind_group(0, Some(&resources.bind_group), &[]);
     pass.draw(0..6, 0..(resources.quads.len() as u32));
 

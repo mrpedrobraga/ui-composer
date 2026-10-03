@@ -1,6 +1,7 @@
 use ui_composer_math::glamour::{Matrix4, Vector4};
 
-pub struct WindowEffectVisitor<'fx> {
+// TODO: Move this struct somewhere else!
+pub struct RenderModuleEffectVisitor<'fx> {
     pub quads: &'fx mut Vec<QuadInstance>
 }
 

@@ -10,10 +10,9 @@ use crossterm::terminal::{
     DisableLineWrap, EnableLineWrap, EnterAlternateScreen,
     LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
 };
-use futures::executor::block_on;
-use futures::{StreamExt, join};
-use futures_signals::signal::SignalExt as _;
+use futures::{StreamExt};
 use smol_str::ToSmolStr as _;
+use ::ui_composer_core::app::composition::modules::NoopRenderResources;
 use std::io::{Write, stdout};
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -21,7 +20,6 @@ use ui_composer_core::app::composition::algebra::Propagate as _;
 use ui_composer_core::app::composition::elements::{
     Blueprint, Environment,
 };
-use ui_composer_core::app::runner::futures::AsyncExecutor;
 use ui_composer_input::event::{
     ButtonState, CursorEvent, DeviceId, Event, KeyEvent, KeyboardEvent,
     TouchStage,
@@ -38,6 +36,7 @@ pub struct TerminalBlueprintResources;
 
 impl Environment for TerminalEnvironment {
     type BlueprintResources<'make> = TerminalBlueprintResources;
+    type RenderResources = NoopRenderResources;
     type EffectVisitor<'fx> = TerminalEffectVisitor<'fx>;
     const TILE_SIZE: Size2 = Size2::new(1.0, 1.0);
 }
@@ -169,9 +168,9 @@ where
                 })
                 .await;
         };
-        let async_handler = AsyncExecutor::new(terminal_element, resources, || {}).to_future();
-        let processes = async { join!(event_handler, async_handler) };
-        block_on(processes);
+        // let async_handler = RenderModulePoller::new(terminal_element, resources, || {}).to_future();
+        // let processes = async { join!(event_handler, async_handler) };
+        // block_on(processes);
 
         Self::release_terminal(&mut stdout()).unwrap();
     }

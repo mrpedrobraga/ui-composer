@@ -10,7 +10,9 @@
 //! code from [`crate::state`]. But, like `Future`s need executors, this crate offers "App executors",
 //! which can poll the app's futures and signals.
 
-use crate::app::composition::elements::{Element, Environment};
+use crate::app::composition::elements::Environment;
+use crate::app::composition::layout::Ui;
+use crate::app::composition::modules::RenderModule;
 use futures_signals::signal::Signal;
 use pin_project::pin_project;
 use std::ops::DerefMut;
@@ -20,25 +22,25 @@ use std::task::{Context, Poll};
 type Own<A> = std::sync::Arc<futures::lock::Mutex<A>>;
 
 /// Has a reference to a runner, serving as an Executor for its [`Future`]s and [`Signal`]s.
-#[pin_project(project=AsyncExecutorProj)]
-pub struct AsyncExecutor<'exec, Env: Environment, App: Element<Env>, Callback> {
+#[pin_project(project=UiPollSignalProj)]
+pub struct RenderModulePoller<'exec, Env: Environment, U: Ui<Env>, Callback: FnMut()> {
     #[pin]
-    element: Own<App>,
+    render_module: Own<RenderModule<Env, U>>,
     blueprint_resources: Env::BlueprintResources<'exec>,
     has_yet_to_yield: bool,
     callback: Callback,
 }
 
-impl<'exec, Env: Environment, App: Element<Env>, Callback>
-    AsyncExecutor<'exec, Env, App, Callback>
+impl<'exec, Env: Environment, U: Ui<Env>, Callback: FnMut()>
+    RenderModulePoller<'exec, Env, U, Callback>
 {
     pub fn new(
-        element: Own<App>,
+        render_module: Own<RenderModule<Env, U>>,
         environment: Env::BlueprintResources<'exec>,
         callback: Callback,
     ) -> Self {
-        AsyncExecutor {
-            element,
+        RenderModulePoller {
+            render_module,
             blueprint_resources: environment,
             has_yet_to_yield: true,
             callback,
@@ -46,8 +48,8 @@ impl<'exec, Env: Environment, App: Element<Env>, Callback>
     }
 }
 
-impl<'exec, Env: Environment, App: Element<Env>, Callback: FnMut()> Signal
-    for AsyncExecutor<'exec, Env, App, Callback>
+impl<'exec, Env: Environment, U: Ui<Env>, Callback: FnMut()> Signal
+    for RenderModulePoller<'exec, Env, U, Callback>
 {
     type Item = ();
 
@@ -55,8 +57,8 @@ impl<'exec, Env: Environment, App: Element<Env>, Callback: FnMut()> Signal
         self: Pin<&mut Self>,
         cx: &mut Context,
     ) -> Poll<Option<Self::Item>> {
-        let AsyncExecutorProj {
-            element,
+        let UiPollSignalProj {
+            render_module: element,
             blueprint_resources,
             has_yet_to_yield,
             callback,
@@ -69,7 +71,7 @@ impl<'exec, Env: Environment, App: Element<Env>, Callback: FnMut()> Signal
                 unsafe { Pin::new_unchecked(element_borrow.deref_mut()) };
 
             // Because of how signals work internally, we must yield at least once.
-            let element_poll = pinned_element.poll_change(cx, blueprint_resources);
+            let element_poll = pinned_element.poll_ui_change(cx, blueprint_resources);
 
             if element_poll.is_pending() { 
                 return Poll::Pending;

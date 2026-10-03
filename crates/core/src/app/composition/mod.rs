@@ -8,6 +8,7 @@ pub mod algebra;
 pub mod effects;
 pub mod elements;
 pub mod layout;
+pub mod modules;
 pub mod visit;
 
 /// This trait marks that an UI item is compatible with a given environment.

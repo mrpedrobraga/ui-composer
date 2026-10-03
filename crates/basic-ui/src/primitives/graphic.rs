@@ -16,7 +16,7 @@ use ui_composer_platform_tui::{
 };
 use ui_composer_platform_winit::{
     runner::{DesktopEnvironment, DesktopResources},
-    window::effect_handling::{QuadInstance, WindowEffectVisitor},
+    window::effect_handling::{QuadInstance, RenderModuleEffectVisitor},
 };
 
 /// An effect that describes rendering of a quad in the terminal.
@@ -73,7 +73,7 @@ impl<'fx> Apply<RenderQuad> for TerminalEffectVisitor<'fx> {
     }
 }
 
-impl<'fx> Apply<RenderQuad> for WindowEffectVisitor<'fx> {
+impl<'fx> Apply<RenderQuad> for RenderModuleEffectVisitor<'fx> {
     fn visit(&mut self, render_quad: &RenderQuad) {
         /* Do nothing for now */
         self.quads.push(render_quad.as_quad_instance())
