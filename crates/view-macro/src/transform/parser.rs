@@ -77,6 +77,12 @@ impl Parse for Element {
             || lookahead.peek(Token![if])
         {
             children.push(input.parse()?);
+        } else if lookahead.peek(syn::LitStr) {
+            let lit_str: syn::LitStr = input.parse()?;
+            children.push(ViewNode::Block(syn::Expr::Lit(syn::ExprLit {
+                attrs: Vec::new(),
+                lit: syn::Lit::Str(lit_str),
+            })));
         } else if lookahead.peek(syn::token::Comma) {
             input.parse::<syn::token::Comma>()?;
         }
@@ -97,10 +103,11 @@ mod kw {
 impl Parse for ForExpr {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         input.parse::<Token![for]>()?;
-        let pat = Pat::parse_multi_with_leading_vert(input).unwrap_or_else(|e| {
-            emit_error!(e);
-            syn::parse_quote!(_)
-        });
+        let pat =
+            Pat::parse_multi_with_leading_vert(input).unwrap_or_else(|e| {
+                emit_error!(e);
+                syn::parse_quote!(_)
+            });
         // if input.parse::<Token![in]>().is_err() {
         //     emit_error!(input.span(), "expected `in`")
         // };
@@ -148,10 +155,11 @@ impl Parse for IfExpr {
         input.parse::<Token![if]>()?;
 
         // There's no `parse_without_eager_bracket` so we can't use square brackets.
-        let condition = Expr::parse_without_eager_brace(input).unwrap_or_else(|e| {
-            emit_error!(e);
-            syn::parse_quote!(())
-        });
+        let condition =
+            Expr::parse_without_eager_brace(input).unwrap_or_else(|e| {
+                emit_error!(e);
+                syn::parse_quote!(())
+            });
 
         let content;
         braced!(content in input);

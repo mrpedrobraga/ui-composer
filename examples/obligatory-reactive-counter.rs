@@ -18,7 +18,7 @@ fn Counter(count: Mutable<i32>) -> impl DesktopUi {
     view! {
         center flex [
             item Button (
-                Label (("Take 1"))
+                Label ("Take 1")
                 (count.clone().effect(|e| *e -= 1))
             )
             item {grow: 1.0}
@@ -26,7 +26,7 @@ fn Counter(count: Mutable<i32>) -> impl DesktopUi {
                 center Label (( format!("Count: {count}") ))
             }
             item Button (
-                Label (("Add 1"))
+                Label ("Add 1")
                 (count.effect(|e| *e += 1))
             )
         ]
