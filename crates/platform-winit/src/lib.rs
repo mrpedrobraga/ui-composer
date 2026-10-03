@@ -27,4 +27,5 @@ impl<T> DesktopBlueprint for T where T: Blueprint<DesktopEnvironment, Output: Se
 pub mod prelude {
     pub use crate::runner::{DesktopEnvironment, DesktopPlatform};
     pub use crate::DesktopUi;
+    pub use crate::window::Window;
 }

@@ -18,6 +18,11 @@ impl Parse for Node {
             let content;
             braced!(content in input);
             Ok(Node::Block(content.parse()?))
+        } else if input.peek(syn::Ident) && input.peek2(syn::Token![!]) {
+            Ok(Node::Block(syn::Expr::Macro(syn::ExprMacro {
+                attrs: Vec::new(),
+                mac: input.parse()?,
+            })))
         } else if input.peek(syn::Ident) {
             Ok(Node::Element(input.parse()?))
         } else {

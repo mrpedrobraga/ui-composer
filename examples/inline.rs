@@ -59,7 +59,7 @@ fn app_w() -> impl DesktopUi {
             inline ColorBoxW {{scale * size!(6.0, 6.0)} {red}}
             inline ColorBoxW {{size!(21.0, 8.0)} {green}}
             MonospaceText {
-                {"This is an amazing opportunity to show how cool layouting is!".to_string()}
+                "This is an amazing opportunity to show how cool layouting is!".to_string()
                 {white}
             }
             inline ColorBoxW {{scale * size!(27.0, 2.0)} {magenta}}
@@ -69,7 +69,7 @@ fn app_w() -> impl DesktopUi {
             inline ColorBoxW {{scale * size!(6.0, 15.0)} {yellow}}
             inline ColorBoxW {{scale * size!(3.0, 5.0)} {blue}}
             MonospaceText {
-                {"What the hell?".to_string()}
+                "What the hell?".to_string()
                 {white}
             }
             inline ColorBoxW {{scale * size!(3.0, 8.0)} {red}}
