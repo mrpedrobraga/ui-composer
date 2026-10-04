@@ -25,7 +25,7 @@ use smol_str::ToSmolStr as _;
 use std::io::{Write, stdout};
 use std::marker::PhantomData;
 use std::sync::Arc;
-use ui_composer_core::app::composition::elements::{Blueprint, Environment};
+use ui_composer_core::app::composition::elements::Environment;
 use ui_composer_input::event::{
     ButtonState, CursorEvent, DeviceId, Event, KeyEvent, KeyboardEvent,
     TouchStage,
@@ -33,7 +33,7 @@ use ui_composer_input::event::{
 use ui_composer_math::prelude::{Point2, Size2, Vector2};
 
 use crate::Tui;
-use crate::items::{TerminalBlueprint, TerminalEffectVisitor};
+use crate::items::{TerminalBlueprint, TerminalEffectVisitor, TerminalElement};
 use crate::render::present_canvas_to_terminal;
 
 pub struct TerminalEnvironment;
@@ -65,11 +65,10 @@ where
         let environment = TerminalEnvironment;
         let resources = TerminalBlueprintResources;
         let terminal_initial_size = terminal_blueprint.state.size.get();
-        let mut terminal_element = terminal_blueprint.make(&resources);
-        terminal_element.update_within(&resources);
-        // TODO: Make the canvas a `RenderResource` of the render module in the tui platform?
+        let terminal_element = TerminalElement::new_from_blueprint(terminal_blueprint, &resources);
         let terminal_state = terminal_element.state;
-        let terminal_state = Arc::new(::futures::lock::Mutex::new(terminal_state));
+        let terminal_state =
+            Arc::new(::futures::lock::Mutex::new(terminal_state));
         let terminal_state_2 = terminal_state.clone();
         let render_module = RenderModule::new(
             terminal_element.ui,
@@ -109,7 +108,8 @@ where
                             ) = event
                             {
                                 let mut l = app_e.lock().await;
-                                let mut terminal_state = terminal_state.lock().await;
+                                let mut terminal_state =
+                                    terminal_state.lock().await;
                                 let new_size = Size2::new(
                                     new_width as f32,
                                     new_height as f32,
@@ -119,7 +119,9 @@ where
                                 ))
                                 .await;
                                 l.resize(new_size, &resources);
-                                terminal_state.render_target.resize(new_size.as_());
+                                terminal_state
+                                    .render_target
+                                    .resize(new_size.as_());
                                 needs_redrawing = true;
                             }
 
@@ -190,9 +192,13 @@ where
 
                             if needs_redrawing {
                                 let render_module = app_e.lock().await;
-                                let mut terminal_state = terminal_state.lock().await;
+                                let mut terminal_state =
+                                    terminal_state.lock().await;
 
-                                draw_render_module_onto_terminal(&*render_module, &mut terminal_state.render_target);
+                                draw_render_module_onto_terminal(
+                                    &*render_module,
+                                    &mut terminal_state.render_target,
+                                );
                             }
                         }
                     }
@@ -200,46 +206,57 @@ where
                 .await;
         };
 
-        // let render_module_3 = render_module.clone();
+        let render_module_3 = render_module.clone();
 
         let async_handler =
-            RenderModulePoller::new(render_module, resources, || {
-                /* TODO: Find a way to draw the screen when the ui changes by itself. */
-                // let render_module = block_on(render_module_3.lock());
-                // let mut canvas = block_on(canvas.lock());
-                // draw_render_module_onto_terminal(&*render_module, &mut canvas);
-            })
-                .to_future();
+            RenderModulePoller::new(render_module, resources).for_each(
+                move |_| {
+                    // TODO: Consider an alternative to all this mindless cloning.
+                    let render_module = render_module_3.clone();
+                    let terminal_state = terminal_state.clone();
+
+                    async move {
+                        let render_module = render_module.lock().await;
+                        let mut terminal_state = terminal_state.lock().await;
+
+                        draw_render_module_onto_terminal(
+                            &*render_module,
+                            &mut terminal_state.render_target,
+                        );
+                    }
+                },
+            );
         let processes = async { join!(event_handler, async_handler) };
         block_on(processes);
         Self::release_terminal(&mut stdout()).unwrap();
     }
 }
 
-pub fn draw_render_module_onto_terminal<U: Ui<TerminalEnvironment>>(render_module: &RenderModule<TerminalEnvironment, U>, canvas: &mut PixelCanvas<TextModePixel>) {
+pub fn draw_render_module_onto_terminal<U: Ui<TerminalEnvironment>>(
+    render_module: &RenderModule<TerminalEnvironment, U>,
+    canvas: &mut PixelCanvas<TextModePixel>,
+) {
     let ui_effects = render_module.ui.effect();
-        canvas.clear();
-        let mut vis = TerminalEffectVisitor {
-            canvas,
-        };
-        ui_effects.drive_thru(&mut vis);
+    canvas.clear();
+    let mut vis = TerminalEffectVisitor { canvas };
+    ui_effects.drive_thru(&mut vis);
 
-        /* Draws a cute little mouse cursor... useful for troubleshooting certain interactions. */
-        // if let Some(mouse_position) = self.state.mouse_position.get() {
-        //     vis.canvas.put_pixel(
-        //         Point2::new(mouse_position.x as u32, mouse_position.y as u32 - 1),
-        //         TextModePixel {
-        //             bg_color: Srgba::new(0.0, 0.0, 0.0, 0.0),
-        //             fg_color: Srgba::new(1.0, 1.0, 1.0, 1.0),
-        //             character: '\u{f01bf}',
-        //         },
-        //     )
-        // } else {
-        //     black_box(())
-        // }
+    /* Draws a cute little mouse cursor... useful for troubleshooting certain interactions. */
+    // if let Some(mouse_position) = self.state.mouse_position.get() {
+    //     vis.canvas.put_pixel(
+    //         Point2::new(mouse_position.x as u32, mouse_position.y as u32 - 1),
+    //         TextModePixel {
+    //             bg_color: Srgba::new(0.0, 0.0, 0.0, 0.0),
+    //             fg_color: Srgba::new(1.0, 1.0, 1.0, 1.0),
+    //             character: '\u{f01bf}',
+    //         },
+    //     )
+    // } else {
+    //     black_box(())
+    // }
 
-        present_canvas_to_terminal(vis.canvas)
-            .expect("Failed to present canvas to terminal?");
+    present_canvas_to_terminal(vis.canvas)
+        .expect("Failed to present canvas to terminal?");
 }
 
 impl<U> TuiPlatform<U>

@@ -23,33 +23,30 @@ type Own<A> = std::sync::Arc<futures::lock::Mutex<A>>;
 
 /// Has a reference to a runner, serving as an Executor for its [`Future`]s and [`Signal`]s.
 #[pin_project(project=UiPollSignalProj)]
-pub struct RenderModulePoller<'exec, Env: Environment, U: Ui<Env>, Callback: FnMut()> {
+pub struct RenderModulePoller<'exec, Env: Environment, U: Ui<Env>> {
     #[pin]
     render_module: Own<RenderModule<Env, U>>,
     blueprint_resources: Env::BlueprintResources<'exec>,
     has_yet_to_yield: bool,
-    callback: Callback,
 }
 
-impl<'exec, Env: Environment, U: Ui<Env>, Callback: FnMut()>
-    RenderModulePoller<'exec, Env, U, Callback>
+impl<'exec, Env: Environment, U: Ui<Env>>
+    RenderModulePoller<'exec, Env, U>
 {
     pub fn new(
         render_module: Own<RenderModule<Env, U>>,
         environment: Env::BlueprintResources<'exec>,
-        callback: Callback,
     ) -> Self {
         RenderModulePoller {
             render_module,
             blueprint_resources: environment,
             has_yet_to_yield: true,
-            callback,
         }
     }
 }
 
-impl<'exec, Env: Environment, U: Ui<Env>, Callback: FnMut()> Signal
-    for RenderModulePoller<'exec, Env, U, Callback>
+impl<'exec, Env: Environment, U: Ui<Env>> Signal
+    for RenderModulePoller<'exec, Env, U>
 {
     type Item = ();
 
@@ -61,7 +58,6 @@ impl<'exec, Env: Environment, U: Ui<Env>, Callback: FnMut()> Signal
             render_module: element,
             blueprint_resources,
             has_yet_to_yield,
-            callback,
         } = self.project();
 
         let has_yet_to_yield2 = *has_yet_to_yield;
@@ -80,10 +76,6 @@ impl<'exec, Env: Environment, U: Ui<Env>, Callback: FnMut()> Signal
                 && !has_yet_to_yield2
             {
                 return Poll::Ready(None);
-            }
-
-            if let Poll::Ready(Some(())) = element_poll {
-                (callback)();
             }
 
             *has_yet_to_yield = false;

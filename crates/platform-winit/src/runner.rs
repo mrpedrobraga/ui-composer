@@ -109,19 +109,20 @@ where
                     '_,
                     DesktopEnvironment,
                     _,
-                    _,
                 > = RenderModulePoller::new(
                     root_module,
-                    app_making_resources,
-                    || {
-                        if let Some(tx) = tx.take() {
-                            let _ = tx.send(());
-                        }
-
-                        let _ = proxy.send_event(DesktopUicRequest::AppUpdate);
-                    },
+                    app_making_resources
                 );
-                block_on(async_executor.to_future())
+                let async_executor_process = async_executor.for_each(|_| {
+                    if let Some(tx) = tx.take() {
+                        let _ = tx.send(());
+                    }
+
+                    let _ = proxy.send_event(DesktopUicRequest::AppUpdate);
+
+                    async {}
+                });
+                block_on(async_executor_process)
             });
 
             let _ = block_on(rx);
