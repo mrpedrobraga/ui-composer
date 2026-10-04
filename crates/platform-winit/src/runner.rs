@@ -44,7 +44,7 @@ impl Environment for DesktopEnvironment {
     type BlueprintResources<'make> = DesktopResources<'make>;
     type RenderResources = DesktopRenderResources;
     type EffectVisitor<'fx> = RenderModuleEffectVisitor<'fx>;
-    const TILE_SIZE: Size2 = Size2::new(16.0, 16.0);
+    const TILE_SIZE: Size2 = Size2::new(8.0, 8.0);
 }
 
 #[derive(Clone)]

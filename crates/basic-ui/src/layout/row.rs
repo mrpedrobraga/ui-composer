@@ -134,8 +134,29 @@ where
         let this = self.project();
 
         Combine::combine(
-            this.item_a.poll_change(cx, resources, parent_hints),
-            this.item_b.poll_change(cx, resources, parent_hints),
+            this.item_a.poll_change(cx, resources, ParentHints {
+                rect: Rect::new(
+                    parent_hints.rect.origin,
+                    Size2::new(
+                        this.__item_a_hints_cache.minimum_size.width,
+                        parent_hints.rect.size.height,
+                    ),
+                ),
+                ..parent_hints
+            }),
+            this.item_b.poll_change(cx, resources, ParentHints {
+                rect: Rect::new(
+                    parent_hints.rect.origin.translate(Vector2::new(
+                        this.__item_a_hints_cache.minimum_size.width + *this.gap,
+                        0.0,
+                    )),
+                    Size2::new(
+                        this.__item_b_hints_cache.minimum_size.width,
+                        parent_hints.rect.size.height,
+                    ),
+                ),
+                ..parent_hints
+            }),
         )
     }
 }

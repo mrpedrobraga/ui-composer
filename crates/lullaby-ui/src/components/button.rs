@@ -1,4 +1,4 @@
-use ::ui_composer_basic_ui::layout::center;
+use ::ui_composer_basic_ui::layout::{v_center};
 use ::ui_composer_core::app::composition::{
     effects::signal::SignalExt as _,
     elements::{Blueprint, Environment},
@@ -36,8 +36,6 @@ where
     /* TODO: Use a single layout component for the bg and tap area instead of many. */
 
     let _bg = is_hovered.signal().for_of(|is_hovered| {
-        println!("Update: {is_hovered}");
-
         Canvas::new(move |hx| {
             if is_hovered {
                 Graphic::new(hx.rect, BUTTON_COLOR_HOVER / 255.0)
@@ -53,5 +51,5 @@ where
     })
     .with_minimum_size(Size2::new(21.0, 5.0) * Env::TILE_SIZE);
 
-    list_internal![tap_area, _bg, center(label)]
+    list_internal![tap_area, _bg, v_center(label)]
 }
