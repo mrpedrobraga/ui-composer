@@ -19,7 +19,7 @@ use ui_composer_math::prelude::{Rect, Size2, Vector2};
 ///
 /// The width of the container is the max width between the items.
 /// TODO: Allow to take more than two items.
-pub fn column<Env, A, B>((item_a, item_b): (A, B)) -> ColumnContainer<Env, A, B> {
+pub fn Column<Env, A, B>((item_a, item_b): (A, B)) -> ColumnContainer<Env, A, B> {
     ColumnContainer {
         item_a,
         item_b,

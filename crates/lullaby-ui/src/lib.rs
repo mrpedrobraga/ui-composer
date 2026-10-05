@@ -23,6 +23,7 @@ pub mod prelude {
 
     /* Traits */
     pub use crate::convert::ToDefaultUi;
+    pub use ui_composer_basic_ui::ergonomics::UiExt as _;
 }
 
 #[macro_export]

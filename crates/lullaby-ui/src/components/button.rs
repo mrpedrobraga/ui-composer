@@ -1,4 +1,4 @@
-use ::ui_composer_basic_ui::layout::{v_center};
+use ::ui_composer_basic_ui::layout::{center};
 use ::ui_composer_core::app::composition::{
     effects::signal::SignalExt as _,
     elements::{Blueprint, Environment},
@@ -51,5 +51,5 @@ where
     })
     .with_minimum_size(Size2::new(21.0, 5.0) * Env::TILE_SIZE);
 
-    list_internal![tap_area, _bg, v_center(label)]
+    list_internal![tap_area, _bg, center(label)]
 }

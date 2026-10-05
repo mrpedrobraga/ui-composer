@@ -18,7 +18,7 @@ use ui_composer_math::{
 
 #[allow(non_snake_case)]
 #[inline(always)]
-pub fn flex<Env, Items>(items: Items) -> FlexContainer<Env, Items>
+pub fn Flex<Env, Items>(items: Items) -> FlexContainer<Env, Items>
 where
     Items: FlexItemList<Env>,
     Env: Environment,

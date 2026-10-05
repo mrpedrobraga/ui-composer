@@ -6,7 +6,7 @@ use ::ui_composer_core::app::composition::CompatibleWith;
 use ::ui_composer_state::effect::animation::assign;
 use ui_composer::prelude::*;
 use ui_composer_basic_ui::{
-    layout::{flex, item, row},
+    layout::{Flex, item, Row},
     primitives::graphic::Graphic,
 };
 use ui_composer_math::{glamour::Rect, palette::rgb::Rgba};
@@ -51,7 +51,7 @@ where
     view! {
         (animation_process)
 
-        row [
+        Row [
             // Awaiting a future
             for color of other_future {
                 ColorBox {
@@ -102,7 +102,7 @@ where
     });
 
     view! {
-        flex (vertical_flow) [
+        Flex (vertical_flow) [
             item {{ c_a }}
             item (grow: 1.0) {{ c_b }}
         ]

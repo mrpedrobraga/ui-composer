@@ -19,7 +19,7 @@ use ui_composer_math::prelude::{Rect, Size2, Vector2};
 ///
 /// The height of the container is the max height between the items.
 /// TODO: Allow it to take more than two items.
-pub fn row<Env, A, B>((item_a, item_b): (A, B)) -> RowContainer<Env, A, B> {
+pub fn Row<Env, A, B>((item_a, item_b): (A, B)) -> RowContainer<Env, A, B> {
     RowContainer {
         item_a,
         item_b,

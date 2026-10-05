@@ -7,6 +7,8 @@ static SURFACE_COLOR_2: Srgba = Srgba::new(255.0, 241.0, 231.0, 255.0);
 static BUTTON_COLOR: Srgba = Srgba::new(255.0, 217.0, 179.0, 255.0);
 static BUTTON_COLOR_HOVER: Srgba = Srgba::new(235.0, 189.0, 143.0, 255.0);
 
+use lullaby_ui::prelude::Flex as flex;
+
 fn main() {
     TuiPlatform::run(uix! (
         <Terminal>

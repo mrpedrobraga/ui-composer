@@ -1,24 +1,21 @@
-#![allow(unused_imports)]
-#![allow(non_snake_case)]
-use {
-    ::ui_composer_platform_winit::prelude::*, lullaby_ui::prelude::*, ui_composer::prelude::*,
-};
+#![allow(unused_imports, non_snake_case)]
+use {lullaby_ui::prelude::*, ui_composer::prelude::*};
 
 fn main() {
     let counter = Mutable::new(0);
-
-    //TuiPlatform::run(Terminal(PanelContainer(Counter(counter))));
-    DesktopPlatform::run(Window(PanelContainer(Counter(counter))));
+    TuiPlatform::run(Terminal(PanelContainer(Counter(counter))));
 }
 
-fn Counter(count: Mutable<i32>) -> impl DesktopUi {
+fn Counter(count: Mutable<i32>) -> impl Tui {
     view! {
-        center flex (vertical_flow) [
+        center Flex (vertical_flow) [
             item (grow: 1.0)
                 for count of count.signal() {
-                    with_size (size: Size2::new(5.0, 5.0)) center Label format!("Count: {count}")
+                    Label (centered resize:Size2::new(5.0, 5.0)) {
+                        format!("Count: {count}")
+                    }
                 }
-            item row [
+            item Row [
                 Button {
                     Label "Take 1"
                     { count.clone().effect(|e| *e -= 1) }

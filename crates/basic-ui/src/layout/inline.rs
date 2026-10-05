@@ -680,7 +680,7 @@ where
     }
 }
 
-pub fn linewise_flow<Env, Items>(items: Items) -> LinewiseFlow<Env, Items>
+pub fn Linewise<Env, Items>(items: Items) -> LinewiseFlow<Env, Items>
 where
     Items: InlineItemList<Env>,
     Env: Environment,

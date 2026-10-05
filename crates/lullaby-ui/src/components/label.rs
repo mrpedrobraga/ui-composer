@@ -1,7 +1,7 @@
 use ::ui_composer_basic_ui::layout::InlineItem;
 use {
     ::ui_composer_core::app::composition::{elements::Environment, CompatibleWith},
-    ui_composer_basic_ui::layout::{linewise_flow, MonospaceText},
+    ui_composer_basic_ui::layout::{Linewise, MonospaceText},
     ui_composer_math::prelude::Srgba,
 };
 
@@ -11,5 +11,5 @@ pub fn Label<Env: Environment>(string: impl ToString) -> impl CompatibleWith<Env
 where
     MonospaceText: InlineItem<Env>,
 {
-    linewise_flow(MonospaceText(string.to_string(), TEXT_COLOR / 255.0))
+    Linewise(MonospaceText(string.to_string(), TEXT_COLOR / 255.0))
 }

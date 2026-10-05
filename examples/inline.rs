@@ -18,7 +18,7 @@ fn app() -> impl Tui {
     let scale = 1.0f32;
 
     view! (
-        linewise_flow [
+        Linewise [
             inline ColorBox {{scale * size!(6.0, 6.0)} {red}}
             inline ColorBox {{size!(21.0, 8.0)} {green}}
             MonospaceText {
@@ -55,7 +55,7 @@ fn app_w() -> impl DesktopUi {
     let scale = 8.0f32;
 
     view! (
-        linewise_flow [
+        Linewise [
             inline ColorBoxW {{scale * size!(6.0, 6.0)} {red}}
             inline ColorBoxW {{size!(21.0, 8.0)} {green}}
             MonospaceText {
