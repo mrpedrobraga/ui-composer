@@ -7,11 +7,11 @@ use {
 fn main() {
     let counter = Mutable::new(0);
 
-    TuiPlatform::run(Terminal(PanelContainer(Counter(counter))));
-    //DesktopPlatform::run(Window(PanelContainer(Counter(counter))));
+    //TuiPlatform::run(Terminal(PanelContainer(Counter(counter))));
+    DesktopPlatform::run(Window(PanelContainer(Counter(counter))));
 }
 
-fn Counter(count: Mutable<i32>) -> impl Tui {
+fn Counter(count: Mutable<i32>) -> impl DesktopUi {
     view! {
         center flex (vertical_flow) [
             item (grow: 1.0)

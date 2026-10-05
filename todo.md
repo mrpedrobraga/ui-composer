@@ -4,13 +4,15 @@
 
 - [X] Reactivity;
   - [X] Layout;
-    - [ ] Variable Arity Containers;
+    - [X] Variable Arity Containers;
   - [X] State viewing and mutation;
     - [X] Value animation;
-- [ ] TUI Target;
-- [ ] Winit Target;
+- [X] TUI Target;
+- [X] Winit Target;
 - [ ] Alpha 0 Testing Suite;
 - [X] JSX-like macro;
+- [X] Swift UI -like macro;
+- [ ] Fixed point mathematics for precise pixel placement;
 
 ## Alpha 1
 
