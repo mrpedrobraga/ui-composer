@@ -21,9 +21,9 @@ where
     __marker: PhantomData<Env>,
 }
 
-/// A container that scales its single item to a bigger size.
+/// A container that adapts its item's minimum size to be bigger.
 /// You **can not** make the minimum size _lower_ than the original, however.
-pub fn with_size<Env, A>(item: A) -> WithSizeContainer<Env, A>
+pub fn resize<Env, A>(item: A) -> WithSizeContainer<Env, A>
 where
     A: Ui<Env>,
     Env: Environment,

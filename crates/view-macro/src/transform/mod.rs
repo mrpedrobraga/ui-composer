@@ -6,7 +6,6 @@ use {
     quote::quote,
     syn::{Expr, Ident, Pat},
 };
-use {::syn::token};
 
 pub mod codegen;
 pub mod parser;
@@ -55,7 +54,6 @@ struct MethodCall {
     dot: ::syn::Token![.],
     method: Ident,
     turbofish: Option<::syn::AngleBracketedGenericArguments>,
-    paren: token::Paren,
     args: Punctuated<Expr, ::syn::Token![,]>
 }
 

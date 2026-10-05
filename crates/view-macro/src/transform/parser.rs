@@ -235,9 +235,9 @@ impl Parse for MethodCall {
         };
 
         let params_content;
-        let paren = parenthesized!(params_content in input);
+        parenthesized!(params_content in input);
         let args = Punctuated::parse_terminated(&params_content)?;
 
-        Ok(MethodCall { dot, method, turbofish, paren, args })
+        Ok(MethodCall { dot, method, turbofish, args })
     }
 }

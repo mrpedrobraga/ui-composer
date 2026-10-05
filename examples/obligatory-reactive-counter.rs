@@ -12,11 +12,9 @@ fn Counter(count: Mutable<i32>) -> impl Tui {
         Flex (vertical_flow) [
             item (grow: 1.0)
             for count of count.signal() {
-                Label {
-                    format!("Count: {count}")
-                }
-                .with_size(Size2::new(5.0, 5.0))
-                .centered()
+                Label { format!("Count: {count}")}
+                    .with_size(Size2::new(5.0, 5.0))
+                    .centered()
             }
 
             item

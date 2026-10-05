@@ -137,7 +137,7 @@ impl IfExpr {
 
 impl MethodCall {
     pub fn to_tokens(&self) -> TokenStream {
-        let MethodCall { dot, method, turbofish, paren: _, args  } = self;
+        let MethodCall { dot, method, turbofish, args  } = self;
 
         quote! {
             #dot #method #turbofish (#args)

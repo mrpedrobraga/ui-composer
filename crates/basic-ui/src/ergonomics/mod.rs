@@ -1,6 +1,6 @@
 use ::ui_composer_core::app::composition::{elements::Environment, layout::Ui};
 use ::ui_composer_math::glamour::Size2;
-use crate::layout::{CenterContainer, FlexItem, WithSizeContainer, center, item, with_size};
+use crate::layout::{CenterContainer, WithSizeContainer, center, resize};
 
 pub trait UiExt<Env>: Ui<Env> where Env: Environment {
     /// Adapts this item to be centered in its parent.
@@ -14,7 +14,7 @@ pub trait UiExt<Env>: Ui<Env> where Env: Environment {
     /// 
     /// Equivalent to `with_size(self)`.
     fn with_size(self, size: Size2) -> WithSizeContainer<Env, Self> where Self: Sized {
-        with_size(self).with_size(size)
+        resize(self).with_size(size)
     }
 }
 
