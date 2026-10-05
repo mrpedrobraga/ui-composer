@@ -136,8 +136,15 @@ where
             match fut_poll {
                 Poll::Ready(value) => {
                     let mut new_ui = map(value);
+                    new_ui.prepare(parent_hints);
                     new_ui.place(parent_hints, resources);
                     this.ui.set(Some(new_ui));
+                    // TODO: In the futur, instead of (),
+                    // the Some here might carry whether the parent
+                    // should re-layout or not.
+                    //
+                    // For an Await like this one,
+                    // the answer is yes!
                     return Poll::Ready(Some(()));
                 }
                 Poll::Pending => {
@@ -149,9 +156,7 @@ where
         /* The future has yielded, so we just pass forth the value of the inner poll! */
         else {
             if let Some(element) = this.ui.as_pin_mut() {
-                let inner_poll = element.poll_change(cx, resources, parent_hints);
-
-                return inner_poll;
+                return element.poll_change(cx, resources, parent_hints);
             } else {
                 return Poll::Ready(None);
             }

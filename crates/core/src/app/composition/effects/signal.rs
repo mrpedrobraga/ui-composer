@@ -1,9 +1,9 @@
 use crate::app::composition::algebra::Combine;
 use crate::app::composition::elements::{Blueprint, Element, Environment};
-use crate::app::composition::layout::hints::{ChildHints, ParentHints};
 use crate::app::composition::layout::Ui;
-use futures_signals::signal::Signal;
+use crate::app::composition::layout::hints::{ChildHints, ParentHints};
 use ::ui_composer_input::event::Event;
+use futures_signals::signal::Signal;
 use std::marker::PhantomData;
 use std::task::{Context, Poll};
 
@@ -82,13 +82,20 @@ where
             .unwrap_or_default()
     }
 
-    fn place(&mut self, parent_hints: ParentHints, resources: &Env::BlueprintResources<'_>) {
+    fn place(
+        &mut self,
+        parent_hints: ParentHints,
+        resources: &Env::BlueprintResources<'_>,
+    ) {
         if let Some(inner) = &mut self.ui {
             inner.place(parent_hints, resources);
         }
     }
 
-    fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect {
+    fn effect(
+        &self,
+    ) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect
+    {
         self.ui.as_ref().map(|inner| inner.effect())
     }
 
@@ -114,7 +121,11 @@ where
             match this.signal.poll_change(cx) {
                 Poll::Ready(Some(value)) => {
                     let mut new_ui = (this.map)(value);
-                    new_ui.prepare(parent_hints);
+                    // TODO: Because of the idea in the comment below,
+                    // we should cache the child hints here and every time it changes
+                    // meaningfully, this means "hey, the parent of
+                    // this `React`" should re-layout too!
+                    let _ = new_ui.prepare(parent_hints);
                     new_ui.place(parent_hints, resources);
                     this.ui.set(Some(new_ui));
                     Poll::Ready(Some(()))
@@ -127,12 +138,13 @@ where
             }
         };
 
+        // An inner poll might have changed the layout,
+        // forcing this node to re-layout itself.
+        //
+        // TODO: Maybe instead of (), polls might carry
+        // the value of whether there should be re-layouting.
         let ui_poll = if let Some(ui) = this.ui.as_pin_mut() {
-            match ui.poll_change(cx, resources, parent_hints) {
-                Poll::Ready(Some(())) => Poll::Ready(Some(())),
-                Poll::Ready(None) => Poll::Ready(None),
-                Poll::Pending => Poll::Pending,
-            }
+            ui.poll_change(cx, resources, parent_hints)
         } else {
             Poll::Ready(None)
         };

@@ -17,7 +17,9 @@ fn Counter(count: Mutable<i32>) -> impl Tui {
                         .with_size(Size2::new(5.0, 5.0))
                         .centered()
                 } else {
-                    Label "Can not display number smaller than zero."
+                    Label "Number is negative."
+                        .with_size(Size2::new(5.0, 5.0))
+                        .centered()
                 }
             }
 
