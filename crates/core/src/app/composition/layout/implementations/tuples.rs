@@ -1,5 +1,6 @@
 use std::pin::Pin;
 
+use ::either::{Either, for_both, map_both};
 use ui_composer_math::prelude::Size2;
 
 use crate::app::composition::algebra::Combine;
@@ -124,5 +125,90 @@ where
     ) -> std::task::Poll<Option<()>> {
         let inner = unsafe { self.map_unchecked_mut(|inner| &mut **inner) };
         inner.poll_change(cx, resources, parent_hints)
+    }
+}
+
+
+impl<Env, A> Ui<Env> for Option<A>
+where
+    A: Ui<Env, Blueprint: Blueprint<Env>>,
+    Env: Environment
+{
+    type Blueprint = Option<A::Blueprint>;
+
+    fn prepare(&mut self, parent_hints: ParentHints) -> ChildHints {
+        if let Some(inner) = self {
+            inner.prepare(parent_hints)
+        } else {
+            ChildHints::default()
+        }
+    }
+
+    fn place(&mut self, parent_hints: ParentHints, resources: &Env::BlueprintResources<'_>) {
+        if let Some(inner) = self {
+            inner.place(parent_hints, resources);
+        }
+    }
+    
+    fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect {
+        self.as_ref().map(|e| e.effect())
+    }
+
+    async fn propagate(&mut self, event: &mut ui_composer_input::event::Event) -> bool {
+        if let Some(inner) = self {
+            inner.propagate(event).await
+        } else {
+            false
+        }
+    }
+    
+    fn poll_change(
+        self: Pin<&mut Self>,
+        cx: &mut std::task::Context,
+        resources: &<Env as Environment>::BlueprintResources<'_>,
+        parent_hints: ParentHints,
+    ) -> std::task::Poll<Option<()>> {
+        if let Some(inner) = self.as_pin_mut() {
+            inner.poll_change(cx, resources, parent_hints)
+        } else {
+            ::std::task::Poll::Ready(None)
+        }
+    }
+}
+
+impl<Env, A, B> Ui<Env> for Either<A, B>
+where
+    A: Ui<Env, Blueprint: Blueprint<Env>>,
+    B: Ui<Env, Blueprint: Blueprint<Env>>,
+    Env: Environment
+{
+    type Blueprint = Either<A::Blueprint, B::Blueprint>;
+
+    fn prepare(&mut self, parent_hints: ParentHints) -> ChildHints {
+        for_both!(self, inner => inner.prepare(parent_hints))
+    }
+
+    fn place(&mut self, parent_hints: ParentHints, resources: &Env::BlueprintResources<'_>) {
+        for_both!(self, inner => inner.place(parent_hints, resources))
+    }
+    
+    fn effect(&self) -> <<Self::Blueprint as Blueprint<Env>>::Output as Element<Env>>::Effect {
+        map_both!(self, inner => inner.effect())
+    }
+
+    async fn propagate(&mut self, event: &mut ui_composer_input::event::Event) -> bool {
+        for_both!(self, inner => inner.propagate(event).await)
+    }
+    
+    fn poll_change(
+        self: Pin<&mut Self>,
+        cx: &mut std::task::Context,
+        resources: &<Env as Environment>::BlueprintResources<'_>,
+        parent_hints: ParentHints,
+    ) -> std::task::Poll<Option<()>> {
+        match self.as_pin_mut() {
+            Either::Left(inner) => inner.poll_change(cx, resources, parent_hints),
+            Either::Right(inner) => inner.poll_change(cx, resources, parent_hints),
+        }
     }
 }
