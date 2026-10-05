@@ -12,10 +12,12 @@ fn Counter(count: Mutable<i32>) -> impl Tui {
         Flex (vertical_flow) [
             item (grow: 1.0)
             for count of count.signal() {
-                if count > 0 {
-                    Label { format!("Count: {count}")}
+                if count >= 0 {
+                    Label format!("Count: {count}")
                         .with_size(Size2::new(5.0, 5.0))
                         .centered()
+                } else {
+                    Label "Can not display number smaller than zero."
                 }
             }
 

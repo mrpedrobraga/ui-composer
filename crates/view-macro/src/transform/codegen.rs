@@ -113,7 +113,7 @@ impl IfExpr {
             let else_content = if else_body.len() > 1 {
                 quote! { list![ #(#else_body),* ] }
             } else {
-                quote! { { #(#body),* } }
+                quote! { { #(#else_body),* } }
             };
 
             return quote! {

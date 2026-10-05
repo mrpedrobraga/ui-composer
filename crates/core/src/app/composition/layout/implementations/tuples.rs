@@ -206,9 +206,6 @@ where
         resources: &<Env as Environment>::BlueprintResources<'_>,
         parent_hints: ParentHints,
     ) -> std::task::Poll<Option<()>> {
-        match self.as_pin_mut() {
-            Either::Left(inner) => inner.poll_change(cx, resources, parent_hints),
-            Either::Right(inner) => inner.poll_change(cx, resources, parent_hints),
-        }
+        for_both!(self.as_pin_mut(), inner => inner.poll_change(cx, resources, parent_hints))
     }
 }

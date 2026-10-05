@@ -1,4 +1,4 @@
-use ::either::{map_both, Either};
+use ::either::{Either, for_both, map_both};
 
 use super::{Blueprint, Element};
 use crate::app::composition::algebra::Combine;
@@ -19,7 +19,12 @@ impl<Env: Environment> Element<Env> for () {
     type Effect = ();
     type Blueprint = ();
 
-    fn update(&mut self, _: Self::Blueprint, _: &<Env as Environment>::BlueprintResources<'_>) {}
+    fn update(
+        &mut self,
+        _: Self::Blueprint,
+        _: &<Env as Environment>::BlueprintResources<'_>,
+    ) {
+    }
 
     fn effect(&self) -> Self::Effect {}
 }
@@ -88,7 +93,11 @@ where
     type Effect = (A::Effect, B::Effect);
     type Blueprint = (A::Blueprint, B::Blueprint);
 
-    fn update(&mut self, blueprint: Self::Blueprint, resources: &Env::BlueprintResources<'_>) {
+    fn update(
+        &mut self,
+        blueprint: Self::Blueprint,
+        resources: &Env::BlueprintResources<'_>,
+    ) {
         self.0.update(blueprint.0, resources);
         self.1.update(blueprint.1, resources);
     }
@@ -253,14 +262,14 @@ where
     ) {
         match self {
             Either::Left(current) => match blueprint {
-                Either::Left(new_left) => {
-                    current.update(new_left, resources);
-                }
+                Either::Left(new_left) => current.update(new_left, resources),
                 Either::Right(_) => *self = blueprint.make(resources),
             },
             Either::Right(current) => match blueprint {
                 Either::Left(_) => *self = blueprint.make(resources),
-                Either::Right(new_right) => current.update(new_right, resources),
+                Either::Right(new_right) => {
+                    current.update(new_right, resources)
+                }
             },
         }
     }
@@ -274,9 +283,6 @@ where
         cx: &mut Context,
         resources: &<Env as Environment>::BlueprintResources<'_>,
     ) -> Poll<Option<()>> {
-        match self.as_pin_mut() {
-            Either::Left(inner) => inner.poll_change(cx, resources),
-            Either::Right(inner) => inner.poll_change(cx, resources),
-        }
+        for_both!(self.as_pin_mut(), inner => inner.poll_change(cx, resources))
     }
 }

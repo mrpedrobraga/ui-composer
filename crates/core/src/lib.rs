@@ -19,4 +19,5 @@ pub mod prelude {
     pub use crate::app::composition::visit::{Apply, ApplyMut, DriveThru, DriveThruMut};
     pub use crate::app::runner::futures::RenderModulePoller;
     pub use crate::app::runner::Runner;
+    pub use either;
 }
