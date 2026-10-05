@@ -1,6 +1,5 @@
 use std::marker::PhantomData;
 
-use ::ui_composer_math::glamour::{Point2, Size2};
 use ui_composer_core::app::composition::{
     elements::{Blueprint, Element, Environment},
     layout::{

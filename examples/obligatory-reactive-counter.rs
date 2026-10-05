@@ -8,14 +8,17 @@ fn main() {
 
 fn Counter(count: Mutable<i32>) -> impl Tui {
     view! {
-        center Flex (vertical_flow) [
+        center
+        Flex (vertical_flow) [
             item (grow: 1.0)
-                for count of count.signal() {
-                    Label (centered resize:Size2::new(5.0, 5.0)) {
-                        format!("Count: {count}")
-                    }
+            for count of count.signal() {
+                Label (centered resize:Size2::new(5.0, 5.0)) {
+                    format!("Count: {count}")
                 }
-            item Row [
+            }
+
+            item
+            Row [
                 Button {
                     Label "Take 1"
                     { count.clone().effect(|e| *e -= 1) }

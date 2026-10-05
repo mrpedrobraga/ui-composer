@@ -70,11 +70,12 @@ where
         let terminal_state =
             Arc::new(::futures::lock::Mutex::new(terminal_state));
         let terminal_state_2 = terminal_state.clone();
-        let render_module = RenderModule::new(
+        let mut render_module = RenderModule::new(
             terminal_element.ui,
             terminal_initial_size,
             NoopRenderResources,
         );
+        render_module.resize(terminal_initial_size, &resources);
         let render_module =
             Arc::new(::futures::lock::Mutex::new(render_module));
         let render_module_2 = render_module.clone();
