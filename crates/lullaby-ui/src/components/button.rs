@@ -49,7 +49,7 @@ where
         Tap::new(hx.rect, effect.clone()).with_hover_state(is_hovered.clone())
           //Graphic::new(hx.rect, BUTTON_COLOR_HOVER / 255.0))
     })
-    .with_minimum_size(Size2::new(21.0, 5.0) * Env::TILE_SIZE);
+    .with_minimum_size(Size2::new(10.0, 3.0) * Env::TILE_SIZE);
 
     list_internal![tap_area, _bg, center(label)]
 }

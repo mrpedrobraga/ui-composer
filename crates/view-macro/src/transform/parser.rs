@@ -1,7 +1,8 @@
 use crate::transform::{ChildrenStructure, NodeList};
 
-use super::{Attribute, Element, ForExpr, IfExpr, Node};
+use super::{Attribute, Element, ForExpr, IfExpr, MethodCall, Node};
 use proc_macro_error2::emit_error;
+use ::syn::{AngleBracketedGenericArguments, punctuated::Punctuated};
 use syn::{
     braced, bracketed, parenthesized,
     parse::{self, Parse, ParseStream},
@@ -97,9 +98,15 @@ impl Parse for Element {
             input.parse::<syn::token::Comma>()?;
         }
 
+        let mut method_calls = Vec::new();
+        while input.peek(syn::Token![.]) {
+            method_calls.push(input.parse()?);
+        }
+
         Ok(Element {
             path,
             attributes,
+            method_calls,
             children_structure,
             children,
         })
@@ -212,5 +219,25 @@ impl Parse for Attribute {
         };
 
         Ok(Attribute { key, value })
+    }
+}
+
+impl Parse for MethodCall {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let dot = input.parse::<Token![.]>()?;
+        let method: Ident = input.parse()?;
+        
+        let turbofish = if input.peek(Token![::]) {
+            let _: Token![::] = input.parse()?;
+            Some(input.parse::<AngleBracketedGenericArguments>()?)
+        } else {
+            None
+        };
+
+        let params_content;
+        let paren = parenthesized!(params_content in input);
+        let args = Punctuated::parse_terminated(&params_content)?;
+
+        Ok(MethodCall { dot, method, turbofish, paren, args })
     }
 }

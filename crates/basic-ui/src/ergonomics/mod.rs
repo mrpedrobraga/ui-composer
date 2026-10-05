@@ -6,14 +6,14 @@ pub trait UiExt<Env>: Ui<Env> where Env: Environment {
     /// Adapts this item to be centered in its parent.
     /// 
     /// Equivalent to `center(self)`.
-    fn with_centered(self) -> CenterContainer<Env, Self> where Self: Sized {
+    fn centered(self) -> CenterContainer<Env, Self> where Self: Sized {
         center(self)
     }
 
     /// Adapts this item to have `size` as its minimum size.
     /// 
     /// Equivalent to `with_size(self)`.
-    fn with_resize(self, size: Size2) -> WithSizeContainer<Env, Self> where Self: Sized {
+    fn with_size(self, size: Size2) -> WithSizeContainer<Env, Self> where Self: Sized {
         with_size(self).with_size(size)
     }
 }

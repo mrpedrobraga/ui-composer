@@ -1,4 +1,4 @@
-use super::IfExpr;
+use super::{IfExpr, MethodCall};
 
 use {
     crate::transform::{ChildrenStructure, Element, NodeList},
@@ -32,6 +32,11 @@ impl Element {
                 Some(v) => quote!( #output.#method(#v) ),
                 None => quote!( #output.#method() ),
             };
+        }
+
+        for method_call in &self.method_calls {
+            let m_call_expr = method_call.to_tokens();
+            output = quote! { #output #m_call_expr };
         }
 
         output
@@ -126,6 +131,16 @@ impl IfExpr {
             } else {
                 None
             }
+        }
+    }
+}
+
+impl MethodCall {
+    pub fn to_tokens(&self) -> TokenStream {
+        let MethodCall { dot, method, turbofish, paren: _, args  } = self;
+
+        quote! {
+            #dot #method #turbofish (#args)
         }
     }
 }

@@ -1,9 +1,12 @@
+use ::syn::punctuated::Punctuated;
+
 use {
     proc_macro::TokenStream,
     proc_macro_error2::emit_error,
     quote::quote,
     syn::{Expr, Ident, Pat},
 };
+use {::syn::token};
 
 pub mod codegen;
 pub mod parser;
@@ -38,6 +41,7 @@ struct NodeList(Vec<Node>);
 struct Element {
     path: syn::Path,
     attributes: Vec<Attribute>,
+    method_calls: Vec<MethodCall>,
     children_structure: ChildrenStructure,
     children: Vec<Node>,
 }
@@ -45,6 +49,14 @@ struct Element {
 struct Attribute {
     key: Ident,
     value: Option<Expr>,
+}
+
+struct MethodCall {
+    dot: ::syn::Token![.],
+    method: Ident,
+    turbofish: Option<::syn::AngleBracketedGenericArguments>,
+    paren: token::Paren,
+    args: Punctuated<Expr, ::syn::Token![,]>
 }
 
 enum ChildrenStructure {
