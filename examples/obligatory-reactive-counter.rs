@@ -6,7 +6,7 @@ fn main() {
     TuiPlatform::run(Terminal(PanelContainer(Counter(counter))));
 }
 
-fn Counter(count: Mutable<i32>) -> impl Tui {
+fn Counter(count: Mutable<i32>) -> impl Tui {    
     view! {
         center
         Flex (vertical_flow) [
@@ -26,14 +26,43 @@ fn Counter(count: Mutable<i32>) -> impl Tui {
             item
             Row [
                 Button {
-                    Label "Take 1"
+                    Label {"Take 1"}
                     { count.clone().effect(|e| *e -= 1) }
                 }
                 Button {
-                    Label "Add 1"
+                    Label {"Add 1"}
                     { count.effect(|e| *e += 1) }
                 }
             ]
         ]
     }
 }
+
+
+// center
+// Flex [vertical_flow] {
+// 	item
+// 	for count of count.signal() {
+// 		if count >= 0 {
+// 			Label("Count: {count}")
+// 				.with_size(...)
+// 				.centered()
+// 		} else {
+// 			Label("Number is negative.")
+// 				.with_size(...)
+// 				.centered()
+// 		}
+// 	}
+//
+// 	item
+// 	Row {
+// 		Button (
+// 			Label "Take 1"
+// 			count.clone().effect(|e| *e -= 1)
+// 		)
+// 		Button (
+// 			Label "Add 1"
+// 			count.clone().effect(|e| *e += 1)
+// 		)
+// 	}
+// }

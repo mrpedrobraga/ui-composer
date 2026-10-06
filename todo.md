@@ -1,4 +1,4 @@
-# ROADMAP
+# To Do
 
 ## Alpha 0
 
@@ -10,15 +10,19 @@
 - [X] TUI Target;
 - [X] Winit Target;
 - [ ] Alpha 0 Testing Suite;
-- [X] JSX-like macro;
-- [X] Swift UI -like macro;
+- [X] HTML/JSX-like macro;
+- [X] Swift UI-like macro;
 - [ ] Fixed point mathematics for precise pixel placement;
 
 ## Alpha 1
 
+- [ ] Custom `RenderModules`;
+  - [ ] Adhoc shader-based modules;
+    - [ ] Allow using [wgsl-rs](https://renderling.xyz/wgsl-rs/manual/getting-started/installation.html) to write shaders;
 - [ ] `no-std` targets;
 - [ ] `IntoUI`;
-  - [ ] `#[derive]` macros allowing you to automatically generate UI from type definitions.
+  - [ ] `#[derive]` macros allowing you to automatically
+  generate UI from type definitions like the Godot `EditorInspector`.
 - [ ] Animatable UI;
 - [ ] Styleable UI;
   - [ ] Query Selectors;

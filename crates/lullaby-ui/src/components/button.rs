@@ -35,7 +35,7 @@ where
 
     /* TODO: Use a single layout component for the bg and tap area instead of many. */
 
-    let _bg = is_hovered.signal().for_of(|is_hovered| {
+    let background = is_hovered.signal().for_of(|is_hovered| {
         Canvas::new(move |hx| {
             if is_hovered {
                 Graphic::new(hx.rect, BUTTON_COLOR_HOVER / 255.0)
@@ -47,9 +47,8 @@ where
 
     let tap_area = Canvas::new(move |hx| {
         Tap::new(hx.rect, effect.clone()).with_hover_state(is_hovered.clone())
-          //Graphic::new(hx.rect, BUTTON_COLOR_HOVER / 255.0))
     })
     .with_minimum_size(Size2::new(10.0, 3.0) * Env::TILE_SIZE);
 
-    list_internal![tap_area, _bg, center(label)]
+    list_internal![tap_area, background, center(label)]
 }
